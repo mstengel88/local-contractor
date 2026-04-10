@@ -4,6 +4,7 @@ export type SavedCustomQuote = {
   id: string;
   shop: string;
   customer_name?: string | null;
+  customer_email?: string | null;
   address1: string;
   address2?: string | null;
   city: string;
@@ -33,6 +34,7 @@ export type SavedCustomQuote = {
 export async function saveCustomQuote(input: {
   shop: string;
   customerName?: string;
+  customerEmail?: string;
   address1: string;
   address2?: string;
   city: string;
@@ -52,6 +54,7 @@ export async function saveCustomQuote(input: {
     .insert({
       shop: input.shop,
       customer_name: input.customerName || null,
+      customer_email: input.customerEmail || null,
       address1: input.address1,
       address2: input.address2 || null,
       city: input.city,

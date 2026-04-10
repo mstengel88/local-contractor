@@ -125,6 +125,7 @@ export async function action({ request }: { request: Request }) {
           ]
             .filter(Boolean)
             .join("\n"),
+          email: quote.customer_email || undefined,
           tags: ["custom-quote", buildQuoteTag(quote.id)],
           shippingAddress: {
             address1: quote.address1,

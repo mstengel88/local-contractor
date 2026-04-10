@@ -34,6 +34,7 @@ type QuoteLine = {
 type SavedQuoteRecord = {
   id: string;
   customer_name?: string | null;
+  customer_email?: string | null;
   address1?: string | null;
   address2?: string | null;
   city?: string | null;
@@ -172,6 +173,7 @@ export async function action({ request }: any) {
   const recentQuotes = await getRecentCustomQuotes(15);
 
   const customerName = String(form.get("customerName") || "");
+  const customerEmail = String(form.get("customerEmail") || "").trim();
   const address1 = String(form.get("address1") || "");
   const address2 = String(form.get("address2") || "");
   const city = String(form.get("city") || "");
@@ -219,6 +221,9 @@ export async function action({ request }: any) {
         ok: false,
         message:
           "Add at least one product line with a selected product and quantity greater than 0.",
+        customerName,
+        customerEmail,
+        address: { address1, address2, city, province, postalCode, country },
         quoteAudience,
         contractorTier,
         googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
@@ -235,6 +240,9 @@ export async function action({ request }: any) {
         recentQuotes,
         ok: false,
         message: "Address 1, city, state, and ZIP are required.",
+        customerName,
+        customerEmail,
+        address: { address1, address2, city, province, postalCode, country },
         quoteAudience,
         contractorTier,
         googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
@@ -282,6 +290,7 @@ export async function action({ request }: any) {
     const saved = await saveCustomQuote({
       shop,
       customerName,
+      customerEmail,
       address1,
       address2,
       city,
@@ -313,6 +322,7 @@ export async function action({ request }: any) {
     recentQuotes,
     ok: true,
     customerName,
+    customerEmail,
     address: { address1, address2, city, province, postalCode, country },
     googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
     savedQuoteId,
@@ -562,6 +572,7 @@ export default function PublicCustomQuotePage() {
       `Audience: ${actionData.quoteAudience === "contractor" ? "Contractor" : "Customer"}`,
       `Pricing Tier: ${actionData.pricing.pricingLabel}`,
       `Customer: ${actionData.customerName || ""}`,
+      `Email: ${actionData.customerEmail || ""}`,
       `Products Subtotal: $${Number(actionData.pricing.productsSubtotal).toFixed(2)}`,
       `Delivery: $${Number(actionData.pricing.deliveryAmount).toFixed(2)}`,
       `Tax: $${Number(actionData.pricing.taxAmount).toFixed(2)}`,
@@ -593,6 +604,7 @@ export default function PublicCustomQuotePage() {
 
     return [
       `Customer: ${selectedHistoryQuote.customer_name || ""}`,
+      `Email: ${selectedHistoryQuote.customer_email || ""}`,
       `Address: ${selectedHistoryQuote.address1 || ""}, ${selectedHistoryQuote.city || ""}, ${selectedHistoryQuote.province || ""} ${selectedHistoryQuote.postal_code || ""}`,
       `Total: $${(Number(selectedHistoryQuote.quote_total_cents || 0) / 100).toFixed(2)}`,
       `Service: ${selectedHistoryQuote.service_name || ""}`,
@@ -768,6 +780,17 @@ export default function PublicCustomQuotePage() {
                   name="customerName"
                   autoComplete="name"
                   defaultValue={actionData?.customerName || ""}
+                  style={styles.input}
+                />
+              </div>
+
+              <div>
+                <label style={styles.label}>Email Address</label>
+                <input
+                  type="email"
+                  name="customerEmail"
+                  autoComplete="email"
+                  defaultValue={actionData?.customerEmail || ""}
                   style={styles.input}
                 />
               </div>
@@ -1373,6 +1396,10 @@ export default function PublicCustomQuotePage() {
                 <div>
                   <strong style={{ color: "#93c5fd" }}>Customer:</strong>{" "}
                   {selectedHistoryQuote.customer_name || "Unnamed customer"}
+                </div>
+                <div>
+                  <strong style={{ color: "#93c5fd" }}>Email:</strong>{" "}
+                  {selectedHistoryQuote.customer_email || "N/A"}
                 </div>
                 <div>
                   <strong style={{ color: "#93c5fd" }}>Address:</strong>{" "}
