@@ -1,7 +1,7 @@
 import { data } from "react-router";
 import { getCustomQuoteById } from "../lib/custom-quotes.server";
 import { getProductOptionsFromSupabase } from "../lib/quote-products.server";
-import { authenticate } from "../shopify.server";
+import shopify, { authenticate } from "../shopify.server";
 
 const SHOPIFY_TITLE_LIMIT = 40;
 
@@ -23,7 +23,6 @@ function buildQuoteTag(quoteId: string) {
 }
 
 export async function action({ request }: { request: Request }) {
-  const { admin, session } = await authenticate.admin(request);
   const form = await request.formData();
   const quoteId = String(form.get("quoteId") || "").trim();
 
@@ -35,6 +34,21 @@ export async function action({ request }: { request: Request }) {
   if (!quote) {
     return data({ ok: false, message: "Quote not found." }, { status: 404 });
   }
+
+  const isEmbeddedRequest = new URL(request.url).pathname.startsWith("/app/");
+  const shop = quote.shop || process.env.SHOPIFY_STORE_DOMAIN || "";
+
+  if (!shop) {
+    return data(
+      { ok: false, message: "Quote is missing a Shopify shop domain." },
+      { status: 400 },
+    );
+  }
+
+  const adminClient = isEmbeddedRequest
+    ? await authenticate.admin(request)
+    : await shopify.unauthenticated.admin(shop);
+  const admin = adminClient.admin;
 
   const products = await getProductOptionsFromSupabase();
   const lineItems = quote.line_items || [];
@@ -174,7 +188,7 @@ export async function action({ request }: { request: Request }) {
     draftOrderName: draftOrder.name,
     draftOrderInvoiceUrl: draftOrder.invoiceUrl || null,
     draftOrderAdminUrl: draftOrder.legacyResourceId
-      ? `https://admin.shopify.com/store/${getStoreHandle(session.shop)}/draft_orders/${draftOrder.legacyResourceId}`
+      ? `https://admin.shopify.com/store/${getStoreHandle(shop)}/draft_orders/${draftOrder.legacyResourceId}`
       : null,
   });
 }
