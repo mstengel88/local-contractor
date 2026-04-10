@@ -189,9 +189,6 @@ export async function action({ request }: any) {
   const pricingLabel = getPricingLabel(quoteAudience, contractorTier);
   const customDeliveryAmountInput = String(form.get("customDeliveryAmount") || "").trim();
   const customTaxRateInput = String(form.get("customTaxRate") || "").trim();
-  const customServiceName = String(form.get("customServiceName") || "").trim();
-  const customEta = String(form.get("customEta") || "").trim();
-  const customSummary = String(form.get("customSummary") || "").trim();
   const customNotes = String(form.get("customNotes") || "").trim();
   const customShippingQuantityInput = String(form.get("customShippingQuantity") || "").trim();
   const customShippingUnit = String(form.get("customShippingUnit") || "miles").trim() === "hours"
@@ -267,9 +264,6 @@ export async function action({ request }: any) {
         customShippingQuantity: customShippingQuantityInput,
         customShippingUnit,
         customShippingRate: customShippingRateInput,
-        customServiceName,
-        customEta,
-        customSummary,
         customNotes,
         googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
       },
@@ -296,9 +290,6 @@ export async function action({ request }: any) {
         customShippingQuantity: customShippingQuantityInput,
         customShippingUnit,
         customShippingRate: customShippingRateInput,
-        customServiceName,
-        customEta,
-        customSummary,
         customNotes,
         googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
       },
@@ -349,16 +340,9 @@ export async function action({ request }: any) {
       : Number(process.env.QUOTE_TAX_RATE || "0");
   const taxAmount = taxableSubtotal * taxRate;
   const totalAmount = taxableSubtotal + taxAmount;
-  const effectiveServiceName =
-    quoteAudience === "custom" && customServiceName
-      ? customServiceName
-      : deliveryQuote.serviceName;
-  const effectiveEta =
-    quoteAudience === "custom" && customEta ? customEta : deliveryQuote.eta;
-  const effectiveSummary =
-    quoteAudience === "custom" && customSummary
-      ? customSummary
-      : deliveryQuote.summary;
+  const effectiveServiceName = deliveryQuote.serviceName;
+  const effectiveEta = deliveryQuote.eta;
+  const effectiveSummary = deliveryQuote.summary;
   const effectiveDescription =
     quoteAudience === "custom" && customNotes
       ? customNotes
@@ -439,9 +423,6 @@ export async function action({ request }: any) {
     customShippingUnit,
     customShippingRate: customShippingRateInput,
     shippingCalculationText,
-    customServiceName,
-    customEta,
-    customSummary,
     customNotes,
   });
 }
@@ -688,10 +669,9 @@ export default function PublicCustomQuotePage() {
       `Email: ${actionData.customerEmail || ""}`,
       `Phone: ${actionData.customerPhone || ""}`,
       `Products Subtotal: $${Number(actionData.pricing.productsSubtotal).toFixed(2)}`,
-      `Delivery: $${Number(actionData.pricing.deliveryAmount).toFixed(2)}`,
       actionData.shippingCalculationText
         ? `Shipping Calc: ${actionData.shippingCalculationText}`
-        : null,
+        : `Delivery: $${Number(actionData.pricing.deliveryAmount).toFixed(2)}`,
       `Tax: $${Number(actionData.pricing.taxAmount).toFixed(2)}`,
       `TOTAL: $${Number(actionData.pricing.totalAmount).toFixed(2)}`,
       `Delivery Service: ${actionData.deliveryQuote.serviceName}`,
@@ -904,7 +884,7 @@ export default function PublicCustomQuotePage() {
             ) : quoteAudience === "custom" ? (
               <div style={{ color: "#93c5fd", fontSize: 14 }}>
                 Custom mode keeps the same quote flow but lets you override line titles,
-                unit prices, delivery, tax, service name, ETA, summary, and notes.
+                unit prices, delivery, shipping math, tax, and notes.
               </div>
             ) : null}
           </div>
@@ -1437,39 +1417,6 @@ export default function PublicCustomQuotePage() {
                 </div>
 
                 <div>
-                  <label style={styles.label}>Delivery Service Name</label>
-                  <input
-                    type="text"
-                    name="customServiceName"
-                    defaultValue={actionData?.customServiceName || ""}
-                    placeholder="Use calculated service name"
-                    style={styles.input}
-                  />
-                </div>
-
-                <div>
-                  <label style={styles.label}>ETA</label>
-                  <input
-                    type="text"
-                    name="customEta"
-                    defaultValue={actionData?.customEta || ""}
-                    placeholder="Use calculated ETA"
-                    style={styles.input}
-                  />
-                </div>
-
-                <div>
-                  <label style={styles.label}>Summary</label>
-                  <input
-                    type="text"
-                    name="customSummary"
-                    defaultValue={actionData?.customSummary || ""}
-                    placeholder="Use calculated summary"
-                    style={styles.input}
-                  />
-                </div>
-
-                <div>
                   <label style={styles.label}>Notes</label>
                   <textarea
                     name="customNotes"
@@ -1556,8 +1503,10 @@ export default function PublicCustomQuotePage() {
                   {Number(actionData.pricing.productsSubtotal).toFixed(2)}
                 </div>
                 <div>
-                  <strong style={{ color: "#93c5fd" }}>Delivery:</strong> $
-                  {Number(actionData.pricing.deliveryAmount).toFixed(2)}
+                  <strong style={{ color: "#93c5fd" }}>
+                    {actionData.shippingCalculationText ? "Shipping:" : "Delivery:"}
+                  </strong>{" "}
+                  ${Number(actionData.pricing.deliveryAmount).toFixed(2)}
                 </div>
                 {actionData.shippingCalculationText ? (
                   <div>
