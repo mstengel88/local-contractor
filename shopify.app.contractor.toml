@@ -1,7 +1,7 @@
 # Copy this to `shopify.app.contractor.toml` for your contractor sandbox app.
 # Use a DIFFERENT Shopify Partner app than the live Local-Delivery app.
 
-client_id = "replace-with-contractor-client-id"
+client_id = "b0094fe9ce9d741db6c54bb5ba0d18cc"
 name = "Local-Delivery-Contractor"
 application_url = "https://contractor.ghstickets.com"
 embedded = true

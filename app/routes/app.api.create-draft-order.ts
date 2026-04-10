@@ -3,8 +3,17 @@ import { getCustomQuoteById } from "../lib/custom-quotes.server";
 import { getProductOptionsFromSupabase } from "../lib/quote-products.server";
 import { authenticate } from "../shopify.server";
 
+const SHOPIFY_TITLE_LIMIT = 40;
+
 function getStoreHandle(shop: string) {
   return shop.replace(".myshopify.com", "");
+}
+
+function truncateShopifyTitle(value: string | null | undefined) {
+  const normalized = String(value || "").trim();
+  if (!normalized) return "Quoted Item";
+  if (normalized.length <= SHOPIFY_TITLE_LIMIT) return normalized;
+  return `${normalized.slice(0, SHOPIFY_TITLE_LIMIT - 1).trimEnd()}…`;
 }
 
 export async function action({ request }: { request: Request }) {
@@ -56,7 +65,7 @@ export async function action({ request }: { request: Request }) {
     }
 
     return {
-      title: line.title,
+      title: truncateShopifyTitle(line.title),
       sku: line.sku,
       quantity: Number(line.quantity || 0),
       requiresShipping: true,
@@ -109,7 +118,9 @@ export async function action({ request }: { request: Request }) {
           ...(remainingChargeCents > 0
             ? {
                 shippingLine: {
-                  title: quote.service_name || "Quoted Delivery / Tax",
+                  title: truncateShopifyTitle(
+                    quote.service_name || "Quoted Delivery / Tax",
+                  ),
                   priceWithCurrency: {
                     amount: (remainingChargeCents / 100).toFixed(2),
                     currencyCode: "USD",
@@ -130,7 +141,13 @@ export async function action({ request }: { request: Request }) {
     return data(
       {
         ok: false,
-        message: userErrors.map((error: { message: string }) => error.message).join(", "),
+        message: userErrors
+          .map((error: { field?: string[]; message: string }) =>
+            error.field?.length
+              ? `${error.field.join(".")}: ${error.message}`
+              : error.message,
+          )
+          .join(", "),
       },
       { status: 400 },
     );
