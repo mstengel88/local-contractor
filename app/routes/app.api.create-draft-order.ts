@@ -16,6 +16,12 @@ function truncateShopifyTitle(value: string | null | undefined) {
   return `${normalized.slice(0, SHOPIFY_TITLE_LIMIT - 1).trimEnd()}…`;
 }
 
+function buildQuoteTag(quoteId: string) {
+  const normalized = String(quoteId || "").trim();
+  if (!normalized) return "quote";
+  return `quote:${normalized.slice(0, 34)}`;
+}
+
 export async function action({ request }: { request: Request }) {
   const { admin, session } = await authenticate.admin(request);
   const form = await request.formData();
@@ -105,7 +111,7 @@ export async function action({ request }: { request: Request }) {
           ]
             .filter(Boolean)
             .join("\n"),
-          tags: ["custom-quote", `quote:${quote.id}`],
+          tags: ["custom-quote", buildQuoteTag(quote.id)],
           shippingAddress: {
             address1: quote.address1,
             address2: quote.address2 || undefined,
