@@ -46,6 +46,7 @@ type SavedQuoteRecord = {
   country?: string | null;
   quote_total_cents: number;
   service_name?: string | null;
+  shipping_details?: string | null;
   description?: string | null;
   eta?: string | null;
   summary?: string | null;
@@ -369,6 +370,7 @@ export async function action({ request }: any) {
       country,
       quoteTotalCents: Math.round(totalAmount * 100),
       serviceName: effectiveServiceName,
+      shippingDetails: shippingCalculationText || undefined,
       description: `${effectiveDescription} Pricing: ${pricingLabel}.`,
       eta: effectiveEta,
       summary: `${effectiveSummary} Pricing: ${pricingLabel}.`,
@@ -676,7 +678,9 @@ export default function PublicCustomQuotePage() {
       `TOTAL: $${Number(actionData.pricing.totalAmount).toFixed(2)}`,
       `Delivery Service: ${actionData.deliveryQuote.serviceName}`,
       `ETA: ${actionData.deliveryQuote.eta}`,
-      `Summary: ${actionData.deliveryQuote.summary}`,
+      actionData.shippingCalculationText
+        ? `Custom Shipping: ${actionData.deliveryQuote.description}`
+        : `Notes: ${actionData.deliveryQuote.description}`,
       "",
       linesText,
     ]
@@ -708,12 +712,17 @@ export default function PublicCustomQuotePage() {
       `Address: ${selectedHistoryQuote.address1 || ""}, ${selectedHistoryQuote.city || ""}, ${selectedHistoryQuote.province || ""} ${selectedHistoryQuote.postal_code || ""}`,
       `Total: $${(Number(selectedHistoryQuote.quote_total_cents || 0) / 100).toFixed(2)}`,
       `Service: ${selectedHistoryQuote.service_name || ""}`,
+      selectedHistoryQuote.shipping_details
+        ? `Shipping Details: ${selectedHistoryQuote.shipping_details}`
+        : null,
       `ETA: ${selectedHistoryQuote.eta || ""}`,
       `Summary: ${selectedHistoryQuote.summary || ""}`,
       `Notes: ${selectedHistoryQuote.description || ""}`,
       "",
       linesText,
-    ].join("\n");
+    ]
+      .filter(Boolean)
+      .join("\n");
   }, [selectedHistoryQuote]);
 
   function updateLine(index: number, patch: Partial<QuoteLine>) {
@@ -1539,11 +1548,9 @@ export default function PublicCustomQuotePage() {
                   {actionData.deliveryQuote.eta}
                 </div>
                 <div>
-                  <strong style={{ color: "#93c5fd" }}>Summary:</strong>{" "}
-                  {actionData.deliveryQuote.summary}
-                </div>
-                <div>
-                  <strong style={{ color: "#93c5fd" }}>Notes:</strong>{" "}
+                  <strong style={{ color: "#93c5fd" }}>
+                    {actionData.shippingCalculationText ? "Custom Shipping:" : "Notes:"}
+                  </strong>{" "}
                   {actionData.deliveryQuote.description}
                 </div>
               </div>
@@ -1728,6 +1735,12 @@ export default function PublicCustomQuotePage() {
                   <strong style={{ color: "#93c5fd" }}>ETA:</strong>{" "}
                   {selectedHistoryQuote.eta || "N/A"}
                 </div>
+                {selectedHistoryQuote.shipping_details ? (
+                  <div>
+                    <strong style={{ color: "#93c5fd" }}>Shipping Details:</strong>{" "}
+                    {selectedHistoryQuote.shipping_details}
+                  </div>
+                ) : null}
                 <div>
                   <strong style={{ color: "#93c5fd" }}>Summary:</strong>{" "}
                   {selectedHistoryQuote.summary || "N/A"}

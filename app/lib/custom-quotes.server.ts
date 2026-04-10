@@ -14,6 +14,7 @@ export type SavedCustomQuote = {
   country: string;
   quote_total_cents: number;
   service_name?: string | null;
+  shipping_details?: string | null;
   description?: string | null;
   eta?: string | null;
   summary?: string | null;
@@ -45,6 +46,7 @@ export async function saveCustomQuote(input: {
   country: string;
   quoteTotalCents: number;
   serviceName?: string;
+  shippingDetails?: string;
   description?: string;
   eta?: string;
   summary?: string;
@@ -66,6 +68,7 @@ export async function saveCustomQuote(input: {
       country: input.country,
       quote_total_cents: input.quoteTotalCents,
       service_name: input.serviceName || null,
+      shipping_details: input.shippingDetails || null,
       description: input.description || null,
       eta: input.eta || null,
       summary: input.summary || null,

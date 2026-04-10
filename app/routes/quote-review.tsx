@@ -50,6 +50,7 @@ function buildQuoteSearchText(quote: SavedCustomQuote) {
     quote.postal_code,
     quote.country,
     quote.service_name,
+    quote.shipping_details,
     quote.description,
     quote.summary,
     quote.eta,
@@ -446,6 +447,9 @@ export default function QuoteReviewPage() {
                     <div><strong>Total:</strong> {formatMoney(selectedQuote.quote_total_cents)}</div>
                     <div><strong>Service:</strong> {selectedQuote.service_name || "Quote"}</div>
                     <div><strong>ETA:</strong> {selectedQuote.eta || "N/A"}</div>
+                    {selectedQuote.shipping_details ? (
+                      <div><strong>Shipping Details:</strong> {selectedQuote.shipping_details}</div>
+                    ) : null}
                     <div><strong>Summary:</strong> {selectedQuote.summary || "N/A"}</div>
                     <div><strong>Notes:</strong> {selectedQuote.description || "N/A"}</div>
                   </div>
