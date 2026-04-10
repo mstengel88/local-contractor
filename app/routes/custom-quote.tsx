@@ -493,8 +493,10 @@ export default function PublicCustomQuotePage() {
     []) as SavedQuoteRecord[];
   const googleMapsApiKey =
     actionData?.googleMapsApiKey ?? loaderData.googleMapsApiKey ?? "";
-  const isEmbeddedRoute = location.pathname.startsWith("/app/");
   const embeddedQs = location.search || "";
+  const createDraftOrderAction = location.pathname.startsWith("/app/")
+    ? `/app/api/create-draft-order${embeddedQs}`
+    : `/api/create-draft-order${embeddedQs}`;
 
   const [googleStatus, setGoogleStatus] = useState("Not loaded");
   const [quoteAudience, setQuoteAudience] = useState<QuoteAudience>(
@@ -1319,40 +1321,38 @@ export default function PublicCustomQuotePage() {
               </button>
             </div>
 
-            {isEmbeddedRoute ? (
-              <draftOrderFetcher.Form
-                method="post"
-                action={`/app/api/create-draft-order${embeddedQs}`}
-                style={{ marginBottom: 16, display: "flex", gap: 12, flexWrap: "wrap" }}
-              >
-                <input type="hidden" name="quoteId" value={selectedHistoryQuote.id} />
-                <button type="submit" style={styles.buttonPrimary}>
-                  {draftOrderFetcher.state === "submitting"
-                    ? "Creating Draft Order..."
-                    : "Send To Shopify"}
-                </button>
-                {draftOrderFetcher.data?.draftOrderAdminUrl ? (
-                  <a
-                    href={draftOrderFetcher.data.draftOrderAdminUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={styles.buttonGhost}
-                  >
-                    Open Draft Order
-                  </a>
-                ) : null}
-                {draftOrderFetcher.data?.draftOrderInvoiceUrl ? (
-                  <a
-                    href={draftOrderFetcher.data.draftOrderInvoiceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={styles.buttonGhost}
-                  >
-                    Open Invoice
-                  </a>
-                ) : null}
-              </draftOrderFetcher.Form>
-            ) : null}
+            <draftOrderFetcher.Form
+              method="post"
+              action={createDraftOrderAction}
+              style={{ marginBottom: 16, display: "flex", gap: 12, flexWrap: "wrap" }}
+            >
+              <input type="hidden" name="quoteId" value={selectedHistoryQuote.id} />
+              <button type="submit" style={styles.buttonPrimary}>
+                {draftOrderFetcher.state === "submitting"
+                  ? "Creating Draft Order..."
+                  : "Send To Shopify"}
+              </button>
+              {draftOrderFetcher.data?.draftOrderAdminUrl ? (
+                <a
+                  href={draftOrderFetcher.data.draftOrderAdminUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={styles.buttonGhost}
+                >
+                  Open Draft Order
+                </a>
+              ) : null}
+              {draftOrderFetcher.data?.draftOrderInvoiceUrl ? (
+                <a
+                  href={draftOrderFetcher.data.draftOrderInvoiceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={styles.buttonGhost}
+                >
+                  Open Invoice
+                </a>
+              ) : null}
+            </draftOrderFetcher.Form>
 
             {draftOrderFetcher.data?.message ? (
               <div

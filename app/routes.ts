@@ -18,6 +18,7 @@ export default [
   route("api/shipping-estimate", "routes/api.shipping-estimate.ts"),
   route("api/carrier-service", "routes/api.carrier-service.ts"),
   route("api/sync-products", "routes/api.sync-products.ts"),
+  route("api/create-draft-order", "routes/api.create-draft-order.ts"),
 
   route("app/api/shipping-estimate", "routes/app.api.shipping-estimate.ts"),
   route("app/api/carrier-service", "routes/app.api.carrier-service.ts"),
