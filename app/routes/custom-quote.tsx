@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { Form, useActionData, useLoaderData, useNavigation } from "react-router";
+import { Form, useActionData, useFetcher, useLoaderData, useLocation, useNavigation } from "react-router";
 import { data, redirect } from "react-router";
 import {
   getRecentCustomQuotes,
@@ -56,6 +56,7 @@ type SavedQuoteRecord = {
     quantity: number;
     vendor?: string;
     price?: number;
+    variantId?: string | null;
     pricingLabel?: string;
     audience?: string;
     contractorTier?: string | null;
@@ -295,6 +296,8 @@ export async function action({ request }: any) {
       sourceBreakdown,
       lineItems: selectedProducts.map((product) => ({
         ...product,
+        variantId:
+          products.find((entry) => entry.sku === product.sku)?.variantId || null,
         audience: quoteAudience,
         contractorTier: quoteAudience === "contractor" ? contractorTier : null,
         pricingLabel,
@@ -478,7 +481,9 @@ const styles = {
 export default function PublicCustomQuotePage() {
   const loaderData = useLoaderData<typeof loader>() as any;
   const actionData = useActionData<typeof action>() as any;
+  const draftOrderFetcher = useFetcher<any>();
   const navigation = useNavigation();
+  const location = useLocation();
   const isSubmitting = navigation.state === "submitting";
 
   const allowed = actionData?.allowed ?? loaderData.allowed;
@@ -488,6 +493,8 @@ export default function PublicCustomQuotePage() {
     []) as SavedQuoteRecord[];
   const googleMapsApiKey =
     actionData?.googleMapsApiKey ?? loaderData.googleMapsApiKey ?? "";
+  const isEmbeddedRoute = location.pathname.startsWith("/app/");
+  const embeddedQs = location.search || "";
 
   const [googleStatus, setGoogleStatus] = useState("Not loaded");
   const [quoteAudience, setQuoteAudience] = useState<QuoteAudience>(
@@ -1311,6 +1318,49 @@ export default function PublicCustomQuotePage() {
                 Copy Saved Quote
               </button>
             </div>
+
+            {isEmbeddedRoute ? (
+              <draftOrderFetcher.Form
+                method="post"
+                action={`/app/api/create-draft-order${embeddedQs}`}
+                style={{ marginBottom: 16, display: "flex", gap: 12, flexWrap: "wrap" }}
+              >
+                <input type="hidden" name="quoteId" value={selectedHistoryQuote.id} />
+                <button type="submit" style={styles.buttonPrimary}>
+                  {draftOrderFetcher.state === "submitting"
+                    ? "Creating Draft Order..."
+                    : "Send To Shopify"}
+                </button>
+                {draftOrderFetcher.data?.draftOrderAdminUrl ? (
+                  <a
+                    href={draftOrderFetcher.data.draftOrderAdminUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={styles.buttonGhost}
+                  >
+                    Open Draft Order
+                  </a>
+                ) : null}
+                {draftOrderFetcher.data?.draftOrderInvoiceUrl ? (
+                  <a
+                    href={draftOrderFetcher.data.draftOrderInvoiceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={styles.buttonGhost}
+                  >
+                    Open Invoice
+                  </a>
+                ) : null}
+              </draftOrderFetcher.Form>
+            ) : null}
+
+            {draftOrderFetcher.data?.message ? (
+              <div
+                style={draftOrderFetcher.data.ok ? styles.statusOk : styles.statusErr}
+              >
+                {draftOrderFetcher.data.message}
+              </div>
+            ) : null}
 
             <div
               style={{

@@ -1,5 +1,35 @@
 import { supabaseAdmin } from "./supabase.server";
 
+export type SavedCustomQuote = {
+  id: string;
+  shop: string;
+  customer_name?: string | null;
+  address1: string;
+  address2?: string | null;
+  city: string;
+  province: string;
+  postal_code: string;
+  country: string;
+  quote_total_cents: number;
+  service_name?: string | null;
+  description?: string | null;
+  eta?: string | null;
+  summary?: string | null;
+  source_breakdown?: unknown[] | null;
+  line_items?: Array<{
+    title: string;
+    sku: string;
+    quantity: number;
+    vendor?: string;
+    price?: number;
+    variantId?: string | null;
+    pricingLabel?: string;
+    audience?: string;
+    contractorTier?: string | null;
+  }> | null;
+  created_at: string;
+};
+
 export async function saveCustomQuote(input: {
   shop: string;
   customerName?: string;
@@ -60,4 +90,19 @@ export async function getRecentCustomQuotes(limit = 20) {
   }
 
   return data || [];
+}
+
+export async function getCustomQuoteById(id: string) {
+  const { data, error } = await supabaseAdmin
+    .from("custom_delivery_quotes")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[GET CUSTOM QUOTE ERROR]", error);
+    return null;
+  }
+
+  return (data as SavedCustomQuote | null) || null;
 }
