@@ -504,9 +504,12 @@ export default function PublicCustomQuotePage() {
   const googleMapsApiKey =
     actionData?.googleMapsApiKey ?? loaderData.googleMapsApiKey ?? "";
   const embeddedQs = location.search || "";
+  const isEmbeddedRoute = location.pathname.startsWith("/app/");
   const createDraftOrderAction = location.pathname.startsWith("/app/")
     ? `/app/api/create-draft-order${embeddedQs}`
     : `/api/create-draft-order${embeddedQs}`;
+  const quoteReviewHref = isEmbeddedRoute ? "/app/quote-review" : "/quote-review";
+  const logoutHref = isEmbeddedRoute ? "/app/custom-quote?logout=1" : "/custom-quote?logout=1";
 
   const [googleStatus, setGoogleStatus] = useState("Not loaded");
   const [quoteAudience, setQuoteAudience] = useState<QuoteAudience>(
@@ -709,9 +712,14 @@ export default function PublicCustomQuotePage() {
             </div>
           </div>
 
-          <a href="/custom-quote?logout=1" style={styles.logout}>
-            Log out
-          </a>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <a href={quoteReviewHref} style={styles.logout}>
+              Review Quotes
+            </a>
+            <a href={logoutHref} style={styles.logout}>
+              Log out
+            </a>
+          </div>
         </div>
 
         <Form method="post" style={{ display: "grid", gap: "22px" }}>
