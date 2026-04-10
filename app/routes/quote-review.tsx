@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Form, useActionData, useFetcher, useLoaderData, useLocation } from "react-router";
 import { data, redirect } from "react-router";
 import { getRecentCustomQuotes, type SavedCustomQuote } from "../lib/custom-quotes.server";
@@ -212,6 +212,7 @@ export default function QuoteReviewPage() {
   const actionData = useActionData<typeof action>() as any;
   const location = useLocation();
   const draftOrderFetcher = useFetcher<any>();
+  const deleteQuoteFetcher = useFetcher<any>();
   const isEmbeddedRoute = location.pathname.startsWith("/app/");
 
   const allowed = actionData?.allowed ?? loaderData.allowed;
@@ -223,6 +224,9 @@ export default function QuoteReviewPage() {
   const createDraftOrderAction = isEmbeddedRoute
     ? `/app/api/create-draft-order${location.search || ""}`
     : `/api/create-draft-order${location.search || ""}`;
+  const deleteQuoteAction = isEmbeddedRoute
+    ? `/app/api/delete-quote${location.search || ""}`
+    : `/api/delete-quote${location.search || ""}`;
   const quoteToolHref = isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote";
 
   const indexedQuotes = useMemo(
@@ -246,6 +250,14 @@ export default function QuoteReviewPage() {
     filteredQuotes.find((quote) => quote.id === selectedQuoteId) ||
     filteredQuotes[0] ||
     null;
+
+  useEffect(() => {
+    if (deleteQuoteFetcher.data?.ok && deleteQuoteFetcher.data?.deletedQuoteId) {
+      setSelectedQuoteId((current) =>
+        current === deleteQuoteFetcher.data.deletedQuoteId ? null : current,
+      );
+    }
+  }, [deleteQuoteFetcher.data]);
 
   if (!allowed) {
     return (
@@ -387,43 +399,68 @@ export default function QuoteReviewPage() {
                     </div>
                   </div>
 
-                  <draftOrderFetcher.Form
-                    method="post"
-                    action={createDraftOrderAction}
-                    style={{ display: "flex", gap: 12, flexWrap: "wrap" }}
-                  >
-                    <input type="hidden" name="quoteId" value={selectedQuote.id} />
-                    <button type="submit" style={styles.buttonPrimary}>
-                      {draftOrderFetcher.state === "submitting"
-                        ? "Creating Draft Order..."
-                        : "Send To Shopify"}
-                    </button>
-                    {draftOrderFetcher.data?.draftOrderAdminUrl ? (
-                      <a
-                        href={draftOrderFetcher.data.draftOrderAdminUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={styles.buttonGhost}
-                      >
-                        Open Draft Order
-                      </a>
-                    ) : null}
-                    {draftOrderFetcher.data?.draftOrderInvoiceUrl ? (
-                      <a
-                        href={draftOrderFetcher.data.draftOrderInvoiceUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={styles.buttonGhost}
-                      >
-                        Open Invoice
-                      </a>
-                    ) : null}
-                  </draftOrderFetcher.Form>
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                    <draftOrderFetcher.Form
+                      method="post"
+                      action={createDraftOrderAction}
+                      style={{ display: "flex", gap: 12, flexWrap: "wrap" }}
+                    >
+                      <input type="hidden" name="quoteId" value={selectedQuote.id} />
+                      <button type="submit" style={styles.buttonPrimary}>
+                        {draftOrderFetcher.state === "submitting"
+                          ? "Creating Draft Order..."
+                          : "Send To Shopify"}
+                      </button>
+                      {draftOrderFetcher.data?.draftOrderAdminUrl ? (
+                        <a
+                          href={draftOrderFetcher.data.draftOrderAdminUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={styles.buttonGhost}
+                        >
+                          Open Draft Order
+                        </a>
+                      ) : null}
+                      {draftOrderFetcher.data?.draftOrderInvoiceUrl ? (
+                        <a
+                          href={draftOrderFetcher.data.draftOrderInvoiceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={styles.buttonGhost}
+                        >
+                          Open Invoice
+                        </a>
+                      ) : null}
+                    </draftOrderFetcher.Form>
+
+                    <deleteQuoteFetcher.Form
+                      method="post"
+                      action={deleteQuoteAction}
+                      onSubmit={(event) => {
+                        if (!window.confirm("Delete this quote? This can't be undone.")) {
+                          event.preventDefault();
+                        }
+                      }}
+                    >
+                      <input type="hidden" name="quoteId" value={selectedQuote.id} />
+                      <button type="submit" style={styles.buttonGhost}>
+                        {deleteQuoteFetcher.state === "submitting"
+                          ? "Deleting..."
+                          : "Delete Quote"}
+                      </button>
+                    </deleteQuoteFetcher.Form>
+                  </div>
                 </div>
 
                 {draftOrderFetcher.data?.message ? (
                   <div style={draftOrderFetcher.data.ok ? styles.statusOk : styles.statusErr}>
                     {draftOrderFetcher.data.message}
+                  </div>
+                ) : null}
+
+                {deleteQuoteFetcher.data?.message ? (
+                  <div style={deleteQuoteFetcher.data.ok ? styles.statusOk : styles.statusErr}>
+                    {deleteQuoteFetcher.data.message}
                   </div>
                 ) : null}
 

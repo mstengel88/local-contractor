@@ -373,7 +373,7 @@ export async function action({ request }: any) {
       shippingDetails: shippingCalculationText || undefined,
       description: `${effectiveDescription} Pricing: ${pricingLabel}.`,
       eta: effectiveEta,
-      summary: `${effectiveSummary} Pricing: ${pricingLabel}.`,
+      summary: undefined,
       sourceBreakdown,
       lineItems: selectedProducts.map((product) => ({
         ...product,
@@ -579,6 +579,7 @@ export default function PublicCustomQuotePage() {
   const loaderData = useLoaderData<typeof loader>() as any;
   const actionData = useActionData<typeof action>() as any;
   const draftOrderFetcher = useFetcher<any>();
+  const deleteQuoteFetcher = useFetcher<any>();
   const navigation = useNavigation();
   const location = useLocation();
   const isSubmitting = navigation.state === "submitting";
@@ -595,6 +596,9 @@ export default function PublicCustomQuotePage() {
   const createDraftOrderAction = location.pathname.startsWith("/app/")
     ? `/app/api/create-draft-order${embeddedQs}`
     : `/api/create-draft-order${embeddedQs}`;
+  const deleteQuoteAction = location.pathname.startsWith("/app/")
+    ? `/app/api/delete-quote${embeddedQs}`
+    : `/api/delete-quote${embeddedQs}`;
   const quoteReviewHref = isEmbeddedRoute ? "/app/quote-review" : "/quote-review";
   const logoutHref = isEmbeddedRoute ? "/app/custom-quote?logout=1" : "/custom-quote?logout=1";
 
@@ -644,6 +648,14 @@ export default function PublicCustomQuotePage() {
         setGoogleStatus(`Error: ${error.message}`);
       });
   }, [allowed, googleMapsApiKey]);
+
+  useEffect(() => {
+    if (deleteQuoteFetcher.data?.ok && deleteQuoteFetcher.data?.deletedQuoteId) {
+      setSelectedHistoryQuoteId((current) =>
+        current === deleteQuoteFetcher.data.deletedQuoteId ? null : current,
+      );
+    }
+  }, [deleteQuoteFetcher.data]);
 
   const quoteText = useMemo(() => {
     if (!actionData?.pricing || !actionData?.deliveryQuote) return "";
@@ -1648,13 +1660,31 @@ export default function PublicCustomQuotePage() {
                   {new Date(selectedHistoryQuote.created_at).toLocaleString()}
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={copyHistoryQuote}
-                style={styles.buttonGhost}
-              >
-                Copy Saved Quote
-              </button>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  onClick={copyHistoryQuote}
+                  style={styles.buttonGhost}
+                >
+                  Copy Saved Quote
+                </button>
+                <deleteQuoteFetcher.Form
+                  method="post"
+                  action={deleteQuoteAction}
+                  onSubmit={(event) => {
+                    if (!window.confirm("Delete this quote? This can't be undone.")) {
+                      event.preventDefault();
+                    }
+                  }}
+                >
+                  <input type="hidden" name="quoteId" value={selectedHistoryQuote.id} />
+                  <button type="submit" style={styles.buttonGhost}>
+                    {deleteQuoteFetcher.state === "submitting"
+                      ? "Deleting..."
+                      : "Delete Quote"}
+                  </button>
+                </deleteQuoteFetcher.Form>
+              </div>
             </div>
 
             <draftOrderFetcher.Form
@@ -1695,6 +1725,14 @@ export default function PublicCustomQuotePage() {
                 style={draftOrderFetcher.data.ok ? styles.statusOk : styles.statusErr}
               >
                 {draftOrderFetcher.data.message}
+              </div>
+            ) : null}
+
+            {deleteQuoteFetcher.data?.message ? (
+              <div
+                style={deleteQuoteFetcher.data.ok ? styles.statusOk : styles.statusErr}
+              >
+                {deleteQuoteFetcher.data.message}
               </div>
             ) : null}
 

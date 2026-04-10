@@ -115,3 +115,17 @@ export async function getCustomQuoteById(id: string) {
 
   return (data as SavedCustomQuote | null) || null;
 }
+
+export async function deleteCustomQuote(id: string) {
+  const { error } = await supabaseAdmin
+    .from("custom_delivery_quotes")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("[DELETE CUSTOM QUOTE ERROR]", error);
+    throw error;
+  }
+
+  return { id };
+}
