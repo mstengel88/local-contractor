@@ -29,6 +29,8 @@ type QuoteLine = {
   sku: string;
   quantity: string;
   search: string;
+  customTitle?: string;
+  customPrice?: string;
 };
 
 type SavedQuoteRecord = {
@@ -183,6 +185,14 @@ export async function action({ request }: any) {
   const quoteAudience = normalizeQuoteAudience(form.get("quoteAudience"));
   const contractorTier = normalizeContractorTier(form.get("contractorTier"));
   const pricingLabel = getPricingLabel(quoteAudience, contractorTier);
+  const customDeliveryAmountInput = String(form.get("customDeliveryAmount") || "").trim();
+  const customTaxRateInput = String(form.get("customTaxRate") || "").trim();
+  const customServiceName = String(form.get("customServiceName") || "").trim();
+  const customEta = String(form.get("customEta") || "").trim();
+  const customSummary = String(form.get("customSummary") || "").trim();
+  const customNotes = String(form.get("customNotes") || "").trim();
+  const customDeliveryAmountValue = Number(customDeliveryAmountInput);
+  const customTaxRateValue = Number(customTaxRateInput);
   const rawLines = JSON.parse(String(form.get("linesJson") || "[]"));
 
   const selectedProducts = rawLines
@@ -190,14 +200,24 @@ export async function action({ request }: any) {
       const sku = String(line?.sku || "").trim();
       const quantity = Number(line?.quantity || 0);
       const product = products.find((p) => p.sku === sku);
-      const unitPrice = product
+      const baseUnitPrice = product
         ? getUnitPriceForProduct(product, quoteAudience, contractorTier)
         : 0;
+      const overrideTitle = String(line?.customTitle || "").trim();
+      const rawCustomPrice = String(line?.customPrice || "").trim();
+      const overridePrice =
+        quoteAudience === "custom" && rawCustomPrice !== ""
+          ? Number(rawCustomPrice)
+          : null;
+      const unitPrice =
+        overridePrice !== null && Number.isFinite(overridePrice)
+          ? overridePrice
+          : baseUnitPrice;
 
       if (!sku || quantity <= 0 || !product) return null;
 
       return {
-        title: product.title,
+        title: overrideTitle || product.title,
         sku: product.sku,
         vendor: product.vendor,
         quantity,
@@ -226,6 +246,12 @@ export async function action({ request }: any) {
         address: { address1, address2, city, province, postalCode, country },
         quoteAudience,
         contractorTier,
+        customDeliveryAmount: customDeliveryAmountInput,
+        customTaxRate: customTaxRateInput,
+        customServiceName,
+        customEta,
+        customSummary,
+        customNotes,
         googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
       },
       { status: 400 },
@@ -245,6 +271,12 @@ export async function action({ request }: any) {
         address: { address1, address2, city, province, postalCode, country },
         quoteAudience,
         contractorTier,
+        customDeliveryAmount: customDeliveryAmountInput,
+        customTaxRate: customTaxRateInput,
+        customServiceName,
+        customEta,
+        customSummary,
+        customNotes,
         googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
       },
       { status: 400 },
@@ -276,11 +308,36 @@ export async function action({ request }: any) {
   );
 
   const deliveryAmount = Number(deliveryQuote.cents || 0) / 100;
-  const taxableSubtotal = productsSubtotal + deliveryAmount;
+  const effectiveDeliveryAmount =
+    quoteAudience === "custom" && customDeliveryAmountInput !== ""
+      ? (Number.isFinite(customDeliveryAmountValue)
+          ? customDeliveryAmountValue
+          : deliveryAmount)
+      : deliveryAmount;
+  const taxableSubtotal = productsSubtotal + effectiveDeliveryAmount;
 
-  const taxRate = Number(process.env.QUOTE_TAX_RATE || "0");
+  const taxRate =
+    quoteAudience === "custom" && customTaxRateInput !== ""
+      ? (Number.isFinite(customTaxRateValue)
+          ? customTaxRateValue
+          : Number(process.env.QUOTE_TAX_RATE || "0"))
+      : Number(process.env.QUOTE_TAX_RATE || "0");
   const taxAmount = taxableSubtotal * taxRate;
   const totalAmount = taxableSubtotal + taxAmount;
+  const effectiveServiceName =
+    quoteAudience === "custom" && customServiceName
+      ? customServiceName
+      : deliveryQuote.serviceName;
+  const effectiveEta =
+    quoteAudience === "custom" && customEta ? customEta : deliveryQuote.eta;
+  const effectiveSummary =
+    quoteAudience === "custom" && customSummary
+      ? customSummary
+      : deliveryQuote.summary;
+  const effectiveDescription =
+    quoteAudience === "custom" && customNotes
+      ? customNotes
+      : deliveryQuote.description;
 
   const sourceBreakdown = getSourceBreakdown(selectedProducts);
 
@@ -298,10 +355,10 @@ export async function action({ request }: any) {
       postalCode,
       country,
       quoteTotalCents: Math.round(totalAmount * 100),
-      serviceName: deliveryQuote.serviceName,
-      description: `${deliveryQuote.description} Pricing: ${pricingLabel}.`,
-      eta: deliveryQuote.eta,
-      summary: `${deliveryQuote.summary} Pricing: ${pricingLabel}.`,
+      serviceName: effectiveServiceName,
+      description: `${effectiveDescription} Pricing: ${pricingLabel}.`,
+      eta: effectiveEta,
+      summary: `${effectiveSummary} Pricing: ${pricingLabel}.`,
       sourceBreakdown,
       lineItems: selectedProducts.map((product) => ({
         ...product,
@@ -331,14 +388,27 @@ export async function action({ request }: any) {
     pricing: {
       pricingLabel,
       productsSubtotal,
-      deliveryAmount,
+      deliveryAmount: effectiveDeliveryAmount,
       taxRate,
       taxAmount,
       totalAmount,
     },
-    deliveryQuote,
+    deliveryQuote: {
+      ...deliveryQuote,
+      serviceName: effectiveServiceName,
+      eta: effectiveEta,
+      summary: effectiveSummary,
+      description: effectiveDescription,
+      cents: Math.round(effectiveDeliveryAmount * 100),
+    },
     quoteAudience,
     contractorTier,
+    customDeliveryAmount: customDeliveryAmountInput,
+    customTaxRate: customTaxRateInput,
+    customServiceName,
+    customEta,
+    customSummary,
+    customNotes,
   });
 }
 
@@ -519,7 +589,7 @@ export default function PublicCustomQuotePage() {
     normalizeContractorTier(actionData?.contractorTier),
   );
   const [lines, setLines] = useState<QuoteLine[]>([
-    { sku: "", quantity: "", search: "" },
+    { sku: "", quantity: "", search: "", customTitle: "", customPrice: "" },
   ]);
   const [selectedHistoryQuoteId, setSelectedHistoryQuoteId] = useState<string | null>(
     null,
@@ -572,7 +642,13 @@ export default function PublicCustomQuotePage() {
         .join("\n") || "";
 
     return [
-      `Audience: ${actionData.quoteAudience === "contractor" ? "Contractor" : "Customer"}`,
+      `Audience: ${
+        actionData.quoteAudience === "contractor"
+          ? "Contractor"
+          : actionData.quoteAudience === "custom"
+            ? "Custom"
+            : "Customer"
+      }`,
       `Pricing Tier: ${actionData.pricing.pricingLabel}`,
       `Customer: ${actionData.customerName || ""}`,
       `Email: ${actionData.customerEmail || ""}`,
@@ -626,7 +702,10 @@ export default function PublicCustomQuotePage() {
   }
 
   function addLine() {
-    setLines((prev) => [...prev, { sku: "", quantity: "", search: "" }]);
+    setLines((prev) => [
+      ...prev,
+      { sku: "", quantity: "", search: "", customTitle: "", customPrice: "" },
+    ]);
   }
 
   function removeLine(index: number) {
@@ -754,6 +833,16 @@ export default function PublicCustomQuotePage() {
               >
                 Contractor
               </button>
+              <button
+                type="button"
+                onClick={() => setQuoteAudience("custom")}
+                style={{
+                  ...styles.tabButton,
+                  ...(quoteAudience === "custom" ? styles.tabButtonActive : {}),
+                }}
+              >
+                Custom
+              </button>
             </div>
 
             {quoteAudience === "contractor" ? (
@@ -770,6 +859,11 @@ export default function PublicCustomQuotePage() {
                   <option value="tier1">Tier 1</option>
                   <option value="tier2">Tier 2</option>
                 </select>
+              </div>
+            ) : quoteAudience === "custom" ? (
+              <div style={{ color: "#93c5fd", fontSize: 14 }}>
+                Custom mode keeps the same quote flow but lets you override line titles,
+                unit prices, delivery, tax, service name, ETA, summary, and notes.
               </div>
             ) : null}
           </div>
@@ -1016,21 +1110,73 @@ export default function PublicCustomQuotePage() {
 
                         <div>
                           <div style={{ fontWeight: 700 }}>
-                            {selectedProduct.title}
+                            {quoteAudience === "custom" && line.customTitle
+                              ? line.customTitle
+                              : selectedProduct.title}
                           </div>
                           <div style={{ fontSize: 13, color: "#bfdbfe" }}>
                             {selectedProduct.sku} — {selectedProduct.vendor}
                           </div>
                           <div style={{ fontSize: 13, color: "#bfdbfe" }}>
                             Unit Price: $
-                            {Number(
+                            {(() => {
+                              const customPriceValue = Number(line.customPrice || "");
+                              const displayPrice =
+                                quoteAudience === "custom" &&
+                                String(line.customPrice || "").trim() !== "" &&
+                                Number.isFinite(customPriceValue)
+                                  ? customPriceValue
+                                  : getUnitPriceForProduct(
+                                      selectedProduct,
+                                      quoteAudience,
+                                      contractorTier,
+                                    );
+                              return Number(displayPrice).toFixed(2);
+                            })()}
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {selectedProduct && quoteAudience === "custom" ? (
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "minmax(260px, 1fr) 180px",
+                          gap: "12px",
+                        }}
+                      >
+                        <div>
+                          <label style={styles.label}>Custom Line Title</label>
+                          <input
+                            type="text"
+                            value={line.customTitle || ""}
+                            onChange={(e) =>
+                              updateLine(index, { customTitle: e.target.value })
+                            }
+                            placeholder={selectedProduct.title}
+                            style={styles.input}
+                          />
+                        </div>
+                        <div>
+                          <label style={styles.label}>Custom Unit Price</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={line.customPrice || ""}
+                            onChange={(e) =>
+                              updateLine(index, { customPrice: e.target.value })
+                            }
+                            placeholder={String(
                               getUnitPriceForProduct(
                                 selectedProduct,
                                 quoteAudience,
                                 contractorTier,
                               ),
-                            ).toFixed(2)}
-                          </div>
+                            )}
+                            style={styles.input}
+                          />
                         </div>
                       </div>
                     ) : null}
@@ -1142,6 +1288,99 @@ export default function PublicCustomQuotePage() {
               })}
             </div>
           </div>
+
+          {quoteAudience === "custom" ? (
+            <div style={styles.card}>
+              <h2 style={styles.sectionTitle}>Custom Adjustments</h2>
+              <p style={styles.sectionSub}>
+                Override delivery, tax, and the customer-facing quote details before
+                calculating or saving.
+              </p>
+
+              <div style={{ display: "grid", gap: "14px" }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "180px 180px",
+                    gap: "14px",
+                  }}
+                >
+                  <div>
+                    <label style={styles.label}>Delivery Amount</label>
+                    <input
+                      type="number"
+                      name="customDeliveryAmount"
+                      min="0"
+                      step="0.01"
+                      defaultValue={actionData?.customDeliveryAmount || ""}
+                      placeholder="Use calculated delivery"
+                      style={styles.input}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={styles.label}>Tax Rate</label>
+                    <input
+                      type="number"
+                      name="customTaxRate"
+                      min="0"
+                      step="0.0001"
+                      defaultValue={actionData?.customTaxRate || ""}
+                      placeholder="Example: 0.055"
+                      style={styles.input}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={styles.label}>Delivery Service Name</label>
+                  <input
+                    type="text"
+                    name="customServiceName"
+                    defaultValue={actionData?.customServiceName || ""}
+                    placeholder="Use calculated service name"
+                    style={styles.input}
+                  />
+                </div>
+
+                <div>
+                  <label style={styles.label}>ETA</label>
+                  <input
+                    type="text"
+                    name="customEta"
+                    defaultValue={actionData?.customEta || ""}
+                    placeholder="Use calculated ETA"
+                    style={styles.input}
+                  />
+                </div>
+
+                <div>
+                  <label style={styles.label}>Summary</label>
+                  <input
+                    type="text"
+                    name="customSummary"
+                    defaultValue={actionData?.customSummary || ""}
+                    placeholder="Use calculated summary"
+                    style={styles.input}
+                  />
+                </div>
+
+                <div>
+                  <label style={styles.label}>Notes</label>
+                  <textarea
+                    name="customNotes"
+                    defaultValue={actionData?.customNotes || ""}
+                    placeholder="Use calculated notes"
+                    style={{
+                      ...styles.input,
+                      minHeight: 110,
+                      resize: "vertical",
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
             <button
