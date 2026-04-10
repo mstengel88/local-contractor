@@ -134,6 +134,7 @@ export async function action({ request }: { request: Request }) {
             province: quote.province,
             country: quote.country,
             zip: quote.postal_code,
+            phone: quote.customer_phone || undefined,
           },
           lineItems: draftLineItems,
           ...(remainingChargeCents > 0

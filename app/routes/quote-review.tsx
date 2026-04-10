@@ -42,6 +42,7 @@ function buildQuoteSearchText(quote: SavedCustomQuote) {
     quote.id,
     quote.customer_name,
     quote.customer_email,
+    quote.customer_phone,
     quote.address1,
     quote.address2,
     quote.city,
@@ -346,6 +347,9 @@ export default function QuoteReviewPage() {
                     <div style={{ marginTop: 6, color: "#bfdbfe", fontSize: 13 }}>
                       {quote.customer_email || "No email"}
                     </div>
+                    <div style={{ marginTop: 4, color: "#cbd5e1", fontSize: 13 }}>
+                      {quote.customer_phone || "No phone"}
+                    </div>
                     <div style={{ marginTop: 6, color: "#94a3b8", fontSize: 13 }}>
                       {quote.address1}, {quote.city}, {quote.province} {quote.postal_code}
                     </div>
@@ -433,6 +437,7 @@ export default function QuoteReviewPage() {
                   <div style={{ display: "grid", gap: 10 }}>
                     <div><strong>Customer:</strong> {selectedQuote.customer_name || "Unnamed customer"}</div>
                     <div><strong>Email:</strong> {selectedQuote.customer_email || "N/A"}</div>
+                    <div><strong>Phone:</strong> {selectedQuote.customer_phone || "N/A"}</div>
                     <div>
                       <strong>Address:</strong> {selectedQuote.address1}, {selectedQuote.city},{" "}
                       {selectedQuote.province} {selectedQuote.postal_code}

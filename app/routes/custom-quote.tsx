@@ -37,6 +37,7 @@ type SavedQuoteRecord = {
   id: string;
   customer_name?: string | null;
   customer_email?: string | null;
+  customer_phone?: string | null;
   address1?: string | null;
   address2?: string | null;
   city?: string | null;
@@ -176,6 +177,7 @@ export async function action({ request }: any) {
 
   const customerName = String(form.get("customerName") || "");
   const customerEmail = String(form.get("customerEmail") || "").trim();
+  const customerPhone = String(form.get("customerPhone") || "").trim();
   const address1 = String(form.get("address1") || "");
   const address2 = String(form.get("address2") || "");
   const city = String(form.get("city") || "");
@@ -191,8 +193,21 @@ export async function action({ request }: any) {
   const customEta = String(form.get("customEta") || "").trim();
   const customSummary = String(form.get("customSummary") || "").trim();
   const customNotes = String(form.get("customNotes") || "").trim();
+  const customShippingQuantityInput = String(form.get("customShippingQuantity") || "").trim();
+  const customShippingUnit = String(form.get("customShippingUnit") || "miles").trim() === "hours"
+    ? "hours"
+    : "miles";
+  const customShippingRateInput = String(form.get("customShippingRate") || "").trim();
   const customDeliveryAmountValue = Number(customDeliveryAmountInput);
   const customTaxRateValue = Number(customTaxRateInput);
+  const customShippingQuantityValue = Number(customShippingQuantityInput);
+  const customShippingRateValue = Number(customShippingRateInput);
+  const hasCustomShippingCalculation =
+    quoteAudience === "custom" &&
+    customShippingQuantityInput !== "" &&
+    customShippingRateInput !== "" &&
+    Number.isFinite(customShippingQuantityValue) &&
+    Number.isFinite(customShippingRateValue);
   const rawLines = JSON.parse(String(form.get("linesJson") || "[]"));
 
   const selectedProducts = rawLines
@@ -243,11 +258,15 @@ export async function action({ request }: any) {
           "Add at least one product line with a selected product and quantity greater than 0.",
         customerName,
         customerEmail,
+        customerPhone,
         address: { address1, address2, city, province, postalCode, country },
         quoteAudience,
         contractorTier,
         customDeliveryAmount: customDeliveryAmountInput,
         customTaxRate: customTaxRateInput,
+        customShippingQuantity: customShippingQuantityInput,
+        customShippingUnit,
+        customShippingRate: customShippingRateInput,
         customServiceName,
         customEta,
         customSummary,
@@ -268,11 +287,15 @@ export async function action({ request }: any) {
         message: "Address 1, city, state, and ZIP are required.",
         customerName,
         customerEmail,
+        customerPhone,
         address: { address1, address2, city, province, postalCode, country },
         quoteAudience,
         contractorTier,
         customDeliveryAmount: customDeliveryAmountInput,
         customTaxRate: customTaxRateInput,
+        customShippingQuantity: customShippingQuantityInput,
+        customShippingUnit,
+        customShippingRate: customShippingRateInput,
         customServiceName,
         customEta,
         customSummary,
@@ -309,7 +332,9 @@ export async function action({ request }: any) {
 
   const deliveryAmount = Number(deliveryQuote.cents || 0) / 100;
   const effectiveDeliveryAmount =
-    quoteAudience === "custom" && customDeliveryAmountInput !== ""
+    hasCustomShippingCalculation
+      ? customShippingQuantityValue * customShippingRateValue
+      : quoteAudience === "custom" && customDeliveryAmountInput !== ""
       ? (Number.isFinite(customDeliveryAmountValue)
           ? customDeliveryAmountValue
           : deliveryAmount)
@@ -338,6 +363,9 @@ export async function action({ request }: any) {
     quoteAudience === "custom" && customNotes
       ? customNotes
       : deliveryQuote.description;
+  const shippingCalculationText = hasCustomShippingCalculation
+    ? `${customShippingQuantityValue.toFixed(2)} ${customShippingUnit} x $${customShippingRateValue.toFixed(2)} = $${effectiveDeliveryAmount.toFixed(2)}`
+    : null;
 
   const sourceBreakdown = getSourceBreakdown(selectedProducts);
 
@@ -348,6 +376,7 @@ export async function action({ request }: any) {
       shop,
       customerName,
       customerEmail,
+      customerPhone,
       address1,
       address2,
       city,
@@ -380,6 +409,7 @@ export async function action({ request }: any) {
     ok: true,
     customerName,
     customerEmail,
+    customerPhone,
     address: { address1, address2, city, province, postalCode, country },
     googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
     savedQuoteId,
@@ -405,6 +435,10 @@ export async function action({ request }: any) {
     contractorTier,
     customDeliveryAmount: customDeliveryAmountInput,
     customTaxRate: customTaxRateInput,
+    customShippingQuantity: customShippingQuantityInput,
+    customShippingUnit,
+    customShippingRate: customShippingRateInput,
+    shippingCalculationText,
     customServiceName,
     customEta,
     customSummary,
@@ -652,8 +686,12 @@ export default function PublicCustomQuotePage() {
       `Pricing Tier: ${actionData.pricing.pricingLabel}`,
       `Customer: ${actionData.customerName || ""}`,
       `Email: ${actionData.customerEmail || ""}`,
+      `Phone: ${actionData.customerPhone || ""}`,
       `Products Subtotal: $${Number(actionData.pricing.productsSubtotal).toFixed(2)}`,
       `Delivery: $${Number(actionData.pricing.deliveryAmount).toFixed(2)}`,
+      actionData.shippingCalculationText
+        ? `Shipping Calc: ${actionData.shippingCalculationText}`
+        : null,
       `Tax: $${Number(actionData.pricing.taxAmount).toFixed(2)}`,
       `TOTAL: $${Number(actionData.pricing.totalAmount).toFixed(2)}`,
       `Delivery Service: ${actionData.deliveryQuote.serviceName}`,
@@ -661,7 +699,9 @@ export default function PublicCustomQuotePage() {
       `Summary: ${actionData.deliveryQuote.summary}`,
       "",
       linesText,
-    ].join("\n");
+    ]
+      .filter(Boolean)
+      .join("\n");
   }, [actionData]);
 
   const selectedHistoryQuote = useMemo(
@@ -684,6 +724,7 @@ export default function PublicCustomQuotePage() {
     return [
       `Customer: ${selectedHistoryQuote.customer_name || ""}`,
       `Email: ${selectedHistoryQuote.customer_email || ""}`,
+      `Phone: ${selectedHistoryQuote.customer_phone || ""}`,
       `Address: ${selectedHistoryQuote.address1 || ""}, ${selectedHistoryQuote.city || ""}, ${selectedHistoryQuote.province || ""} ${selectedHistoryQuote.postal_code || ""}`,
       `Total: $${(Number(selectedHistoryQuote.quote_total_cents || 0) / 100).toFixed(2)}`,
       `Service: ${selectedHistoryQuote.service_name || ""}`,
@@ -893,6 +934,17 @@ export default function PublicCustomQuotePage() {
                   name="customerEmail"
                   autoComplete="email"
                   defaultValue={actionData?.customerEmail || ""}
+                  style={styles.input}
+                />
+              </div>
+
+              <div>
+                <label style={styles.label}>Phone Number</label>
+                <input
+                  type="tel"
+                  name="customerPhone"
+                  autoComplete="tel"
+                  defaultValue={actionData?.customerPhone || ""}
                   style={styles.input}
                 />
               </div>
@@ -1332,6 +1384,58 @@ export default function PublicCustomQuotePage() {
                   </div>
                 </div>
 
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "160px 160px 180px",
+                    gap: "14px",
+                  }}
+                >
+                  <div>
+                    <label style={styles.label}>Shipping Qty</label>
+                    <input
+                      type="number"
+                      name="customShippingQuantity"
+                      min="0"
+                      step="0.01"
+                      defaultValue={actionData?.customShippingQuantity || ""}
+                      placeholder="Miles or hours"
+                      style={styles.input}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={styles.label}>Shipping Unit</label>
+                    <select
+                      name="customShippingUnit"
+                      defaultValue={actionData?.customShippingUnit || "miles"}
+                      style={styles.input}
+                    >
+                      <option value="miles">Miles</option>
+                      <option value="hours">Hours</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={styles.label}>Price Per Unit</label>
+                    <input
+                      type="number"
+                      name="customShippingRate"
+                      min="0"
+                      step="0.01"
+                      defaultValue={actionData?.customShippingRate || ""}
+                      placeholder="Rate per mile/hour"
+                      style={styles.input}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ color: "#93c5fd", fontSize: 13 }}>
+                  If shipping quantity and price per unit are both filled in, the
+                  delivery amount will use `quantity x rate` and override the manual
+                  delivery amount above.
+                </div>
+
                 <div>
                   <label style={styles.label}>Delivery Service Name</label>
                   <input
@@ -1455,6 +1559,12 @@ export default function PublicCustomQuotePage() {
                   <strong style={{ color: "#93c5fd" }}>Delivery:</strong> $
                   {Number(actionData.pricing.deliveryAmount).toFixed(2)}
                 </div>
+                {actionData.shippingCalculationText ? (
+                  <div>
+                    <strong style={{ color: "#93c5fd" }}>Shipping Calc:</strong>{" "}
+                    {actionData.shippingCalculationText}
+                  </div>
+                ) : null}
                 <div>
                   <strong style={{ color: "#93c5fd" }}>Tax:</strong> $
                   {Number(actionData.pricing.taxAmount).toFixed(2)}
@@ -1647,6 +1757,10 @@ export default function PublicCustomQuotePage() {
                 <div>
                   <strong style={{ color: "#93c5fd" }}>Email:</strong>{" "}
                   {selectedHistoryQuote.customer_email || "N/A"}
+                </div>
+                <div>
+                  <strong style={{ color: "#93c5fd" }}>Phone:</strong>{" "}
+                  {selectedHistoryQuote.customer_phone || "N/A"}
                 </div>
                 <div>
                   <strong style={{ color: "#93c5fd" }}>Address:</strong>{" "}
