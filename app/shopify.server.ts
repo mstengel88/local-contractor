@@ -6,7 +6,7 @@ import {
 } from "@shopify/shopify-app-react-router/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
-import { syncProductOptionsToSupabase } from "./lib/quote-products.server";
+import { ensureProductOptionsFresh } from "./lib/quote-products.server";
 
 console.log("SHOPIFY_APP_URL =", process.env.SHOPIFY_APP_URL);
 console.log("APP_URL =", process.env.APP_URL);
@@ -30,35 +30,14 @@ const shopify = shopifyApp({
     afterAuth: async ({ admin, session }) => {
       try {
         console.log("[afterAuth] syncing products for", session.shop);
-
-        const response = await admin.graphql(`
-          query AdminQuoteProducts {
-            products(first: 100, sortKey: TITLE) {
-              nodes {
-                title
-                vendor
-                featuredImage {
-                  url
-                }
-                variants(first: 50) {
-                  nodes {
-                    sku
-                    title
-                    image {
-                      url
-                    }
-                  }
-                }
-              }
-            }
-          }
-        `);
+        const appUrl = (process.env.SHOPIFY_APP_URL || "").replace(/\/$/, "");
+        const webhookCallbackUrl = `${appUrl}/webhooks/products/update`;
       await admin.graphql(`
       mutation {
         webhookSubscriptionCreate(
           topic: PRODUCTS_UPDATE,
           webhookSubscription: {
-            callbackUrl: "https://app.ghstickets.com/webhooks/products/update",
+            callbackUrl: "${webhookCallbackUrl}",
             format: JSON
           }
         ) {
@@ -69,44 +48,8 @@ const shopify = shopifyApp({
         }
       }
 `);
-
-        const json = await response.json();
-        const products = json?.data?.products?.nodes || [];
-        const options: Array<{
-          title: string;
-          sku: string;
-          vendor: string;
-          imageUrl?: string;
-        }> = [];
-
-        for (const product of products) {
-          const vendor = product?.vendor || "";
-          const productTitle = product?.title || "";
-          const productImage = product?.featuredImage?.url || "";
-
-          for (const variant of product?.variants?.nodes || []) {
-            const sku = (variant?.sku || "").trim();
-            if (!sku) continue;
-
-            const variantTitle = (variant?.title || "").trim();
-            const variantImage = variant?.image?.url || productImage || "";
-
-            const title =
-              variantTitle && variantTitle !== "Default Title"
-                ? `${productTitle} - ${variantTitle}`
-                : productTitle;
-
-            options.push({
-              title,
-              sku,
-              vendor,
-              imageUrl: variantImage,
-            });
-          }
-        }
-
-        await syncProductOptionsToSupabase(options);
-        console.log("[afterAuth] synced", options.length, "product variants");
+        const syncResult = await ensureProductOptionsFresh(admin, 0);
+        console.log("[afterAuth] synced", syncResult.syncedCount, "product variants");
       } catch (error) {
         console.error("[afterAuth] product sync failed", error);
       }
