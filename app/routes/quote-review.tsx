@@ -265,6 +265,35 @@ export default function QuoteReviewPage() {
     minHeight: isMobile ? 48 : undefined,
     width: isMobile ? "100%" : undefined,
   };
+  const mobileTabLinkStyle = (active: boolean) =>
+    ({
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 4,
+      minHeight: 56,
+      borderRadius: 14,
+      textDecoration: "none",
+      color: active ? "#38bdf8" : "#94a3b8",
+      background: active ? "rgba(14, 165, 233, 0.12)" : "transparent",
+      fontSize: 11,
+      fontWeight: 700,
+      letterSpacing: "0.01em",
+    }) as const;
+  const mobileTabIconStyle = (active: boolean) =>
+    ({
+      width: 24,
+      height: 24,
+      borderRadius: 999,
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      background: active ? "rgba(14, 165, 233, 0.18)" : "rgba(51, 65, 85, 0.35)",
+      color: active ? "#38bdf8" : "#cbd5e1",
+      fontSize: 12,
+      lineHeight: 1,
+    }) as const;
   const mobileBottomNavStyle = {
     position: "fixed" as const,
     left: 12,
@@ -274,10 +303,10 @@ export default function QuoteReviewPage() {
     display: "grid",
     gridTemplateColumns: "repeat(3, 1fr)",
     gap: 10,
-    padding: 10,
-    borderRadius: 18,
-    background: "rgba(2, 6, 23, 0.94)",
-    border: "1px solid rgba(51, 65, 85, 0.95)",
+    padding: "8px 10px",
+    borderRadius: 20,
+    background: "rgba(15, 23, 42, 0.96)",
+    border: "1px solid rgba(30, 41, 59, 0.95)",
     boxShadow: "0 18px 38px rgba(2, 6, 23, 0.45)",
     backdropFilter: "blur(14px)",
   };
@@ -351,30 +380,30 @@ export default function QuoteReviewPage() {
       }}
     >
       <div style={styles.shell}>
-        <div
-          style={{
-            ...styles.card,
-            padding: isMobile ? "18px" : styles.card.padding,
-            position: isMobile ? "sticky" : "static",
-            top: isMobile ? 10 : undefined,
-            zIndex: isMobile ? 18 : undefined,
-            backdropFilter: isMobile ? "blur(12px)" : styles.card.backdropFilter,
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: isMobile ? "flex-start" : "center" }}>
-            <div>
-              <h1 style={{ ...styles.title, fontSize: isMobile ? "2.2rem" : styles.title.fontSize }}>Quote Review</h1>
-              <p style={styles.subtitle}>
-                Search across customer info, address, notes, SKU, product titles, vendors, and saved quote details.
-              </p>
-            </div>
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <a href={mobileDashboardHref} style={mobileActionButtonStyle}>Dashboard</a>
-              <a href={quoteToolHref} style={mobileActionButtonStyle}>Open Quote Tool</a>
-              <a href="?logout=1" style={mobileActionButtonStyle}>Log Out</a>
+        {isMobile ? (
+          <div style={{ marginBottom: 18 }}>
+            <h1 style={{ ...styles.title, fontSize: "2.2rem" }}>Quote Review</h1>
+            <p style={styles.subtitle}>
+              Search across customer info, address, notes, SKU, product titles, vendors, and saved quote details.
+            </p>
+          </div>
+        ) : (
+          <div style={styles.card}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
+              <div>
+                <h1 style={styles.title}>Quote Review</h1>
+                <p style={styles.subtitle}>
+                  Search across customer info, address, notes, SKU, product titles, vendors, and saved quote details.
+                </p>
+              </div>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <a href={mobileDashboardHref} style={styles.buttonGhost}>Dashboard</a>
+                <a href={quoteToolHref} style={styles.buttonGhost}>Open Quote Tool</a>
+                <a href="?logout=1" style={styles.buttonGhost}>Log Out</a>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div style={{ ...styles.card, display: "grid", gap: 14, padding: isMobile ? "18px" : styles.card.padding }}>
           <div>
@@ -647,14 +676,17 @@ export default function QuoteReviewPage() {
       </div>
       {isMobile ? (
         <div style={mobileBottomNavStyle}>
-          <a href={mobileDashboardHref} style={mobileActionButtonStyle}>
-            Dashboard
+          <a href={mobileDashboardHref} style={mobileTabLinkStyle(false)}>
+            <span style={mobileTabIconStyle(false)}>D</span>
+            <span>Dashboard</span>
           </a>
-          <a href={quoteToolHref} style={mobileActionButtonStyle}>
-            Quote Tool
+          <a href={quoteToolHref} style={mobileTabLinkStyle(false)}>
+            <span style={mobileTabIconStyle(false)}>Q</span>
+            <span>Quote Tool</span>
           </a>
-          <a href={isEmbeddedRoute ? "/app/quote-review" : "/quote-review"} style={mobileActionButtonStyle}>
-            Review
+          <a href={isEmbeddedRoute ? "/app/quote-review" : "/quote-review"} style={mobileTabLinkStyle(true)}>
+            <span style={mobileTabIconStyle(true)}>R</span>
+            <span>Review</span>
           </a>
         </div>
       ) : null}

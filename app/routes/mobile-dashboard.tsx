@@ -120,25 +120,26 @@ const styles = {
     display: "grid",
     gridTemplateColumns: "repeat(3, 1fr)",
     gap: 10,
-    padding: 10,
-    borderRadius: 18,
-    background: "rgba(2, 6, 23, 0.94)",
-    border: "1px solid rgba(51, 65, 85, 0.95)",
+    padding: "8px 10px",
+    borderRadius: 20,
+    background: "rgba(15, 23, 42, 0.96)",
+    border: "1px solid rgba(30, 41, 59, 0.95)",
     boxShadow: "0 18px 38px rgba(2, 6, 23, 0.45)",
     backdropFilter: "blur(14px)",
   },
   navLink: {
-    display: "inline-flex",
+    display: "flex",
+    flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 48,
+    gap: 4,
+    minHeight: 56,
     borderRadius: 14,
-    border: "1px solid rgba(51, 65, 85, 0.95)",
-    background: "rgba(2, 6, 23, 0.86)",
-    color: "#e2e8f0",
+    color: "#94a3b8",
     textDecoration: "none",
     fontWeight: 700,
-    fontSize: "13px",
+    fontSize: "11px",
+    letterSpacing: "0.01em",
   } as const,
   statusErr: {
     marginTop: "16px",
@@ -150,6 +151,29 @@ const styles = {
     fontWeight: 700,
   } as const,
 };
+
+function navLinkStyle(active: boolean) {
+  return {
+    ...styles.navLink,
+    color: active ? "#38bdf8" : "#94a3b8",
+    background: active ? "rgba(14, 165, 233, 0.12)" : "transparent",
+  } as const;
+}
+
+function navIconStyle(active: boolean) {
+  return {
+    width: 24,
+    height: 24,
+    borderRadius: 999,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: active ? "rgba(14, 165, 233, 0.18)" : "rgba(51, 65, 85, 0.35)",
+    color: active ? "#38bdf8" : "#cbd5e1",
+    fontSize: 12,
+    lineHeight: 1,
+  } as const;
+}
 
 export async function loader({ request }: any) {
   const url = new URL(request.url);
@@ -315,9 +339,18 @@ export default function MobileDashboardPage() {
       </div>
 
       <div style={styles.bottomNav}>
-        <a href={dashboardHref} style={styles.navLink}>Dashboard</a>
-        <a href={quoteToolBase} style={styles.navLink}>Quote Tool</a>
-        <a href={reviewHref} style={styles.navLink}>Review</a>
+        <a href={dashboardHref} style={navLinkStyle(true)}>
+          <span style={navIconStyle(true)}>D</span>
+          <span>Dashboard</span>
+        </a>
+        <a href={quoteToolBase} style={navLinkStyle(false)}>
+          <span style={navIconStyle(false)}>Q</span>
+          <span>Quote Tool</span>
+        </a>
+        <a href={reviewHref} style={navLinkStyle(false)}>
+          <span style={navIconStyle(false)}>R</span>
+          <span>Review</span>
+        </a>
       </div>
     </div>
   );

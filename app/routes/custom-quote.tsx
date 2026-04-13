@@ -738,6 +738,35 @@ export default function PublicCustomQuotePage() {
     width: isMobile ? "100%" : undefined,
     justifyContent: "center" as const,
   };
+  const mobileTabLinkStyle = (active: boolean) =>
+    ({
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 4,
+      minHeight: 56,
+      borderRadius: 14,
+      textDecoration: "none",
+      color: active ? "#38bdf8" : "#94a3b8",
+      background: active ? "rgba(14, 165, 233, 0.12)" : "transparent",
+      fontSize: 11,
+      fontWeight: 700,
+      letterSpacing: "0.01em",
+    }) as const;
+  const mobileTabIconStyle = (active: boolean) =>
+    ({
+      width: 24,
+      height: 24,
+      borderRadius: 999,
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      background: active ? "rgba(14, 165, 233, 0.18)" : "rgba(51, 65, 85, 0.35)",
+      color: active ? "#38bdf8" : "#cbd5e1",
+      fontSize: 12,
+      lineHeight: 1,
+    }) as const;
   const mobileBottomNavStyle = {
     position: "fixed" as const,
     left: 12,
@@ -747,10 +776,10 @@ export default function PublicCustomQuotePage() {
     display: "grid",
     gridTemplateColumns: "repeat(3, 1fr)",
     gap: 10,
-    padding: 10,
-    borderRadius: 18,
-    background: "rgba(2, 6, 23, 0.94)",
-    border: "1px solid rgba(51, 65, 85, 0.95)",
+    padding: "8px 10px",
+    borderRadius: 20,
+    background: "rgba(15, 23, 42, 0.96)",
+    border: "1px solid rgba(30, 41, 59, 0.95)",
     boxShadow: "0 18px 38px rgba(2, 6, 23, 0.45)",
     backdropFilter: "blur(14px)",
   };
@@ -885,46 +914,42 @@ export default function PublicCustomQuotePage() {
       }}
     >
       <div style={styles.shell}>
-        <div
-          style={{
-            ...styles.hero,
-            alignItems: isMobile ? "flex-start" : styles.hero.alignItems,
-            marginBottom: isMobile ? "18px" : styles.hero.marginBottom,
-            position: isMobile ? "sticky" : "static",
-            top: isMobile ? 10 : undefined,
-            zIndex: isMobile ? 18 : undefined,
-            padding: isMobile ? "14px" : 0,
-            borderRadius: isMobile ? 18 : undefined,
-            background: isMobile ? "rgba(2, 6, 23, 0.92)" : "transparent",
-            border: isMobile ? "1px solid rgba(51, 65, 85, 0.9)" : "none",
-            backdropFilter: isMobile ? "blur(12px)" : "none",
-          }}
-        >
-          <div>
-            <h1 style={{ ...styles.title, fontSize: isMobile ? "28px" : styles.title.fontSize }}>
-              Custom Quote Tool
-            </h1>
+        {isMobile ? (
+          <div style={{ marginBottom: 18 }}>
+            <h1 style={{ ...styles.title, fontSize: "28px" }}>Custom Quote Tool</h1>
             <div style={styles.subtitle}>
-              Full quote builder with products, delivery, tax, images, and saved
-              history.
+              Full quote builder with products, delivery, tax, images, and saved history.
             </div>
             <div style={{ marginTop: 8, color: "#64748b", fontSize: 13 }}>
               Loaded products: {products.length} · Google Places: {googleStatus}
             </div>
           </div>
+        ) : (
+          <div style={styles.hero}>
+            <div>
+              <h1 style={styles.title}>Custom Quote Tool</h1>
+              <div style={styles.subtitle}>
+                Full quote builder with products, delivery, tax, images, and saved
+                history.
+              </div>
+              <div style={{ marginTop: 8, color: "#64748b", fontSize: 13 }}>
+                Loaded products: {products.length} · Google Places: {googleStatus}
+              </div>
+            </div>
 
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <a href={mobileDashboardHref} style={styles.logout}>
-              Dashboard
-            </a>
-            <a href={quoteReviewHref} style={styles.logout}>
-              Review Quotes
-            </a>
-            <a href={logoutHref} style={styles.logout}>
-              Log out
-            </a>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <a href={mobileDashboardHref} style={styles.logout}>
+                Dashboard
+              </a>
+              <a href={quoteReviewHref} style={styles.logout}>
+                Review Quotes
+              </a>
+              <a href={logoutHref} style={styles.logout}>
+                Log out
+              </a>
+            </div>
           </div>
-        </div>
+        )}
 
         <Form method="post" style={{ display: "grid", gap: "22px" }}>
           <input type="hidden" name="quoteAudience" value={quoteAudience} />
@@ -2053,14 +2078,17 @@ export default function PublicCustomQuotePage() {
       </div>
       {isMobile ? (
         <div style={mobileBottomNavStyle}>
-          <a href={mobileDashboardHref} style={mobileActionButtonStyle}>
-            Dashboard
+          <a href={mobileDashboardHref} style={mobileTabLinkStyle(false)}>
+            <span style={mobileTabIconStyle(false)}>D</span>
+            <span>Dashboard</span>
           </a>
-          <a href={isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote"} style={mobileActionButtonStyle}>
-            Quote Tool
+          <a href={isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote"} style={mobileTabLinkStyle(true)}>
+            <span style={mobileTabIconStyle(true)}>Q</span>
+            <span>Quote Tool</span>
           </a>
-          <a href={quoteReviewHref} style={mobileActionButtonStyle}>
-            Review Quotes
+          <a href={quoteReviewHref} style={mobileTabLinkStyle(false)}>
+            <span style={mobileTabIconStyle(false)}>R</span>
+            <span>Review</span>
           </a>
         </div>
       ) : null}
