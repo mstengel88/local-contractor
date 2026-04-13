@@ -264,7 +264,7 @@ export default function QuoteReviewPage() {
     position: "fixed" as const,
     left: 12,
     right: 12,
-    bottom: 12,
+    bottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
     zIndex: 30,
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
@@ -335,12 +335,21 @@ export default function QuoteReviewPage() {
     <div
       style={{
         ...styles.page,
-        padding: isMobile ? "20px 14px 104px" : styles.page.padding,
+        padding: isMobile ? "20px 14px 120px" : styles.page.padding,
         overflowX: "clip",
       }}
     >
       <div style={styles.shell}>
-        <div style={{ ...styles.card, padding: isMobile ? "18px" : styles.card.padding }}>
+        <div
+          style={{
+            ...styles.card,
+            padding: isMobile ? "18px" : styles.card.padding,
+            position: isMobile ? "sticky" : "static",
+            top: isMobile ? 10 : undefined,
+            zIndex: isMobile ? 18 : undefined,
+            backdropFilter: isMobile ? "blur(12px)" : styles.card.backdropFilter,
+          }}
+        >
           <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: isMobile ? "flex-start" : "center" }}>
             <div>
               <h1 style={{ ...styles.title, fontSize: isMobile ? "2.2rem" : styles.title.fontSize }}>Quote Review</h1>
@@ -400,7 +409,7 @@ export default function QuoteReviewPage() {
                     onClick={() => setSelectedQuoteId(quote.id)}
                     style={{
                       textAlign: "left",
-                      padding: 16,
+                      padding: isMobile ? 16 : 14,
                       borderRadius: 16,
                       border:
                         selectedQuote?.id === quote.id
@@ -412,6 +421,8 @@ export default function QuoteReviewPage() {
                           : "rgba(2, 6, 23, 0.7)",
                       color: "#f8fafc",
                       cursor: "pointer",
+                      overflowWrap: "anywhere",
+                      minHeight: isMobile ? 92 : undefined,
                     }}
                   >
                     <div style={{ fontWeight: 800 }}>

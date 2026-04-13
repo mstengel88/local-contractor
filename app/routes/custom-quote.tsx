@@ -733,7 +733,7 @@ export default function PublicCustomQuotePage() {
     position: "fixed" as const,
     left: 12,
     right: 12,
-    bottom: 12,
+    bottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
     zIndex: 30,
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
@@ -871,7 +871,7 @@ export default function PublicCustomQuotePage() {
     <div
       style={{
         ...styles.page,
-        padding: isMobile ? "20px 14px 104px" : styles.page.padding,
+        padding: isMobile ? "20px 14px 120px" : styles.page.padding,
         overflowX: "clip",
       }}
     >
@@ -881,6 +881,14 @@ export default function PublicCustomQuotePage() {
             ...styles.hero,
             alignItems: isMobile ? "flex-start" : styles.hero.alignItems,
             marginBottom: isMobile ? "18px" : styles.hero.marginBottom,
+            position: isMobile ? "sticky" : "static",
+            top: isMobile ? 10 : undefined,
+            zIndex: isMobile ? 18 : undefined,
+            padding: isMobile ? "14px" : 0,
+            borderRadius: isMobile ? 18 : undefined,
+            background: isMobile ? "rgba(2, 6, 23, 0.92)" : "transparent",
+            border: isMobile ? "1px solid rgba(51, 65, 85, 0.9)" : "none",
+            backdropFilter: isMobile ? "blur(12px)" : "none",
           }}
         >
           <div>
@@ -1142,9 +1150,10 @@ export default function PublicCustomQuotePage() {
                       border: "1px solid #1f2937",
                       background: "rgba(2, 6, 23, 0.72)",
                       borderRadius: "16px",
-                      padding: "16px",
+                      padding: isMobile ? "14px" : "16px",
                       display: "grid",
                       gap: "12px",
+                      overflowX: "clip",
                     }}
                   >
                     <div
@@ -1549,7 +1558,7 @@ export default function PublicCustomQuotePage() {
               flexWrap: "wrap",
               flexDirection: isMobile ? "column" : "row",
               position: isMobile ? "sticky" : "static",
-              bottom: isMobile ? 10 : undefined,
+              bottom: isMobile ? "calc(env(safe-area-inset-bottom, 0px) + 76px)" : undefined,
               zIndex: isMobile ? 20 : undefined,
               padding: isMobile ? "12px" : 0,
               borderRadius: isMobile ? 16 : undefined,
@@ -1748,10 +1757,12 @@ export default function PublicCustomQuotePage() {
                     width: "100%",
                     border: "1px solid #1f2937",
                     borderRadius: 12,
-                    padding: 14,
+                    padding: isMobile ? 16 : 14,
                     background: "rgba(2, 6, 23, 0.72)",
                     color: "#f8fafc",
                     cursor: "pointer",
+                    overflowWrap: "anywhere",
+                    minHeight: isMobile ? 88 : undefined,
                   }}
                 >
                   <div style={{ fontWeight: 700 }}>
