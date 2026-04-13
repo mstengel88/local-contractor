@@ -615,6 +615,7 @@ export default function PublicCustomQuotePage() {
   const [selectedHistoryQuoteId, setSelectedHistoryQuoteId] = useState<string | null>(
     null,
   );
+  const [isMobile, setIsMobile] = useState(false);
   const deferredLines = useDeferredValue(lines);
   const productSearchIndex = useMemo(
     () =>
@@ -648,6 +649,18 @@ export default function PublicCustomQuotePage() {
         setGoogleStatus(`Error: ${error.message}`);
       });
   }, [allowed, googleMapsApiKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const media = window.matchMedia("(max-width: 820px)");
+    const updateViewport = () => setIsMobile(media.matches);
+
+    updateViewport();
+    media.addEventListener("change", updateViewport);
+
+    return () => media.removeEventListener("change", updateViewport);
+  }, []);
 
   useEffect(() => {
     if (deleteQuoteFetcher.data?.ok && deleteQuoteFetcher.data?.deletedQuoteId) {
@@ -819,11 +832,19 @@ export default function PublicCustomQuotePage() {
   }
 
   return (
-    <div style={styles.page}>
+    <div style={{ ...styles.page, padding: isMobile ? "20px 14px 40px" : styles.page.padding }}>
       <div style={styles.shell}>
-        <div style={styles.hero}>
+        <div
+          style={{
+            ...styles.hero,
+            alignItems: isMobile ? "flex-start" : styles.hero.alignItems,
+            marginBottom: isMobile ? "18px" : styles.hero.marginBottom,
+          }}
+        >
           <div>
-            <h1 style={styles.title}>Custom Quote Tool</h1>
+            <h1 style={{ ...styles.title, fontSize: isMobile ? "28px" : styles.title.fontSize }}>
+              Custom Quote Tool
+            </h1>
             <div style={styles.subtitle}>
               Full quote builder with products, delivery, tax, images, and saved
               history.
@@ -848,7 +869,7 @@ export default function PublicCustomQuotePage() {
           <input type="hidden" name="contractorTier" value={contractorTier} />
           <input type="hidden" name="linesJson" value={JSON.stringify(lines)} />
 
-          <div style={styles.card}>
+          <div style={{ ...styles.card, padding: isMobile ? "18px" : styles.card.padding }}>
             <h2 style={styles.sectionTitle}>Quote Type</h2>
             <p style={styles.sectionSub}>
               Switch between standard customer pricing and contractor tier pricing.
@@ -910,7 +931,7 @@ export default function PublicCustomQuotePage() {
             ) : null}
           </div>
 
-          <div style={styles.card}>
+          <div style={{ ...styles.card, padding: isMobile ? "18px" : styles.card.padding }}>
             <h2 style={styles.sectionTitle}>Customer & Delivery Address</h2>
             <p style={styles.sectionSub}>
               Start typing the street address and choose a suggestion.
@@ -976,7 +997,9 @@ export default function PublicCustomQuotePage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1.3fr 0.8fr 0.8fr 0.8fr",
+                  gridTemplateColumns: isMobile
+                    ? "repeat(2, minmax(0, 1fr))"
+                    : "1.3fr 0.8fr 0.8fr 0.8fr",
                   gap: "14px",
                 }}
               >
@@ -1031,14 +1054,15 @@ export default function PublicCustomQuotePage() {
             </div>
           </div>
 
-          <div style={styles.card}>
+          <div style={{ ...styles.card, padding: isMobile ? "18px" : styles.card.padding }}>
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                alignItems: "center",
+                alignItems: isMobile ? "flex-start" : "center",
                 gap: "16px",
                 marginBottom: "14px",
+                flexWrap: "wrap",
               }}
             >
               <div>
@@ -1075,7 +1099,9 @@ export default function PublicCustomQuotePage() {
                     <div
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "minmax(360px, 1fr) 160px 120px",
+                        gridTemplateColumns: isMobile
+                          ? "minmax(0, 1fr)"
+                          : "minmax(360px, 1fr) 160px 120px",
                         gap: "12px",
                         alignItems: "end",
                       }}
@@ -1122,11 +1148,12 @@ export default function PublicCustomQuotePage() {
 
                     {selectedProduct ? (
                       <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 12,
-                          padding: "12px 14px",
+                      style={{
+                        display: "flex",
+                        alignItems: isMobile ? "flex-start" : "center",
+                        flexWrap: isMobile ? "wrap" : "nowrap",
+                        gap: 12,
+                        padding: "12px 14px",
                           borderRadius: "12px",
                           background: "rgba(37, 99, 235, 0.12)",
                           border: "1px solid rgba(96, 165, 250, 0.35)",
@@ -1193,11 +1220,13 @@ export default function PublicCustomQuotePage() {
 
                     {selectedProduct && quoteAudience === "custom" ? (
                       <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "minmax(260px, 1fr) 180px",
-                          gap: "12px",
-                        }}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: isMobile
+                          ? "minmax(0, 1fr)"
+                          : "minmax(260px, 1fr) 180px",
+                        gap: "12px",
+                      }}
                       >
                         <div>
                           <label style={styles.label}>Custom Line Title</label>
@@ -1343,7 +1372,7 @@ export default function PublicCustomQuotePage() {
           </div>
 
           {quoteAudience === "custom" ? (
-            <div style={styles.card}>
+            <div style={{ ...styles.card, padding: isMobile ? "18px" : styles.card.padding }}>
               <h2 style={styles.sectionTitle}>Custom Adjustments</h2>
               <p style={styles.sectionSub}>
                 Override delivery, tax, and the customer-facing quote details before
@@ -1354,7 +1383,9 @@ export default function PublicCustomQuotePage() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "180px 180px",
+                    gridTemplateColumns: isMobile
+                      ? "minmax(0, 1fr)"
+                      : "180px 180px",
                     gap: "14px",
                   }}
                 >
@@ -1388,7 +1419,9 @@ export default function PublicCustomQuotePage() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "160px 160px 180px",
+                    gridTemplateColumns: isMobile
+                      ? "minmax(0, 1fr)"
+                      : "160px 160px 180px",
                     gap: "14px",
                   }}
                 >
@@ -1454,12 +1487,19 @@ export default function PublicCustomQuotePage() {
             </div>
           ) : null}
 
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "12px",
+              flexWrap: "wrap",
+              flexDirection: isMobile ? "column" : "row",
+            }}
+          >
             <button
               type="submit"
               name="intent"
               value="quote"
-              style={styles.buttonPrimary}
+              style={{ ...styles.buttonPrimary, width: isMobile ? "100%" : undefined }}
             >
               {isSubmitting ? "Calculating..." : "Get Full Quote"}
             </button>
@@ -1468,7 +1508,7 @@ export default function PublicCustomQuotePage() {
               type="submit"
               name="intent"
               value="save"
-              style={styles.buttonSecondary}
+              style={{ ...styles.buttonSecondary, width: isMobile ? "100%" : undefined }}
             >
               {isSubmitting ? "Saving..." : "Save Quote"}
             </button>
@@ -1492,16 +1532,17 @@ export default function PublicCustomQuotePage() {
             style={{
               marginTop: "24px",
               display: "grid",
-              gridTemplateColumns: "1.2fr 1fr",
+              gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "1.2fr 1fr",
               gap: "20px",
             }}
           >
-            <div style={styles.card}>
+            <div style={{ ...styles.card, padding: isMobile ? "18px" : styles.card.padding }}>
               <div
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  alignItems: "center",
+                  alignItems: isMobile ? "flex-start" : "center",
+                  flexWrap: "wrap",
                   gap: "12px",
                   marginBottom: "16px",
                 }}
@@ -1568,7 +1609,7 @@ export default function PublicCustomQuotePage() {
               </div>
             </div>
 
-            <div style={styles.card}>
+            <div style={{ ...styles.card, padding: isMobile ? "18px" : styles.card.padding }}>
               <h2 style={styles.sectionTitle}>Source Breakdown</h2>
               <div style={{ display: "grid", gap: "12px" }}>
                 {actionData.sourceBreakdown?.map((source: any, index: number) => (
@@ -1604,7 +1645,13 @@ export default function PublicCustomQuotePage() {
         ) : null}
 
         {recentQuotes.length ? (
-          <div style={{ ...styles.card, marginTop: 24 }}>
+          <div
+            style={{
+              ...styles.card,
+              marginTop: 24,
+              padding: isMobile ? "18px" : styles.card.padding,
+            }}
+          >
             <h2 style={styles.sectionTitle}>Recent Quotes</h2>
             <div style={{ display: "grid", gap: 12 }}>
               {recentQuotes.map((quote: any) => (
@@ -1644,12 +1691,19 @@ export default function PublicCustomQuotePage() {
         ) : null}
 
         {selectedHistoryQuote ? (
-          <div style={{ ...styles.card, marginTop: 24 }}>
+          <div
+            style={{
+              ...styles.card,
+              marginTop: 24,
+              padding: isMobile ? "18px" : styles.card.padding,
+            }}
+          >
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                alignItems: "center",
+                alignItems: isMobile ? "flex-start" : "center",
+                flexWrap: "wrap",
                 gap: "12px",
                 marginBottom: "16px",
               }}
@@ -1739,7 +1793,7 @@ export default function PublicCustomQuotePage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "1.2fr 1fr",
+                gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "1.2fr 1fr",
                 gap: "20px",
               }}
             >

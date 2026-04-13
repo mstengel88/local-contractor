@@ -220,6 +220,7 @@ export default function QuoteReviewPage() {
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(quotes[0]?.id || null);
+  const [isMobile, setIsMobile] = useState(false);
 
   const createDraftOrderAction = isEmbeddedRoute
     ? `/app/api/create-draft-order${location.search || ""}`
@@ -259,9 +260,21 @@ export default function QuoteReviewPage() {
     }
   }, [deleteQuoteFetcher.data]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const media = window.matchMedia("(max-width: 900px)");
+    const updateViewport = () => setIsMobile(media.matches);
+
+    updateViewport();
+    media.addEventListener("change", updateViewport);
+
+    return () => media.removeEventListener("change", updateViewport);
+  }, []);
+
   if (!allowed) {
     return (
-      <div style={styles.page}>
+      <div style={{ ...styles.page, padding: isMobile ? "20px 14px 40px" : styles.page.padding }}>
         <div style={{ ...styles.shell, maxWidth: 520 }}>
           <div style={styles.card}>
             <h1 style={styles.title}>Quote Review</h1>
@@ -287,12 +300,12 @@ export default function QuoteReviewPage() {
   }
 
   return (
-    <div style={styles.page}>
+    <div style={{ ...styles.page, padding: isMobile ? "20px 14px 40px" : styles.page.padding }}>
       <div style={styles.shell}>
-        <div style={styles.card}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+        <div style={{ ...styles.card, padding: isMobile ? "18px" : styles.card.padding }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: isMobile ? "flex-start" : "center" }}>
             <div>
-              <h1 style={styles.title}>Quote Review</h1>
+              <h1 style={{ ...styles.title, fontSize: isMobile ? "2.2rem" : styles.title.fontSize }}>Quote Review</h1>
               <p style={styles.subtitle}>
                 Search across customer info, address, notes, SKU, product titles, vendors, and saved quote details.
               </p>
@@ -304,7 +317,7 @@ export default function QuoteReviewPage() {
           </div>
         </div>
 
-        <div style={{ ...styles.card, display: "grid", gap: 14 }}>
+        <div style={{ ...styles.card, display: "grid", gap: 14, padding: isMobile ? "18px" : styles.card.padding }}>
           <div>
             <label style={styles.label}>Search Saved Quotes</label>
             <input
@@ -323,12 +336,21 @@ export default function QuoteReviewPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "minmax(320px, 420px) minmax(0, 1fr)",
+            gridTemplateColumns: isMobile
+              ? "minmax(0, 1fr)"
+              : "minmax(320px, 420px) minmax(0, 1fr)",
             gap: 20,
             alignItems: "start",
           }}
         >
-          <div style={{ ...styles.card, maxHeight: "70vh", overflowY: "auto" }}>
+          <div
+            style={{
+              ...styles.card,
+              maxHeight: isMobile ? "none" : "70vh",
+              overflowY: isMobile ? "visible" : "auto",
+              padding: isMobile ? "18px" : styles.card.padding,
+            }}
+          >
             <div style={{ display: "grid", gap: 12 }}>
               {filteredQuotes.length === 0 ? (
                 <div style={{ color: "#94a3b8" }}>No saved quotes matched your search.</div>
@@ -385,10 +407,10 @@ export default function QuoteReviewPage() {
             </div>
           </div>
 
-          <div style={styles.card}>
+          <div style={{ ...styles.card, padding: isMobile ? "18px" : styles.card.padding }}>
             {selectedQuote ? (
               <>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: isMobile ? "flex-start" : "center" }}>
                   <div>
                     <h2 style={{ margin: 0, fontSize: 24 }}>Saved Quote Detail</h2>
                     <div style={{ color: "#94a3b8", marginTop: 6, fontSize: 14 }}>
@@ -399,14 +421,14 @@ export default function QuoteReviewPage() {
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                    <draftOrderFetcher.Form
-                      method="post"
-                      action={createDraftOrderAction}
-                      style={{ display: "flex", gap: 12, flexWrap: "wrap" }}
-                    >
-                      <input type="hidden" name="quoteId" value={selectedQuote.id} />
-                      <button type="submit" style={styles.buttonPrimary}>
+                    <div style={{ display: "flex", gap: 12, flexWrap: "wrap", width: isMobile ? "100%" : undefined }}>
+                      <draftOrderFetcher.Form
+                        method="post"
+                        action={createDraftOrderAction}
+                        style={{ display: "flex", gap: 12, flexWrap: "wrap", width: isMobile ? "100%" : undefined }}
+                      >
+                        <input type="hidden" name="quoteId" value={selectedQuote.id} />
+                      <button type="submit" style={{ ...styles.buttonPrimary, width: isMobile ? "100%" : undefined }}>
                         {draftOrderFetcher.state === "submitting"
                           ? "Creating Draft Order..."
                           : "Send To Shopify"}
@@ -443,7 +465,7 @@ export default function QuoteReviewPage() {
                       }}
                     >
                       <input type="hidden" name="quoteId" value={selectedQuote.id} />
-                      <button type="submit" style={styles.buttonGhost}>
+                      <button type="submit" style={{ ...styles.buttonGhost, width: isMobile ? "100%" : undefined }}>
                         {deleteQuoteFetcher.state === "submitting"
                           ? "Deleting..."
                           : "Delete Quote"}
@@ -468,7 +490,7 @@ export default function QuoteReviewPage() {
                   style={{
                     marginTop: 20,
                     display: "grid",
-                    gridTemplateColumns: "1.1fr 1fr",
+                    gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "1.1fr 1fr",
                     gap: 20,
                   }}
                 >
