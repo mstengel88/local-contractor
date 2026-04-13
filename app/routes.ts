@@ -5,6 +5,7 @@ export default [
 
   route("custom-quote", "routes/custom-quote.tsx"),
   route("quote-review", "routes/quote-review.tsx"),
+  route("mobile", "routes/mobile-dashboard.tsx"),
 
   route("auth/login", "routes/auth.login/route.tsx"),
   route("auth/*", "routes/auth.$.tsx"),
@@ -15,6 +16,7 @@ export default [
     route("additional", "routes/app.additional.tsx"),
     route("custom-quote", "routes/app.custom-quote.tsx"),
     route("quote-review", "routes/app.quote-review.tsx"),
+    route("mobile", "routes/app.mobile.tsx"),
   ]),
 
   route("api/shipping-estimate", "routes/api.shipping-estimate.ts"),

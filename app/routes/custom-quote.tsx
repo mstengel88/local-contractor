@@ -593,6 +593,9 @@ export default function PublicCustomQuotePage() {
     actionData?.googleMapsApiKey ?? loaderData.googleMapsApiKey ?? "";
   const embeddedQs = location.search || "";
   const isEmbeddedRoute = location.pathname.startsWith("/app/");
+  const urlParams = new URLSearchParams(location.search);
+  const initialAudience = normalizeQuoteAudience(urlParams.get("audience"));
+  const initialTier = normalizeContractorTier(urlParams.get("tier"));
   const createDraftOrderAction = location.pathname.startsWith("/app/")
     ? `/app/api/create-draft-order${embeddedQs}`
     : `/api/create-draft-order${embeddedQs}`;
@@ -601,13 +604,14 @@ export default function PublicCustomQuotePage() {
     : `/api/delete-quote${embeddedQs}`;
   const quoteReviewHref = isEmbeddedRoute ? "/app/quote-review" : "/quote-review";
   const logoutHref = isEmbeddedRoute ? "/app/custom-quote?logout=1" : "/custom-quote?logout=1";
+  const mobileDashboardHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
 
   const [googleStatus, setGoogleStatus] = useState("Not loaded");
   const [quoteAudience, setQuoteAudience] = useState<QuoteAudience>(
-    normalizeQuoteAudience(actionData?.quoteAudience),
+    normalizeQuoteAudience(actionData?.quoteAudience ?? initialAudience),
   );
   const [contractorTier, setContractorTier] = useState<ContractorTier>(
-    normalizeContractorTier(actionData?.contractorTier),
+    normalizeContractorTier(actionData?.contractorTier ?? initialTier),
   );
   const [lines, setLines] = useState<QuoteLine[]>([
     { sku: "", quantity: "", search: "", customTitle: "", customPrice: "" },
@@ -675,6 +679,11 @@ export default function PublicCustomQuotePage() {
     }
   }, [deleteQuoteFetcher.data]);
 
+  useEffect(() => {
+    setQuoteAudience(normalizeQuoteAudience(actionData?.quoteAudience ?? initialAudience));
+    setContractorTier(normalizeContractorTier(actionData?.contractorTier ?? initialTier));
+  }, [actionData?.quoteAudience, actionData?.contractorTier, initialAudience, initialTier]);
+
   const quoteText = useMemo(() => {
     if (!actionData?.pricing || !actionData?.deliveryQuote) return "";
 
@@ -736,7 +745,7 @@ export default function PublicCustomQuotePage() {
     bottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
     zIndex: 30,
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    gridTemplateColumns: "repeat(3, 1fr)",
     gap: 10,
     padding: 10,
     borderRadius: 18,
@@ -905,6 +914,9 @@ export default function PublicCustomQuotePage() {
           </div>
 
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <a href={mobileDashboardHref} style={styles.logout}>
+              Dashboard
+            </a>
             <a href={quoteReviewHref} style={styles.logout}>
               Review Quotes
             </a>
@@ -2041,6 +2053,9 @@ export default function PublicCustomQuotePage() {
       </div>
       {isMobile ? (
         <div style={mobileBottomNavStyle}>
+          <a href={mobileDashboardHref} style={mobileActionButtonStyle}>
+            Dashboard
+          </a>
           <a href={isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote"} style={mobileActionButtonStyle}>
             Quote Tool
           </a>

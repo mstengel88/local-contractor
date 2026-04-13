@@ -214,12 +214,16 @@ export default function QuoteReviewPage() {
   const draftOrderFetcher = useFetcher<any>();
   const deleteQuoteFetcher = useFetcher<any>();
   const isEmbeddedRoute = location.pathname.startsWith("/app/");
+  const urlParams = new URLSearchParams(location.search);
+  const requestedQuoteId = urlParams.get("quote");
 
   const allowed = actionData?.allowed ?? loaderData.allowed;
   const quotes = ((actionData?.quotes || loaderData.quotes) || []) as SavedCustomQuote[];
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(quotes[0]?.id || null);
+  const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(
+    requestedQuoteId || quotes[0]?.id || null,
+  );
   const [isMobile, setIsMobile] = useState(false);
   const [detailSectionsOpen, setDetailSectionsOpen] = useState({
     customer: true,
@@ -233,6 +237,7 @@ export default function QuoteReviewPage() {
     ? `/app/api/delete-quote${location.search || ""}`
     : `/api/delete-quote${location.search || ""}`;
   const quoteToolHref = isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote";
+  const mobileDashboardHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
 
   const indexedQuotes = useMemo(
     () =>
@@ -267,7 +272,7 @@ export default function QuoteReviewPage() {
     bottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
     zIndex: 30,
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    gridTemplateColumns: "repeat(3, 1fr)",
     gap: 10,
     padding: 10,
     borderRadius: 18,
@@ -303,6 +308,12 @@ export default function QuoteReviewPage() {
 
     return () => media.removeEventListener("change", updateViewport);
   }, []);
+
+  useEffect(() => {
+    if (requestedQuoteId) {
+      setSelectedQuoteId(requestedQuoteId);
+    }
+  }, [requestedQuoteId]);
 
   if (!allowed) {
     return (
@@ -358,6 +369,7 @@ export default function QuoteReviewPage() {
               </p>
             </div>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <a href={mobileDashboardHref} style={mobileActionButtonStyle}>Dashboard</a>
               <a href={quoteToolHref} style={mobileActionButtonStyle}>Open Quote Tool</a>
               <a href="?logout=1" style={mobileActionButtonStyle}>Log Out</a>
             </div>
@@ -635,11 +647,14 @@ export default function QuoteReviewPage() {
       </div>
       {isMobile ? (
         <div style={mobileBottomNavStyle}>
+          <a href={mobileDashboardHref} style={mobileActionButtonStyle}>
+            Dashboard
+          </a>
           <a href={quoteToolHref} style={mobileActionButtonStyle}>
             Quote Tool
           </a>
           <a href={isEmbeddedRoute ? "/app/quote-review" : "/quote-review"} style={mobileActionButtonStyle}>
-            Review Quotes
+            Review
           </a>
         </div>
       ) : null}
