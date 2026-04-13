@@ -221,6 +221,10 @@ export default function QuoteReviewPage() {
   const deferredQuery = useDeferredValue(query);
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(quotes[0]?.id || null);
   const [isMobile, setIsMobile] = useState(false);
+  const [detailSectionsOpen, setDetailSectionsOpen] = useState({
+    customer: true,
+    lineItems: false,
+  });
 
   const createDraftOrderAction = isEmbeddedRoute
     ? `/app/api/create-draft-order${location.search || ""}`
@@ -256,6 +260,29 @@ export default function QuoteReviewPage() {
     minHeight: isMobile ? 48 : undefined,
     width: isMobile ? "100%" : undefined,
   };
+  const mobileBottomNavStyle = {
+    position: "fixed" as const,
+    left: 12,
+    right: 12,
+    bottom: 12,
+    zIndex: 30,
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 10,
+    padding: 10,
+    borderRadius: 18,
+    background: "rgba(2, 6, 23, 0.94)",
+    border: "1px solid rgba(51, 65, 85, 0.95)",
+    boxShadow: "0 18px 38px rgba(2, 6, 23, 0.45)",
+    backdropFilter: "blur(14px)",
+  };
+
+  function toggleDetailSection(key: keyof typeof detailSectionsOpen) {
+    setDetailSectionsOpen((current) => ({
+      ...current,
+      [key]: !current[key],
+    }));
+  }
 
   useEffect(() => {
     if (deleteQuoteFetcher.data?.ok && deleteQuoteFetcher.data?.deletedQuoteId) {
@@ -305,7 +332,13 @@ export default function QuoteReviewPage() {
   }
 
   return (
-    <div style={{ ...styles.page, padding: isMobile ? "20px 14px 40px" : styles.page.padding }}>
+    <div
+      style={{
+        ...styles.page,
+        padding: isMobile ? "20px 14px 104px" : styles.page.padding,
+        overflowX: "clip",
+      }}
+    >
       <div style={styles.shell}>
         <div style={{ ...styles.card, padding: isMobile ? "18px" : styles.card.padding }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: isMobile ? "flex-start" : "center" }}>
@@ -480,13 +513,25 @@ export default function QuoteReviewPage() {
                 </div>
 
                 {draftOrderFetcher.data?.message ? (
-                  <div style={draftOrderFetcher.data.ok ? styles.statusOk : styles.statusErr}>
+                  <div
+                    style={{
+                      ...(draftOrderFetcher.data.ok ? styles.statusOk : styles.statusErr),
+                      fontSize: isMobile ? 16 : undefined,
+                      fontWeight: isMobile ? 700 : undefined,
+                    }}
+                  >
                     {draftOrderFetcher.data.message}
                   </div>
                 ) : null}
 
                 {deleteQuoteFetcher.data?.message ? (
-                  <div style={deleteQuoteFetcher.data.ok ? styles.statusOk : styles.statusErr}>
+                  <div
+                    style={{
+                      ...(deleteQuoteFetcher.data.ok ? styles.statusOk : styles.statusErr),
+                      fontSize: isMobile ? 16 : undefined,
+                      fontWeight: isMobile ? 700 : undefined,
+                    }}
+                  >
                     {deleteQuoteFetcher.data.message}
                   </div>
                 ) : null}
@@ -500,50 +545,74 @@ export default function QuoteReviewPage() {
                   }}
                 >
                   <div style={{ display: "grid", gap: 10 }}>
-                    <div><strong>Customer:</strong> {selectedQuote.customer_name || "Unnamed customer"}</div>
-                    <div><strong>Email:</strong> {selectedQuote.customer_email || "N/A"}</div>
-                    <div><strong>Phone:</strong> {selectedQuote.customer_phone || "N/A"}</div>
-                    <div>
-                      <strong>Address:</strong> {selectedQuote.address1}, {selectedQuote.city},{" "}
-                      {selectedQuote.province} {selectedQuote.postal_code}
-                    </div>
-                    <div><strong>Country:</strong> {selectedQuote.country || "US"}</div>
-                    <div><strong>Total:</strong> {formatMoney(selectedQuote.quote_total_cents)}</div>
-                    <div><strong>Service:</strong> {selectedQuote.service_name || "Quote"}</div>
-                    <div><strong>ETA:</strong> {selectedQuote.eta || "N/A"}</div>
-                    {selectedQuote.shipping_details ? (
-                      <div><strong>Shipping Details:</strong> {selectedQuote.shipping_details}</div>
+                    <button
+                      type="button"
+                      onClick={() => toggleDetailSection("customer")}
+                      style={mobileActionButtonStyle}
+                    >
+                      {detailSectionsOpen.customer ? "Hide Quote Info" : "Show Quote Info"}
+                    </button>
+                    {detailSectionsOpen.customer ? (
+                      <div style={{ display: "grid", gap: 10, overflowWrap: "anywhere" }}>
+                        <div><strong>Customer:</strong> {selectedQuote.customer_name || "Unnamed customer"}</div>
+                        <div><strong>Email:</strong> {selectedQuote.customer_email || "N/A"}</div>
+                        <div><strong>Phone:</strong> {selectedQuote.customer_phone || "N/A"}</div>
+                        <div>
+                          <strong>Address:</strong> {selectedQuote.address1}, {selectedQuote.city},{" "}
+                          {selectedQuote.province} {selectedQuote.postal_code}
+                        </div>
+                        <div><strong>Country:</strong> {selectedQuote.country || "US"}</div>
+                        <div style={{ fontSize: isMobile ? 22 : undefined, fontWeight: isMobile ? 800 : undefined }}>
+                          <strong>Total:</strong> {formatMoney(selectedQuote.quote_total_cents)}
+                        </div>
+                        <div><strong>Service:</strong> {selectedQuote.service_name || "Quote"}</div>
+                        <div><strong>ETA:</strong> {selectedQuote.eta || "N/A"}</div>
+                        {selectedQuote.shipping_details ? (
+                          <div><strong>Shipping Details:</strong> {selectedQuote.shipping_details}</div>
+                        ) : null}
+                        <div><strong>Summary:</strong> {selectedQuote.summary || "N/A"}</div>
+                        <div><strong>Notes:</strong> {selectedQuote.description || "N/A"}</div>
+                      </div>
                     ) : null}
-                    <div><strong>Summary:</strong> {selectedQuote.summary || "N/A"}</div>
-                    <div><strong>Notes:</strong> {selectedQuote.description || "N/A"}</div>
                   </div>
 
                   <div style={{ display: "grid", gap: 12 }}>
-                    <h3 style={{ margin: 0 }}>Line Items</h3>
-                    {(selectedQuote.line_items || []).length === 0 ? (
-                      <div style={{ color: "#94a3b8" }}>No saved line items.</div>
-                    ) : (
-                      (selectedQuote.line_items || []).map((line, index) => (
-                        <div
-                          key={`${line.sku}-${index}`}
-                          style={{
-                            border: "1px solid #1f2937",
-                            borderRadius: 14,
-                            padding: 14,
-                            background: "rgba(2, 6, 23, 0.72)",
-                          }}
-                        >
-                          <div style={{ fontWeight: 700 }}>{line.title}</div>
-                          <div style={{ color: "#94a3b8", marginTop: 4, fontSize: 14 }}>
-                            {line.sku} {line.vendor ? `- ${line.vendor}` : ""}
-                          </div>
-                          <div style={{ color: "#cbd5e1", marginTop: 8, fontSize: 14 }}>
-                            Qty {line.quantity} at ${Number(line.price || 0).toFixed(2)}
-                            {line.pricingLabel ? ` - ${line.pricingLabel}` : ""}
-                          </div>
-                        </div>
-                      ))
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => toggleDetailSection("lineItems")}
+                      style={mobileActionButtonStyle}
+                    >
+                      {detailSectionsOpen.lineItems ? "Hide Line Items" : "Show Line Items"}
+                    </button>
+                    {detailSectionsOpen.lineItems ? (
+                      <>
+                        {(selectedQuote.line_items || []).length === 0 ? (
+                          <div style={{ color: "#94a3b8" }}>No saved line items.</div>
+                        ) : (
+                          (selectedQuote.line_items || []).map((line, index) => (
+                            <div
+                              key={`${line.sku}-${index}`}
+                              style={{
+                                border: "1px solid #1f2937",
+                                borderRadius: 14,
+                                padding: 14,
+                                background: "rgba(2, 6, 23, 0.72)",
+                                overflowWrap: "anywhere",
+                              }}
+                            >
+                              <div style={{ fontWeight: 700 }}>{line.title}</div>
+                              <div style={{ color: "#94a3b8", marginTop: 4, fontSize: 14 }}>
+                                {line.sku} {line.vendor ? `- ${line.vendor}` : ""}
+                              </div>
+                              <div style={{ color: "#cbd5e1", marginTop: 8, fontSize: 14 }}>
+                                Qty {line.quantity} at ${Number(line.price || 0).toFixed(2)}
+                                {line.pricingLabel ? ` - ${line.pricingLabel}` : ""}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </>
+                    ) : null}
                   </div>
                 </div>
               </>
@@ -553,6 +622,16 @@ export default function QuoteReviewPage() {
           </div>
         </div>
       </div>
+      {isMobile ? (
+        <div style={mobileBottomNavStyle}>
+          <a href={quoteToolHref} style={mobileActionButtonStyle}>
+            Quote Tool
+          </a>
+          <a href={isEmbeddedRoute ? "/app/quote-review" : "/quote-review"} style={mobileActionButtonStyle}>
+            Review Quotes
+          </a>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -616,6 +616,11 @@ export default function PublicCustomQuotePage() {
     null,
   );
   const [isMobile, setIsMobile] = useState(false);
+  const [historyDetailsOpen, setHistoryDetailsOpen] = useState({
+    customer: true,
+    lineItems: false,
+    sourceBreakdown: false,
+  });
   const deferredLines = useDeferredValue(lines);
   const productSearchIndex = useMemo(
     () =>
@@ -724,6 +729,31 @@ export default function PublicCustomQuotePage() {
     width: isMobile ? "100%" : undefined,
     justifyContent: "center" as const,
   };
+  const mobileBottomNavStyle = {
+    position: "fixed" as const,
+    left: 12,
+    right: 12,
+    bottom: 12,
+    zIndex: 30,
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 10,
+    padding: 10,
+    borderRadius: 18,
+    background: "rgba(2, 6, 23, 0.94)",
+    border: "1px solid rgba(51, 65, 85, 0.95)",
+    boxShadow: "0 18px 38px rgba(2, 6, 23, 0.45)",
+    backdropFilter: "blur(14px)",
+  };
+
+  function toggleHistorySection(
+    key: keyof typeof historyDetailsOpen,
+  ) {
+    setHistoryDetailsOpen((current) => ({
+      ...current,
+      [key]: !current[key],
+    }));
+  }
 
   const historyQuoteText = useMemo(() => {
     if (!selectedHistoryQuote) return "";
@@ -838,7 +868,13 @@ export default function PublicCustomQuotePage() {
   }
 
   return (
-    <div style={{ ...styles.page, padding: isMobile ? "20px 14px 40px" : styles.page.padding }}>
+    <div
+      style={{
+        ...styles.page,
+        padding: isMobile ? "20px 14px 104px" : styles.page.padding,
+        overflowX: "clip",
+      }}
+    >
       <div style={styles.shell}>
         <div
           style={{
@@ -1552,13 +1588,25 @@ export default function PublicCustomQuotePage() {
         </Form>
 
         {actionData?.message ? (
-          <div style={actionData.ok ? styles.statusOk : styles.statusErr}>
+          <div
+            style={{
+              ...(actionData.ok ? styles.statusOk : styles.statusErr),
+              fontSize: isMobile ? 16 : undefined,
+              fontWeight: isMobile ? 700 : undefined,
+            }}
+          >
             {actionData.message}
           </div>
         ) : null}
 
         {actionData?.savedQuoteId ? (
-          <div style={styles.statusOk}>
+          <div
+            style={{
+              ...styles.statusOk,
+              fontSize: isMobile ? 16 : undefined,
+              fontWeight: isMobile ? 700 : undefined,
+            }}
+          >
             Quote saved successfully. ID: {actionData.savedQuoteId}
           </div>
         ) : null}
@@ -1621,7 +1669,7 @@ export default function PublicCustomQuotePage() {
                     marginTop: 8,
                     paddingTop: 10,
                     borderTop: "1px solid #334155",
-                    fontSize: 18,
+                    fontSize: isMobile ? 22 : 18,
                     fontWeight: 800,
                   }}
                 >
@@ -1810,21 +1858,29 @@ export default function PublicCustomQuotePage() {
               ) : null}
             </draftOrderFetcher.Form>
 
-            {draftOrderFetcher.data?.message ? (
-              <div
-                style={draftOrderFetcher.data.ok ? styles.statusOk : styles.statusErr}
-              >
-                {draftOrderFetcher.data.message}
-              </div>
-            ) : null}
+                {draftOrderFetcher.data?.message ? (
+                  <div
+                    style={{
+                      ...(draftOrderFetcher.data.ok ? styles.statusOk : styles.statusErr),
+                      fontSize: isMobile ? 16 : undefined,
+                      fontWeight: isMobile ? 700 : undefined,
+                    }}
+                  >
+                    {draftOrderFetcher.data.message}
+                  </div>
+                ) : null}
 
-            {deleteQuoteFetcher.data?.message ? (
-              <div
-                style={deleteQuoteFetcher.data.ok ? styles.statusOk : styles.statusErr}
-              >
-                {deleteQuoteFetcher.data.message}
-              </div>
-            ) : null}
+                {deleteQuoteFetcher.data?.message ? (
+                  <div
+                    style={{
+                      ...(deleteQuoteFetcher.data.ok ? styles.statusOk : styles.statusErr),
+                      fontSize: isMobile ? 16 : undefined,
+                      fontWeight: isMobile ? 700 : undefined,
+                    }}
+                  >
+                    {deleteQuoteFetcher.data.message}
+                  </div>
+                ) : null}
 
             <div
               style={{
@@ -1834,117 +1890,154 @@ export default function PublicCustomQuotePage() {
               }}
             >
               <div style={{ display: "grid", gap: "10px", color: "#e5e7eb" }}>
-                <div>
-                  <strong style={{ color: "#93c5fd" }}>Customer:</strong>{" "}
-                  {selectedHistoryQuote.customer_name || "Unnamed customer"}
-                </div>
-                <div>
-                  <strong style={{ color: "#93c5fd" }}>Email:</strong>{" "}
-                  {selectedHistoryQuote.customer_email || "N/A"}
-                </div>
-                <div>
-                  <strong style={{ color: "#93c5fd" }}>Phone:</strong>{" "}
-                  {selectedHistoryQuote.customer_phone || "N/A"}
-                </div>
-                <div>
-                  <strong style={{ color: "#93c5fd" }}>Address:</strong>{" "}
-                  {selectedHistoryQuote.address1}, {selectedHistoryQuote.city},{" "}
-                  {selectedHistoryQuote.province} {selectedHistoryQuote.postal_code}
-                </div>
-                <div>
-                  <strong style={{ color: "#93c5fd" }}>Total:</strong> $
-                  {(Number(selectedHistoryQuote.quote_total_cents || 0) / 100).toFixed(2)}
-                </div>
-                <div>
-                  <strong style={{ color: "#93c5fd" }}>Service:</strong>{" "}
-                  {selectedHistoryQuote.service_name || "Quote"}
-                </div>
-                <div>
-                  <strong style={{ color: "#93c5fd" }}>ETA:</strong>{" "}
-                  {selectedHistoryQuote.eta || "N/A"}
-                </div>
-                {selectedHistoryQuote.shipping_details ? (
-                  <div>
-                    <strong style={{ color: "#93c5fd" }}>Shipping Details:</strong>{" "}
-                    {selectedHistoryQuote.shipping_details}
+                <button
+                  type="button"
+                  onClick={() => toggleHistorySection("customer")}
+                  style={mobileActionButtonStyle}
+                >
+                  {historyDetailsOpen.customer ? "Hide Quote Info" : "Show Quote Info"}
+                </button>
+                {historyDetailsOpen.customer ? (
+                  <div style={{ display: "grid", gap: "10px" }}>
+                    <div>
+                      <strong style={{ color: "#93c5fd" }}>Customer:</strong>{" "}
+                      {selectedHistoryQuote.customer_name || "Unnamed customer"}
+                    </div>
+                    <div>
+                      <strong style={{ color: "#93c5fd" }}>Email:</strong>{" "}
+                      {selectedHistoryQuote.customer_email || "N/A"}
+                    </div>
+                    <div>
+                      <strong style={{ color: "#93c5fd" }}>Phone:</strong>{" "}
+                      {selectedHistoryQuote.customer_phone || "N/A"}
+                    </div>
+                    <div>
+                      <strong style={{ color: "#93c5fd" }}>Address:</strong>{" "}
+                      {selectedHistoryQuote.address1}, {selectedHistoryQuote.city},{" "}
+                      {selectedHistoryQuote.province} {selectedHistoryQuote.postal_code}
+                    </div>
+                    <div style={{ fontSize: isMobile ? 22 : undefined, fontWeight: isMobile ? 800 : undefined }}>
+                      <strong style={{ color: "#93c5fd" }}>Total:</strong> $
+                      {(Number(selectedHistoryQuote.quote_total_cents || 0) / 100).toFixed(2)}
+                    </div>
+                    <div>
+                      <strong style={{ color: "#93c5fd" }}>Service:</strong>{" "}
+                      {selectedHistoryQuote.service_name || "Quote"}
+                    </div>
+                    <div>
+                      <strong style={{ color: "#93c5fd" }}>ETA:</strong>{" "}
+                      {selectedHistoryQuote.eta || "N/A"}
+                    </div>
+                    {selectedHistoryQuote.shipping_details ? (
+                      <div>
+                        <strong style={{ color: "#93c5fd" }}>Shipping Details:</strong>{" "}
+                        {selectedHistoryQuote.shipping_details}
+                      </div>
+                    ) : null}
+                    <div>
+                      <strong style={{ color: "#93c5fd" }}>Summary:</strong>{" "}
+                      {selectedHistoryQuote.summary || "N/A"}
+                    </div>
+                    <div>
+                      <strong style={{ color: "#93c5fd" }}>Notes:</strong>{" "}
+                      {selectedHistoryQuote.description || "N/A"}
+                    </div>
                   </div>
                 ) : null}
-                <div>
-                  <strong style={{ color: "#93c5fd" }}>Summary:</strong>{" "}
-                  {selectedHistoryQuote.summary || "N/A"}
-                </div>
-                <div>
-                  <strong style={{ color: "#93c5fd" }}>Notes:</strong>{" "}
-                  {selectedHistoryQuote.description || "N/A"}
-                </div>
 
                 <div style={{ marginTop: 10 }}>
-                  <h3 style={{ margin: "0 0 10px 0", fontSize: 16, color: "#f8fafc" }}>
-                    Line Items
-                  </h3>
-                  <div style={{ display: "grid", gap: 10 }}>
-                    {(selectedHistoryQuote.line_items || []).map((line, index) => (
-                      <div
-                        key={`${line.sku}-${index}`}
-                        style={{
-                          border: "1px solid #1f2937",
-                          borderRadius: 12,
-                          padding: 12,
-                          background: "rgba(2, 6, 23, 0.72)",
-                        }}
-                      >
-                        <div style={{ fontWeight: 700 }}>{line.title}</div>
-                        <div style={{ color: "#93c5fd", marginTop: 4 }}>
-                          {line.sku} · Qty {line.quantity}
+                  <button
+                    type="button"
+                    onClick={() => toggleHistorySection("lineItems")}
+                    style={mobileActionButtonStyle}
+                  >
+                    {historyDetailsOpen.lineItems ? "Hide Line Items" : "Show Line Items"}
+                  </button>
+                  {historyDetailsOpen.lineItems ? (
+                    <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+                      {(selectedHistoryQuote.line_items || []).map((line, index) => (
+                        <div
+                          key={`${line.sku}-${index}`}
+                          style={{
+                            border: "1px solid #1f2937",
+                            borderRadius: 12,
+                            padding: 12,
+                            background: "rgba(2, 6, 23, 0.72)",
+                            overflowWrap: "anywhere",
+                          }}
+                        >
+                          <div style={{ fontWeight: 700 }}>{line.title}</div>
+                          <div style={{ color: "#93c5fd", marginTop: 4 }}>
+                            {line.sku} · Qty {line.quantity}
+                          </div>
+                          <div style={{ color: "#9ca3af", marginTop: 4, fontSize: 14 }}>
+                            Unit ${Number(line.price || 0).toFixed(2)} · Total $
+                            {(Number(line.price || 0) * Number(line.quantity || 0)).toFixed(2)}
+                          </div>
                         </div>
-                        <div style={{ color: "#9ca3af", marginTop: 4, fontSize: 14 }}>
-                          Unit ${Number(line.price || 0).toFixed(2)} · Total $
-                          {(Number(line.price || 0) * Number(line.quantity || 0)).toFixed(2)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
               <div>
-                <h3 style={{ margin: "0 0 10px 0", fontSize: 16, color: "#f8fafc" }}>
-                  Source Breakdown
-                </h3>
-                <div style={{ display: "grid", gap: 12 }}>
-                  {(selectedHistoryQuote.source_breakdown || []).map((source, index) => (
-                    <div
-                      key={`${source.vendor}-${index}`}
-                      style={{
-                        border: "1px solid #1f2937",
-                        borderRadius: "12px",
-                        padding: "14px",
-                        background: "rgba(2, 6, 23, 0.72)",
-                      }}
-                    >
-                      <div style={{ fontWeight: 700, color: "#f8fafc" }}>
-                        {source.vendor}
-                      </div>
-                      <div style={{ color: "#93c5fd", marginTop: "4px" }}>
-                        Total Qty: {source.quantity}
-                      </div>
+                <button
+                  type="button"
+                  onClick={() => toggleHistorySection("sourceBreakdown")}
+                  style={mobileActionButtonStyle}
+                >
+                  {historyDetailsOpen.sourceBreakdown
+                    ? "Hide Source Breakdown"
+                    : "Show Source Breakdown"}
+                </button>
+                {historyDetailsOpen.sourceBreakdown ? (
+                  <div style={{ display: "grid", gap: 12, marginTop: 10 }}>
+                    {(selectedHistoryQuote.source_breakdown || []).map((source, index) => (
                       <div
+                        key={`${source.vendor}-${index}`}
                         style={{
-                          color: "#9ca3af",
-                          marginTop: "8px",
-                          fontSize: "14px",
+                          border: "1px solid #1f2937",
+                          borderRadius: "12px",
+                          padding: "14px",
+                          background: "rgba(2, 6, 23, 0.72)",
+                          overflowWrap: "anywhere",
                         }}
                       >
-                        {source.items.join(", ")}
+                        <div style={{ fontWeight: 700, color: "#f8fafc" }}>
+                          {source.vendor}
+                        </div>
+                        <div style={{ color: "#93c5fd", marginTop: "4px" }}>
+                          Total Qty: {source.quantity}
+                        </div>
+                        <div
+                          style={{
+                            color: "#9ca3af",
+                            marginTop: "8px",
+                            fontSize: "14px",
+                          }}
+                        >
+                          {source.items.join(", ")}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
         ) : null}
       </div>
+      {isMobile ? (
+        <div style={mobileBottomNavStyle}>
+          <a href={isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote"} style={mobileActionButtonStyle}>
+            Quote Tool
+          </a>
+          <a href={quoteReviewHref} style={mobileActionButtonStyle}>
+            Review Quotes
+          </a>
+        </div>
+      ) : null}
     </div>
   );
 }
