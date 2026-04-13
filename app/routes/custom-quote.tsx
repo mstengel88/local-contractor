@@ -718,6 +718,12 @@ export default function PublicCustomQuotePage() {
       recentQuotes.find((quote) => quote.id === selectedHistoryQuoteId) || null,
     [recentQuotes, selectedHistoryQuoteId],
   );
+  const mobileActionButtonStyle = {
+    ...styles.buttonGhost,
+    minHeight: isMobile ? 48 : undefined,
+    width: isMobile ? "100%" : undefined,
+    justifyContent: "center" as const,
+  };
 
   const historyQuoteText = useMemo(() => {
     if (!selectedHistoryQuote) return "";
@@ -881,6 +887,9 @@ export default function PublicCustomQuotePage() {
                 onClick={() => setQuoteAudience("customer")}
                 style={{
                   ...styles.tabButton,
+                  minHeight: isMobile ? 46 : undefined,
+                  flex: isMobile ? "1 1 110px" : undefined,
+                  textAlign: "center",
                   ...(quoteAudience === "customer" ? styles.tabButtonActive : {}),
                 }}
               >
@@ -891,6 +900,9 @@ export default function PublicCustomQuotePage() {
                 onClick={() => setQuoteAudience("contractor")}
                 style={{
                   ...styles.tabButton,
+                  minHeight: isMobile ? 46 : undefined,
+                  flex: isMobile ? "1 1 110px" : undefined,
+                  textAlign: "center",
                   ...(quoteAudience === "contractor" ? styles.tabButtonActive : {}),
                 }}
               >
@@ -901,6 +913,9 @@ export default function PublicCustomQuotePage() {
                 onClick={() => setQuoteAudience("custom")}
                 style={{
                   ...styles.tabButton,
+                  minHeight: isMobile ? 46 : undefined,
+                  flex: isMobile ? "1 1 110px" : undefined,
+                  textAlign: "center",
                   ...(quoteAudience === "custom" ? styles.tabButtonActive : {}),
                 }}
               >
@@ -1140,7 +1155,11 @@ export default function PublicCustomQuotePage() {
                         type="button"
                         onClick={() => removeLine(index)}
                         disabled={lines.length === 1}
-                        style={styles.buttonGhost}
+                        style={{
+                          ...styles.buttonGhost,
+                          minHeight: isMobile ? 46 : undefined,
+                          width: isMobile ? "100%" : undefined,
+                        }}
                       >
                         Remove
                       </button>
@@ -1493,13 +1512,26 @@ export default function PublicCustomQuotePage() {
               gap: "12px",
               flexWrap: "wrap",
               flexDirection: isMobile ? "column" : "row",
+              position: isMobile ? "sticky" : "static",
+              bottom: isMobile ? 10 : undefined,
+              zIndex: isMobile ? 20 : undefined,
+              padding: isMobile ? "12px" : 0,
+              borderRadius: isMobile ? 16 : undefined,
+              background: isMobile ? "rgba(2, 6, 23, 0.92)" : "transparent",
+              border: isMobile ? "1px solid rgba(51, 65, 85, 0.9)" : "none",
+              boxShadow: isMobile ? "0 18px 32px rgba(2, 6, 23, 0.4)" : "none",
+              backdropFilter: isMobile ? "blur(12px)" : "none",
             }}
           >
             <button
               type="submit"
               name="intent"
               value="quote"
-              style={{ ...styles.buttonPrimary, width: isMobile ? "100%" : undefined }}
+              style={{
+                ...styles.buttonPrimary,
+                width: isMobile ? "100%" : undefined,
+                minHeight: isMobile ? 50 : undefined,
+              }}
             >
               {isSubmitting ? "Calculating..." : "Get Full Quote"}
             </button>
@@ -1508,7 +1540,11 @@ export default function PublicCustomQuotePage() {
               type="submit"
               name="intent"
               value="save"
-              style={{ ...styles.buttonSecondary, width: isMobile ? "100%" : undefined }}
+              style={{
+                ...styles.buttonSecondary,
+                width: isMobile ? "100%" : undefined,
+                minHeight: isMobile ? 50 : undefined,
+              }}
             >
               {isSubmitting ? "Saving..." : "Save Quote"}
             </button>
@@ -1718,7 +1754,7 @@ export default function PublicCustomQuotePage() {
                 <button
                   type="button"
                   onClick={copyHistoryQuote}
-                  style={styles.buttonGhost}
+                  style={mobileActionButtonStyle}
                 >
                   Copy Saved Quote
                 </button>
@@ -1732,7 +1768,7 @@ export default function PublicCustomQuotePage() {
                   }}
                 >
                   <input type="hidden" name="quoteId" value={selectedHistoryQuote.id} />
-                  <button type="submit" style={styles.buttonGhost}>
+                  <button type="submit" style={mobileActionButtonStyle}>
                     {deleteQuoteFetcher.state === "submitting"
                       ? "Deleting..."
                       : "Delete Quote"}
@@ -1757,7 +1793,7 @@ export default function PublicCustomQuotePage() {
                   href={draftOrderFetcher.data.draftOrderAdminUrl}
                   target="_blank"
                   rel="noreferrer"
-                  style={styles.buttonGhost}
+                  style={mobileActionButtonStyle}
                 >
                   Open Draft Order
                 </a>
@@ -1767,7 +1803,7 @@ export default function PublicCustomQuotePage() {
                   href={draftOrderFetcher.data.draftOrderInvoiceUrl}
                   target="_blank"
                   rel="noreferrer"
-                  style={styles.buttonGhost}
+                  style={mobileActionButtonStyle}
                 >
                   Open Invoice
                 </a>

@@ -251,6 +251,11 @@ export default function QuoteReviewPage() {
     filteredQuotes.find((quote) => quote.id === selectedQuoteId) ||
     filteredQuotes[0] ||
     null;
+  const mobileActionButtonStyle = {
+    ...styles.buttonGhost,
+    minHeight: isMobile ? 48 : undefined,
+    width: isMobile ? "100%" : undefined,
+  };
 
   useEffect(() => {
     if (deleteQuoteFetcher.data?.ok && deleteQuoteFetcher.data?.deletedQuoteId) {
@@ -311,8 +316,8 @@ export default function QuoteReviewPage() {
               </p>
             </div>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <a href={quoteToolHref} style={styles.buttonGhost}>Open Quote Tool</a>
-              <a href="?logout=1" style={styles.buttonGhost}>Log Out</a>
+              <a href={quoteToolHref} style={mobileActionButtonStyle}>Open Quote Tool</a>
+              <a href="?logout=1" style={mobileActionButtonStyle}>Log Out</a>
             </div>
           </div>
         </div>
@@ -438,7 +443,7 @@ export default function QuoteReviewPage() {
                           href={draftOrderFetcher.data.draftOrderAdminUrl}
                           target="_blank"
                           rel="noreferrer"
-                          style={styles.buttonGhost}
+                          style={mobileActionButtonStyle}
                         >
                           Open Draft Order
                         </a>
@@ -448,7 +453,7 @@ export default function QuoteReviewPage() {
                           href={draftOrderFetcher.data.draftOrderInvoiceUrl}
                           target="_blank"
                           rel="noreferrer"
-                          style={styles.buttonGhost}
+                          style={mobileActionButtonStyle}
                         >
                           Open Invoice
                         </a>
@@ -465,7 +470,7 @@ export default function QuoteReviewPage() {
                       }}
                     >
                       <input type="hidden" name="quoteId" value={selectedQuote.id} />
-                      <button type="submit" style={{ ...styles.buttonGhost, width: isMobile ? "100%" : undefined }}>
+                      <button type="submit" style={mobileActionButtonStyle}>
                         {deleteQuoteFetcher.state === "submitting"
                           ? "Deleting..."
                           : "Delete Quote"}
