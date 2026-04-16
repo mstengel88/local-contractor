@@ -6,6 +6,7 @@ export type QuoteProductOption = {
   title: string;
   vendor: string;
   imageUrl?: string;
+  unitLabel?: string;
   price?: number;
   contractorTier1Price?: number;
   contractorTier2Price?: number;
@@ -17,6 +18,8 @@ type ProductSourceMapRow = {
   product_title: string | null;
   pickup_vendor: string | null;
   image_url: string | null;
+  unit_label?: string | null;
+  price_unit_label?: string | null;
   price: number | string | null;
 };
 
@@ -76,6 +79,7 @@ export async function getProductOptionsFromSupabase(): Promise<
       title: row.product_title || row.sku,
       vendor: row.pickup_vendor || "",
       imageUrl: row.image_url || "",
+      unitLabel: row.unit_label || row.price_unit_label || "",
       price: toNumberOrUndefined(row.price),
       contractorTier1Price: toNumberOrUndefined(
         row.contractor_tier_1_price ?? row.tier_1_price,
