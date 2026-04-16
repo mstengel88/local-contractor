@@ -71,7 +71,7 @@ async function getLatestProductSyncTimestamp() {
 async function syncProductOptionsToSupabase(products) {
   if (!products.length) return;
   const skus = products.map((product) => product.sku);
-  const { data: existingRows, error: existingError } = await supabaseAdmin.from("product_source_map").select("sku, variant_id, product_title, pickup_vendor, image_url, price").in("sku", skus);
+  const { data: existingRows, error: existingError } = await supabaseAdmin.from("product_source_map").select("sku, variant_id, product_title, pickup_vendor, image_url, unit_label, price").in("sku", skus);
   if (existingError) {
     console.error("[GET EXISTING PRODUCT OPTIONS ERROR]", existingError);
     throw existingError;
@@ -90,6 +90,7 @@ async function syncProductOptionsToSupabase(products) {
       product_title: product.title || (existing == null ? void 0 : existing.product_title) || product.sku,
       pickup_vendor: product.vendor || (existing == null ? void 0 : existing.pickup_vendor) || "",
       image_url: product.imageUrl || (existing == null ? void 0 : existing.image_url) || null,
+      unit_label: product.unitLabel || (existing == null ? void 0 : existing.unit_label) || null,
       price: product.price === null || product.price === void 0 ? (existing == null ? void 0 : existing.price) === null || (existing == null ? void 0 : existing.price) === void 0 ? null : Number(existing.price) : Number(product.price),
       updated_at: (/* @__PURE__ */ new Date()).toISOString()
     };
@@ -101,13 +102,16 @@ async function syncProductOptionsToSupabase(products) {
   }
 }
 async function fetchProductOptionsFromShopify(admin) {
-  var _a2, _b, _c, _d, _e;
+  var _a2, _b, _c, _d, _e, _f;
   const response = await admin.graphql(`
     query SyncProductsForQuotes {
       products(first: 100, sortKey: TITLE) {
         nodes {
           title
           vendor
+          metafield(namespace: "green_hills", key: "price_unit_label") {
+            value
+          }
           featuredImage {
             url
           }
@@ -133,7 +137,8 @@ async function fetchProductOptionsFromShopify(admin) {
     const productTitle = (product == null ? void 0 : product.title) || "";
     const vendor = (product == null ? void 0 : product.vendor) || "";
     const productImage = ((_c = product == null ? void 0 : product.featuredImage) == null ? void 0 : _c.url) || "";
-    for (const variant of ((_d = product == null ? void 0 : product.variants) == null ? void 0 : _d.nodes) || []) {
+    const unitLabel = ((_d = product == null ? void 0 : product.metafield) == null ? void 0 : _d.value) || "";
+    for (const variant of ((_e = product == null ? void 0 : product.variants) == null ? void 0 : _e.nodes) || []) {
       const sku = ((variant == null ? void 0 : variant.sku) || "").trim();
       if (!sku) continue;
       const variantTitle = ((variant == null ? void 0 : variant.title) || "").trim();
@@ -143,7 +148,8 @@ async function fetchProductOptionsFromShopify(admin) {
         variantId: (variant == null ? void 0 : variant.id) || "",
         title,
         vendor,
-        imageUrl: ((_e = variant == null ? void 0 : variant.image) == null ? void 0 : _e.url) || productImage || "",
+        imageUrl: ((_f = variant == null ? void 0 : variant.image) == null ? void 0 : _f.url) || productImage || "",
+        unitLabel,
         price: (variant == null ? void 0 : variant.price) === null || (variant == null ? void 0 : variant.price) === void 0 ? void 0 : Number(variant.price)
       });
     }
