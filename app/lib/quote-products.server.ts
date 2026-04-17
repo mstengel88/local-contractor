@@ -39,6 +39,9 @@ type ShopifyProductNode = {
   metafield?: {
     value?: string | null;
   } | null;
+  legacyUnitLabel?: {
+    value?: string | null;
+  } | null;
   featuredImage?: {
     url?: string | null;
   } | null;
@@ -172,6 +175,9 @@ export async function fetchProductOptionsFromShopify(admin: ShopifyAdminClient) 
           metafield(namespace: "green_hills", key: "price_unit_label") {
             value
           }
+          legacyUnitLabel: metafield(namespace: "$app", key: "price_unit_label") {
+            value
+          }
           featuredImage {
             url
           }
@@ -199,7 +205,8 @@ export async function fetchProductOptionsFromShopify(admin: ShopifyAdminClient) 
     const productTitle = product?.title || "";
     const vendor = product?.vendor || "";
     const productImage = product?.featuredImage?.url || "";
-    const unitLabel = product?.metafield?.value || "";
+    const unitLabel =
+      product?.metafield?.value || product?.legacyUnitLabel?.value || "";
 
     for (const variant of product?.variants?.nodes || []) {
       const sku = (variant?.sku || "").trim();

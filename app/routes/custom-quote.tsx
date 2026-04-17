@@ -101,7 +101,14 @@ function formatQuantityWithUnit(quantity: number, unitLabel?: string | null) {
   const normalizedQuantity = Number.isInteger(quantity)
     ? String(quantity)
     : quantity.toFixed(2).replace(/\.?0+$/, "");
-  const normalizedUnit = String(unitLabel || "").trim();
+  const baseUnit = String(unitLabel || "")
+    .trim()
+    .replace(/^per\s+/i, "")
+    .trim();
+  const normalizedUnit =
+    baseUnit && quantity !== 1 && !baseUnit.toLowerCase().endsWith("s")
+      ? `${baseUnit}s`
+      : baseUnit;
 
   return normalizedUnit
     ? `${normalizedQuantity} ${normalizedUnit}`
