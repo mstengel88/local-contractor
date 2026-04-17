@@ -107,7 +107,7 @@ function formatQuantityWithUnit(quantity: number, unitLabel?: string | null) {
     .trim();
   const normalizedUnit =
     baseUnit && quantity !== 1 && !baseUnit.toLowerCase().endsWith("s")
-      ? `${baseUnit}s`
+      ? `${baseUnit}S`
       : baseUnit;
 
   return normalizedUnit
