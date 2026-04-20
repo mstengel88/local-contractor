@@ -37,6 +37,75 @@ function splitCustomerName(name: string | null | undefined) {
   };
 }
 
+async function findOrCreateCustomerId(
+  admin: { graphql: (query: string, options?: any) => Promise<Response> },
+  input: {
+    email?: string | null;
+    firstName?: string;
+    lastName?: string;
+  },
+) {
+  const email = String(input.email || "").trim();
+  if (!email) return null;
+
+  const findResponse = await admin.graphql(
+    `#graphql
+      query FindCustomerByEmail($query: String!) {
+        customers(first: 1, query: $query) {
+          nodes {
+            id
+          }
+        }
+      }
+    `,
+    { variables: { query: `email:${email}` } },
+  );
+  const findJson = await findResponse.json();
+  const existingCustomerId = findJson?.data?.customers?.nodes?.[0]?.id;
+  if (existingCustomerId) return existingCustomerId;
+
+  const createResponse = await admin.graphql(
+    `#graphql
+      mutation CreateQuoteCustomer($input: CustomerInput!) {
+        customerCreate(input: $input) {
+          customer {
+            id
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `,
+    {
+      variables: {
+        input: {
+          email,
+          firstName: input.firstName || undefined,
+          lastName: input.lastName || undefined,
+        },
+      },
+    },
+  );
+  const createJson = await createResponse.json();
+  const userErrors = createJson?.data?.customerCreate?.userErrors || [];
+
+  if (userErrors.length > 0) {
+    throw new Error(
+      userErrors
+        .map((error: { field?: string[]; message: string }) =>
+          error.field?.length
+            ? `${error.field.join(".")}: ${error.message}`
+            : error.message,
+        )
+        .join(", "),
+    );
+  }
+
+  return createJson?.data?.customerCreate?.customer?.id || null;
+}
+
 export async function action({ request }: { request: Request }) {
   const form = await request.formData();
   const quoteId = String(form.get("quoteId") || "").trim();
@@ -68,6 +137,7 @@ export async function action({ request }: { request: Request }) {
   const products = await getProductOptionsFromSupabase();
   const lineItems = quote.line_items || [];
   const customerName = splitCustomerName(quote.customer_name);
+  let customerId: string | null = null;
 
   if (lineItems.length === 0) {
     return data({ ok: false, message: "Quote has no line items." }, { status: 400 });
@@ -114,6 +184,24 @@ export async function action({ request }: { request: Request }) {
     };
   });
 
+  try {
+    customerId = await findOrCreateCustomerId(admin, {
+      email: quote.customer_email,
+      firstName: customerName.firstName,
+      lastName: customerName.lastName,
+    });
+  } catch (error: any) {
+    return data(
+      {
+        ok: false,
+        message:
+          error?.message ||
+          "Could not attach a Shopify customer to this draft order.",
+      },
+      { status: 400 },
+    );
+  }
+
   const response = await admin.graphql(
     `#graphql
       mutation draftOrderCreate($input: DraftOrderInput!) {
@@ -142,6 +230,7 @@ export async function action({ request }: { request: Request }) {
             .filter(Boolean)
             .join("\n"),
           email: quote.customer_email || undefined,
+          customerId: customerId || undefined,
           tags: ["custom-quote", buildQuoteTag(quote.id)],
           shippingAddress: {
             firstName: customerName.firstName,

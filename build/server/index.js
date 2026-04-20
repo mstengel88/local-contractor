@@ -5532,6 +5532,57 @@ function splitCustomerName(name) {
     lastName: parts.at(-1)
   };
 }
+async function findOrCreateCustomerId(admin, input) {
+  var _a2, _b, _c, _d, _e, _f, _g, _h, _i;
+  const email = String(input.email || "").trim();
+  if (!email) return null;
+  const findResponse = await admin.graphql(`#graphql
+      query FindCustomerByEmail($query: String!) {
+        customers(first: 1, query: $query) {
+          nodes {
+            id
+          }
+        }
+      }
+    `, {
+    variables: {
+      query: `email:${email}`
+    }
+  });
+  const findJson = await findResponse.json();
+  const existingCustomerId = (_d = (_c = (_b = (_a2 = findJson == null ? void 0 : findJson.data) == null ? void 0 : _a2.customers) == null ? void 0 : _b.nodes) == null ? void 0 : _c[0]) == null ? void 0 : _d.id;
+  if (existingCustomerId) return existingCustomerId;
+  const createResponse = await admin.graphql(`#graphql
+      mutation CreateQuoteCustomer($input: CustomerInput!) {
+        customerCreate(input: $input) {
+          customer {
+            id
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `, {
+    variables: {
+      input: {
+        email,
+        firstName: input.firstName || void 0,
+        lastName: input.lastName || void 0
+      }
+    }
+  });
+  const createJson = await createResponse.json();
+  const userErrors = ((_f = (_e = createJson == null ? void 0 : createJson.data) == null ? void 0 : _e.customerCreate) == null ? void 0 : _f.userErrors) || [];
+  if (userErrors.length > 0) {
+    throw new Error(userErrors.map((error) => {
+      var _a3;
+      return ((_a3 = error.field) == null ? void 0 : _a3.length) ? `${error.field.join(".")}: ${error.message}` : error.message;
+    }).join(", "));
+  }
+  return ((_i = (_h = (_g = createJson == null ? void 0 : createJson.data) == null ? void 0 : _g.customerCreate) == null ? void 0 : _h.customer) == null ? void 0 : _i.id) || null;
+}
 async function action$5({
   request
 }) {
@@ -5570,6 +5621,7 @@ async function action$5({
   const products = await getProductOptionsFromSupabase();
   const lineItems = quote.line_items || [];
   const customerName = splitCustomerName(quote.customer_name);
+  let customerId = null;
   if (lineItems.length === 0) {
     return data({
       ok: false,
@@ -5612,6 +5664,20 @@ async function action$5({
       }]
     };
   });
+  try {
+    customerId = await findOrCreateCustomerId(admin, {
+      email: quote.customer_email,
+      firstName: customerName.firstName,
+      lastName: customerName.lastName
+    });
+  } catch (error) {
+    return data({
+      ok: false,
+      message: (error == null ? void 0 : error.message) || "Could not attach a Shopify customer to this draft order."
+    }, {
+      status: 400
+    });
+  }
   const response = await admin.graphql(`#graphql
       mutation draftOrderCreate($input: DraftOrderInput!) {
         draftOrderCreate(input: $input) {
@@ -5632,6 +5698,7 @@ async function action$5({
       input: {
         note: [`Quote ID: ${quote.id}`, quote.summary ? `Summary: ${quote.summary}` : null, quote.description ? `Notes: ${quote.description}` : null].filter(Boolean).join("\n"),
         email: quote.customer_email || void 0,
+        customerId: customerId || void 0,
         tags: ["custom-quote", buildQuoteTag(quote.id)],
         shippingAddress: {
           firstName: customerName.firstName,
