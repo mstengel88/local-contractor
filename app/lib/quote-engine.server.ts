@@ -32,6 +32,7 @@ type QuoteInput = {
   city?: string;
   address1?: string;
   address2?: string;
+  ratePerMinute?: number;
   items: QuoteItem[];
 };
 
@@ -407,6 +408,12 @@ export async function getQuote(input: QuoteInput): Promise<QuoteResult> {
   const materialRules = await getMaterialRules();
   const defaultYard = await getActiveOriginAddress();
   const shippableItems = input.items.filter((item) => item.requiresShipping !== false);
+  const ratePerMinute =
+    typeof input.ratePerMinute === "number" &&
+    Number.isFinite(input.ratePerMinute) &&
+    input.ratePerMinute > 0
+      ? input.ratePerMinute
+      : RATE_PER_MINUTE;
 
   const groupedItems: Record<
     string,
@@ -519,7 +526,7 @@ export async function getQuote(input: QuoteInput): Promise<QuoteResult> {
       maxOneWayMiles = oneWayMilesForRadiusCheck;
     }
 
-    let groupCostDollars = totalLoopMinutes * RATE_PER_MINUTE * trucksForGroup;
+    let groupCostDollars = totalLoopMinutes * ratePerMinute * trucksForGroup;
 
     if (settings.enableRemoteSurcharge && input.postalCode.startsWith("9")) {
       groupCostDollars += 3;
@@ -543,7 +550,7 @@ export async function getQuote(input: QuoteInput): Promise<QuoteResult> {
       maxOneWayMiles = yardToCustomer.miles;
 
       let fallbackDollars =
-        (yardToCustomer.minutes + customerToYard.minutes) * RATE_PER_MINUTE;
+        (yardToCustomer.minutes + customerToYard.minutes) * ratePerMinute;
 
       if (settings.enableRemoteSurcharge && input.postalCode.startsWith("9")) {
         fallbackDollars += 3;

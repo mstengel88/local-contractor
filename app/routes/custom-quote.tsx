@@ -207,6 +207,7 @@ export async function action({ request }: any) {
   const contractorTier = normalizeContractorTier(form.get("contractorTier"));
   const pricingLabel = getPricingLabel(quoteAudience, contractorTier);
   const customDeliveryAmountInput = String(form.get("customDeliveryAmount") || "").trim();
+  const customRatePerMinuteInput = String(form.get("customRatePerMinute") || "").trim();
   const customTaxRateInput = String(form.get("customTaxRate") || "").trim();
   const customNotes = String(form.get("customNotes") || "").trim();
   const customShippingQuantityInput = String(form.get("customShippingQuantity") || "").trim();
@@ -215,6 +216,7 @@ export async function action({ request }: any) {
     : "miles";
   const customShippingRateInput = String(form.get("customShippingRate") || "").trim();
   const customDeliveryAmountValue = Number(customDeliveryAmountInput);
+  const customRatePerMinuteValue = Number(customRatePerMinuteInput);
   const customTaxRateValue = Number(customTaxRateInput);
   const customShippingQuantityValue = Number(customShippingQuantityInput);
   const customShippingRateValue = Number(customShippingRateInput);
@@ -224,6 +226,13 @@ export async function action({ request }: any) {
     customShippingRateInput !== "" &&
     Number.isFinite(customShippingQuantityValue) &&
     Number.isFinite(customShippingRateValue);
+  const customRatePerMinute =
+    quoteAudience === "custom" &&
+    customRatePerMinuteInput !== "" &&
+    Number.isFinite(customRatePerMinuteValue) &&
+    customRatePerMinuteValue > 0
+      ? customRatePerMinuteValue
+      : undefined;
   const rawLines = JSON.parse(String(form.get("linesJson") || "[]"));
 
   const selectedProducts = rawLines
@@ -281,6 +290,7 @@ export async function action({ request }: any) {
         quoteAudience,
         contractorTier,
         customDeliveryAmount: customDeliveryAmountInput,
+        customRatePerMinute: customRatePerMinuteInput,
         customTaxRate: customTaxRateInput,
         customShippingQuantity: customShippingQuantityInput,
         customShippingUnit,
@@ -307,6 +317,7 @@ export async function action({ request }: any) {
         quoteAudience,
         contractorTier,
         customDeliveryAmount: customDeliveryAmountInput,
+        customRatePerMinute: customRatePerMinuteInput,
         customTaxRate: customTaxRateInput,
         customShippingQuantity: customShippingQuantityInput,
         customShippingUnit,
@@ -328,6 +339,7 @@ export async function action({ request }: any) {
     city,
     address1,
     address2,
+    ratePerMinute: customRatePerMinute,
     items: selectedProducts.map((item) => ({
       sku: item.sku,
       quantity: item.quantity,
@@ -440,6 +452,7 @@ export async function action({ request }: any) {
     quoteAudience,
     contractorTier,
     customDeliveryAmount: customDeliveryAmountInput,
+    customRatePerMinute: customRatePerMinuteInput,
     customTaxRate: customTaxRateInput,
     customShippingQuantity: customShippingQuantityInput,
     customShippingUnit,
@@ -1480,7 +1493,7 @@ export default function PublicCustomQuotePage() {
             <div style={{ ...styles.card, padding: isMobile ? "18px" : styles.card.padding }}>
               <h2 style={styles.sectionTitle}>Custom Adjustments</h2>
               <p style={styles.sectionSub}>
-                Override delivery, tax, and the customer-facing quote details before
+                Override delivery, minute charge, tax, and the customer-facing quote details before
                 calculating or saving.
               </p>
 
@@ -1490,7 +1503,7 @@ export default function PublicCustomQuotePage() {
                     display: "grid",
                     gridTemplateColumns: isMobile
                       ? "minmax(0, 1fr)"
-                      : "180px 180px",
+                      : "180px 180px 180px",
                     gap: "14px",
                   }}
                 >
@@ -1503,6 +1516,19 @@ export default function PublicCustomQuotePage() {
                       step="0.01"
                       defaultValue={actionData?.customDeliveryAmount || ""}
                       placeholder="Use calculated delivery"
+                      style={styles.input}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={styles.label}>Minute Charge</label>
+                    <input
+                      type="number"
+                      name="customRatePerMinute"
+                      min="0"
+                      step="0.01"
+                      defaultValue={actionData?.customRatePerMinute || ""}
+                      placeholder="Default 2.08"
                       style={styles.input}
                     />
                   </div>
