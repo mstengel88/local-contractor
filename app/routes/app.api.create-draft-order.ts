@@ -22,6 +22,21 @@ function buildQuoteTag(quoteId: string) {
   return `quote:${normalized.slice(0, 34)}`;
 }
 
+function splitCustomerName(name: string | null | undefined) {
+  const normalized = String(name || "").trim();
+  if (!normalized) return { firstName: undefined, lastName: undefined };
+
+  const parts = normalized.split(/\s+/);
+  if (parts.length === 1) {
+    return { firstName: parts[0], lastName: undefined };
+  }
+
+  return {
+    firstName: parts.slice(0, -1).join(" "),
+    lastName: parts.at(-1),
+  };
+}
+
 export async function action({ request }: { request: Request }) {
   const form = await request.formData();
   const quoteId = String(form.get("quoteId") || "").trim();
@@ -52,6 +67,7 @@ export async function action({ request }: { request: Request }) {
 
   const products = await getProductOptionsFromSupabase();
   const lineItems = quote.line_items || [];
+  const customerName = splitCustomerName(quote.customer_name);
 
   if (lineItems.length === 0) {
     return data({ ok: false, message: "Quote has no line items." }, { status: 400 });
@@ -128,6 +144,19 @@ export async function action({ request }: { request: Request }) {
           email: quote.customer_email || undefined,
           tags: ["custom-quote", buildQuoteTag(quote.id)],
           shippingAddress: {
+            firstName: customerName.firstName,
+            lastName: customerName.lastName,
+            address1: quote.address1,
+            address2: quote.address2 || undefined,
+            city: quote.city,
+            province: quote.province,
+            country: quote.country,
+            zip: quote.postal_code,
+            phone: quote.customer_phone || undefined,
+          },
+          billingAddress: {
+            firstName: customerName.firstName,
+            lastName: customerName.lastName,
             address1: quote.address1,
             address2: quote.address2 || undefined,
             city: quote.city,
