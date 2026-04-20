@@ -213,12 +213,15 @@ export default function QuoteReviewPage() {
   const location = useLocation();
   const draftOrderFetcher = useFetcher<any>();
   const deleteQuoteFetcher = useFetcher<any>();
+  const updateQuoteFetcher = useFetcher<any>();
   const isEmbeddedRoute = location.pathname.startsWith("/app/");
   const urlParams = new URLSearchParams(location.search);
   const requestedQuoteId = urlParams.get("quote");
 
   const allowed = actionData?.allowed ?? loaderData.allowed;
-  const quotes = ((actionData?.quotes || loaderData.quotes) || []) as SavedCustomQuote[];
+  const rawQuotes = ((actionData?.quotes || loaderData.quotes) || []) as SavedCustomQuote[];
+  const [editedQuotesById, setEditedQuotesById] = useState<Record<string, SavedCustomQuote>>({});
+  const quotes = rawQuotes.map((quote) => editedQuotesById[quote.id] || quote);
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(
@@ -236,8 +239,12 @@ export default function QuoteReviewPage() {
   const deleteQuoteAction = isEmbeddedRoute
     ? `/app/api/delete-quote${location.search || ""}`
     : `/api/delete-quote${location.search || ""}`;
+  const updateQuoteAction = isEmbeddedRoute
+    ? `/app/api/update-quote${location.search || ""}`
+    : `/api/update-quote${location.search || ""}`;
   const quoteToolHref = isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote";
   const mobileDashboardHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
+  const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
 
   const indexedQuotes = useMemo(
     () =>
@@ -325,6 +332,18 @@ export default function QuoteReviewPage() {
       );
     }
   }, [deleteQuoteFetcher.data]);
+
+  useEffect(() => {
+    if (updateQuoteFetcher.data?.ok && updateQuoteFetcher.data?.quote) {
+      const quote = updateQuoteFetcher.data.quote as SavedCustomQuote;
+      setEditedQuotesById((current) => ({
+        ...current,
+        [quote.id]: quote,
+      }));
+      setSelectedQuoteId(quote.id);
+      setEditingQuoteId(null);
+    }
+  }, [updateQuoteFetcher.data]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -545,6 +564,18 @@ export default function QuoteReviewPage() {
                       ) : null}
                     </draftOrderFetcher.Form>
 
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditingQuoteId((current) =>
+                          current === selectedQuote.id ? null : selectedQuote.id,
+                        )
+                      }
+                      style={mobileActionButtonStyle}
+                    >
+                      {editingQuoteId === selectedQuote.id ? "Cancel Edit" : "Edit Quote"}
+                    </button>
+
                     <deleteQuoteFetcher.Form
                       method="post"
                       action={deleteQuoteAction}
@@ -586,6 +617,148 @@ export default function QuoteReviewPage() {
                   >
                     {deleteQuoteFetcher.data.message}
                   </div>
+                ) : null}
+
+                {updateQuoteFetcher.data?.message ? (
+                  <div
+                    style={{
+                      ...(updateQuoteFetcher.data.ok ? styles.statusOk : styles.statusErr),
+                      fontSize: isMobile ? 16 : undefined,
+                      fontWeight: isMobile ? 700 : undefined,
+                    }}
+                  >
+                    {updateQuoteFetcher.data.message}
+                  </div>
+                ) : null}
+
+                {editingQuoteId === selectedQuote.id ? (
+                  <updateQuoteFetcher.Form
+                    method="post"
+                    action={updateQuoteAction}
+                    style={{
+                      marginTop: 20,
+                      display: "grid",
+                      gap: 16,
+                      padding: 16,
+                      borderRadius: 18,
+                      border: "1px solid rgba(45, 212, 191, 0.35)",
+                      background: "rgba(20, 184, 166, 0.08)",
+                    }}
+                  >
+                    <input type="hidden" name="quoteId" value={selectedQuote.id} />
+                    <h3 style={{ margin: 0 }}>Edit Saved Quote</h3>
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: isMobile
+                          ? "minmax(0, 1fr)"
+                          : "repeat(3, minmax(0, 1fr))",
+                        gap: 12,
+                      }}
+                    >
+                      <div>
+                        <label style={styles.label}>Customer Name</label>
+                        <input name="customerName" defaultValue={selectedQuote.customer_name || ""} style={styles.input} />
+                      </div>
+                      <div>
+                        <label style={styles.label}>Email</label>
+                        <input name="customerEmail" defaultValue={selectedQuote.customer_email || ""} style={styles.input} />
+                      </div>
+                      <div>
+                        <label style={styles.label}>Phone</label>
+                        <input name="customerPhone" defaultValue={selectedQuote.customer_phone || ""} style={styles.input} />
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: isMobile
+                          ? "minmax(0, 1fr)"
+                          : "1.4fr 0.9fr 0.5fr 0.5fr 0.5fr",
+                        gap: 12,
+                      }}
+                    >
+                      <div>
+                        <label style={styles.label}>Address 1</label>
+                        <input name="address1" defaultValue={selectedQuote.address1 || ""} style={styles.input} />
+                      </div>
+                      <div>
+                        <label style={styles.label}>City</label>
+                        <input name="city" defaultValue={selectedQuote.city || ""} style={styles.input} />
+                      </div>
+                      <div>
+                        <label style={styles.label}>State</label>
+                        <input name="province" defaultValue={selectedQuote.province || ""} style={styles.input} />
+                      </div>
+                      <div>
+                        <label style={styles.label}>ZIP</label>
+                        <input name="postalCode" defaultValue={selectedQuote.postal_code || ""} style={styles.input} />
+                      </div>
+                      <div>
+                        <label style={styles.label}>Country</label>
+                        <input name="country" defaultValue={selectedQuote.country || "US"} style={styles.input} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={styles.label}>Address 2</label>
+                      <input name="address2" defaultValue={selectedQuote.address2 || ""} style={styles.input} />
+                    </div>
+
+                    <div style={{ display: "grid", gap: 10 }}>
+                      <h4 style={{ margin: 0 }}>Line Quantities</h4>
+                      {(selectedQuote.line_items || []).map((line, index) => (
+                        <div
+                          key={`${line.sku}-${index}`}
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "minmax(0, 1fr) 130px",
+                            gap: 12,
+                            alignItems: "end",
+                            padding: 12,
+                            borderRadius: 14,
+                            border: "1px solid rgba(51, 65, 85, 0.9)",
+                            background: "rgba(2, 6, 23, 0.42)",
+                          }}
+                        >
+                          <div style={{ overflowWrap: "anywhere" }}>
+                            <div style={{ fontWeight: 800 }}>{line.title}</div>
+                            <div style={{ color: "#94a3b8", marginTop: 4, fontSize: 13 }}>
+                              {line.sku} · Unit ${Number(line.price || 0).toFixed(2)}
+                            </div>
+                          </div>
+                          <div>
+                            <label style={styles.label}>Quantity</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              name={`lineQuantity::${index}`}
+                              defaultValue={line.quantity}
+                              style={styles.input}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                      <button type="submit" style={styles.buttonPrimary}>
+                        {updateQuoteFetcher.state === "submitting"
+                          ? "Saving Changes..."
+                          : "Save Changes"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingQuoteId(null)}
+                        style={styles.buttonGhost}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </updateQuoteFetcher.Form>
                 ) : null}
 
                 <div
