@@ -143,6 +143,11 @@ export async function updateCustomQuote(
     postalCode: string;
     country: string;
     quoteTotalCents: number;
+    serviceName?: string;
+    shippingDetails?: string | null;
+    description?: string;
+    eta?: string;
+    summary?: string;
     sourceBreakdown: any[];
     lineItems: any[];
   },
@@ -160,6 +165,11 @@ export async function updateCustomQuote(
       postal_code: input.postalCode,
       country: input.country,
       quote_total_cents: input.quoteTotalCents,
+      service_name: input.serviceName || null,
+      shipping_details: input.shippingDetails || null,
+      description: input.description || null,
+      eta: input.eta || null,
+      summary: input.summary || null,
       source_breakdown: input.sourceBreakdown,
       line_items: input.lineItems,
     })

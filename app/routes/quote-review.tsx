@@ -573,7 +573,7 @@ export default function QuoteReviewPage() {
                       }
                       style={mobileActionButtonStyle}
                     >
-                      {editingQuoteId === selectedQuote.id ? "Cancel Edit" : "Edit Quote"}
+                      {editingQuoteId === selectedQuote.id ? "Cancel Regenerate" : "Edit / Regenerate"}
                     </button>
 
                     <deleteQuoteFetcher.Form
@@ -646,7 +646,11 @@ export default function QuoteReviewPage() {
                     }}
                   >
                     <input type="hidden" name="quoteId" value={selectedQuote.id} />
-                    <h3 style={{ margin: 0 }}>Edit Saved Quote</h3>
+                    <h3 style={{ margin: 0 }}>Edit And Regenerate Quote</h3>
+                    <div style={{ color: "#93c5fd", fontSize: 13, lineHeight: 1.5 }}>
+                      Updating quantities or address will recalculate delivery, truck-load logic,
+                      tax, and the saved total.
+                    </div>
 
                     <div
                       style={{
@@ -747,8 +751,8 @@ export default function QuoteReviewPage() {
                     <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                       <button type="submit" style={styles.buttonPrimary}>
                         {updateQuoteFetcher.state === "submitting"
-                          ? "Saving Changes..."
-                          : "Save Changes"}
+                          ? "Regenerating..."
+                          : "Regenerate Quote"}
                       </button>
                       <button
                         type="button"

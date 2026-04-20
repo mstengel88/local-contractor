@@ -5,6 +5,7 @@ import {
 } from "../lib/custom-quotes.server";
 import { hasAdminQuoteAccess } from "../lib/admin-quote-auth.server";
 import { authenticate } from "../shopify.server";
+import { getQuote } from "../lib/quote-engine.server";
 
 function normalizeQuantity(value: FormDataEntryValue | null) {
   const quantity = Number(value || 0);
@@ -66,16 +67,6 @@ export async function action({ request }: { request: Request }) {
   }
 
   const oldLineItems = existing.line_items || [];
-  const oldProductsSubtotalCents = oldLineItems.reduce(
-    (sum, line) =>
-      sum + Math.round(Number(line.price || 0) * Number(line.quantity || 0) * 100),
-    0,
-  );
-  const nonProductCents = Math.max(
-    0,
-    Number(existing.quote_total_cents || 0) - oldProductsSubtotalCents,
-  );
-
   const lineItems = oldLineItems
     .map((line, index) => ({
       ...line,
@@ -90,30 +81,71 @@ export async function action({ request }: { request: Request }) {
     );
   }
 
-  const productsSubtotalCents = lineItems.reduce(
-    (sum, line) =>
-      sum + Math.round(Number(line.price || 0) * Number(line.quantity || 0) * 100),
+  const customerName = String(form.get("customerName") || "").trim();
+  const customerEmail = String(form.get("customerEmail") || "").trim();
+  const customerPhone = String(form.get("customerPhone") || "").trim();
+  const address1 = String(form.get("address1") || "").trim();
+  const address2 = String(form.get("address2") || "").trim();
+  const city = String(form.get("city") || "").trim();
+  const province = String(form.get("province") || "").trim();
+  const postalCode = String(form.get("postalCode") || "").trim();
+  const country = String(form.get("country") || "US").trim() || "US";
+
+  if (!address1 || !city || !province || !postalCode) {
+    return data(
+      { ok: false, message: "Address 1, city, state, and ZIP are required to regenerate." },
+      { status: 400 },
+    );
+  }
+
+  const productsSubtotal = lineItems.reduce(
+    (sum, line) => sum + Number(line.price || 0) * Number(line.quantity || 0),
     0,
   );
+  const deliveryQuote = await getQuote({
+    shop: existing.shop || process.env.SHOPIFY_STORE_DOMAIN || "darfaz-2e.myshopify.com",
+    postalCode,
+    country,
+    province,
+    city,
+    address1,
+    address2,
+    items: lineItems.map((line) => ({
+      sku: line.sku,
+      quantity: Number(line.quantity || 0),
+      requiresShipping: true,
+      pickupVendor: line.vendor,
+      price: Number(line.price || 0),
+    })),
+  });
+  const deliveryAmount = Number(deliveryQuote.cents || 0) / 100;
+  const taxRate = Number(process.env.QUOTE_TAX_RATE || "0");
+  const taxAmount = (productsSubtotal + deliveryAmount) * taxRate;
+  const totalAmount = productsSubtotal + deliveryAmount + taxAmount;
 
   const updatedQuote = await updateCustomQuote(quoteId, {
-    customerName: String(form.get("customerName") || "").trim(),
-    customerEmail: String(form.get("customerEmail") || "").trim(),
-    customerPhone: String(form.get("customerPhone") || "").trim(),
-    address1: String(form.get("address1") || "").trim(),
-    address2: String(form.get("address2") || "").trim(),
-    city: String(form.get("city") || "").trim(),
-    province: String(form.get("province") || "").trim(),
-    postalCode: String(form.get("postalCode") || "").trim(),
-    country: String(form.get("country") || "US").trim() || "US",
-    quoteTotalCents: productsSubtotalCents + nonProductCents,
+    customerName,
+    customerEmail,
+    customerPhone,
+    address1,
+    address2,
+    city,
+    province,
+    postalCode,
+    country,
+    quoteTotalCents: Math.round(totalAmount * 100),
+    serviceName: deliveryQuote.serviceName,
+    shippingDetails: null,
+    description: deliveryQuote.description,
+    eta: deliveryQuote.eta,
+    summary: deliveryQuote.summary,
     sourceBreakdown: buildSourceBreakdown(lineItems),
     lineItems,
   });
 
   return data({
     ok: true,
-    message: "Quote updated.",
+    message: "Quote regenerated.",
     quote: updatedQuote,
   });
 }
