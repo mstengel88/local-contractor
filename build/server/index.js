@@ -955,6 +955,9 @@ function formatQuantityWithUnit(quantity, unitLabel) {
   const normalizedUnit = baseUnit && quantity !== 1 && !baseUnit.toLowerCase().endsWith("s") ? `${baseUnit}S` : baseUnit;
   return normalizedUnit ? `${normalizedQuantity} ${normalizedUnit}` : `Qty ${normalizedQuantity}`;
 }
+function getBrowserGoogleMapsApiKey() {
+  return process.env.GOOGLE_MAPS_BROWSER_API_KEY || process.env.GOOGLE_MAPS_API_KEY || "";
+}
 async function loader$7({
   request
 }) {
@@ -975,7 +978,7 @@ async function loader$7({
     allowed,
     products,
     recentQuotes,
-    googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || ""
+    googleMapsApiKey: getBrowserGoogleMapsApiKey()
   });
 }
 async function action$e({
@@ -992,7 +995,7 @@ async function action$e({
         loginError: "Invalid password",
         products: [],
         recentQuotes: [],
-        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || ""
+        googleMapsApiKey: getBrowserGoogleMapsApiKey()
       }, {
         status: 401
       });
@@ -1003,7 +1006,7 @@ async function action$e({
       allowed: true,
       products: products2,
       recentQuotes: recentQuotes2,
-      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || ""
+      googleMapsApiKey: getBrowserGoogleMapsApiKey()
     }, {
       headers: {
         "Set-Cookie": await adminQuoteCookie.serialize("ok")
@@ -1017,7 +1020,7 @@ async function action$e({
       loginError: "Please log in",
       products: [],
       recentQuotes: [],
-      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || ""
+      googleMapsApiKey: getBrowserGoogleMapsApiKey()
     }, {
       status: 401
     });
@@ -1097,7 +1100,7 @@ async function action$e({
       customShippingUnit,
       customShippingRate: customShippingRateInput,
       customNotes,
-      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || ""
+      googleMapsApiKey: getBrowserGoogleMapsApiKey()
     }, {
       status: 400
     });
@@ -1129,7 +1132,7 @@ async function action$e({
       customShippingUnit,
       customShippingRate: customShippingRateInput,
       customNotes,
-      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || ""
+      googleMapsApiKey: getBrowserGoogleMapsApiKey()
     }, {
       status: 400
     });
@@ -1213,7 +1216,7 @@ async function action$e({
       postalCode,
       country
     },
-    googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
+    googleMapsApiKey: getBrowserGoogleMapsApiKey(),
     savedQuoteId,
     selectedLines: selectedProducts,
     sourceBreakdown,
