@@ -1,4 +1,4 @@
-import { type FormEvent, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Form, useActionData, useLoaderData, useLocation } from "react-router";
 import { data, redirect } from "react-router";
 import {
@@ -6,23 +6,14 @@ import {
   getAdminQuotePassword,
   hasAdminQuoteAccess,
 } from "../lib/admin-quote-auth.server";
-
-type DispatchOrder = {
-  id: string;
-  source: "email" | "manual";
-  customer: string;
-  contact: string;
-  address: string;
-  city: string;
-  material: string;
-  quantity: string;
-  unit: string;
-  requestedWindow: string;
-  truckPreference?: string;
-  notes: string;
-  status: "new" | "scheduled" | "hold";
-  assignedRouteId?: string;
-};
+import {
+  createDispatchOrder,
+  ensureSeedDispatchOrders,
+  getDispatchOrders,
+  type DispatchOrder,
+  seedDispatchOrders,
+  updateDispatchOrder,
+} from "../lib/dispatch.server";
 
 type DispatchRoute = {
   id: string;
@@ -68,68 +59,6 @@ const seedRoutes: DispatchRoute[] = [
   },
 ];
 
-const seedOrders: DispatchOrder[] = [
-  {
-    id: "D-24081",
-    source: "email",
-    customer: "Oak Creek Plaza",
-    contact: "shipping@oakcreekplaza.com",
-    address: "2543 W Applebrook Lane",
-    city: "Oak Creek, WI",
-    material: "Coarse Torpedo Sand",
-    quantity: "12",
-    unit: "TonS",
-    requestedWindow: "Today 9:00a - 11:00a",
-    notes: "Forklift on site. Call before arrival.",
-    status: "new",
-  },
-  {
-    id: "D-24082",
-    source: "email",
-    customer: "Merton Build Group",
-    contact: "dispatch@mertonbuild.com",
-    address: "N67W28345 Silver Spring Dr",
-    city: "Sussex, WI",
-    material: "Premium Mulch",
-    quantity: "22",
-    unit: "YardS",
-    requestedWindow: "Today 10:30a - 1:00p",
-    truckPreference: "Walking floor",
-    notes: "Back alley drop. Need photo after unload.",
-    status: "scheduled",
-    assignedRouteId: "route-west",
-  },
-  {
-    id: "D-24083",
-    source: "manual",
-    customer: "Village of Men Falls",
-    contact: "yard@menfalls.gov",
-    address: "W156N8480 Pilgrim Rd",
-    city: "Menomonee Falls, WI",
-    material: "Road Salt",
-    quantity: "8",
-    unit: "TonS",
-    requestedWindow: "Tomorrow 7:00a - 9:00a",
-    notes: "Municipal account. Ticket copy required.",
-    status: "hold",
-  },
-  {
-    id: "D-24084",
-    source: "email",
-    customer: "Lakeview Landscape",
-    contact: "ops@lakeviewlandscape.com",
-    address: "2211 Scenic Ridge Rd",
-    city: "Delafield, WI",
-    material: "Screened Topsoil",
-    quantity: "16",
-    unit: "YardS",
-    requestedWindow: "Today 1:00p - 3:00p",
-    notes: "Split delivery with second stop if needed.",
-    status: "scheduled",
-    assignedRouteId: "route-north",
-  },
-];
-
 function metricCard(label: string, value: string, accent: string) {
   return (
     <div
@@ -141,19 +70,57 @@ function metricCard(label: string, value: string, accent: string) {
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
       }}
     >
-      <div style={{ color: "#94a3b8", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+      <div
+        style={{
+          color: "#94a3b8",
+          fontSize: 12,
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+        }}
+      >
         {label}
       </div>
-      <div style={{ marginTop: 8, fontSize: 28, fontWeight: 800, color: "#f8fafc" }}>
+      <div
+        style={{
+          marginTop: 8,
+          fontSize: 28,
+          fontWeight: 800,
+          color: "#f8fafc",
+        }}
+      >
         {value}
       </div>
     </div>
   );
 }
 
+function getDispatchPath(url: URL) {
+  return url.pathname.startsWith("/app/") ? "/app/dispatch" : "/dispatch";
+}
+
+async function loadDispatchState() {
+  try {
+    await ensureSeedDispatchOrders();
+    return {
+      orders: await getDispatchOrders(),
+      storageReady: true,
+      storageError: null,
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unable to load dispatch storage";
+    console.error("[DISPATCH STORAGE ERROR]", message);
+    return {
+      orders: seedDispatchOrders,
+      storageReady: false,
+      storageError: message,
+    };
+  }
+}
+
 export async function loader({ request }: any) {
   const url = new URL(request.url);
-  const dispatchPath = url.pathname.startsWith("/app/") ? "/app/dispatch" : "/dispatch";
+  const dispatchPath = getDispatchPath(url);
 
   if (url.searchParams.get("logout") === "1") {
     return redirect(dispatchPath, {
@@ -163,35 +130,185 @@ export async function loader({ request }: any) {
     });
   }
 
-  return data({ allowed: await hasAdminQuoteAccess(request) });
+  const allowed = await hasAdminQuoteAccess(request);
+  if (!allowed) {
+    return data({ allowed: false, orders: [], storageReady: false, storageError: null });
+  }
+
+  const dispatchState = await loadDispatchState();
+
+  return data({
+    allowed: true,
+    ...dispatchState,
+  });
 }
 
 export async function action({ request }: any) {
   const form = await request.formData();
   const intent = String(form.get("intent") || "");
 
-  if (intent !== "login") {
-    return data({ allowed: false, loginError: "Invalid request" }, { status: 400 });
+  if (intent === "login") {
+    const password = String(form.get("password") || "");
+    const expected = getAdminQuotePassword();
+
+    if (!expected || password !== expected) {
+      return data(
+        { allowed: false, loginError: "Invalid password", orders: [] },
+        { status: 401 },
+      );
+    }
+
+    const dispatchState = await loadDispatchState();
+
+    return data(
+      {
+        allowed: true,
+        loginError: null,
+        ...dispatchState,
+      },
+      {
+        headers: {
+          "Set-Cookie": await adminQuoteCookie.serialize("ok"),
+        },
+      },
+    );
   }
 
-  const password = String(form.get("password") || "");
-  const expected = getAdminQuotePassword();
-
-  if (!expected || password !== expected) {
+  const allowed = await hasAdminQuoteAccess(request);
+  if (!allowed) {
     return data(
-      { allowed: false, loginError: "Invalid password" },
+      { allowed: false, loginError: "Please log in", orders: [] },
       { status: 401 },
     );
   }
 
-  return data(
-    { allowed: true, loginError: null },
-    {
-      headers: {
-        "Set-Cookie": await adminQuoteCookie.serialize("ok"),
+  try {
+    if (intent === "create-order") {
+      const customer = String(form.get("customer") || "").trim();
+      const address = String(form.get("address") || "").trim();
+      const material = String(form.get("material") || "").trim();
+
+      if (!customer || !address || !material) {
+        const dispatchState = await loadDispatchState();
+        return data(
+          {
+            allowed: true,
+            ok: false,
+            message: "Customer, jobsite address, and material are required.",
+            ...dispatchState,
+          },
+          { status: 400 },
+        );
+      }
+
+      const created = await createDispatchOrder({
+        source: "manual",
+        customer,
+        contact: String(form.get("contact") || "").trim(),
+        address,
+        city: String(form.get("city") || "").trim(),
+        material,
+        quantity: String(form.get("quantity") || "").trim(),
+        unit: String(form.get("unit") || "TonS").trim() || "TonS",
+        requestedWindow: String(form.get("requestedWindow") || "").trim(),
+        truckPreference: String(form.get("truckPreference") || "").trim(),
+        notes: String(form.get("notes") || "").trim(),
+      });
+
+      const dispatchState = await loadDispatchState();
+
+      return data({
+        allowed: true,
+        ok: true,
+        message: `Added ${created.customer} to the dispatch queue.`,
+        selectedOrderId: created.id,
+        ...dispatchState,
+      });
+    }
+
+    if (intent === "assign-order") {
+      const orderId = String(form.get("orderId") || "").trim();
+      const routeId = String(form.get("routeId") || "").trim();
+
+      if (!orderId || !routeId) {
+        throw new Error("Missing order or route assignment details");
+      }
+
+      await updateDispatchOrder(orderId, {
+        status: "scheduled",
+        assignedRouteId: routeId,
+      });
+
+      const dispatchState = await loadDispatchState();
+
+      return data({
+        allowed: true,
+        ok: true,
+        message: "Order assigned to route.",
+        selectedOrderId: orderId,
+        ...dispatchState,
+      });
+    }
+
+    if (intent === "hold-order") {
+      const orderId = String(form.get("orderId") || "").trim();
+      if (!orderId) throw new Error("Missing order selection");
+
+      await updateDispatchOrder(orderId, {
+        status: "hold",
+        assignedRouteId: null,
+      });
+
+      const dispatchState = await loadDispatchState();
+
+      return data({
+        allowed: true,
+        ok: true,
+        message: "Order moved to hold.",
+        selectedOrderId: orderId,
+        ...dispatchState,
+      });
+    }
+
+    if (intent === "unassign-order") {
+      const orderId = String(form.get("orderId") || "").trim();
+      if (!orderId) throw new Error("Missing order selection");
+
+      await updateDispatchOrder(orderId, {
+        status: "new",
+        assignedRouteId: null,
+      });
+
+      const dispatchState = await loadDispatchState();
+
+      return data({
+        allowed: true,
+        ok: true,
+        message: "Order moved back to inbox.",
+        selectedOrderId: orderId,
+        ...dispatchState,
+      });
+    }
+
+    return data(
+      { allowed: true, ok: false, message: "Unknown dispatch action." },
+      { status: 400 },
+    );
+  } catch (error) {
+    const dispatchState = await loadDispatchState();
+    const message =
+      error instanceof Error ? error.message : "Dispatch action failed";
+
+    return data(
+      {
+        allowed: true,
+        ok: false,
+        message,
+        ...dispatchState,
       },
-    },
-  );
+      { status: 500 },
+    );
+  }
 }
 
 export default function DispatchPage() {
@@ -205,21 +322,12 @@ export default function DispatchPage() {
   const mobileHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
   const logoutHref = `${dispatchHref}?logout=1`;
+  const orders = (actionData?.orders ?? loaderData.orders ?? []) as DispatchOrder[];
+  const storageReady = actionData?.storageReady ?? loaderData.storageReady ?? false;
+  const storageError = actionData?.storageError ?? loaderData.storageError ?? null;
 
-  const [orders, setOrders] = useState<DispatchOrder[]>(seedOrders);
-  const [selectedOrderId, setSelectedOrderId] = useState<string>(seedOrders[0]?.id || "");
-  const [draftOrder, setDraftOrder] = useState({
-    customer: "",
-    contact: "",
-    address: "",
-    city: "",
-    material: "",
-    quantity: "",
-    unit: "TonS",
-    requestedWindow: "",
-    truckPreference: "",
-    notes: "",
-  });
+  const querySelectedOrderId = new URLSearchParams(location.search).get("order");
+  const selectedOrderId = actionData?.selectedOrderId || querySelectedOrderId || orders[0]?.id;
 
   const selectedOrder = useMemo(
     () => orders.find((order) => order.id === selectedOrderId) || orders[0] || null,
@@ -247,85 +355,6 @@ export default function DispatchPage() {
   const holdOrders = orders.filter((order) => order.status === "hold");
   const scheduledOrders = orders.filter((order) => order.assignedRouteId);
 
-  function selectOrder(orderId: string) {
-    setSelectedOrderId(orderId);
-  }
-
-  function assignOrder(routeId: string) {
-    if (!selectedOrder) return;
-
-    setOrders((current) =>
-      current.map((order) =>
-        order.id === selectedOrder.id
-          ? { ...order, assignedRouteId: routeId, status: "scheduled" }
-          : order,
-      ),
-    );
-  }
-
-  function moveToHold() {
-    if (!selectedOrder) return;
-
-    setOrders((current) =>
-      current.map((order) =>
-        order.id === selectedOrder.id
-          ? { ...order, assignedRouteId: undefined, status: "hold" }
-          : order,
-      ),
-    );
-  }
-
-  function unassignOrder() {
-    if (!selectedOrder) return;
-
-    setOrders((current) =>
-      current.map((order) =>
-        order.id === selectedOrder.id
-          ? { ...order, assignedRouteId: undefined, status: "new" }
-          : order,
-      ),
-    );
-  }
-
-  function addManualOrder(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!draftOrder.customer || !draftOrder.address || !draftOrder.material) {
-      return;
-    }
-
-    const nextOrder: DispatchOrder = {
-      id: `D-${24090 + orders.length}`,
-      source: "manual",
-      customer: draftOrder.customer,
-      contact: draftOrder.contact,
-      address: draftOrder.address,
-      city: draftOrder.city,
-      material: draftOrder.material,
-      quantity: draftOrder.quantity || "0",
-      unit: draftOrder.unit,
-      requestedWindow: draftOrder.requestedWindow || "Needs scheduling",
-      truckPreference: draftOrder.truckPreference || undefined,
-      notes: draftOrder.notes,
-      status: "new",
-    };
-
-    setOrders((current) => [nextOrder, ...current]);
-    setSelectedOrderId(nextOrder.id);
-    setDraftOrder({
-      customer: "",
-      contact: "",
-      address: "",
-      city: "",
-      material: "",
-      quantity: "",
-      unit: "TonS",
-      requestedWindow: "",
-      truckPreference: "",
-      notes: "",
-    });
-  }
-
   if (!allowed) {
     return (
       <div style={styles.page}>
@@ -350,7 +379,10 @@ export default function DispatchPage() {
                 <div style={styles.statusErr}>{actionData.loginError}</div>
               ) : null}
 
-              <button type="submit" style={{ ...styles.primaryButton, width: "100%", marginTop: 16 }}>
+              <button
+                type="submit"
+                style={{ ...styles.primaryButton, width: "100%", marginTop: 16 }}
+              >
                 Open Dispatch
               </button>
             </Form>
@@ -368,8 +400,8 @@ export default function DispatchPage() {
             <div style={styles.kicker}>Dispatch Workspace</div>
             <h1 style={styles.title}>Plan, intake, and assign deliveries</h1>
             <p style={styles.subtitle}>
-              First contractor-only dispatch slice with email/manual intake, truck and driver
-              assignment, route boards, and a Track-POD-inspired planning surface.
+              Contractor-only dispatch slice with persistent intake, truck assignment,
+              route boards, and the first foundation for email-driven scheduling.
             </p>
           </div>
 
@@ -380,6 +412,23 @@ export default function DispatchPage() {
             <a href={logoutHref} style={styles.ghostButton}>Log Out</a>
           </div>
         </div>
+
+        {!storageReady ? (
+          <div style={styles.statusWarn}>
+            Dispatch storage is not ready yet. Run
+            {" "}
+            <strong>`dispatch_schema.sql`</strong>
+            {" "}
+            in Supabase SQL Editor, then refresh. Until then, you are seeing seed data.
+            {storageError ? ` Storage error: ${storageError}` : ""}
+          </div>
+        ) : null}
+
+        {actionData?.message ? (
+          <div style={actionData.ok ? styles.statusOk : styles.statusErr}>
+            {actionData.message}
+          </div>
+        ) : null}
 
         <div style={styles.metricsGrid}>
           {metricCard("Inbox", String(inboxOrders.length), "#f97316")}
@@ -406,16 +455,16 @@ export default function DispatchPage() {
                   const active = order.id === selectedOrder?.id;
                   const route = routes.find((entry) => entry.id === order.assignedRouteId);
                   return (
-                    <button
+                    <a
                       key={order.id}
-                      type="button"
-                      onClick={() => selectOrder(order.id)}
+                      href={`${dispatchHref}?order=${encodeURIComponent(order.id)}`}
                       style={{
                         ...styles.queueCard,
                         borderColor: active ? "#38bdf8" : "rgba(51, 65, 85, 0.92)",
                         boxShadow: active
                           ? "0 0 0 1px rgba(56, 189, 248, 0.45)"
                           : "none",
+                        textDecoration: "none",
                       }}
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
@@ -425,9 +474,7 @@ export default function DispatchPage() {
                             {order.address}, {order.city}
                           </div>
                         </div>
-                        <div style={styles.badge(order.status)}>
-                          {order.status}
-                        </div>
+                        <div style={styles.badge(order.status)}>{order.status}</div>
                       </div>
 
                       <div style={styles.queueDetails}>
@@ -442,7 +489,7 @@ export default function DispatchPage() {
                           {route ? `${route.truck} / ${route.driver}` : "Unassigned"}
                         </span>
                       </div>
-                    </button>
+                    </a>
                   );
                 })}
               </div>
@@ -453,88 +500,48 @@ export default function DispatchPage() {
                 <div>
                   <h2 style={styles.panelTitle}>Manual Intake</h2>
                   <p style={styles.panelSub}>
-                    Start the GoCanvas-style capture flow by typing in the order details you need dispatch to track.
+                    Start the GoCanvas-style capture flow by typing in the order details dispatch needs to track.
                   </p>
                 </div>
               </div>
 
-              <form onSubmit={addManualOrder} style={{ display: "grid", gap: 12 }}>
+              <Form method="post" style={{ display: "grid", gap: 12 }}>
+                <input type="hidden" name="intent" value="create-order" />
+
                 <div style={styles.formGridTwo}>
                   <div>
                     <label style={styles.label}>Customer</label>
-                    <input
-                      value={draftOrder.customer}
-                      onChange={(event) =>
-                        setDraftOrder((current) => ({ ...current, customer: event.target.value }))
-                      }
-                      style={styles.input}
-                    />
+                    <input name="customer" style={styles.input} />
                   </div>
                   <div>
                     <label style={styles.label}>Contact / Email</label>
-                    <input
-                      value={draftOrder.contact}
-                      onChange={(event) =>
-                        setDraftOrder((current) => ({ ...current, contact: event.target.value }))
-                      }
-                      style={styles.input}
-                    />
+                    <input name="contact" style={styles.input} />
                   </div>
                 </div>
 
                 <div style={styles.formGridTwo}>
                   <div>
                     <label style={styles.label}>Jobsite Address</label>
-                    <input
-                      value={draftOrder.address}
-                      onChange={(event) =>
-                        setDraftOrder((current) => ({ ...current, address: event.target.value }))
-                      }
-                      style={styles.input}
-                    />
+                    <input name="address" style={styles.input} />
                   </div>
                   <div>
                     <label style={styles.label}>City</label>
-                    <input
-                      value={draftOrder.city}
-                      onChange={(event) =>
-                        setDraftOrder((current) => ({ ...current, city: event.target.value }))
-                      }
-                      style={styles.input}
-                    />
+                    <input name="city" style={styles.input} />
                   </div>
                 </div>
 
                 <div style={styles.formGridThree}>
                   <div>
                     <label style={styles.label}>Material</label>
-                    <input
-                      value={draftOrder.material}
-                      onChange={(event) =>
-                        setDraftOrder((current) => ({ ...current, material: event.target.value }))
-                      }
-                      style={styles.input}
-                    />
+                    <input name="material" style={styles.input} />
                   </div>
                   <div>
                     <label style={styles.label}>Quantity</label>
-                    <input
-                      value={draftOrder.quantity}
-                      onChange={(event) =>
-                        setDraftOrder((current) => ({ ...current, quantity: event.target.value }))
-                      }
-                      style={styles.input}
-                    />
+                    <input name="quantity" style={styles.input} />
                   </div>
                   <div>
                     <label style={styles.label}>Unit</label>
-                    <select
-                      value={draftOrder.unit}
-                      onChange={(event) =>
-                        setDraftOrder((current) => ({ ...current, unit: event.target.value }))
-                      }
-                      style={styles.input}
-                    >
+                    <select name="unit" style={styles.input}>
                       <option>TonS</option>
                       <option>YardS</option>
                       <option>GallonS</option>
@@ -546,13 +553,7 @@ export default function DispatchPage() {
                   <div>
                     <label style={styles.label}>Requested Window</label>
                     <input
-                      value={draftOrder.requestedWindow}
-                      onChange={(event) =>
-                        setDraftOrder((current) => ({
-                          ...current,
-                          requestedWindow: event.target.value,
-                        }))
-                      }
+                      name="requestedWindow"
                       placeholder="Today 1:00p - 3:00p"
                       style={styles.input}
                     />
@@ -560,13 +561,7 @@ export default function DispatchPage() {
                   <div>
                     <label style={styles.label}>Truck Preference</label>
                     <input
-                      value={draftOrder.truckPreference}
-                      onChange={(event) =>
-                        setDraftOrder((current) => ({
-                          ...current,
-                          truckPreference: event.target.value,
-                        }))
-                      }
+                      name="truckPreference"
                       placeholder="Walking floor, tri-axle, etc."
                       style={styles.input}
                     />
@@ -576,19 +571,16 @@ export default function DispatchPage() {
                 <div>
                   <label style={styles.label}>Dispatch Notes</label>
                   <textarea
-                    value={draftOrder.notes}
-                    onChange={(event) =>
-                      setDraftOrder((current) => ({ ...current, notes: event.target.value }))
-                    }
+                    name="notes"
                     rows={4}
-                    style={{ ...styles.input, resize: "vertical" as const }}
+                    style={{ ...styles.input, resize: "vertical" }}
                   />
                 </div>
 
                 <button type="submit" style={styles.primaryButton}>
                   Add To Dispatch Queue
                 </button>
-              </form>
+              </Form>
             </div>
           </div>
 
@@ -607,20 +599,40 @@ export default function DispatchPage() {
               <div style={{ display: "grid", gap: 12 }}>
                 {routes.map((route) => (
                   <div key={route.id} style={styles.routeCard(route.color)}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 12,
+                        alignItems: "center",
+                      }}
+                    >
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <div style={styles.routeColor(route.color)} />
                           <div style={styles.routeCode}>{route.code}</div>
                           <div style={styles.routeRegion}>{route.region}</div>
                         </div>
-                        <div style={{ marginTop: 8, color: "#e2e8f0", fontWeight: 700 }}>
+                        <div
+                          style={{
+                            marginTop: 8,
+                            color: "#e2e8f0",
+                            fontWeight: 700,
+                          }}
+                        >
                           {route.truck} · {route.driver} / {route.helper}
                         </div>
                       </div>
-                      <button type="button" onClick={() => assignOrder(route.id)} style={styles.assignButton}>
-                        Assign Selected
-                      </button>
+                      {selectedOrder ? (
+                        <Form method="post">
+                          <input type="hidden" name="intent" value="assign-order" />
+                          <input type="hidden" name="orderId" value={selectedOrder.id} />
+                          <input type="hidden" name="routeId" value={route.id} />
+                          <button type="submit" style={styles.assignButton}>
+                            Assign Selected
+                          </button>
+                        </Form>
+                      ) : null}
                     </div>
 
                     <div style={styles.routeStats}>
@@ -674,7 +686,10 @@ export default function DispatchPage() {
                 )}
                 <div style={styles.mapLegend}>
                   {routes.map((route) => (
-                    <div key={route.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div
+                      key={route.id}
+                      style={{ display: "flex", alignItems: "center", gap: 8 }}
+                    >
                       <div style={styles.routeColor(route.color)} />
                       <span>{route.truck}</span>
                     </div>
@@ -736,16 +751,27 @@ export default function DispatchPage() {
                   </div>
 
                   <div style={{ display: "grid", gap: 10 }}>
-                    <button type="button" onClick={unassignOrder} style={styles.secondaryButton}>
-                      Move Back To Inbox
-                    </button>
-                    <button type="button" onClick={moveToHold} style={styles.secondaryButton}>
-                      Put On Hold
-                    </button>
+                    <Form method="post">
+                      <input type="hidden" name="intent" value="unassign-order" />
+                      <input type="hidden" name="orderId" value={selectedOrder.id} />
+                      <button type="submit" style={styles.secondaryButton}>
+                        Move Back To Inbox
+                      </button>
+                    </Form>
+
+                    <Form method="post">
+                      <input type="hidden" name="intent" value="hold-order" />
+                      <input type="hidden" name="orderId" value={selectedOrder.id} />
+                      <button type="submit" style={styles.secondaryButton}>
+                        Put On Hold
+                      </button>
+                    </Form>
                   </div>
                 </div>
               ) : (
-                <div style={{ color: "#94a3b8" }}>Select an order to view dispatch detail.</div>
+                <div style={{ color: "#94a3b8" }}>
+                  Select an order to view dispatch detail.
+                </div>
               )}
             </div>
 
@@ -761,7 +787,7 @@ export default function DispatchPage() {
 
               <div style={{ display: "grid", gap: 10 }}>
                 {[
-                  "Email parser to read order inbox and prefill dispatch cards",
+                  "Email parser to read the order inbox and prefill dispatch cards",
                   "Persistent trucks, employees, routes, and assigned stops in Supabase",
                   "Driver mobile workflow: arrive, depart, signature, photos, tickets",
                   "GoCanvas-style field forms for inspection, proof, and custom checklists",
@@ -862,7 +888,8 @@ const styles = {
   } as const,
   workspaceGrid: {
     display: "grid",
-    gridTemplateColumns: "minmax(320px, 0.95fr) minmax(420px, 1.2fr) minmax(320px, 0.82fr)",
+    gridTemplateColumns:
+      "minmax(320px, 0.95fr) minmax(420px, 1.2fr) minmax(320px, 0.82fr)",
     gap: 18,
     alignItems: "start",
   } as const,
@@ -996,6 +1023,7 @@ const styles = {
     cursor: "pointer",
   } as const,
   secondaryButton: {
+    width: "100%",
     minHeight: 46,
     borderRadius: 14,
     border: "1px solid rgba(51, 65, 85, 0.95)",
@@ -1009,7 +1037,8 @@ const styles = {
       borderRadius: 20,
       padding: 18,
       border: `1px solid ${color}44`,
-      background: "linear-gradient(145deg, rgba(2, 6, 23, 0.86), rgba(15, 23, 42, 0.98))",
+      background:
+        "linear-gradient(145deg, rgba(2, 6, 23, 0.86), rgba(15, 23, 42, 0.98))",
       boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03), 0 18px 28px ${color}12`,
     }) as const,
   routeColor: (color: string) =>
@@ -1166,8 +1195,24 @@ const styles = {
     boxShadow: "0 0 0 5px rgba(56, 189, 248, 0.15)",
     flex: "0 0 auto",
   } as const,
+  statusOk: {
+    padding: "14px 16px",
+    borderRadius: 14,
+    background: "rgba(22, 163, 74, 0.15)",
+    border: "1px solid rgba(34, 197, 94, 0.5)",
+    color: "#dcfce7",
+    fontWeight: 700,
+  } as const,
+  statusWarn: {
+    padding: "14px 16px",
+    borderRadius: 14,
+    background: "rgba(234, 179, 8, 0.14)",
+    border: "1px solid rgba(250, 204, 21, 0.35)",
+    color: "#fef3c7",
+    fontWeight: 600,
+    lineHeight: 1.6,
+  } as const,
   statusErr: {
-    marginTop: 16,
     padding: "14px 16px",
     borderRadius: 14,
     background: "rgba(220, 38, 38, 0.15)",
@@ -1178,10 +1223,22 @@ const styles = {
   badge: (status: DispatchOrder["status"]) => {
     const palette =
       status === "scheduled"
-        ? { color: "#bbf7d0", border: "rgba(34, 197, 94, 0.35)", bg: "rgba(34, 197, 94, 0.12)" }
+        ? {
+            color: "#bbf7d0",
+            border: "rgba(34, 197, 94, 0.35)",
+            bg: "rgba(34, 197, 94, 0.12)",
+          }
         : status === "hold"
-        ? { color: "#fde68a", border: "rgba(234, 179, 8, 0.35)", bg: "rgba(234, 179, 8, 0.12)" }
-        : { color: "#fed7aa", border: "rgba(249, 115, 22, 0.35)", bg: "rgba(249, 115, 22, 0.12)" };
+        ? {
+            color: "#fde68a",
+            border: "rgba(234, 179, 8, 0.35)",
+            bg: "rgba(234, 179, 8, 0.12)",
+          }
+        : {
+            color: "#fed7aa",
+            border: "rgba(249, 115, 22, 0.35)",
+            bg: "rgba(249, 115, 22, 0.12)",
+          };
 
     return {
       minHeight: 30,
