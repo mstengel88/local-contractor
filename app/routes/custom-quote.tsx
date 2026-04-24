@@ -644,6 +644,7 @@ export default function PublicCustomQuotePage() {
     ? `/app/api/delete-quote${embeddedQs}`
     : `/api/delete-quote${embeddedQs}`;
   const quoteReviewHref = isEmbeddedRoute ? "/app/quote-review" : "/quote-review";
+  const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
   const logoutHref = isEmbeddedRoute ? "/app/custom-quote?logout=1" : "/custom-quote?logout=1";
   const mobileDashboardHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
 
@@ -799,7 +800,7 @@ export default function PublicCustomQuotePage() {
     bottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
     zIndex: 30,
     display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
+    gridTemplateColumns: "repeat(4, 1fr)",
     gap: 10,
     padding: "8px 10px",
     borderRadius: 20,
@@ -965,6 +966,9 @@ export default function PublicCustomQuotePage() {
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <a href={mobileDashboardHref} style={styles.logout}>
                 Dashboard
+              </a>
+              <a href={dispatchHref} style={styles.logout}>
+                Dispatch
               </a>
               <a href={quoteReviewHref} style={styles.logout}>
                 Review Quotes
@@ -2127,6 +2131,10 @@ export default function PublicCustomQuotePage() {
           <a href={quoteReviewHref} style={mobileTabLinkStyle(false)}>
             <span style={mobileTabIconStyle(false)}>R</span>
             <span>Review</span>
+          </a>
+          <a href={dispatchHref} style={mobileTabLinkStyle(false)}>
+            <span style={mobileTabIconStyle(false)}>X</span>
+            <span>Dispatch</span>
           </a>
         </div>
       ) : null}

@@ -118,7 +118,7 @@ const styles = {
     bottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
     zIndex: 30,
     display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
+    gridTemplateColumns: "repeat(4, 1fr)",
     gap: 10,
     padding: "8px 10px",
     borderRadius: 20,
@@ -236,6 +236,7 @@ export default function MobileDashboardPage() {
   const quoteToolBase = isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote";
   const reviewHref = isEmbeddedRoute ? "/app/quote-review" : "/quote-review";
   const dashboardHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
+  const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
 
   if (!allowed) {
     return (
@@ -301,6 +302,7 @@ export default function MobileDashboardPage() {
           <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
             <a href={quoteToolBase} style={styles.smallButton}>Open Quote Tool</a>
             <a href={reviewHref} style={styles.smallButton}>Review Quotes</a>
+            <a href={dispatchHref} style={styles.smallButton}>Dispatch</a>
             <a href={`${dashboardHref}?logout=1`} style={styles.smallButton}>Log Out</a>
           </div>
         </div>
@@ -350,6 +352,10 @@ export default function MobileDashboardPage() {
         <a href={reviewHref} style={navLinkStyle(false)}>
           <span style={navIconStyle(false)}>R</span>
           <span>Review</span>
+        </a>
+        <a href={dispatchHref} style={navLinkStyle(false)}>
+          <span style={navIconStyle(false)}>X</span>
+          <span>Dispatch</span>
         </a>
       </div>
     </div>

@@ -243,6 +243,7 @@ export default function QuoteReviewPage() {
     ? `/app/api/update-quote${location.search || ""}`
     : `/api/update-quote${location.search || ""}`;
   const quoteToolHref = isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote";
+  const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
   const mobileDashboardHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
 
@@ -308,7 +309,7 @@ export default function QuoteReviewPage() {
     bottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
     zIndex: 30,
     display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
+    gridTemplateColumns: "repeat(4, 1fr)",
     gap: 10,
     padding: "8px 10px",
     borderRadius: 20,
@@ -418,6 +419,7 @@ export default function QuoteReviewPage() {
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <a href={mobileDashboardHref} style={styles.buttonGhost}>Dashboard</a>
                 <a href={quoteToolHref} style={styles.buttonGhost}>Open Quote Tool</a>
+                <a href={dispatchHref} style={styles.buttonGhost}>Dispatch</a>
                 <a href="?logout=1" style={styles.buttonGhost}>Log Out</a>
               </div>
             </div>
@@ -864,6 +866,10 @@ export default function QuoteReviewPage() {
           <a href={isEmbeddedRoute ? "/app/quote-review" : "/quote-review"} style={mobileTabLinkStyle(true)}>
             <span style={mobileTabIconStyle(true)}>R</span>
             <span>Review</span>
+          </a>
+          <a href={dispatchHref} style={mobileTabLinkStyle(false)}>
+            <span style={mobileTabIconStyle(false)}>X</span>
+            <span>Dispatch</span>
           </a>
         </div>
       ) : null}
