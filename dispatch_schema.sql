@@ -39,3 +39,37 @@ create trigger dispatch_orders_set_updated_at
 before update on public.dispatch_orders
 for each row
 execute function public.set_dispatch_orders_updated_at();
+
+create table if not exists public.dispatch_routes (
+  id text primary key,
+  code text not null default '',
+  truck text not null default '',
+  driver text not null default '',
+  helper text not null default '',
+  color text not null default '#38bdf8',
+  shift text not null default '',
+  region text not null default '',
+  is_active boolean not null default true,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+create index if not exists dispatch_routes_active_idx
+  on public.dispatch_routes (is_active, created_at asc);
+
+create or replace function public.set_dispatch_routes_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = timezone('utc', now());
+  return new;
+end;
+$$;
+
+drop trigger if exists dispatch_routes_set_updated_at on public.dispatch_routes;
+
+create trigger dispatch_routes_set_updated_at
+before update on public.dispatch_routes
+for each row
+execute function public.set_dispatch_routes_updated_at();

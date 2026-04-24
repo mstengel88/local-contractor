@@ -7,57 +7,18 @@ import {
   hasAdminQuoteAccess,
 } from "../lib/admin-quote-auth.server";
 import {
+  createDispatchRoute,
   createDispatchOrder,
   ensureSeedDispatchOrders,
+  ensureSeedDispatchRoutes,
   getDispatchOrders,
+  getDispatchRoutes,
   type DispatchOrder,
+  type DispatchRoute,
   seedDispatchOrders,
+  seedDispatchRoutes,
   updateDispatchOrder,
 } from "../lib/dispatch.server";
-
-type DispatchRoute = {
-  id: string;
-  code: string;
-  truck: string;
-  driver: string;
-  helper: string;
-  color: string;
-  shift: string;
-  region: string;
-};
-
-const seedRoutes: DispatchRoute[] = [
-  {
-    id: "route-north",
-    code: "R-12",
-    truck: "Truck 12",
-    driver: "Paul",
-    helper: "Manny",
-    color: "#f97316",
-    shift: "6:30a - 3:30p",
-    region: "North / Menomonee Falls",
-  },
-  {
-    id: "route-west",
-    code: "R-18",
-    truck: "Truck 18",
-    driver: "Peter",
-    helper: "Luis",
-    color: "#06b6d4",
-    shift: "7:00a - 4:00p",
-    region: "West / Waukesha",
-  },
-  {
-    id: "route-south",
-    code: "R-05",
-    truck: "Truck 05",
-    driver: "Andrew",
-    helper: "Nate",
-    color: "#22c55e",
-    shift: "6:00a - 2:30p",
-    region: "South / Oak Creek",
-  },
-];
 
 function metricCard(label: string, value: string, accent: string) {
   return (
@@ -101,8 +62,10 @@ function getDispatchPath(url: URL) {
 async function loadDispatchState() {
   try {
     await ensureSeedDispatchOrders();
+    await ensureSeedDispatchRoutes();
     return {
       orders: await getDispatchOrders(),
+      routes: await getDispatchRoutes(),
       storageReady: true,
       storageError: null,
     };
@@ -112,6 +75,7 @@ async function loadDispatchState() {
     console.error("[DISPATCH STORAGE ERROR]", message);
     return {
       orders: seedDispatchOrders,
+      routes: seedDispatchRoutes,
       storageReady: false,
       storageError: message,
     };
@@ -132,7 +96,13 @@ export async function loader({ request }: any) {
 
   const allowed = await hasAdminQuoteAccess(request);
   if (!allowed) {
-    return data({ allowed: false, orders: [], storageReady: false, storageError: null });
+    return data({
+      allowed: false,
+      orders: [],
+      routes: [],
+      storageReady: false,
+      storageError: null,
+    });
   }
 
   const dispatchState = await loadDispatchState();
@@ -153,7 +123,7 @@ export async function action({ request }: any) {
 
     if (!expected || password !== expected) {
       return data(
-        { allowed: false, loginError: "Invalid password", orders: [] },
+        { allowed: false, loginError: "Invalid password", orders: [], routes: [] },
         { status: 401 },
       );
     }
@@ -177,7 +147,7 @@ export async function action({ request }: any) {
   const allowed = await hasAdminQuoteAccess(request);
   if (!allowed) {
     return data(
-      { allowed: false, loginError: "Please log in", orders: [] },
+      { allowed: false, loginError: "Please log in", orders: [], routes: [] },
       { status: 401 },
     );
   }
@@ -222,6 +192,44 @@ export async function action({ request }: any) {
         ok: true,
         message: `Added ${created.customer} to the dispatch queue.`,
         selectedOrderId: created.id,
+        ...dispatchState,
+      });
+    }
+
+    if (intent === "create-route") {
+      const code = String(form.get("code") || "").trim();
+      const truck = String(form.get("truck") || "").trim();
+      const driver = String(form.get("driver") || "").trim();
+
+      if (!code || !truck || !driver) {
+        const dispatchState = await loadDispatchState();
+        return data(
+          {
+            allowed: true,
+            ok: false,
+            message: "Route code, truck, and driver are required.",
+            ...dispatchState,
+          },
+          { status: 400 },
+        );
+      }
+
+      const created = await createDispatchRoute({
+        code,
+        truck,
+        driver,
+        helper: String(form.get("helper") || "").trim(),
+        color: String(form.get("color") || "#38bdf8").trim(),
+        shift: String(form.get("shift") || "").trim(),
+        region: String(form.get("region") || "").trim(),
+      });
+
+      const dispatchState = await loadDispatchState();
+
+      return data({
+        allowed: true,
+        ok: true,
+        message: `Added ${created.truck} to the route board.`,
         ...dispatchState,
       });
     }
@@ -323,6 +331,7 @@ export default function DispatchPage() {
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
   const logoutHref = `${dispatchHref}?logout=1`;
   const orders = (actionData?.orders ?? loaderData.orders ?? []) as DispatchOrder[];
+  const dispatchRoutes = (actionData?.routes ?? loaderData.routes ?? []) as DispatchRoute[];
   const storageReady = actionData?.storageReady ?? loaderData.storageReady ?? false;
   const storageError = actionData?.storageError ?? loaderData.storageError ?? null;
 
@@ -336,7 +345,7 @@ export default function DispatchPage() {
 
   const routes = useMemo(
     () =>
-      seedRoutes.map((route) => {
+      dispatchRoutes.map((route) => {
         const routeOrders = orders.filter((order) => order.assignedRouteId === route.id);
         return {
           ...route,
@@ -348,7 +357,7 @@ export default function DispatchPage() {
           orders: routeOrders,
         };
       }),
-    [orders],
+    [dispatchRoutes, orders],
   );
 
   const inboxOrders = orders.filter((order) => !order.assignedRouteId && order.status === "new");
@@ -643,6 +652,57 @@ export default function DispatchPage() {
                   </div>
                 ))}
               </div>
+
+              <Form method="post" style={styles.routeCreateForm}>
+                <input type="hidden" name="intent" value="create-route" />
+
+                <div style={styles.formGridThree}>
+                  <div>
+                    <label style={styles.label}>Route Code</label>
+                    <input name="code" placeholder="R-22" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Truck</label>
+                    <input name="truck" placeholder="Truck 22" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Color</label>
+                    <input
+                      type="color"
+                      name="color"
+                      defaultValue="#38bdf8"
+                      style={styles.colorInput}
+                    />
+                  </div>
+                </div>
+
+                <div style={styles.formGridThree}>
+                  <div>
+                    <label style={styles.label}>Driver</label>
+                    <input name="driver" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Helper</label>
+                    <input name="helper" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Shift</label>
+                    <input name="shift" placeholder="7:00a - 4:00p" style={styles.input} />
+                  </div>
+                </div>
+
+                <div style={styles.formGridTwo}>
+                  <div>
+                    <label style={styles.label}>Region</label>
+                    <input name="region" placeholder="North / Menomonee Falls" style={styles.input} />
+                  </div>
+                  <div style={{ display: "flex", alignItems: "flex-end" }}>
+                    <button type="submit" style={{ ...styles.primaryButton, width: "100%" }}>
+                      Add Route
+                    </button>
+                  </div>
+                </div>
+              </Form>
             </div>
 
             <div style={styles.panel}>
@@ -1012,6 +1072,16 @@ const styles = {
     fontSize: 14,
     outline: "none",
   },
+  colorInput: {
+    width: "100%",
+    boxSizing: "border-box" as const,
+    minHeight: 48,
+    padding: 6,
+    borderRadius: 14,
+    border: "1px solid #334155",
+    background: "rgba(15, 23, 42, 0.94)",
+    cursor: "pointer",
+  },
   primaryButton: {
     minHeight: 50,
     borderRadius: 15,
@@ -1065,6 +1135,13 @@ const styles = {
     flexWrap: "wrap" as const,
     color: "#cbd5e1",
     fontSize: 13,
+  } as const,
+  routeCreateForm: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTop: "1px solid rgba(51, 65, 85, 0.82)",
+    display: "grid",
+    gap: 12,
   } as const,
   assignButton: {
     minHeight: 42,

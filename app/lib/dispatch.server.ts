@@ -22,6 +22,56 @@ export type DispatchOrder = {
   updated_at?: string;
 };
 
+export type DispatchRoute = {
+  id: string;
+  code: string;
+  truck: string;
+  driver: string;
+  helper: string;
+  color: string;
+  shift: string;
+  region: string;
+  isActive?: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export const seedDispatchRoutes: DispatchRoute[] = [
+  {
+    id: "route-north",
+    code: "R-12",
+    truck: "Truck 12",
+    driver: "Paul",
+    helper: "Manny",
+    color: "#f97316",
+    shift: "6:30a - 3:30p",
+    region: "North / Menomonee Falls",
+    isActive: true,
+  },
+  {
+    id: "route-west",
+    code: "R-18",
+    truck: "Truck 18",
+    driver: "Peter",
+    helper: "Luis",
+    color: "#06b6d4",
+    shift: "7:00a - 4:00p",
+    region: "West / Waukesha",
+    isActive: true,
+  },
+  {
+    id: "route-south",
+    code: "R-05",
+    truck: "Truck 05",
+    driver: "Andrew",
+    helper: "Nate",
+    color: "#22c55e",
+    shift: "6:00a - 2:30p",
+    region: "South / Oak Creek",
+    isActive: true,
+  },
+];
+
 export const seedDispatchOrders: DispatchOrder[] = [
   {
     id: "D-24081",
@@ -84,7 +134,8 @@ export const seedDispatchOrders: DispatchOrder[] = [
   },
 ];
 
-const TABLE = "dispatch_orders";
+const ORDERS_TABLE = "dispatch_orders";
+const ROUTES_TABLE = "dispatch_routes";
 
 function normalizeOrder(row: any): DispatchOrder {
   return {
@@ -108,6 +159,22 @@ function normalizeOrder(row: any): DispatchOrder {
   };
 }
 
+function normalizeRoute(row: any): DispatchRoute {
+  return {
+    id: String(row.id),
+    code: String(row.code || ""),
+    truck: String(row.truck || ""),
+    driver: String(row.driver || ""),
+    helper: String(row.helper || ""),
+    color: String(row.color || "#38bdf8"),
+    shift: String(row.shift || ""),
+    region: String(row.region || ""),
+    isActive: row.is_active !== false,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
 function formatSupabaseError(error: any) {
   if (!error) return "Unknown storage error";
   return error.message || error.details || error.hint || "Unknown storage error";
@@ -115,7 +182,7 @@ function formatSupabaseError(error: any) {
 
 export async function ensureSeedDispatchOrders() {
   const { data, error } = await supabaseAdmin
-    .from(TABLE)
+    .from(ORDERS_TABLE)
     .select("id", { count: "exact", head: false })
     .limit(1);
 
@@ -127,7 +194,7 @@ export async function ensureSeedDispatchOrders() {
     return;
   }
 
-  const { error: insertError } = await supabaseAdmin.from(TABLE).insert(
+  const { error: insertError } = await supabaseAdmin.from(ORDERS_TABLE).insert(
     seedDispatchOrders.map((order) => ({
       id: order.id,
       source: order.source,
@@ -151,9 +218,42 @@ export async function ensureSeedDispatchOrders() {
   }
 }
 
+export async function ensureSeedDispatchRoutes() {
+  const { data, error } = await supabaseAdmin
+    .from(ROUTES_TABLE)
+    .select("id", { count: "exact", head: false })
+    .limit(1);
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+
+  if ((data || []).length > 0) {
+    return;
+  }
+
+  const { error: insertError } = await supabaseAdmin.from(ROUTES_TABLE).insert(
+    seedDispatchRoutes.map((route) => ({
+      id: route.id,
+      code: route.code,
+      truck: route.truck,
+      driver: route.driver,
+      helper: route.helper,
+      color: route.color,
+      shift: route.shift,
+      region: route.region,
+      is_active: route.isActive !== false,
+    })),
+  );
+
+  if (insertError) {
+    throw new Error(formatSupabaseError(insertError));
+  }
+}
+
 export async function getDispatchOrders() {
   const { data, error } = await supabaseAdmin
-    .from(TABLE)
+    .from(ORDERS_TABLE)
     .select("*")
     .order("created_at", { ascending: false });
 
@@ -162,6 +262,20 @@ export async function getDispatchOrders() {
   }
 
   return (data || []).map(normalizeOrder);
+}
+
+export async function getDispatchRoutes() {
+  const { data, error } = await supabaseAdmin
+    .from(ROUTES_TABLE)
+    .select("*")
+    .eq("is_active", true)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+
+  return (data || []).map(normalizeRoute);
 }
 
 export async function createDispatchOrder(input: {
@@ -180,7 +294,7 @@ export async function createDispatchOrder(input: {
   const id = `D-${Date.now().toString().slice(-6)}`;
 
   const { data, error } = await supabaseAdmin
-    .from(TABLE)
+    .from(ORDERS_TABLE)
     .insert({
       id,
       source: input.source,
@@ -207,6 +321,40 @@ export async function createDispatchOrder(input: {
   return normalizeOrder(data);
 }
 
+export async function createDispatchRoute(input: {
+  code: string;
+  truck: string;
+  driver: string;
+  helper?: string;
+  color?: string;
+  shift?: string;
+  region?: string;
+}) {
+  const id = `route-${Date.now().toString(36)}`;
+
+  const { data, error } = await supabaseAdmin
+    .from(ROUTES_TABLE)
+    .insert({
+      id,
+      code: input.code,
+      truck: input.truck,
+      driver: input.driver,
+      helper: input.helper || "",
+      color: input.color || "#38bdf8",
+      shift: input.shift || "",
+      region: input.region || "",
+      is_active: true,
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+
+  return normalizeRoute(data);
+}
+
 export async function updateDispatchOrder(
   id: string,
   patch: {
@@ -222,7 +370,7 @@ export async function updateDispatchOrder(
   }
 
   const { data, error } = await supabaseAdmin
-    .from(TABLE)
+    .from(ORDERS_TABLE)
     .update(payload)
     .eq("id", id)
     .select("*")
