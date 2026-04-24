@@ -17,11 +17,39 @@ create table if not exists public.dispatch_orders (
   updated_at timestamptz not null default timezone('utc', now())
 );
 
+create table if not exists public.dispatch_trucks (
+  id text primary key,
+  label text not null default '',
+  truck_type text not null default '',
+  capacity text not null default '',
+  license_plate text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+create table if not exists public.dispatch_employees (
+  id text primary key,
+  name text not null default '',
+  role text not null default 'driver' check (role in ('driver', 'helper', 'dispatcher')),
+  phone text,
+  email text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
 create index if not exists dispatch_orders_status_idx
   on public.dispatch_orders (status, created_at desc);
 
 create index if not exists dispatch_orders_assigned_route_idx
   on public.dispatch_orders (assigned_route_id);
+
+create index if not exists dispatch_trucks_active_idx
+  on public.dispatch_trucks (is_active, label asc);
+
+create index if not exists dispatch_employees_active_idx
+  on public.dispatch_employees (is_active, name asc);
 
 create or replace function public.set_dispatch_orders_updated_at()
 returns trigger
@@ -40,11 +68,48 @@ before update on public.dispatch_orders
 for each row
 execute function public.set_dispatch_orders_updated_at();
 
+create or replace function public.set_dispatch_trucks_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = timezone('utc', now());
+  return new;
+end;
+$$;
+
+drop trigger if exists dispatch_trucks_set_updated_at on public.dispatch_trucks;
+
+create trigger dispatch_trucks_set_updated_at
+before update on public.dispatch_trucks
+for each row
+execute function public.set_dispatch_trucks_updated_at();
+
+create or replace function public.set_dispatch_employees_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = timezone('utc', now());
+  return new;
+end;
+$$;
+
+drop trigger if exists dispatch_employees_set_updated_at on public.dispatch_employees;
+
+create trigger dispatch_employees_set_updated_at
+before update on public.dispatch_employees
+for each row
+execute function public.set_dispatch_employees_updated_at();
+
 create table if not exists public.dispatch_routes (
   id text primary key,
   code text not null default '',
+  truck_id text references public.dispatch_trucks(id) on delete set null,
   truck text not null default '',
+  driver_id text references public.dispatch_employees(id) on delete set null,
   driver text not null default '',
+  helper_id text references public.dispatch_employees(id) on delete set null,
   helper text not null default '',
   color text not null default '#38bdf8',
   shift text not null default '',
@@ -53,6 +118,11 @@ create table if not exists public.dispatch_routes (
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
+
+alter table public.dispatch_routes
+  add column if not exists truck_id text references public.dispatch_trucks(id) on delete set null,
+  add column if not exists driver_id text references public.dispatch_employees(id) on delete set null,
+  add column if not exists helper_id text references public.dispatch_employees(id) on delete set null;
 
 create index if not exists dispatch_routes_active_idx
   on public.dispatch_routes (is_active, created_at asc);

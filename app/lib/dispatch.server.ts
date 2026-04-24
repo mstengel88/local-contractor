@@ -25,8 +25,11 @@ export type DispatchOrder = {
 export type DispatchRoute = {
   id: string;
   code: string;
+  truckId?: string | null;
   truck: string;
+  driverId?: string | null;
   driver: string;
+  helperId?: string | null;
   helper: string;
   color: string;
   shift: string;
@@ -36,12 +39,115 @@ export type DispatchRoute = {
   updated_at?: string;
 };
 
+export type DispatchTruck = {
+  id: string;
+  label: string;
+  truckType: string;
+  capacity: string;
+  licensePlate?: string | null;
+  isActive?: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type DispatchEmployee = {
+  id: string;
+  name: string;
+  role: "driver" | "helper" | "dispatcher";
+  phone?: string | null;
+  email?: string | null;
+  isActive?: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export const seedDispatchTrucks: DispatchTruck[] = [
+  {
+    id: "truck-12",
+    label: "Truck 12",
+    truckType: "Tri-axle",
+    capacity: "22 TonS",
+    licensePlate: "GHS-12",
+    isActive: true,
+  },
+  {
+    id: "truck-18",
+    label: "Truck 18",
+    truckType: "Walking floor",
+    capacity: "25 YardS",
+    licensePlate: "GHS-18",
+    isActive: true,
+  },
+  {
+    id: "truck-05",
+    label: "Truck 05",
+    truckType: "Tri-axle",
+    capacity: "22 TonS",
+    licensePlate: "GHS-05",
+    isActive: true,
+  },
+];
+
+export const seedDispatchEmployees: DispatchEmployee[] = [
+  {
+    id: "employee-paul",
+    name: "Paul",
+    role: "driver",
+    phone: "",
+    email: "",
+    isActive: true,
+  },
+  {
+    id: "employee-peter",
+    name: "Peter",
+    role: "driver",
+    phone: "",
+    email: "",
+    isActive: true,
+  },
+  {
+    id: "employee-andrew",
+    name: "Andrew",
+    role: "driver",
+    phone: "",
+    email: "",
+    isActive: true,
+  },
+  {
+    id: "employee-manny",
+    name: "Manny",
+    role: "helper",
+    phone: "",
+    email: "",
+    isActive: true,
+  },
+  {
+    id: "employee-luis",
+    name: "Luis",
+    role: "helper",
+    phone: "",
+    email: "",
+    isActive: true,
+  },
+  {
+    id: "employee-nate",
+    name: "Nate",
+    role: "helper",
+    phone: "",
+    email: "",
+    isActive: true,
+  },
+];
+
 export const seedDispatchRoutes: DispatchRoute[] = [
   {
     id: "route-north",
     code: "R-12",
+    truckId: "truck-12",
     truck: "Truck 12",
+    driverId: "employee-paul",
     driver: "Paul",
+    helperId: "employee-manny",
     helper: "Manny",
     color: "#f97316",
     shift: "6:30a - 3:30p",
@@ -51,8 +157,11 @@ export const seedDispatchRoutes: DispatchRoute[] = [
   {
     id: "route-west",
     code: "R-18",
+    truckId: "truck-18",
     truck: "Truck 18",
+    driverId: "employee-peter",
     driver: "Peter",
+    helperId: "employee-luis",
     helper: "Luis",
     color: "#06b6d4",
     shift: "7:00a - 4:00p",
@@ -62,8 +171,11 @@ export const seedDispatchRoutes: DispatchRoute[] = [
   {
     id: "route-south",
     code: "R-05",
+    truckId: "truck-05",
     truck: "Truck 05",
+    driverId: "employee-andrew",
     driver: "Andrew",
+    helperId: "employee-nate",
     helper: "Nate",
     color: "#22c55e",
     shift: "6:00a - 2:30p",
@@ -136,6 +248,8 @@ export const seedDispatchOrders: DispatchOrder[] = [
 
 const ORDERS_TABLE = "dispatch_orders";
 const ROUTES_TABLE = "dispatch_routes";
+const TRUCKS_TABLE = "dispatch_trucks";
+const EMPLOYEES_TABLE = "dispatch_employees";
 
 function normalizeOrder(row: any): DispatchOrder {
   return {
@@ -163,12 +277,44 @@ function normalizeRoute(row: any): DispatchRoute {
   return {
     id: String(row.id),
     code: String(row.code || ""),
+    truckId: row.truck_id || null,
     truck: String(row.truck || ""),
+    driverId: row.driver_id || null,
     driver: String(row.driver || ""),
+    helperId: row.helper_id || null,
     helper: String(row.helper || ""),
     color: String(row.color || "#38bdf8"),
     shift: String(row.shift || ""),
     region: String(row.region || ""),
+    isActive: row.is_active !== false,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+function normalizeTruck(row: any): DispatchTruck {
+  return {
+    id: String(row.id),
+    label: String(row.label || ""),
+    truckType: String(row.truck_type || ""),
+    capacity: String(row.capacity || ""),
+    licensePlate: row.license_plate || null,
+    isActive: row.is_active !== false,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+function normalizeEmployee(row: any): DispatchEmployee {
+  const role =
+    row.role === "helper" || row.role === "dispatcher" ? row.role : "driver";
+
+  return {
+    id: String(row.id),
+    name: String(row.name || ""),
+    role,
+    phone: row.phone || null,
+    email: row.email || null,
     isActive: row.is_active !== false,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -236,13 +382,72 @@ export async function ensureSeedDispatchRoutes() {
     seedDispatchRoutes.map((route) => ({
       id: route.id,
       code: route.code,
+      truck_id: route.truckId || null,
       truck: route.truck,
+      driver_id: route.driverId || null,
       driver: route.driver,
+      helper_id: route.helperId || null,
       helper: route.helper,
       color: route.color,
       shift: route.shift,
       region: route.region,
       is_active: route.isActive !== false,
+    })),
+  );
+
+  if (insertError) {
+    throw new Error(formatSupabaseError(insertError));
+  }
+}
+
+export async function ensureSeedDispatchTrucks() {
+  const { data, error } = await supabaseAdmin
+    .from(TRUCKS_TABLE)
+    .select("id", { count: "exact", head: false })
+    .limit(1);
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+
+  if ((data || []).length > 0) return;
+
+  const { error: insertError } = await supabaseAdmin.from(TRUCKS_TABLE).insert(
+    seedDispatchTrucks.map((truck) => ({
+      id: truck.id,
+      label: truck.label,
+      truck_type: truck.truckType,
+      capacity: truck.capacity,
+      license_plate: truck.licensePlate || null,
+      is_active: truck.isActive !== false,
+    })),
+  );
+
+  if (insertError) {
+    throw new Error(formatSupabaseError(insertError));
+  }
+}
+
+export async function ensureSeedDispatchEmployees() {
+  const { data, error } = await supabaseAdmin
+    .from(EMPLOYEES_TABLE)
+    .select("id", { count: "exact", head: false })
+    .limit(1);
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+
+  if ((data || []).length > 0) return;
+
+  const { error: insertError } = await supabaseAdmin.from(EMPLOYEES_TABLE).insert(
+    seedDispatchEmployees.map((employee) => ({
+      id: employee.id,
+      name: employee.name,
+      role: employee.role,
+      phone: employee.phone || null,
+      email: employee.email || null,
+      is_active: employee.isActive !== false,
     })),
   );
 
@@ -276,6 +481,34 @@ export async function getDispatchRoutes() {
   }
 
   return (data || []).map(normalizeRoute);
+}
+
+export async function getDispatchTrucks() {
+  const { data, error } = await supabaseAdmin
+    .from(TRUCKS_TABLE)
+    .select("*")
+    .eq("is_active", true)
+    .order("label", { ascending: true });
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+
+  return (data || []).map(normalizeTruck);
+}
+
+export async function getDispatchEmployees() {
+  const { data, error } = await supabaseAdmin
+    .from(EMPLOYEES_TABLE)
+    .select("*")
+    .eq("is_active", true)
+    .order("name", { ascending: true });
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+
+  return (data || []).map(normalizeEmployee);
 }
 
 export async function createDispatchOrder(input: {
@@ -323,8 +556,11 @@ export async function createDispatchOrder(input: {
 
 export async function createDispatchRoute(input: {
   code: string;
+  truckId?: string;
   truck: string;
+  driverId?: string;
   driver: string;
+  helperId?: string;
   helper?: string;
   color?: string;
   shift?: string;
@@ -337,8 +573,11 @@ export async function createDispatchRoute(input: {
     .insert({
       id,
       code: input.code,
+      truck_id: input.truckId || null,
       truck: input.truck,
+      driver_id: input.driverId || null,
       driver: input.driver,
+      helper_id: input.helperId || null,
       helper: input.helper || "",
       color: input.color || "#38bdf8",
       shift: input.shift || "",
@@ -353,6 +592,62 @@ export async function createDispatchRoute(input: {
   }
 
   return normalizeRoute(data);
+}
+
+export async function createDispatchTruck(input: {
+  label: string;
+  truckType?: string;
+  capacity?: string;
+  licensePlate?: string;
+}) {
+  const id = `truck-${Date.now().toString(36)}`;
+
+  const { data, error } = await supabaseAdmin
+    .from(TRUCKS_TABLE)
+    .insert({
+      id,
+      label: input.label,
+      truck_type: input.truckType || "",
+      capacity: input.capacity || "",
+      license_plate: input.licensePlate || null,
+      is_active: true,
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+
+  return normalizeTruck(data);
+}
+
+export async function createDispatchEmployee(input: {
+  name: string;
+  role: DispatchEmployee["role"];
+  phone?: string;
+  email?: string;
+}) {
+  const id = `employee-${Date.now().toString(36)}`;
+
+  const { data, error } = await supabaseAdmin
+    .from(EMPLOYEES_TABLE)
+    .insert({
+      id,
+      name: input.name,
+      role: input.role,
+      phone: input.phone || null,
+      email: input.email || null,
+      is_active: true,
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+
+  return normalizeEmployee(data);
 }
 
 export async function updateDispatchOrder(

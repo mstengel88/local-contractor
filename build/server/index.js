@@ -3933,12 +3933,91 @@ const route3 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProper
   default: quoteReview,
   loader: loader$7
 }, Symbol.toStringTag, { value: "Module" }));
+const seedDispatchTrucks = [
+  {
+    id: "truck-12",
+    label: "Truck 12",
+    truckType: "Tri-axle",
+    capacity: "22 TonS",
+    licensePlate: "GHS-12",
+    isActive: true
+  },
+  {
+    id: "truck-18",
+    label: "Truck 18",
+    truckType: "Walking floor",
+    capacity: "25 YardS",
+    licensePlate: "GHS-18",
+    isActive: true
+  },
+  {
+    id: "truck-05",
+    label: "Truck 05",
+    truckType: "Tri-axle",
+    capacity: "22 TonS",
+    licensePlate: "GHS-05",
+    isActive: true
+  }
+];
+const seedDispatchEmployees = [
+  {
+    id: "employee-paul",
+    name: "Paul",
+    role: "driver",
+    phone: "",
+    email: "",
+    isActive: true
+  },
+  {
+    id: "employee-peter",
+    name: "Peter",
+    role: "driver",
+    phone: "",
+    email: "",
+    isActive: true
+  },
+  {
+    id: "employee-andrew",
+    name: "Andrew",
+    role: "driver",
+    phone: "",
+    email: "",
+    isActive: true
+  },
+  {
+    id: "employee-manny",
+    name: "Manny",
+    role: "helper",
+    phone: "",
+    email: "",
+    isActive: true
+  },
+  {
+    id: "employee-luis",
+    name: "Luis",
+    role: "helper",
+    phone: "",
+    email: "",
+    isActive: true
+  },
+  {
+    id: "employee-nate",
+    name: "Nate",
+    role: "helper",
+    phone: "",
+    email: "",
+    isActive: true
+  }
+];
 const seedDispatchRoutes = [
   {
     id: "route-north",
     code: "R-12",
+    truckId: "truck-12",
     truck: "Truck 12",
+    driverId: "employee-paul",
     driver: "Paul",
+    helperId: "employee-manny",
     helper: "Manny",
     color: "#f97316",
     shift: "6:30a - 3:30p",
@@ -3948,8 +4027,11 @@ const seedDispatchRoutes = [
   {
     id: "route-west",
     code: "R-18",
+    truckId: "truck-18",
     truck: "Truck 18",
+    driverId: "employee-peter",
     driver: "Peter",
+    helperId: "employee-luis",
     helper: "Luis",
     color: "#06b6d4",
     shift: "7:00a - 4:00p",
@@ -3959,8 +4041,11 @@ const seedDispatchRoutes = [
   {
     id: "route-south",
     code: "R-05",
+    truckId: "truck-05",
     truck: "Truck 05",
+    driverId: "employee-andrew",
     driver: "Andrew",
+    helperId: "employee-nate",
     helper: "Nate",
     color: "#22c55e",
     shift: "6:00a - 2:30p",
@@ -4031,6 +4116,8 @@ const seedDispatchOrders = [
 ];
 const ORDERS_TABLE = "dispatch_orders";
 const ROUTES_TABLE = "dispatch_routes";
+const TRUCKS_TABLE = "dispatch_trucks";
+const EMPLOYEES_TABLE = "dispatch_employees";
 function normalizeOrder(row) {
   return {
     id: String(row.id),
@@ -4055,12 +4142,40 @@ function normalizeRoute(row) {
   return {
     id: String(row.id),
     code: String(row.code || ""),
+    truckId: row.truck_id || null,
     truck: String(row.truck || ""),
+    driverId: row.driver_id || null,
     driver: String(row.driver || ""),
+    helperId: row.helper_id || null,
     helper: String(row.helper || ""),
     color: String(row.color || "#38bdf8"),
     shift: String(row.shift || ""),
     region: String(row.region || ""),
+    isActive: row.is_active !== false,
+    created_at: row.created_at,
+    updated_at: row.updated_at
+  };
+}
+function normalizeTruck(row) {
+  return {
+    id: String(row.id),
+    label: String(row.label || ""),
+    truckType: String(row.truck_type || ""),
+    capacity: String(row.capacity || ""),
+    licensePlate: row.license_plate || null,
+    isActive: row.is_active !== false,
+    created_at: row.created_at,
+    updated_at: row.updated_at
+  };
+}
+function normalizeEmployee(row) {
+  const role = row.role === "helper" || row.role === "dispatcher" ? row.role : "driver";
+  return {
+    id: String(row.id),
+    name: String(row.name || ""),
+    role,
+    phone: row.phone || null,
+    email: row.email || null,
     isActive: row.is_active !== false,
     created_at: row.created_at,
     updated_at: row.updated_at
@@ -4112,13 +4227,56 @@ async function ensureSeedDispatchRoutes() {
     seedDispatchRoutes.map((route30) => ({
       id: route30.id,
       code: route30.code,
+      truck_id: route30.truckId || null,
       truck: route30.truck,
+      driver_id: route30.driverId || null,
       driver: route30.driver,
+      helper_id: route30.helperId || null,
       helper: route30.helper,
       color: route30.color,
       shift: route30.shift,
       region: route30.region,
       is_active: route30.isActive !== false
+    }))
+  );
+  if (insertError) {
+    throw new Error(formatSupabaseError(insertError));
+  }
+}
+async function ensureSeedDispatchTrucks() {
+  const { data: data2, error } = await supabaseAdmin.from(TRUCKS_TABLE).select("id", { count: "exact", head: false }).limit(1);
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+  if ((data2 || []).length > 0) return;
+  const { error: insertError } = await supabaseAdmin.from(TRUCKS_TABLE).insert(
+    seedDispatchTrucks.map((truck) => ({
+      id: truck.id,
+      label: truck.label,
+      truck_type: truck.truckType,
+      capacity: truck.capacity,
+      license_plate: truck.licensePlate || null,
+      is_active: truck.isActive !== false
+    }))
+  );
+  if (insertError) {
+    throw new Error(formatSupabaseError(insertError));
+  }
+}
+async function ensureSeedDispatchEmployees() {
+  const { data: data2, error } = await supabaseAdmin.from(EMPLOYEES_TABLE).select("id", { count: "exact", head: false }).limit(1);
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+  if ((data2 || []).length > 0) return;
+  const { error: insertError } = await supabaseAdmin.from(EMPLOYEES_TABLE).insert(
+    seedDispatchEmployees.map((employee) => ({
+      id: employee.id,
+      name: employee.name,
+      role: employee.role,
+      phone: employee.phone || null,
+      email: employee.email || null,
+      is_active: employee.isActive !== false
     }))
   );
   if (insertError) {
@@ -4138,6 +4296,20 @@ async function getDispatchRoutes() {
     throw new Error(formatSupabaseError(error));
   }
   return (data2 || []).map(normalizeRoute);
+}
+async function getDispatchTrucks() {
+  const { data: data2, error } = await supabaseAdmin.from(TRUCKS_TABLE).select("*").eq("is_active", true).order("label", { ascending: true });
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+  return (data2 || []).map(normalizeTruck);
+}
+async function getDispatchEmployees() {
+  const { data: data2, error } = await supabaseAdmin.from(EMPLOYEES_TABLE).select("*").eq("is_active", true).order("name", { ascending: true });
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+  return (data2 || []).map(normalizeEmployee);
 }
 async function createDispatchOrder(input) {
   const id = `D-${Date.now().toString().slice(-6)}`;
@@ -4167,8 +4339,11 @@ async function createDispatchRoute(input) {
   const { data: data2, error } = await supabaseAdmin.from(ROUTES_TABLE).insert({
     id,
     code: input.code,
+    truck_id: input.truckId || null,
     truck: input.truck,
+    driver_id: input.driverId || null,
     driver: input.driver,
+    helper_id: input.helperId || null,
     helper: input.helper || "",
     color: input.color || "#38bdf8",
     shift: input.shift || "",
@@ -4179,6 +4354,36 @@ async function createDispatchRoute(input) {
     throw new Error(formatSupabaseError(error));
   }
   return normalizeRoute(data2);
+}
+async function createDispatchTruck(input) {
+  const id = `truck-${Date.now().toString(36)}`;
+  const { data: data2, error } = await supabaseAdmin.from(TRUCKS_TABLE).insert({
+    id,
+    label: input.label,
+    truck_type: input.truckType || "",
+    capacity: input.capacity || "",
+    license_plate: input.licensePlate || null,
+    is_active: true
+  }).select("*").single();
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+  return normalizeTruck(data2);
+}
+async function createDispatchEmployee(input) {
+  const id = `employee-${Date.now().toString(36)}`;
+  const { data: data2, error } = await supabaseAdmin.from(EMPLOYEES_TABLE).insert({
+    id,
+    name: input.name,
+    role: input.role,
+    phone: input.phone || null,
+    email: input.email || null,
+    is_active: true
+  }).select("*").single();
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+  return normalizeEmployee(data2);
 }
 async function updateDispatchOrder(id, patch) {
   const payload = {};
@@ -4225,11 +4430,15 @@ function getDispatchPath(url) {
 }
 async function loadDispatchState() {
   try {
+    await ensureSeedDispatchTrucks();
+    await ensureSeedDispatchEmployees();
     await ensureSeedDispatchOrders();
     await ensureSeedDispatchRoutes();
     return {
       orders: await getDispatchOrders(),
       routes: await getDispatchRoutes(),
+      trucks: await getDispatchTrucks(),
+      employees: await getDispatchEmployees(),
       storageReady: true,
       storageError: null
     };
@@ -4239,6 +4448,8 @@ async function loadDispatchState() {
     return {
       orders: seedDispatchOrders,
       routes: seedDispatchRoutes,
+      trucks: seedDispatchTrucks,
+      employees: seedDispatchEmployees,
       storageReady: false,
       storageError: message
     };
@@ -4264,6 +4475,8 @@ async function loader$6({
       allowed: false,
       orders: [],
       routes: [],
+      trucks: [],
+      employees: [],
       storageReady: false,
       storageError: null
     });
@@ -4287,7 +4500,9 @@ async function action$d({
         allowed: false,
         loginError: "Invalid password",
         orders: [],
-        routes: []
+        routes: [],
+        trucks: [],
+        employees: []
       }, {
         status: 401
       });
@@ -4309,7 +4524,9 @@ async function action$d({
       allowed: false,
       loginError: "Please log in",
       orders: [],
-      routes: []
+      routes: [],
+      trucks: [],
+      employees: []
     }, {
       status: 401
     });
@@ -4354,9 +4571,15 @@ async function action$d({
     }
     if (intent === "create-route") {
       const code = String(form.get("code") || "").trim();
-      const truck = String(form.get("truck") || "").trim();
-      const driver = String(form.get("driver") || "").trim();
-      if (!code || !truck || !driver) {
+      const truckId = String(form.get("truckId") || "").trim();
+      const driverId = String(form.get("driverId") || "").trim();
+      const helperId = String(form.get("helperId") || "").trim();
+      const trucks = await getDispatchTrucks();
+      const employees = await getDispatchEmployees();
+      const selectedTruck = trucks.find((truck) => truck.id === truckId);
+      const selectedDriver = employees.find((employee) => employee.id === driverId);
+      const selectedHelper = employees.find((employee) => employee.id === helperId);
+      if (!code || !selectedTruck || !selectedDriver) {
         const dispatchState2 = await loadDispatchState();
         return data({
           allowed: true,
@@ -4369,9 +4592,12 @@ async function action$d({
       }
       const created = await createDispatchRoute({
         code,
-        truck,
-        driver,
-        helper: String(form.get("helper") || "").trim(),
+        truckId: selectedTruck.id,
+        truck: selectedTruck.label,
+        driverId: selectedDriver.id,
+        driver: selectedDriver.name,
+        helperId: selectedHelper == null ? void 0 : selectedHelper.id,
+        helper: (selectedHelper == null ? void 0 : selectedHelper.name) || "",
         color: String(form.get("color") || "#38bdf8").trim(),
         shift: String(form.get("shift") || "").trim(),
         region: String(form.get("region") || "").trim()
@@ -4381,6 +4607,62 @@ async function action$d({
         allowed: true,
         ok: true,
         message: `Added ${created.truck} to the route board.`,
+        ...dispatchState
+      });
+    }
+    if (intent === "create-truck") {
+      const label = String(form.get("label") || "").trim();
+      if (!label) {
+        const dispatchState2 = await loadDispatchState();
+        return data({
+          allowed: true,
+          ok: false,
+          message: "Truck name is required.",
+          ...dispatchState2
+        }, {
+          status: 400
+        });
+      }
+      const created = await createDispatchTruck({
+        label,
+        truckType: String(form.get("truckType") || "").trim(),
+        capacity: String(form.get("capacity") || "").trim(),
+        licensePlate: String(form.get("licensePlate") || "").trim()
+      });
+      const dispatchState = await loadDispatchState();
+      return data({
+        allowed: true,
+        ok: true,
+        message: `Added ${created.label} to the fleet.`,
+        ...dispatchState
+      });
+    }
+    if (intent === "create-employee") {
+      const name = String(form.get("name") || "").trim();
+      const rawRole = String(form.get("role") || "driver").trim();
+      const role = rawRole === "helper" || rawRole === "dispatcher" ? rawRole : "driver";
+      if (!name) {
+        const dispatchState2 = await loadDispatchState();
+        return data({
+          allowed: true,
+          ok: false,
+          message: "Employee name is required.",
+          ...dispatchState2
+        }, {
+          status: 400
+        });
+      }
+      const created = await createDispatchEmployee({
+        name,
+        role,
+        phone: String(form.get("phone") || "").trim(),
+        email: String(form.get("email") || "").trim()
+      });
+      const dispatchState = await loadDispatchState();
+      return data({
+        allowed: true,
+        ok: true,
+        message: `Added ${created.name} to employees.`,
         ...dispatchState
       });
     }
@@ -4469,6 +4751,8 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
   const logoutHref = `${dispatchHref}?logout=1`;
   const orders = (actionData == null ? void 0 : actionData.orders) ?? loaderData.orders ?? [];
   const dispatchRoutes = (actionData == null ? void 0 : actionData.routes) ?? loaderData.routes ?? [];
+  const trucks = (actionData == null ? void 0 : actionData.trucks) ?? loaderData.trucks ?? [];
+  const employees = (actionData == null ? void 0 : actionData.employees) ?? loaderData.employees ?? [];
   const storageReady = (actionData == null ? void 0 : actionData.storageReady) ?? loaderData.storageReady ?? false;
   const storageError = (actionData == null ? void 0 : actionData.storageError) ?? loaderData.storageError ?? null;
   const querySelectedOrderId = new URLSearchParams(location.search).get("order");
@@ -4486,6 +4770,8 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
   const inboxOrders = orders.filter((order) => !order.assignedRouteId && order.status === "new");
   const holdOrders = orders.filter((order) => order.status === "hold");
   const scheduledOrders = orders.filter((order) => order.assignedRouteId);
+  const drivers = employees.filter((employee) => employee.role === "driver");
+  const helpers = employees.filter((employee) => employee.role === "helper");
   if (!allowed) {
     return /* @__PURE__ */ jsx("div", {
       style: styles$1.page,
@@ -4903,10 +5189,16 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
                   children: [/* @__PURE__ */ jsx("label", {
                     style: styles$1.label,
                     children: "Truck"
-                  }), /* @__PURE__ */ jsx("input", {
-                    name: "truck",
-                    placeholder: "Truck 22",
-                    style: styles$1.input
+                  }), /* @__PURE__ */ jsxs("select", {
+                    name: "truckId",
+                    style: styles$1.input,
+                    children: [/* @__PURE__ */ jsx("option", {
+                      value: "",
+                      children: "Select truck"
+                    }), trucks.map((truck) => /* @__PURE__ */ jsx("option", {
+                      value: truck.id,
+                      children: truck.label
+                    }, truck.id))]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
@@ -4925,17 +5217,31 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
                   children: [/* @__PURE__ */ jsx("label", {
                     style: styles$1.label,
                     children: "Driver"
-                  }), /* @__PURE__ */ jsx("input", {
-                    name: "driver",
-                    style: styles$1.input
+                  }), /* @__PURE__ */ jsxs("select", {
+                    name: "driverId",
+                    style: styles$1.input,
+                    children: [/* @__PURE__ */ jsx("option", {
+                      value: "",
+                      children: "Select driver"
+                    }), drivers.map((employee) => /* @__PURE__ */ jsx("option", {
+                      value: employee.id,
+                      children: employee.name
+                    }, employee.id))]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
                     style: styles$1.label,
                     children: "Helper"
-                  }), /* @__PURE__ */ jsx("input", {
-                    name: "helper",
-                    style: styles$1.input
+                  }), /* @__PURE__ */ jsxs("select", {
+                    name: "helperId",
+                    style: styles$1.input,
+                    children: [/* @__PURE__ */ jsx("option", {
+                      value: "",
+                      children: "No helper"
+                    }), helpers.map((employee) => /* @__PURE__ */ jsx("option", {
+                      value: employee.id,
+                      children: employee.name
+                    }, employee.id))]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
@@ -4970,6 +5276,180 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
                       width: "100%"
                     },
                     children: "Add Route"
+                  })
+                })]
+              })]
+            })]
+          }), /* @__PURE__ */ jsxs("div", {
+            style: styles$1.panel,
+            children: [/* @__PURE__ */ jsxs("div", {
+              style: styles$1.panelHeader,
+              children: [/* @__PURE__ */ jsxs("div", {
+                children: [/* @__PURE__ */ jsx("h2", {
+                  style: styles$1.panelTitle,
+                  children: "Fleet & Employees"
+                }), /* @__PURE__ */ jsx("p", {
+                  style: styles$1.panelSub,
+                  children: "Add trucks and crew members before building route assignments."
+                })]
+              }), /* @__PURE__ */ jsxs("div", {
+                style: styles$1.headerPill,
+                children: [trucks.length, " trucks / ", employees.length, " people"]
+              })]
+            }), /* @__PURE__ */ jsxs("div", {
+              style: styles$1.resourceSummary,
+              children: [/* @__PURE__ */ jsxs("div", {
+                children: [/* @__PURE__ */ jsx("div", {
+                  style: styles$1.detailLabel,
+                  children: "Trucks"
+                }), /* @__PURE__ */ jsx("div", {
+                  style: styles$1.resourceList,
+                  children: trucks.map((truck) => /* @__PURE__ */ jsx("span", {
+                    style: styles$1.resourcePill,
+                    children: truck.label
+                  }, truck.id))
+                })]
+              }), /* @__PURE__ */ jsxs("div", {
+                children: [/* @__PURE__ */ jsx("div", {
+                  style: styles$1.detailLabel,
+                  children: "Drivers"
+                }), /* @__PURE__ */ jsx("div", {
+                  style: styles$1.resourceList,
+                  children: drivers.map((employee) => /* @__PURE__ */ jsx("span", {
+                    style: styles$1.resourcePill,
+                    children: employee.name
+                  }, employee.id))
+                })]
+              })]
+            }), /* @__PURE__ */ jsxs(Form, {
+              method: "post",
+              style: styles$1.routeCreateForm,
+              children: [/* @__PURE__ */ jsx("input", {
+                type: "hidden",
+                name: "intent",
+                value: "create-truck"
+              }), /* @__PURE__ */ jsxs("div", {
+                style: styles$1.formGridThree,
+                children: [/* @__PURE__ */ jsxs("div", {
+                  children: [/* @__PURE__ */ jsx("label", {
+                    style: styles$1.label,
+                    children: "Truck Name"
+                  }), /* @__PURE__ */ jsx("input", {
+                    name: "label",
+                    placeholder: "Truck 22",
+                    style: styles$1.input
+                  })]
+                }), /* @__PURE__ */ jsxs("div", {
+                  children: [/* @__PURE__ */ jsx("label", {
+                    style: styles$1.label,
+                    children: "Type"
+                  }), /* @__PURE__ */ jsx("input", {
+                    name: "truckType",
+                    placeholder: "Tri-axle",
+                    style: styles$1.input
+                  })]
+                }), /* @__PURE__ */ jsxs("div", {
+                  children: [/* @__PURE__ */ jsx("label", {
+                    style: styles$1.label,
+                    children: "Capacity"
+                  }), /* @__PURE__ */ jsx("input", {
+                    name: "capacity",
+                    placeholder: "22 TonS",
+                    style: styles$1.input
+                  })]
+                })]
+              }), /* @__PURE__ */ jsxs("div", {
+                style: styles$1.formGridTwo,
+                children: [/* @__PURE__ */ jsxs("div", {
+                  children: [/* @__PURE__ */ jsx("label", {
+                    style: styles$1.label,
+                    children: "Plate"
+                  }), /* @__PURE__ */ jsx("input", {
+                    name: "licensePlate",
+                    style: styles$1.input
+                  })]
+                }), /* @__PURE__ */ jsx("div", {
+                  style: {
+                    display: "flex",
+                    alignItems: "flex-end"
+                  },
+                  children: /* @__PURE__ */ jsx("button", {
+                    type: "submit",
+                    style: {
+                      ...styles$1.secondaryButton,
+                      width: "100%"
+                    },
+                    children: "Add Truck"
+                  })
+                })]
+              })]
+            }), /* @__PURE__ */ jsxs(Form, {
+              method: "post",
+              style: styles$1.routeCreateForm,
+              children: [/* @__PURE__ */ jsx("input", {
+                type: "hidden",
+                name: "intent",
+                value: "create-employee"
+              }), /* @__PURE__ */ jsxs("div", {
+                style: styles$1.formGridThree,
+                children: [/* @__PURE__ */ jsxs("div", {
+                  children: [/* @__PURE__ */ jsx("label", {
+                    style: styles$1.label,
+                    children: "Name"
+                  }), /* @__PURE__ */ jsx("input", {
+                    name: "name",
+                    style: styles$1.input
+                  })]
+                }), /* @__PURE__ */ jsxs("div", {
+                  children: [/* @__PURE__ */ jsx("label", {
+                    style: styles$1.label,
+                    children: "Role"
+                  }), /* @__PURE__ */ jsxs("select", {
+                    name: "role",
+                    style: styles$1.input,
+                    children: [/* @__PURE__ */ jsx("option", {
+                      value: "driver",
+                      children: "Driver"
+                    }), /* @__PURE__ */ jsx("option", {
+                      value: "helper",
+                      children: "Helper"
+                    }), /* @__PURE__ */ jsx("option", {
+                      value: "dispatcher",
+                      children: "Dispatcher"
+                    })]
+                  })]
+                }), /* @__PURE__ */ jsxs("div", {
+                  children: [/* @__PURE__ */ jsx("label", {
+                    style: styles$1.label,
+                    children: "Phone"
+                  }), /* @__PURE__ */ jsx("input", {
+                    name: "phone",
+                    style: styles$1.input
+                  })]
+                })]
+              }), /* @__PURE__ */ jsxs("div", {
+                style: styles$1.formGridTwo,
+                children: [/* @__PURE__ */ jsxs("div", {
+                  children: [/* @__PURE__ */ jsx("label", {
+                    style: styles$1.label,
+                    children: "Email"
+                  }), /* @__PURE__ */ jsx("input", {
+                    name: "email",
+                    type: "email",
+                    style: styles$1.input
+                  })]
+                }), /* @__PURE__ */ jsx("div", {
+                  style: {
+                    display: "flex",
+                    alignItems: "flex-end"
+                  },
+                  children: /* @__PURE__ */ jsx("button", {
+                    type: "submit",
+                    style: {
+                      ...styles$1.secondaryButton,
+                      width: "100%"
+                    },
+                    children: "Add Employee"
                   })
                 })]
               })]
@@ -5448,6 +5928,29 @@ const styles$1 = {
     borderTop: "1px solid rgba(51, 65, 85, 0.82)",
     display: "grid",
     gap: 12
+  },
+  resourceSummary: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 14
+  },
+  resourceList: {
+    display: "flex",
+    gap: 8,
+    flexWrap: "wrap",
+    marginTop: 8
+  },
+  resourcePill: {
+    display: "inline-flex",
+    alignItems: "center",
+    minHeight: 28,
+    padding: "0 10px",
+    borderRadius: 999,
+    background: "rgba(2, 6, 23, 0.72)",
+    border: "1px solid rgba(51, 65, 85, 0.95)",
+    color: "#cbd5e1",
+    fontSize: 12,
+    fontWeight: 700
   },
   assignButton: {
     minHeight: 42,
@@ -7865,7 +8368,7 @@ const route29 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.definePrope
   __proto__: null,
   action
 }, Symbol.toStringTag, { value: "Module" }));
-const serverManifest = { "entry": { "module": "/assets/entry.client-Hi1v893O.js", "imports": ["/assets/jsx-runtime-_y2a4OCT.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/root-DJaHMJOf.js", "imports": ["/assets/jsx-runtime-_y2a4OCT.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/_index/route": { "id": "routes/_index/route", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-CBBVwP4O.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/custom-quote": { "id": "routes/custom-quote", "parentId": "root", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/custom-quote-DP0QU3_S.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/quote-review": { "id": "routes/quote-review", "parentId": "root", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/quote-review-qPbAlat6.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch": { "id": "routes/dispatch", "parentId": "root", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-DslT0zOw.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/mobile-dashboard": { "id": "routes/mobile-dashboard", "parentId": "root", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/mobile-dashboard-DXg0ATcK.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.login/route": { "id": "routes/auth.login/route", "parentId": "root", "path": "auth/login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-CfMXwAFC.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.$": { "id": "routes/auth.$", "parentId": "root", "path": "auth/*", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/auth._-jWRsTZ3_.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app": { "id": "routes/app", "parentId": "root", "path": "app", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": true, "module": "/assets/app-DqmvE_W1.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app._index": { "id": "routes/app._index", "parentId": "routes/app", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app._index-GC_ws-sp.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.admin": { "id": "routes/app.admin", "parentId": "routes/app", "path": "admin", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.admin-BjiBp67i.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.additional": { "id": "routes/app.additional", "parentId": "routes/app", "path": "additional", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.additional-C3SA_ndc.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.custom-quote": { "id": "routes/app.custom-quote", "parentId": "routes/app", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.custom-quote-pFDwKQ2f.js", "imports": ["/assets/custom-quote-DP0QU3_S.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.quote-review": { "id": "routes/app.quote-review", "parentId": "routes/app", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.quote-review-KA8LGrfV.js", "imports": ["/assets/quote-review-qPbAlat6.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch": { "id": "routes/app.dispatch", "parentId": "routes/app", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-CCCv-20v.js", "imports": ["/assets/dispatch-DslT0zOw.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.mobile": { "id": "routes/app.mobile", "parentId": "routes/app", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.mobile--ZYi3-6v.js", "imports": ["/assets/mobile-dashboard-DXg0ATcK.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.shipping-estimate": { "id": "routes/api.shipping-estimate", "parentId": "root", "path": "api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.carrier-service": { "id": "routes/api.carrier-service", "parentId": "root", "path": "api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.sync-products": { "id": "routes/api.sync-products", "parentId": "root", "path": "api/sync-products", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.sync-products-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.create-draft-order": { "id": "routes/api.create-draft-order", "parentId": "root", "path": "api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.delete-quote": { "id": "routes/api.delete-quote", "parentId": "root", "path": "api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.update-quote": { "id": "routes/api.update-quote", "parentId": "root", "path": "api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.shipping-estimate": { "id": "routes/app.api.shipping-estimate", "parentId": "root", "path": "app/api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.carrier-service": { "id": "routes/app.api.carrier-service", "parentId": "root", "path": "app/api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.create-draft-order": { "id": "routes/app.api.create-draft-order", "parentId": "root", "path": "app/api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.delete-quote": { "id": "routes/app.api.delete-quote", "parentId": "root", "path": "app/api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.update-quote": { "id": "routes/app.api.update-quote", "parentId": "root", "path": "app/api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.products.update": { "id": "routes/webhooks.products.update", "parentId": "root", "path": "webhooks/products/update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.products.update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.scopes_update": { "id": "routes/webhooks.app.scopes_update", "parentId": "root", "path": "webhooks/app/scopes_update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.scopes_update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.uninstalled": { "id": "routes/webhooks.app.uninstalled", "parentId": "root", "path": "webhooks/app/uninstalled", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.uninstalled-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-0dfb1d20.js", "version": "0dfb1d20", "sri": void 0 };
+const serverManifest = { "entry": { "module": "/assets/entry.client-Hi1v893O.js", "imports": ["/assets/jsx-runtime-_y2a4OCT.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/root-DJaHMJOf.js", "imports": ["/assets/jsx-runtime-_y2a4OCT.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/_index/route": { "id": "routes/_index/route", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-CBBVwP4O.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/custom-quote": { "id": "routes/custom-quote", "parentId": "root", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/custom-quote-DP0QU3_S.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/quote-review": { "id": "routes/quote-review", "parentId": "root", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/quote-review-qPbAlat6.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch": { "id": "routes/dispatch", "parentId": "root", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-FU2sA85K.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/mobile-dashboard": { "id": "routes/mobile-dashboard", "parentId": "root", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/mobile-dashboard-DXg0ATcK.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.login/route": { "id": "routes/auth.login/route", "parentId": "root", "path": "auth/login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-CfMXwAFC.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.$": { "id": "routes/auth.$", "parentId": "root", "path": "auth/*", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/auth._-jWRsTZ3_.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app": { "id": "routes/app", "parentId": "root", "path": "app", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": true, "module": "/assets/app-DqmvE_W1.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app._index": { "id": "routes/app._index", "parentId": "routes/app", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app._index-GC_ws-sp.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.admin": { "id": "routes/app.admin", "parentId": "routes/app", "path": "admin", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.admin-BjiBp67i.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.additional": { "id": "routes/app.additional", "parentId": "routes/app", "path": "additional", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.additional-C3SA_ndc.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.custom-quote": { "id": "routes/app.custom-quote", "parentId": "routes/app", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.custom-quote-pFDwKQ2f.js", "imports": ["/assets/custom-quote-DP0QU3_S.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.quote-review": { "id": "routes/app.quote-review", "parentId": "routes/app", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.quote-review-KA8LGrfV.js", "imports": ["/assets/quote-review-qPbAlat6.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch": { "id": "routes/app.dispatch", "parentId": "routes/app", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-Cpy--N8U.js", "imports": ["/assets/dispatch-FU2sA85K.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.mobile": { "id": "routes/app.mobile", "parentId": "routes/app", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.mobile--ZYi3-6v.js", "imports": ["/assets/mobile-dashboard-DXg0ATcK.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.shipping-estimate": { "id": "routes/api.shipping-estimate", "parentId": "root", "path": "api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.carrier-service": { "id": "routes/api.carrier-service", "parentId": "root", "path": "api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.sync-products": { "id": "routes/api.sync-products", "parentId": "root", "path": "api/sync-products", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.sync-products-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.create-draft-order": { "id": "routes/api.create-draft-order", "parentId": "root", "path": "api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.delete-quote": { "id": "routes/api.delete-quote", "parentId": "root", "path": "api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.update-quote": { "id": "routes/api.update-quote", "parentId": "root", "path": "api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.shipping-estimate": { "id": "routes/app.api.shipping-estimate", "parentId": "root", "path": "app/api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.carrier-service": { "id": "routes/app.api.carrier-service", "parentId": "root", "path": "app/api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.create-draft-order": { "id": "routes/app.api.create-draft-order", "parentId": "root", "path": "app/api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.delete-quote": { "id": "routes/app.api.delete-quote", "parentId": "root", "path": "app/api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.update-quote": { "id": "routes/app.api.update-quote", "parentId": "root", "path": "app/api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.products.update": { "id": "routes/webhooks.products.update", "parentId": "root", "path": "webhooks/products/update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.products.update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.scopes_update": { "id": "routes/webhooks.app.scopes_update", "parentId": "root", "path": "webhooks/app/scopes_update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.scopes_update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.uninstalled": { "id": "routes/webhooks.app.uninstalled", "parentId": "root", "path": "webhooks/app/uninstalled", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.uninstalled-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-08e988d9.js", "version": "08e988d9", "sri": void 0 };
 const assetsBuildDirectory = "build/client";
 const basename = "/";
 const future = { "unstable_optimizeDeps": false, "unstable_passThroughRequests": false, "unstable_subResourceIntegrity": false, "unstable_trailingSlashAwareDataRequests": false, "unstable_previewServerPrerendering": false, "v8_middleware": false, "v8_splitRouteModules": false, "v8_viteEnvironmentApi": false };

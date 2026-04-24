@@ -7,16 +7,26 @@ import {
   hasAdminQuoteAccess,
 } from "../lib/admin-quote-auth.server";
 import {
+  createDispatchEmployee,
   createDispatchRoute,
+  createDispatchTruck,
   createDispatchOrder,
+  ensureSeedDispatchEmployees,
   ensureSeedDispatchOrders,
   ensureSeedDispatchRoutes,
+  ensureSeedDispatchTrucks,
+  getDispatchEmployees,
   getDispatchOrders,
   getDispatchRoutes,
+  getDispatchTrucks,
+  type DispatchEmployee,
   type DispatchOrder,
   type DispatchRoute,
+  type DispatchTruck,
+  seedDispatchEmployees,
   seedDispatchOrders,
   seedDispatchRoutes,
+  seedDispatchTrucks,
   updateDispatchOrder,
 } from "../lib/dispatch.server";
 
@@ -61,11 +71,15 @@ function getDispatchPath(url: URL) {
 
 async function loadDispatchState() {
   try {
+    await ensureSeedDispatchTrucks();
+    await ensureSeedDispatchEmployees();
     await ensureSeedDispatchOrders();
     await ensureSeedDispatchRoutes();
     return {
       orders: await getDispatchOrders(),
       routes: await getDispatchRoutes(),
+      trucks: await getDispatchTrucks(),
+      employees: await getDispatchEmployees(),
       storageReady: true,
       storageError: null,
     };
@@ -76,6 +90,8 @@ async function loadDispatchState() {
     return {
       orders: seedDispatchOrders,
       routes: seedDispatchRoutes,
+      trucks: seedDispatchTrucks,
+      employees: seedDispatchEmployees,
       storageReady: false,
       storageError: message,
     };
@@ -100,6 +116,8 @@ export async function loader({ request }: any) {
       allowed: false,
       orders: [],
       routes: [],
+      trucks: [],
+      employees: [],
       storageReady: false,
       storageError: null,
     });
@@ -123,7 +141,14 @@ export async function action({ request }: any) {
 
     if (!expected || password !== expected) {
       return data(
-        { allowed: false, loginError: "Invalid password", orders: [], routes: [] },
+        {
+          allowed: false,
+          loginError: "Invalid password",
+          orders: [],
+          routes: [],
+          trucks: [],
+          employees: [],
+        },
         { status: 401 },
       );
     }
@@ -147,7 +172,14 @@ export async function action({ request }: any) {
   const allowed = await hasAdminQuoteAccess(request);
   if (!allowed) {
     return data(
-      { allowed: false, loginError: "Please log in", orders: [], routes: [] },
+      {
+        allowed: false,
+        loginError: "Please log in",
+        orders: [],
+        routes: [],
+        trucks: [],
+        employees: [],
+      },
       { status: 401 },
     );
   }
@@ -198,10 +230,16 @@ export async function action({ request }: any) {
 
     if (intent === "create-route") {
       const code = String(form.get("code") || "").trim();
-      const truck = String(form.get("truck") || "").trim();
-      const driver = String(form.get("driver") || "").trim();
+      const truckId = String(form.get("truckId") || "").trim();
+      const driverId = String(form.get("driverId") || "").trim();
+      const helperId = String(form.get("helperId") || "").trim();
+      const trucks = await getDispatchTrucks();
+      const employees = await getDispatchEmployees();
+      const selectedTruck = trucks.find((truck) => truck.id === truckId);
+      const selectedDriver = employees.find((employee) => employee.id === driverId);
+      const selectedHelper = employees.find((employee) => employee.id === helperId);
 
-      if (!code || !truck || !driver) {
+      if (!code || !selectedTruck || !selectedDriver) {
         const dispatchState = await loadDispatchState();
         return data(
           {
@@ -216,9 +254,12 @@ export async function action({ request }: any) {
 
       const created = await createDispatchRoute({
         code,
-        truck,
-        driver,
-        helper: String(form.get("helper") || "").trim(),
+        truckId: selectedTruck.id,
+        truck: selectedTruck.label,
+        driverId: selectedDriver.id,
+        driver: selectedDriver.name,
+        helperId: selectedHelper?.id,
+        helper: selectedHelper?.name || "",
         color: String(form.get("color") || "#38bdf8").trim(),
         shift: String(form.get("shift") || "").trim(),
         region: String(form.get("region") || "").trim(),
@@ -230,6 +271,74 @@ export async function action({ request }: any) {
         allowed: true,
         ok: true,
         message: `Added ${created.truck} to the route board.`,
+        ...dispatchState,
+      });
+    }
+
+    if (intent === "create-truck") {
+      const label = String(form.get("label") || "").trim();
+      if (!label) {
+        const dispatchState = await loadDispatchState();
+        return data(
+          {
+            allowed: true,
+            ok: false,
+            message: "Truck name is required.",
+            ...dispatchState,
+          },
+          { status: 400 },
+        );
+      }
+
+      const created = await createDispatchTruck({
+        label,
+        truckType: String(form.get("truckType") || "").trim(),
+        capacity: String(form.get("capacity") || "").trim(),
+        licensePlate: String(form.get("licensePlate") || "").trim(),
+      });
+
+      const dispatchState = await loadDispatchState();
+
+      return data({
+        allowed: true,
+        ok: true,
+        message: `Added ${created.label} to the fleet.`,
+        ...dispatchState,
+      });
+    }
+
+    if (intent === "create-employee") {
+      const name = String(form.get("name") || "").trim();
+      const rawRole = String(form.get("role") || "driver").trim();
+      const role =
+        rawRole === "helper" || rawRole === "dispatcher" ? rawRole : "driver";
+
+      if (!name) {
+        const dispatchState = await loadDispatchState();
+        return data(
+          {
+            allowed: true,
+            ok: false,
+            message: "Employee name is required.",
+            ...dispatchState,
+          },
+          { status: 400 },
+        );
+      }
+
+      const created = await createDispatchEmployee({
+        name,
+        role,
+        phone: String(form.get("phone") || "").trim(),
+        email: String(form.get("email") || "").trim(),
+      });
+
+      const dispatchState = await loadDispatchState();
+
+      return data({
+        allowed: true,
+        ok: true,
+        message: `Added ${created.name} to employees.`,
         ...dispatchState,
       });
     }
@@ -332,6 +441,8 @@ export default function DispatchPage() {
   const logoutHref = `${dispatchHref}?logout=1`;
   const orders = (actionData?.orders ?? loaderData.orders ?? []) as DispatchOrder[];
   const dispatchRoutes = (actionData?.routes ?? loaderData.routes ?? []) as DispatchRoute[];
+  const trucks = (actionData?.trucks ?? loaderData.trucks ?? []) as DispatchTruck[];
+  const employees = (actionData?.employees ?? loaderData.employees ?? []) as DispatchEmployee[];
   const storageReady = actionData?.storageReady ?? loaderData.storageReady ?? false;
   const storageError = actionData?.storageError ?? loaderData.storageError ?? null;
 
@@ -363,6 +474,8 @@ export default function DispatchPage() {
   const inboxOrders = orders.filter((order) => !order.assignedRouteId && order.status === "new");
   const holdOrders = orders.filter((order) => order.status === "hold");
   const scheduledOrders = orders.filter((order) => order.assignedRouteId);
+  const drivers = employees.filter((employee) => employee.role === "driver");
+  const helpers = employees.filter((employee) => employee.role === "helper");
 
   if (!allowed) {
     return (
@@ -663,7 +776,14 @@ export default function DispatchPage() {
                   </div>
                   <div>
                     <label style={styles.label}>Truck</label>
-                    <input name="truck" placeholder="Truck 22" style={styles.input} />
+                    <select name="truckId" style={styles.input}>
+                      <option value="">Select truck</option>
+                      {trucks.map((truck) => (
+                        <option key={truck.id} value={truck.id}>
+                          {truck.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label style={styles.label}>Color</label>
@@ -679,11 +799,25 @@ export default function DispatchPage() {
                 <div style={styles.formGridThree}>
                   <div>
                     <label style={styles.label}>Driver</label>
-                    <input name="driver" style={styles.input} />
+                    <select name="driverId" style={styles.input}>
+                      <option value="">Select driver</option>
+                      {drivers.map((employee) => (
+                        <option key={employee.id} value={employee.id}>
+                          {employee.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label style={styles.label}>Helper</label>
-                    <input name="helper" style={styles.input} />
+                    <select name="helperId" style={styles.input}>
+                      <option value="">No helper</option>
+                      {helpers.map((employee) => (
+                        <option key={employee.id} value={employee.id}>
+                          {employee.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label style={styles.label}>Shift</label>
@@ -699,6 +833,105 @@ export default function DispatchPage() {
                   <div style={{ display: "flex", alignItems: "flex-end" }}>
                     <button type="submit" style={{ ...styles.primaryButton, width: "100%" }}>
                       Add Route
+                    </button>
+                  </div>
+                </div>
+              </Form>
+            </div>
+
+            <div style={styles.panel}>
+              <div style={styles.panelHeader}>
+                <div>
+                  <h2 style={styles.panelTitle}>Fleet & Employees</h2>
+                  <p style={styles.panelSub}>
+                    Add trucks and crew members before building route assignments.
+                  </p>
+                </div>
+                <div style={styles.headerPill}>
+                  {trucks.length} trucks / {employees.length} people
+                </div>
+              </div>
+
+              <div style={styles.resourceSummary}>
+                <div>
+                  <div style={styles.detailLabel}>Trucks</div>
+                  <div style={styles.resourceList}>
+                    {trucks.map((truck) => (
+                      <span key={truck.id} style={styles.resourcePill}>
+                        {truck.label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div style={styles.detailLabel}>Drivers</div>
+                  <div style={styles.resourceList}>
+                    {drivers.map((employee) => (
+                      <span key={employee.id} style={styles.resourcePill}>
+                        {employee.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <Form method="post" style={styles.routeCreateForm}>
+                <input type="hidden" name="intent" value="create-truck" />
+                <div style={styles.formGridThree}>
+                  <div>
+                    <label style={styles.label}>Truck Name</label>
+                    <input name="label" placeholder="Truck 22" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Type</label>
+                    <input name="truckType" placeholder="Tri-axle" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Capacity</label>
+                    <input name="capacity" placeholder="22 TonS" style={styles.input} />
+                  </div>
+                </div>
+                <div style={styles.formGridTwo}>
+                  <div>
+                    <label style={styles.label}>Plate</label>
+                    <input name="licensePlate" style={styles.input} />
+                  </div>
+                  <div style={{ display: "flex", alignItems: "flex-end" }}>
+                    <button type="submit" style={{ ...styles.secondaryButton, width: "100%" }}>
+                      Add Truck
+                    </button>
+                  </div>
+                </div>
+              </Form>
+
+              <Form method="post" style={styles.routeCreateForm}>
+                <input type="hidden" name="intent" value="create-employee" />
+                <div style={styles.formGridThree}>
+                  <div>
+                    <label style={styles.label}>Name</label>
+                    <input name="name" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Role</label>
+                    <select name="role" style={styles.input}>
+                      <option value="driver">Driver</option>
+                      <option value="helper">Helper</option>
+                      <option value="dispatcher">Dispatcher</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={styles.label}>Phone</label>
+                    <input name="phone" style={styles.input} />
+                  </div>
+                </div>
+                <div style={styles.formGridTwo}>
+                  <div>
+                    <label style={styles.label}>Email</label>
+                    <input name="email" type="email" style={styles.input} />
+                  </div>
+                  <div style={{ display: "flex", alignItems: "flex-end" }}>
+                    <button type="submit" style={{ ...styles.secondaryButton, width: "100%" }}>
+                      Add Employee
                     </button>
                   </div>
                 </div>
@@ -1142,6 +1375,29 @@ const styles = {
     borderTop: "1px solid rgba(51, 65, 85, 0.82)",
     display: "grid",
     gap: 12,
+  } as const,
+  resourceSummary: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 14,
+  } as const,
+  resourceList: {
+    display: "flex",
+    gap: 8,
+    flexWrap: "wrap" as const,
+    marginTop: 8,
+  },
+  resourcePill: {
+    display: "inline-flex",
+    alignItems: "center",
+    minHeight: 28,
+    padding: "0 10px",
+    borderRadius: 999,
+    background: "rgba(2, 6, 23, 0.72)",
+    border: "1px solid rgba(51, 65, 85, 0.95)",
+    color: "#cbd5e1",
+    fontSize: 12,
+    fontWeight: 700,
   } as const,
   assignButton: {
     minHeight: 42,
