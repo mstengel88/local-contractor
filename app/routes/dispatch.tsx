@@ -16,6 +16,7 @@ import {
   ensureSeedDispatchRoutes,
   ensureSeedDispatchTrucks,
   getDispatchEmployees,
+  getNextRouteStopSequence,
   getDispatchOrders,
   getDispatchRoutes,
   getDispatchTrucks,
@@ -29,6 +30,81 @@ import {
   seedDispatchTrucks,
   updateDispatchOrder,
 } from "../lib/dispatch.server";
+
+function getDeliveryStatusLabel(status?: DispatchOrder["deliveryStatus"]) {
+  if (status === "en_route") return "En route";
+  if (status === "arrived") return "Arrived";
+  if (status === "delivered") return "Delivered";
+  if (status === "issue") return "Issue";
+  return "Not started";
+}
+
+function getDeliveryStatusColor(status?: DispatchOrder["deliveryStatus"]) {
+  if (status === "delivered") return "#22c55e";
+  if (status === "arrived") return "#38bdf8";
+  if (status === "en_route") return "#f97316";
+  if (status === "issue") return "#ef4444";
+  return "#64748b";
+}
+
+function readEmailField(raw: string, labels: string[]) {
+  for (const label of labels) {
+    const match = raw.match(new RegExp(`^\\s*${label}\\s*:?\\s*(.+)$`, "im"));
+    if (match?.[1]) return match[1].trim();
+  }
+  return "";
+}
+
+function parseDispatchEmail(raw: string) {
+  const subject = readEmailField(raw, ["Subject"]);
+  const contact =
+    readEmailField(raw, ["Email", "Contact", "Customer Email"]) ||
+    raw.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] ||
+    "";
+  const customer =
+    readEmailField(raw, ["Customer", "Client", "Name", "Company"]) ||
+    subject.replace(/^(order|delivery|quote)\s*[:-]\s*/i, "").trim();
+  const address = readEmailField(raw, [
+    "Address",
+    "Delivery Address",
+    "Jobsite",
+    "Job Site",
+    "Ship To",
+  ]);
+  const city = readEmailField(raw, ["City", "City/State", "Location"]);
+  const material = readEmailField(raw, ["Material", "Product", "Item"]);
+  const quantity = readEmailField(raw, ["Quantity", "Qty", "Amount"]);
+  const unit = readEmailField(raw, ["Unit", "UOM"]) || "TonS";
+  const requestedWindow =
+    readEmailField(raw, ["Requested Window", "Delivery Window", "Requested", "Date", "When"]) ||
+    "Needs scheduling";
+  const truckPreference = readEmailField(raw, ["Truck", "Truck Preference", "Equipment"]);
+  const notes = readEmailField(raw, ["Notes", "Instructions", "Special Instructions"]);
+
+  return {
+    subject,
+    customer: customer || "Email Order",
+    contact,
+    address,
+    city,
+    material,
+    quantity,
+    unit,
+    requestedWindow,
+    truckPreference,
+    notes,
+  };
+}
+
+function buildChecklistJson(form: FormData) {
+  return JSON.stringify({
+    siteSafe: form.get("siteSafe") === "on",
+    loadMatchesTicket: form.get("loadMatchesTicket") === "on",
+    customerConfirmedPlacement: form.get("customerConfirmedPlacement") === "on",
+    photosTaken: form.get("photosTaken") === "on",
+    customChecklist: String(form.get("customChecklist") || "").trim(),
+  });
+}
 
 function metricCard(label: string, value: string, accent: string) {
   return (
@@ -228,6 +304,62 @@ export async function action({ request }: any) {
       });
     }
 
+    if (intent === "parse-email-order") {
+      const rawEmail = String(form.get("rawEmail") || "").trim();
+      if (!rawEmail) {
+        const dispatchState = await loadDispatchState();
+        return data(
+          {
+            allowed: true,
+            ok: false,
+            message: "Paste the order email before parsing.",
+            ...dispatchState,
+          },
+          { status: 400 },
+        );
+      }
+
+      const parsed = parseDispatchEmail(rawEmail);
+      if (!parsed.address || !parsed.material) {
+        const dispatchState = await loadDispatchState();
+        return data(
+          {
+            allowed: true,
+            ok: false,
+            message: "I could not find an address and material in that email. Add labels like Address: and Material: and try again.",
+            ...dispatchState,
+          },
+          { status: 400 },
+        );
+      }
+
+      const created = await createDispatchOrder({
+        source: "email",
+        customer: parsed.customer,
+        contact: parsed.contact,
+        address: parsed.address,
+        city: parsed.city,
+        material: parsed.material,
+        quantity: parsed.quantity,
+        unit: parsed.unit,
+        requestedWindow: parsed.requestedWindow,
+        truckPreference: parsed.truckPreference,
+        notes: parsed.notes || "Parsed from order email.",
+        emailSubject: parsed.subject,
+        rawEmail,
+      });
+
+      const dispatchState = await loadDispatchState();
+
+      return data({
+        allowed: true,
+        ok: true,
+        message: `Parsed email order for ${created.customer}.`,
+        selectedOrderId: created.id,
+        ...dispatchState,
+      });
+    }
+
     if (intent === "create-route") {
       const code = String(form.get("code") || "").trim();
       const truckId = String(form.get("truckId") || "").trim();
@@ -351,9 +483,14 @@ export async function action({ request }: any) {
         throw new Error("Missing order or route assignment details");
       }
 
+      const stopSequence = await getNextRouteStopSequence(routeId);
+
       await updateDispatchOrder(orderId, {
         status: "scheduled",
         assignedRouteId: routeId,
+        stopSequence,
+        deliveryStatus: "not_started",
+        eta: String(form.get("eta") || "").trim() || null,
       });
 
       const dispatchState = await loadDispatchState();
@@ -367,6 +504,40 @@ export async function action({ request }: any) {
       });
     }
 
+    if (intent === "sequence-route") {
+      const routeId = String(form.get("routeId") || "").trim();
+      const mode = String(form.get("sequenceMode") || "city").trim();
+      if (!routeId) throw new Error("Missing route selection");
+
+      const routeOrders = (await getDispatchOrders())
+        .filter((order) => order.assignedRouteId === routeId)
+        .sort((a, b) => {
+          if (mode === "reverse") {
+            return Number(b.stopSequence || 0) - Number(a.stopSequence || 0);
+          }
+          if (mode === "address") {
+            return `${a.address} ${a.city}`.localeCompare(`${b.address} ${b.city}`);
+          }
+          return `${a.city} ${a.address}`.localeCompare(`${b.city} ${b.address}`);
+        });
+
+      await Promise.all(
+        routeOrders.map((order, index) =>
+          updateDispatchOrder(order.id, { stopSequence: index + 1 }),
+        ),
+      );
+
+      const dispatchState = await loadDispatchState();
+
+      return data({
+        allowed: true,
+        ok: true,
+        message: "Route stop sequence updated.",
+        selectedOrderId: routeOrders[0]?.id,
+        ...dispatchState,
+      });
+    }
+
     if (intent === "hold-order") {
       const orderId = String(form.get("orderId") || "").trim();
       if (!orderId) throw new Error("Missing order selection");
@@ -374,6 +545,9 @@ export async function action({ request }: any) {
       await updateDispatchOrder(orderId, {
         status: "hold",
         assignedRouteId: null,
+        stopSequence: null,
+        deliveryStatus: "not_started",
+        eta: null,
       });
 
       const dispatchState = await loadDispatchState();
@@ -394,6 +568,9 @@ export async function action({ request }: any) {
       await updateDispatchOrder(orderId, {
         status: "new",
         assignedRouteId: null,
+        stopSequence: null,
+        deliveryStatus: "not_started",
+        eta: null,
       });
 
       const dispatchState = await loadDispatchState();
@@ -402,6 +579,51 @@ export async function action({ request }: any) {
         allowed: true,
         ok: true,
         message: "Order moved back to inbox.",
+        selectedOrderId: orderId,
+        ...dispatchState,
+      });
+    }
+
+    if (intent === "update-stop-status") {
+      const orderId = String(form.get("orderId") || "").trim();
+      const rawDeliveryStatus = String(form.get("deliveryStatus") || "").trim();
+      const deliveryStatus =
+        rawDeliveryStatus === "en_route" ||
+        rawDeliveryStatus === "arrived" ||
+        rawDeliveryStatus === "delivered" ||
+        rawDeliveryStatus === "issue"
+          ? rawDeliveryStatus
+          : "not_started";
+
+      if (!orderId) throw new Error("Missing order selection");
+
+      const now = new Date().toISOString();
+      const patch: Parameters<typeof updateDispatchOrder>[1] = {
+        deliveryStatus,
+        proofName: String(form.get("proofName") || "").trim() || null,
+        proofNotes: String(form.get("proofNotes") || "").trim() || null,
+        signatureName: String(form.get("signatureName") || "").trim() || null,
+        signatureData: String(form.get("signatureData") || "").trim() || null,
+        photoUrls: String(form.get("photoUrls") || "").trim() || null,
+        ticketNumbers: String(form.get("ticketNumbers") || "").trim() || null,
+        inspectionStatus: String(form.get("inspectionStatus") || "").trim() || null,
+        checklistJson: buildChecklistJson(form),
+      };
+
+      if (deliveryStatus === "arrived") patch.arrivedAt = now;
+      if (deliveryStatus === "delivered") {
+        patch.departedAt = now;
+        patch.deliveredAt = now;
+      }
+
+      await updateDispatchOrder(orderId, patch);
+
+      const dispatchState = await loadDispatchState();
+
+      return data({
+        allowed: true,
+        ok: true,
+        message: `Stop marked ${getDeliveryStatusLabel(deliveryStatus).toLowerCase()}.`,
         selectedOrderId: orderId,
         ...dispatchState,
       });
@@ -438,6 +660,7 @@ export default function DispatchPage() {
   const reviewHref = isEmbeddedRoute ? "/app/quote-review" : "/quote-review";
   const mobileHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
+  const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
   const logoutHref = `${dispatchHref}?logout=1`;
   const orders = (actionData?.orders ?? loaderData.orders ?? []) as DispatchOrder[];
   const dispatchRoutes = (actionData?.routes ?? loaderData.routes ?? []) as DispatchRoute[];
@@ -457,7 +680,12 @@ export default function DispatchPage() {
   const routes = useMemo(
     () =>
       dispatchRoutes.map((route) => {
-        const routeOrders = orders.filter((order) => order.assignedRouteId === route.id);
+        const routeOrders = orders
+          .filter((order) => order.assignedRouteId === route.id)
+          .sort(
+            (a, b) =>
+              Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999),
+          );
         return {
           ...route,
           stops: routeOrders.length,
@@ -474,6 +702,7 @@ export default function DispatchPage() {
   const inboxOrders = orders.filter((order) => !order.assignedRouteId && order.status === "new");
   const holdOrders = orders.filter((order) => order.status === "hold");
   const scheduledOrders = orders.filter((order) => order.assignedRouteId);
+  const deliveredOrders = orders.filter((order) => order.deliveryStatus === "delivered");
   const drivers = employees.filter((employee) => employee.role === "driver");
   const helpers = employees.filter((employee) => employee.role === "helper");
 
@@ -531,6 +760,7 @@ export default function DispatchPage() {
             <a href={mobileHref} style={styles.ghostButton}>Dashboard</a>
             <a href={quoteHref} style={styles.ghostButton}>Quote Tool</a>
             <a href={reviewHref} style={styles.ghostButton}>Review Quotes</a>
+            <a href={driverHref} style={styles.ghostButton}>Driver View</a>
             <a href={logoutHref} style={styles.ghostButton}>Log Out</a>
           </div>
         </div>
@@ -556,7 +786,7 @@ export default function DispatchPage() {
           {metricCard("Inbox", String(inboxOrders.length), "#f97316")}
           {metricCard("Scheduled", String(scheduledOrders.length), "#22c55e")}
           {metricCard("On Hold", String(holdOrders.length), "#eab308")}
-          {metricCard("Active Trucks", String(routes.length), "#38bdf8")}
+          {metricCard("Delivered", String(deliveredOrders.length), "#38bdf8")}
         </div>
 
         <div style={styles.workspaceGrid}>
@@ -603,12 +833,15 @@ export default function DispatchPage() {
                         <span>{order.id}</span>
                         <span>{order.quantity} {order.unit}</span>
                         <span>{order.material}</span>
+                        {order.stopSequence ? <span>Stop {order.stopSequence}</span> : null}
                       </div>
 
                       <div style={styles.queueFooter}>
                         <span>{order.requestedWindow}</span>
                         <span>
-                          {route ? `${route.truck} / ${route.driver}` : "Unassigned"}
+                          {route
+                            ? `${route.truck} / ${getDeliveryStatusLabel(order.deliveryStatus)}`
+                            : "Unassigned"}
                         </span>
                       </div>
                     </a>
@@ -704,6 +937,31 @@ export default function DispatchPage() {
                 </button>
               </Form>
             </div>
+
+            <div style={styles.panel}>
+              <div style={styles.panelHeader}>
+                <div>
+                  <h2 style={styles.panelTitle}>Email Parser</h2>
+                  <p style={styles.panelSub}>
+                    Paste an order email here to prefill a dispatch card. Use labels like Customer:, Address:, Material:, Quantity:, and Requested Window: for best results.
+                  </p>
+                </div>
+                <div style={styles.headerPill}>Inbox Prep</div>
+              </div>
+
+              <Form method="post" style={{ display: "grid", gap: 12 }}>
+                <input type="hidden" name="intent" value="parse-email-order" />
+                <textarea
+                  name="rawEmail"
+                  rows={9}
+                  placeholder={"Subject: Delivery order\nCustomer: Green Hills Supply\nAddress: 2543 W Applebrook Lane\nCity: Oak Creek, WI\nMaterial: Coarse Torpedo Sand\nQuantity: 12\nUnit: TonS\nRequested Window: Tomorrow 9a - 11a"}
+                  style={{ ...styles.input, resize: "vertical", minHeight: 180 }}
+                />
+                <button type="submit" style={styles.secondaryButton}>
+                  Parse Email Into Dispatch Card
+                </button>
+              </Form>
+            </div>
           </div>
 
           <div style={styles.centerColumn}>
@@ -745,11 +1003,23 @@ export default function DispatchPage() {
                           {route.truck} · {route.driver} / {route.helper}
                         </div>
                       </div>
+                      <a
+                        href={`${driverHref}?route=${encodeURIComponent(route.id)}`}
+                        style={styles.assignButton}
+                      >
+                        Driver View
+                      </a>
                       {selectedOrder ? (
-                        <Form method="post">
+                        <Form method="post" style={styles.assignForm}>
                           <input type="hidden" name="intent" value="assign-order" />
                           <input type="hidden" name="orderId" value={selectedOrder.id} />
                           <input type="hidden" name="routeId" value={route.id} />
+                          <input
+                            name="eta"
+                            placeholder="ETA"
+                            defaultValue={selectedOrder.eta || ""}
+                            style={styles.compactInput}
+                          />
                           <button type="submit" style={styles.assignButton}>
                             Assign Selected
                           </button>
@@ -762,6 +1032,48 @@ export default function DispatchPage() {
                       <span>{route.stops} stops</span>
                       <span>{route.loadSummary || "No assigned loads yet"}</span>
                     </div>
+
+                    {route.orders.length ? (
+                      <div style={styles.stopList}>
+                        {route.orders.map((order) => (
+                          <a
+                            key={order.id}
+                            href={`${dispatchHref}?order=${encodeURIComponent(order.id)}`}
+                            style={styles.stopRow}
+                          >
+                            <span style={styles.stopNumber}>
+                              {order.stopSequence || "-"}
+                            </span>
+                            <span style={styles.stopMain}>
+                              <strong>{order.customer}</strong>
+                              <small>{order.city} · {order.material}</small>
+                            </span>
+                            <span
+                              style={styles.stopStatus(
+                                getDeliveryStatusColor(order.deliveryStatus),
+                              )}
+                            >
+                              {getDeliveryStatusLabel(order.deliveryStatus)}
+                            </span>
+                          </a>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    {route.orders.length ? (
+                      <Form method="post" style={styles.sequenceForm}>
+                        <input type="hidden" name="intent" value="sequence-route" />
+                        <input type="hidden" name="routeId" value={route.id} />
+                        <select name="sequenceMode" style={styles.compactSelect}>
+                          <option value="city">Sequence by city/address</option>
+                          <option value="address">Sequence by address</option>
+                          <option value="reverse">Reverse current order</option>
+                        </select>
+                        <button type="submit" style={styles.assignButton}>
+                          Sequence Stops
+                        </button>
+                      </Form>
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -1034,6 +1346,38 @@ export default function DispatchPage() {
                         {selectedOrder.truckPreference || "No preference"}
                       </div>
                     </div>
+                    <div>
+                      <div style={styles.detailLabel}>Route Stop</div>
+                      <div style={styles.detailValue}>
+                        {selectedOrder.assignedRouteId
+                          ? `Stop ${selectedOrder.stopSequence || "-"}`
+                          : "Unassigned"}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={styles.detailLabel}>Delivery Status</div>
+                      <div
+                        style={{
+                          ...styles.detailValue,
+                          color: getDeliveryStatusColor(selectedOrder.deliveryStatus),
+                        }}
+                      >
+                        {getDeliveryStatusLabel(selectedOrder.deliveryStatus)}
+                        {selectedOrder.eta ? ` · ETA ${selectedOrder.eta}` : ""}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={styles.detailLabel}>Tickets</div>
+                      <div style={styles.detailValue}>
+                        {selectedOrder.ticketNumbers || "Not captured"}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={styles.detailLabel}>Inspection</div>
+                      <div style={styles.detailValue}>
+                        {selectedOrder.inspectionStatus || "Not completed"}
+                      </div>
+                    </div>
                   </div>
 
                   <div style={styles.notesBlock}>
@@ -1042,6 +1386,118 @@ export default function DispatchPage() {
                       {selectedOrder.notes || "No dispatch notes yet."}
                     </div>
                   </div>
+
+                  <Form method="post" style={styles.stopStatusForm}>
+                    <input type="hidden" name="intent" value="update-stop-status" />
+                    <input type="hidden" name="orderId" value={selectedOrder.id} />
+
+                    <div>
+                      <label style={styles.label}>Stop Status</label>
+                      <select
+                        name="deliveryStatus"
+                        defaultValue={selectedOrder.deliveryStatus || "not_started"}
+                        style={styles.input}
+                      >
+                        <option value="not_started">Not started</option>
+                        <option value="en_route">En route</option>
+                        <option value="arrived">Arrived</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="issue">Issue</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={styles.label}>Proof Name</label>
+                      <input
+                        name="proofName"
+                        defaultValue={selectedOrder.proofName || ""}
+                        style={styles.input}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={styles.label}>Signature / Authorized Name</label>
+                      <input
+                        name="signatureName"
+                        defaultValue={selectedOrder.signatureName || ""}
+                        style={styles.input}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={styles.label}>Ticket Numbers</label>
+                      <input
+                        name="ticketNumbers"
+                        defaultValue={selectedOrder.ticketNumbers || ""}
+                        placeholder="Ticket #12345, Scale #7781"
+                        style={styles.input}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={styles.label}>Photo Links</label>
+                      <textarea
+                        name="photoUrls"
+                        defaultValue={selectedOrder.photoUrls || ""}
+                        rows={3}
+                        placeholder="Paste photo URLs or file references, one per line"
+                        style={{ ...styles.input, resize: "vertical" }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={styles.label}>Inspection Status</label>
+                      <select
+                        name="inspectionStatus"
+                        defaultValue={selectedOrder.inspectionStatus || ""}
+                        style={styles.input}
+                      >
+                        <option value="">Not completed</option>
+                        <option value="Passed">Passed</option>
+                        <option value="Needs review">Needs review</option>
+                        <option value="Blocked">Blocked</option>
+                      </select>
+                    </div>
+
+                    <div style={styles.checklistGrid}>
+                      <label style={styles.checkboxLabel}>
+                        <input type="checkbox" name="siteSafe" /> Site safe
+                      </label>
+                      <label style={styles.checkboxLabel}>
+                        <input type="checkbox" name="loadMatchesTicket" /> Load matches ticket
+                      </label>
+                      <label style={styles.checkboxLabel}>
+                        <input type="checkbox" name="customerConfirmedPlacement" /> Placement confirmed
+                      </label>
+                      <label style={styles.checkboxLabel}>
+                        <input type="checkbox" name="photosTaken" /> Photos taken
+                      </label>
+                    </div>
+
+                    <div>
+                      <label style={styles.label}>Custom Checklist Notes</label>
+                      <textarea
+                        name="customChecklist"
+                        rows={3}
+                        defaultValue={selectedOrder.checklistJson || ""}
+                        style={{ ...styles.input, resize: "vertical" }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={styles.label}>Proof Notes</label>
+                      <textarea
+                        name="proofNotes"
+                        defaultValue={selectedOrder.proofNotes || ""}
+                        rows={3}
+                        style={{ ...styles.input, resize: "vertical" }}
+                      />
+                    </div>
+
+                    <button type="submit" style={styles.primaryButton}>
+                      Update Stop
+                    </button>
+                  </Form>
 
                   <div style={{ display: "grid", gap: 10 }}>
                     <Form method="post">
@@ -1315,6 +1771,18 @@ const styles = {
     background: "rgba(15, 23, 42, 0.94)",
     cursor: "pointer",
   },
+  compactInput: {
+    width: 82,
+    boxSizing: "border-box" as const,
+    minHeight: 42,
+    padding: "10px 12px",
+    borderRadius: 12,
+    border: "1px solid #334155",
+    background: "rgba(15, 23, 42, 0.94)",
+    color: "#f8fafc",
+    fontSize: 13,
+    outline: "none",
+  },
   primaryButton: {
     minHeight: 50,
     borderRadius: 15,
@@ -1399,15 +1867,84 @@ const styles = {
     fontSize: 12,
     fontWeight: 700,
   } as const,
+  assignForm: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap" as const,
+    justifyContent: "flex-end",
+  } as const,
   assignButton: {
     minHeight: 42,
     padding: "0 14px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 12,
     border: "1px solid rgba(34, 197, 94, 0.4)",
     background: "rgba(34, 197, 94, 0.12)",
     color: "#bbf7d0",
+    textDecoration: "none",
     fontWeight: 800,
     cursor: "pointer",
+  } as const,
+  stopList: {
+    marginTop: 14,
+    display: "grid",
+    gap: 8,
+  } as const,
+  stopRow: {
+    display: "grid",
+    gridTemplateColumns: "32px minmax(0, 1fr) auto",
+    gap: 10,
+    alignItems: "center",
+    padding: "10px 12px",
+    borderRadius: 14,
+    background: "rgba(2, 6, 23, 0.62)",
+    border: "1px solid rgba(51, 65, 85, 0.78)",
+    textDecoration: "none",
+    color: "#f8fafc",
+  } as const,
+  stopNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 999,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "rgba(15, 23, 42, 0.92)",
+    border: "1px solid rgba(51, 65, 85, 0.95)",
+    color: "#cbd5e1",
+    fontSize: 12,
+    fontWeight: 900,
+  } as const,
+  stopMain: {
+    display: "grid",
+    gap: 3,
+    minWidth: 0,
+  } as const,
+  stopStatus: (color: string) =>
+    ({
+      minHeight: 28,
+      padding: "0 9px",
+      borderRadius: 999,
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color,
+      background: `${color}1f`,
+      border: `1px solid ${color}55`,
+      fontSize: 11,
+      fontWeight: 800,
+      whiteSpace: "nowrap" as const,
+    }) as const,
+  stopStatusForm: {
+    display: "grid",
+    gap: 12,
+    padding: 14,
+    borderRadius: 18,
+    background: "rgba(2, 6, 23, 0.62)",
+    border: "1px solid rgba(51, 65, 85, 0.82)",
   } as const,
   mapStage: {
     position: "relative" as const,

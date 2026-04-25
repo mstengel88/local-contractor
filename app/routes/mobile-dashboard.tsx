@@ -237,6 +237,7 @@ export default function MobileDashboardPage() {
   const reviewHref = isEmbeddedRoute ? "/app/quote-review" : "/quote-review";
   const dashboardHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
+  const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
 
   if (!allowed) {
     return (
@@ -303,6 +304,7 @@ export default function MobileDashboardPage() {
             <a href={quoteToolBase} style={styles.smallButton}>Open Quote Tool</a>
             <a href={reviewHref} style={styles.smallButton}>Review Quotes</a>
             <a href={dispatchHref} style={styles.smallButton}>Dispatch</a>
+            <a href={driverHref} style={styles.smallButton}>Driver Route</a>
             <a href={`${dashboardHref}?logout=1`} style={styles.smallButton}>Log Out</a>
           </div>
         </div>

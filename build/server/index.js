@@ -296,7 +296,7 @@ const route0 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProper
   default: root,
   links
 }, Symbol.toStringTag, { value: "Module" }));
-async function loader$9({
+async function loader$a({
   request
 }) {
   const url = new URL(request.url);
@@ -309,7 +309,7 @@ const route$1 = UNSAFE_withComponentProps(function Index() {
 const route1 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: route$1,
-  loader: loader$9
+  loader: loader$a
 }, Symbol.toStringTag, { value: "Module" }));
 async function saveCustomQuote(input) {
   const { data: data2, error } = await supabaseAdmin.from("custom_delivery_quotes").insert({
@@ -502,7 +502,7 @@ function attachAddressAutocomplete(options) {
     const place = autocomplete.getPlace();
     const components = (place == null ? void 0 : place.address_components) || [];
     let streetNumber = "";
-    let route30 = "";
+    let route32 = "";
     let locality = "";
     let administrativeArea = "";
     let zip = "";
@@ -510,7 +510,7 @@ function attachAddressAutocomplete(options) {
     for (const component of components) {
       const types = component.types || [];
       if (types.includes("street_number")) streetNumber = component.long_name || "";
-      if (types.includes("route")) route30 = component.long_name || "";
+      if (types.includes("route")) route32 = component.long_name || "";
       if (types.includes("locality")) locality = component.long_name || "";
       if (types.includes("administrative_area_level_1")) {
         administrativeArea = component.short_name || component.long_name || "";
@@ -520,7 +520,7 @@ function attachAddressAutocomplete(options) {
         countryCode = component.short_name || component.long_name || "US";
       }
     }
-    address1.value = [streetNumber, route30].filter(Boolean).join(" ").trim();
+    address1.value = [streetNumber, route32].filter(Boolean).join(" ").trim();
     city.value = locality;
     province.value = administrativeArea;
     postalCode.value = zip;
@@ -974,7 +974,7 @@ function formatQuantityWithUnit(quantity, unitLabel) {
 function getBrowserGoogleMapsApiKey() {
   return process.env.GOOGLE_MAPS_BROWSER_API_KEY || process.env.GOOGLE_MAPS_API_KEY || "";
 }
-async function loader$8({
+async function loader$9({
   request
 }) {
   const url = new URL(request.url);
@@ -997,7 +997,7 @@ async function loader$8({
     googleMapsApiKey: getBrowserGoogleMapsApiKey()
   });
 }
-async function action$f({
+async function action$g({
   request
 }) {
   const form = await request.formData();
@@ -1264,7 +1264,7 @@ async function action$f({
     customNotes
   });
 }
-const styles$3 = {
+const styles$4 = {
   page: {
     minHeight: "100vh",
     background: "radial-gradient(circle at top, #1f2937 0%, #111827 45%, #030712 100%)",
@@ -1499,7 +1499,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
   }, [actionData]);
   const selectedHistoryQuote = useMemo(() => recentQuotes.find((quote) => quote.id === selectedHistoryQuoteId) || null, [recentQuotes, selectedHistoryQuoteId]);
   const mobileActionButtonStyle = {
-    ...styles$3.buttonGhost,
+    ...styles$4.buttonGhost,
     minHeight: isMobile ? 48 : void 0,
     width: isMobile ? "100%" : void 0,
     justifyContent: "center"
@@ -1598,19 +1598,19 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
   }
   if (!allowed) {
     return /* @__PURE__ */ jsx("div", {
-      style: styles$3.page,
+      style: styles$4.page,
       children: /* @__PURE__ */ jsx("div", {
         style: {
-          ...styles$3.shell,
+          ...styles$4.shell,
           maxWidth: "520px"
         },
         children: /* @__PURE__ */ jsxs("div", {
-          style: styles$3.card,
+          style: styles$4.card,
           children: [/* @__PURE__ */ jsx("h1", {
-            style: styles$3.title,
+            style: styles$4.title,
             children: "Custom Quote Portal"
           }), /* @__PURE__ */ jsx("p", {
-            style: styles$3.subtitle,
+            style: styles$4.subtitle,
             children: "Enter the admin password to access the quote tool."
           }), /* @__PURE__ */ jsxs(Form, {
             method: "post",
@@ -1623,20 +1623,20 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
               name: "intent",
               value: "login"
             }), /* @__PURE__ */ jsx("label", {
-              style: styles$3.label,
+              style: styles$4.label,
               children: "Admin Password"
             }), /* @__PURE__ */ jsx("input", {
               type: "password",
               name: "password",
               autoComplete: "current-password",
-              style: styles$3.input
+              style: styles$4.input
             }), (actionData == null ? void 0 : actionData.loginError) ? /* @__PURE__ */ jsx("div", {
-              style: styles$3.statusErr,
+              style: styles$4.statusErr,
               children: actionData.loginError
             }) : null, /* @__PURE__ */ jsx("button", {
               type: "submit",
               style: {
-                ...styles$3.buttonPrimary,
+                ...styles$4.buttonPrimary,
                 marginTop: "18px",
                 width: "100%"
               },
@@ -1649,24 +1649,24 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
   }
   return /* @__PURE__ */ jsxs("div", {
     style: {
-      ...styles$3.page,
-      padding: isMobile ? "20px 14px 120px" : styles$3.page.padding,
+      ...styles$4.page,
+      padding: isMobile ? "20px 14px 120px" : styles$4.page.padding,
       overflowX: "clip"
     },
     children: [/* @__PURE__ */ jsxs("div", {
-      style: styles$3.shell,
+      style: styles$4.shell,
       children: [isMobile ? /* @__PURE__ */ jsxs("div", {
         style: {
           marginBottom: 18
         },
         children: [/* @__PURE__ */ jsx("h1", {
           style: {
-            ...styles$3.title,
+            ...styles$4.title,
             fontSize: "28px"
           },
           children: "Custom Quote Tool"
         }), /* @__PURE__ */ jsx("div", {
-          style: styles$3.subtitle,
+          style: styles$4.subtitle,
           children: "Full quote builder with products, delivery, tax, images, and saved history."
         }), /* @__PURE__ */ jsxs("div", {
           style: {
@@ -1677,13 +1677,13 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
           children: ["Loaded products: ", products.length, " · Google Places: ", googleStatus]
         })]
       }) : /* @__PURE__ */ jsxs("div", {
-        style: styles$3.hero,
+        style: styles$4.hero,
         children: [/* @__PURE__ */ jsxs("div", {
           children: [/* @__PURE__ */ jsx("h1", {
-            style: styles$3.title,
+            style: styles$4.title,
             children: "Custom Quote Tool"
           }), /* @__PURE__ */ jsx("div", {
-            style: styles$3.subtitle,
+            style: styles$4.subtitle,
             children: "Full quote builder with products, delivery, tax, images, and saved history."
           }), /* @__PURE__ */ jsxs("div", {
             style: {
@@ -1701,19 +1701,19 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
           },
           children: [/* @__PURE__ */ jsx("a", {
             href: mobileDashboardHref,
-            style: styles$3.logout,
+            style: styles$4.logout,
             children: "Dashboard"
           }), /* @__PURE__ */ jsx("a", {
             href: dispatchHref,
-            style: styles$3.logout,
+            style: styles$4.logout,
             children: "Dispatch"
           }), /* @__PURE__ */ jsx("a", {
             href: quoteReviewHref,
-            style: styles$3.logout,
+            style: styles$4.logout,
             children: "Review Quotes"
           }), /* @__PURE__ */ jsx("a", {
             href: logoutHref,
-            style: styles$3.logout,
+            style: styles$4.logout,
             children: "Log out"
           })]
         })]
@@ -1737,48 +1737,48 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
           value: JSON.stringify(lines)
         }), /* @__PURE__ */ jsxs("div", {
           style: {
-            ...styles$3.card,
-            padding: isMobile ? "18px" : styles$3.card.padding
+            ...styles$4.card,
+            padding: isMobile ? "18px" : styles$4.card.padding
           },
           children: [/* @__PURE__ */ jsx("h2", {
-            style: styles$3.sectionTitle,
+            style: styles$4.sectionTitle,
             children: "Quote Type"
           }), /* @__PURE__ */ jsx("p", {
-            style: styles$3.sectionSub,
+            style: styles$4.sectionSub,
             children: "Switch between standard customer pricing and contractor tier pricing."
           }), /* @__PURE__ */ jsxs("div", {
-            style: styles$3.tabRow,
+            style: styles$4.tabRow,
             children: [/* @__PURE__ */ jsx("button", {
               type: "button",
               onClick: () => setQuoteAudience("customer"),
               style: {
-                ...styles$3.tabButton,
+                ...styles$4.tabButton,
                 minHeight: isMobile ? 46 : void 0,
                 flex: isMobile ? "1 1 110px" : void 0,
                 textAlign: "center",
-                ...quoteAudience === "customer" ? styles$3.tabButtonActive : {}
+                ...quoteAudience === "customer" ? styles$4.tabButtonActive : {}
               },
               children: "Customer"
             }), /* @__PURE__ */ jsx("button", {
               type: "button",
               onClick: () => setQuoteAudience("contractor"),
               style: {
-                ...styles$3.tabButton,
+                ...styles$4.tabButton,
                 minHeight: isMobile ? 46 : void 0,
                 flex: isMobile ? "1 1 110px" : void 0,
                 textAlign: "center",
-                ...quoteAudience === "contractor" ? styles$3.tabButtonActive : {}
+                ...quoteAudience === "contractor" ? styles$4.tabButtonActive : {}
               },
               children: "Contractor"
             }), /* @__PURE__ */ jsx("button", {
               type: "button",
               onClick: () => setQuoteAudience("custom"),
               style: {
-                ...styles$3.tabButton,
+                ...styles$4.tabButton,
                 minHeight: isMobile ? 46 : void 0,
                 flex: isMobile ? "1 1 110px" : void 0,
                 textAlign: "center",
-                ...quoteAudience === "custom" ? styles$3.tabButtonActive : {}
+                ...quoteAudience === "custom" ? styles$4.tabButtonActive : {}
               },
               children: "Custom"
             })]
@@ -1787,13 +1787,13 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
               maxWidth: 280
             },
             children: [/* @__PURE__ */ jsx("label", {
-              style: styles$3.label,
+              style: styles$4.label,
               children: "Contractor Tier"
             }), /* @__PURE__ */ jsxs("select", {
               name: "contractorTierUi",
               value: contractorTier,
               onChange: (e) => setContractorTier(normalizeContractorTier(e.target.value)),
-              style: styles$3.input,
+              style: styles$4.input,
               children: [/* @__PURE__ */ jsx("option", {
                 value: "tier1",
                 children: "Tier 1"
@@ -1811,14 +1811,14 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
           }) : null]
         }), /* @__PURE__ */ jsxs("div", {
           style: {
-            ...styles$3.card,
-            padding: isMobile ? "18px" : styles$3.card.padding
+            ...styles$4.card,
+            padding: isMobile ? "18px" : styles$4.card.padding
           },
           children: [/* @__PURE__ */ jsx("h2", {
-            style: styles$3.sectionTitle,
+            style: styles$4.sectionTitle,
             children: "Customer & Delivery Address"
           }), /* @__PURE__ */ jsx("p", {
-            style: styles$3.sectionSub,
+            style: styles$4.sectionSub,
             children: "Start typing the street address and choose a suggestion."
           }), /* @__PURE__ */ jsxs("div", {
             style: {
@@ -1827,40 +1827,40 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
             },
             children: [/* @__PURE__ */ jsxs("div", {
               children: [/* @__PURE__ */ jsx("label", {
-                style: styles$3.label,
+                style: styles$4.label,
                 children: "Customer Name"
               }), /* @__PURE__ */ jsx("input", {
                 type: "text",
                 name: "customerName",
                 autoComplete: "name",
                 defaultValue: (actionData == null ? void 0 : actionData.customerName) || "",
-                style: styles$3.input
+                style: styles$4.input
               })]
             }), /* @__PURE__ */ jsxs("div", {
               children: [/* @__PURE__ */ jsx("label", {
-                style: styles$3.label,
+                style: styles$4.label,
                 children: "Email Address"
               }), /* @__PURE__ */ jsx("input", {
                 type: "email",
                 name: "customerEmail",
                 autoComplete: "email",
                 defaultValue: (actionData == null ? void 0 : actionData.customerEmail) || "",
-                style: styles$3.input
+                style: styles$4.input
               })]
             }), /* @__PURE__ */ jsxs("div", {
               children: [/* @__PURE__ */ jsx("label", {
-                style: styles$3.label,
+                style: styles$4.label,
                 children: "Phone Number"
               }), /* @__PURE__ */ jsx("input", {
                 type: "tel",
                 name: "customerPhone",
                 autoComplete: "tel",
                 defaultValue: (actionData == null ? void 0 : actionData.customerPhone) || "",
-                style: styles$3.input
+                style: styles$4.input
               })]
             }), /* @__PURE__ */ jsxs("div", {
               children: [/* @__PURE__ */ jsx("label", {
-                style: styles$3.label,
+                style: styles$4.label,
                 children: "Address 1"
               }), /* @__PURE__ */ jsx("input", {
                 id: "quote-address1",
@@ -1868,18 +1868,18 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                 name: "address1",
                 autoComplete: "street-address",
                 defaultValue: ((_a2 = actionData == null ? void 0 : actionData.address) == null ? void 0 : _a2.address1) || "",
-                style: styles$3.input
+                style: styles$4.input
               })]
             }), /* @__PURE__ */ jsxs("div", {
               children: [/* @__PURE__ */ jsx("label", {
-                style: styles$3.label,
+                style: styles$4.label,
                 children: "Address 2"
               }), /* @__PURE__ */ jsx("input", {
                 type: "text",
                 name: "address2",
                 autoComplete: "address-line2",
                 defaultValue: ((_b = actionData == null ? void 0 : actionData.address) == null ? void 0 : _b.address2) || "",
-                style: styles$3.input
+                style: styles$4.input
               })]
             }), /* @__PURE__ */ jsxs("div", {
               style: {
@@ -1889,7 +1889,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
               },
               children: [/* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$3.label,
+                  style: styles$4.label,
                   children: "City"
                 }), /* @__PURE__ */ jsx("input", {
                   id: "quote-city",
@@ -1897,11 +1897,11 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   name: "city",
                   autoComplete: "address-level2",
                   defaultValue: ((_c = actionData == null ? void 0 : actionData.address) == null ? void 0 : _c.city) || "",
-                  style: styles$3.input
+                  style: styles$4.input
                 })]
               }), /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$3.label,
+                  style: styles$4.label,
                   children: "State"
                 }), /* @__PURE__ */ jsx("input", {
                   id: "quote-province",
@@ -1909,11 +1909,11 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   name: "province",
                   autoComplete: "address-level1",
                   defaultValue: ((_d = actionData == null ? void 0 : actionData.address) == null ? void 0 : _d.province) || "WI",
-                  style: styles$3.input
+                  style: styles$4.input
                 })]
               }), /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$3.label,
+                  style: styles$4.label,
                   children: "ZIP"
                 }), /* @__PURE__ */ jsx("input", {
                   id: "quote-postalCode",
@@ -1921,11 +1921,11 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   name: "postalCode",
                   autoComplete: "postal-code",
                   defaultValue: ((_e = actionData == null ? void 0 : actionData.address) == null ? void 0 : _e.postalCode) || "",
-                  style: styles$3.input
+                  style: styles$4.input
                 })]
               }), /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$3.label,
+                  style: styles$4.label,
                   children: "Country"
                 }), /* @__PURE__ */ jsx("input", {
                   id: "quote-country",
@@ -1933,15 +1933,15 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   name: "country",
                   autoComplete: "country-name",
                   defaultValue: ((_f = actionData == null ? void 0 : actionData.address) == null ? void 0 : _f.country) || "US",
-                  style: styles$3.input
+                  style: styles$4.input
                 })]
               })]
             })]
           })]
         }), /* @__PURE__ */ jsxs("div", {
           style: {
-            ...styles$3.card,
-            padding: isMobile ? "18px" : styles$3.card.padding
+            ...styles$4.card,
+            padding: isMobile ? "18px" : styles$4.card.padding
           },
           children: [/* @__PURE__ */ jsxs("div", {
             style: {
@@ -1954,16 +1954,16 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
             },
             children: [/* @__PURE__ */ jsxs("div", {
               children: [/* @__PURE__ */ jsx("h2", {
-                style: styles$3.sectionTitle,
+                style: styles$4.sectionTitle,
                 children: "Quote Lines"
               }), /* @__PURE__ */ jsx("p", {
-                style: styles$3.sectionSub,
+                style: styles$4.sectionSub,
                 children: "Search by product, SKU, or vendor. Click a result to select it."
               })]
             }), /* @__PURE__ */ jsx("button", {
               type: "button",
               onClick: addLine,
-              style: styles$3.buttonGhost,
+              style: styles$4.buttonGhost,
               children: "Add Line"
             })]
           }), /* @__PURE__ */ jsx("div", {
@@ -1993,7 +1993,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   },
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$3.label,
+                      style: styles$4.label,
                       children: "Search Product"
                     }), /* @__PURE__ */ jsx("input", {
                       type: "text",
@@ -2003,11 +2003,11 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                         sku: ""
                       }),
                       placeholder: "Type product name, SKU, or vendor",
-                      style: styles$3.input
+                      style: styles$4.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$3.label,
+                      style: styles$4.label,
                       children: "Quantity"
                     }), /* @__PURE__ */ jsx("input", {
                       type: "number",
@@ -2017,14 +2017,14 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                       onChange: (e) => updateLine(index, {
                         quantity: e.target.value
                       }),
-                      style: styles$3.input
+                      style: styles$4.input
                     })]
                   }), /* @__PURE__ */ jsx("button", {
                     type: "button",
                     onClick: () => removeLine(index),
                     disabled: lines.length === 1,
                     style: {
-                      ...styles$3.buttonGhost,
+                      ...styles$4.buttonGhost,
                       minHeight: isMobile ? 46 : void 0,
                       width: isMobile ? "100%" : void 0
                     },
@@ -2096,7 +2096,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   },
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$3.label,
+                      style: styles$4.label,
                       children: "Custom Line Title"
                     }), /* @__PURE__ */ jsx("input", {
                       type: "text",
@@ -2105,11 +2105,11 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                         customTitle: e.target.value
                       }),
                       placeholder: selectedProduct.title,
-                      style: styles$3.input
+                      style: styles$4.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$3.label,
+                      style: styles$4.label,
                       children: "Custom Unit Price"
                     }), /* @__PURE__ */ jsx("input", {
                       type: "number",
@@ -2120,7 +2120,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                         customPrice: e.target.value
                       }),
                       placeholder: String(getUnitPriceForProduct(selectedProduct, quoteAudience, contractorTier)),
-                      style: styles$3.input
+                      style: styles$4.input
                     })]
                   })]
                 }) : null, !selectedProduct && line.search.trim() ? /* @__PURE__ */ jsx("div", {
@@ -2207,14 +2207,14 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
           })]
         }), quoteAudience === "custom" ? /* @__PURE__ */ jsxs("div", {
           style: {
-            ...styles$3.card,
-            padding: isMobile ? "18px" : styles$3.card.padding
+            ...styles$4.card,
+            padding: isMobile ? "18px" : styles$4.card.padding
           },
           children: [/* @__PURE__ */ jsx("h2", {
-            style: styles$3.sectionTitle,
+            style: styles$4.sectionTitle,
             children: "Custom Adjustments"
           }), /* @__PURE__ */ jsx("p", {
-            style: styles$3.sectionSub,
+            style: styles$4.sectionSub,
             children: "Override delivery, minute charge, tax, and the customer-facing quote details before calculating or saving."
           }), /* @__PURE__ */ jsxs("div", {
             style: {
@@ -2229,7 +2229,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
               },
               children: [/* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$3.label,
+                  style: styles$4.label,
                   children: "Delivery Amount"
                 }), /* @__PURE__ */ jsx("input", {
                   type: "number",
@@ -2238,11 +2238,11 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   step: "0.01",
                   defaultValue: (actionData == null ? void 0 : actionData.customDeliveryAmount) || "",
                   placeholder: "Use calculated delivery",
-                  style: styles$3.input
+                  style: styles$4.input
                 })]
               }), /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$3.label,
+                  style: styles$4.label,
                   children: "Minute Charge"
                 }), /* @__PURE__ */ jsx("input", {
                   type: "number",
@@ -2251,11 +2251,11 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   step: "0.01",
                   defaultValue: (actionData == null ? void 0 : actionData.customRatePerMinute) || "",
                   placeholder: "Default 2.08",
-                  style: styles$3.input
+                  style: styles$4.input
                 })]
               }), /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$3.label,
+                  style: styles$4.label,
                   children: "Tax Rate"
                 }), /* @__PURE__ */ jsx("input", {
                   type: "number",
@@ -2264,7 +2264,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   step: "0.0001",
                   defaultValue: (actionData == null ? void 0 : actionData.customTaxRate) || "",
                   placeholder: "Example: 0.055",
-                  style: styles$3.input
+                  style: styles$4.input
                 })]
               })]
             }), /* @__PURE__ */ jsxs("div", {
@@ -2275,7 +2275,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
               },
               children: [/* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$3.label,
+                  style: styles$4.label,
                   children: "Shipping Qty"
                 }), /* @__PURE__ */ jsx("input", {
                   type: "number",
@@ -2284,16 +2284,16 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   step: "0.01",
                   defaultValue: (actionData == null ? void 0 : actionData.customShippingQuantity) || "",
                   placeholder: "Miles or hours",
-                  style: styles$3.input
+                  style: styles$4.input
                 })]
               }), /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$3.label,
+                  style: styles$4.label,
                   children: "Shipping Unit"
                 }), /* @__PURE__ */ jsxs("select", {
                   name: "customShippingUnit",
                   defaultValue: (actionData == null ? void 0 : actionData.customShippingUnit) || "miles",
-                  style: styles$3.input,
+                  style: styles$4.input,
                   children: [/* @__PURE__ */ jsx("option", {
                     value: "miles",
                     children: "Miles"
@@ -2304,7 +2304,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                 })]
               }), /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$3.label,
+                  style: styles$4.label,
                   children: "Price Per Unit"
                 }), /* @__PURE__ */ jsx("input", {
                   type: "number",
@@ -2313,7 +2313,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   step: "0.01",
                   defaultValue: (actionData == null ? void 0 : actionData.customShippingRate) || "",
                   placeholder: "Rate per mile/hour",
-                  style: styles$3.input
+                  style: styles$4.input
                 })]
               })]
             }), /* @__PURE__ */ jsx("div", {
@@ -2324,14 +2324,14 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
               children: "If shipping quantity and price per unit are both filled in, the delivery amount will use `quantity x rate` and override the manual delivery amount above."
             }), /* @__PURE__ */ jsxs("div", {
               children: [/* @__PURE__ */ jsx("label", {
-                style: styles$3.label,
+                style: styles$4.label,
                 children: "Notes"
               }), /* @__PURE__ */ jsx("textarea", {
                 name: "customNotes",
                 defaultValue: (actionData == null ? void 0 : actionData.customNotes) || "",
                 placeholder: "Use calculated notes",
                 style: {
-                  ...styles$3.input,
+                  ...styles$4.input,
                   minHeight: 110,
                   resize: "vertical"
                 }
@@ -2359,7 +2359,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
             name: "intent",
             value: "quote",
             style: {
-              ...styles$3.buttonPrimary,
+              ...styles$4.buttonPrimary,
               width: isMobile ? "100%" : void 0,
               minHeight: isMobile ? 50 : void 0
             },
@@ -2369,7 +2369,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
             name: "intent",
             value: "save",
             style: {
-              ...styles$3.buttonSecondary,
+              ...styles$4.buttonSecondary,
               width: isMobile ? "100%" : void 0,
               minHeight: isMobile ? 50 : void 0
             },
@@ -2378,14 +2378,14 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
         })]
       }), (actionData == null ? void 0 : actionData.message) ? /* @__PURE__ */ jsx("div", {
         style: {
-          ...actionData.ok ? styles$3.statusOk : styles$3.statusErr,
+          ...actionData.ok ? styles$4.statusOk : styles$4.statusErr,
           fontSize: isMobile ? 16 : void 0,
           fontWeight: isMobile ? 700 : void 0
         },
         children: actionData.message
       }) : null, (actionData == null ? void 0 : actionData.savedQuoteId) ? /* @__PURE__ */ jsxs("div", {
         style: {
-          ...styles$3.statusOk,
+          ...styles$4.statusOk,
           fontSize: isMobile ? 16 : void 0,
           fontWeight: isMobile ? 700 : void 0
         },
@@ -2399,8 +2399,8 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
         },
         children: [/* @__PURE__ */ jsxs("div", {
           style: {
-            ...styles$3.card,
-            padding: isMobile ? "18px" : styles$3.card.padding
+            ...styles$4.card,
+            padding: isMobile ? "18px" : styles$4.card.padding
           },
           children: [/* @__PURE__ */ jsxs("div", {
             style: {
@@ -2413,14 +2413,14 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
             },
             children: [/* @__PURE__ */ jsx("h2", {
               style: {
-                ...styles$3.sectionTitle,
+                ...styles$4.sectionTitle,
                 margin: 0
               },
               children: "Full Quote Result"
             }), /* @__PURE__ */ jsx("button", {
               type: "button",
               onClick: copyQuote,
-              style: styles$3.buttonGhost,
+              style: styles$4.buttonGhost,
               children: "Copy Quote"
             })]
           }), /* @__PURE__ */ jsxs("div", {
@@ -2501,11 +2501,11 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
           })]
         }), /* @__PURE__ */ jsxs("div", {
           style: {
-            ...styles$3.card,
-            padding: isMobile ? "18px" : styles$3.card.padding
+            ...styles$4.card,
+            padding: isMobile ? "18px" : styles$4.card.padding
           },
           children: [/* @__PURE__ */ jsx("h2", {
-            style: styles$3.sectionTitle,
+            style: styles$4.sectionTitle,
             children: "Source Breakdown"
           }), /* @__PURE__ */ jsx("div", {
             style: {
@@ -2544,12 +2544,12 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
         })]
       }) : null, recentQuotes.length ? /* @__PURE__ */ jsxs("div", {
         style: {
-          ...styles$3.card,
+          ...styles$4.card,
           marginTop: 24,
-          padding: isMobile ? "18px" : styles$3.card.padding
+          padding: isMobile ? "18px" : styles$4.card.padding
         },
         children: [/* @__PURE__ */ jsx("h2", {
-          style: styles$3.sectionTitle,
+          style: styles$4.sectionTitle,
           children: "Recent Quotes"
         }), /* @__PURE__ */ jsx("div", {
           style: {
@@ -2601,9 +2601,9 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
         })]
       }) : null, selectedHistoryQuote ? /* @__PURE__ */ jsxs("div", {
         style: {
-          ...styles$3.card,
+          ...styles$4.card,
           marginTop: 24,
-          padding: isMobile ? "18px" : styles$3.card.padding
+          padding: isMobile ? "18px" : styles$4.card.padding
         },
         children: [/* @__PURE__ */ jsxs("div", {
           style: {
@@ -2617,7 +2617,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
           children: [/* @__PURE__ */ jsxs("div", {
             children: [/* @__PURE__ */ jsx("h2", {
               style: {
-                ...styles$3.sectionTitle,
+                ...styles$4.sectionTitle,
                 margin: 0
               },
               children: "Saved Quote Detail"
@@ -2674,7 +2674,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
             value: selectedHistoryQuote.id
           }), /* @__PURE__ */ jsx("button", {
             type: "submit",
-            style: styles$3.buttonPrimary,
+            style: styles$4.buttonPrimary,
             children: draftOrderFetcher.state === "submitting" ? "Creating Draft Order..." : "Send To Shopify"
           }), ((_h = draftOrderFetcher.data) == null ? void 0 : _h.draftOrderAdminUrl) ? /* @__PURE__ */ jsx("a", {
             href: draftOrderFetcher.data.draftOrderAdminUrl,
@@ -2691,14 +2691,14 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
           }) : null]
         }), ((_j = draftOrderFetcher.data) == null ? void 0 : _j.message) ? /* @__PURE__ */ jsx("div", {
           style: {
-            ...draftOrderFetcher.data.ok ? styles$3.statusOk : styles$3.statusErr,
+            ...draftOrderFetcher.data.ok ? styles$4.statusOk : styles$4.statusErr,
             fontSize: isMobile ? 16 : void 0,
             fontWeight: isMobile ? 700 : void 0
           },
           children: draftOrderFetcher.data.message
         }) : null, ((_k = deleteQuoteFetcher.data) == null ? void 0 : _k.message) ? /* @__PURE__ */ jsx("div", {
           style: {
-            ...deleteQuoteFetcher.data.ok ? styles$3.statusOk : styles$3.statusErr,
+            ...deleteQuoteFetcher.data.ok ? styles$4.statusOk : styles$4.statusErr,
             fontSize: isMobile ? 16 : void 0,
             fontWeight: isMobile ? 700 : void 0
           },
@@ -2934,9 +2934,9 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
 });
 const route2 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$f,
+  action: action$g,
   default: customQuote,
-  loader: loader$8
+  loader: loader$9
 }, Symbol.toStringTag, { value: "Module" }));
 function formatMoney$1(cents) {
   return `$${(Number(cents || 0) / 100).toFixed(2)}`;
@@ -2946,7 +2946,7 @@ function buildQuoteSearchText(quote) {
   const sourceText = Array.isArray(quote.source_breakdown) ? quote.source_breakdown.map((entry2) => [entry2 == null ? void 0 : entry2.vendor, ...Array.isArray(entry2 == null ? void 0 : entry2.items) ? entry2.items : []].filter(Boolean).join(" ")).join(" ") : "";
   return [quote.id, quote.customer_name, quote.customer_email, quote.customer_phone, quote.address1, quote.address2, quote.city, quote.province, quote.postal_code, quote.country, quote.service_name, quote.shipping_details, quote.description, quote.summary, quote.eta, lineText, sourceText].filter(Boolean).join(" ").toLowerCase();
 }
-const styles$2 = {
+const styles$3 = {
   page: {
     minHeight: "100vh",
     background: "radial-gradient(circle at top left, rgba(30, 64, 175, 0.24), transparent 35%), linear-gradient(180deg, #020617 0%, #0f172a 55%, #111827 100%)",
@@ -3037,7 +3037,7 @@ const styles$2 = {
     color: "#fee2e2"
   }
 };
-async function loader$7({
+async function loader$8({
   request
 }) {
   const url = new URL(request.url);
@@ -3059,7 +3059,7 @@ async function loader$7({
     quotes
   });
 }
-async function action$e({
+async function action$f({
   request
 }) {
   const form = await request.formData();
@@ -3135,7 +3135,7 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
   }, [deferredQuery, indexedQuotes]);
   const selectedQuote = filteredQuotes.find((quote) => quote.id === selectedQuoteId) || filteredQuotes[0] || null;
   const mobileActionButtonStyle = {
-    ...styles$2.buttonGhost,
+    ...styles$3.buttonGhost,
     minHeight: isMobile ? 48 : void 0,
     width: isMobile ? "100%" : void 0
   };
@@ -3222,21 +3222,21 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
   if (!allowed) {
     return /* @__PURE__ */ jsx("div", {
       style: {
-        ...styles$2.page,
-        padding: isMobile ? "20px 14px 40px" : styles$2.page.padding
+        ...styles$3.page,
+        padding: isMobile ? "20px 14px 40px" : styles$3.page.padding
       },
       children: /* @__PURE__ */ jsx("div", {
         style: {
-          ...styles$2.shell,
+          ...styles$3.shell,
           maxWidth: 520
         },
         children: /* @__PURE__ */ jsxs("div", {
-          style: styles$2.card,
+          style: styles$3.card,
           children: [/* @__PURE__ */ jsx("h1", {
-            style: styles$2.title,
+            style: styles$3.title,
             children: "Quote Review"
           }), /* @__PURE__ */ jsx("p", {
-            style: styles$2.subtitle,
+            style: styles$3.subtitle,
             children: "Enter the admin password to search saved quotes and send them to Shopify."
           }), /* @__PURE__ */ jsxs(Form, {
             method: "post",
@@ -3249,20 +3249,20 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
               name: "intent",
               value: "login"
             }), /* @__PURE__ */ jsx("label", {
-              style: styles$2.label,
+              style: styles$3.label,
               children: "Admin Password"
             }), /* @__PURE__ */ jsx("input", {
               type: "password",
               name: "password",
               autoComplete: "current-password",
-              style: styles$2.input
+              style: styles$3.input
             }), (actionData == null ? void 0 : actionData.loginError) ? /* @__PURE__ */ jsx("div", {
-              style: styles$2.statusErr,
+              style: styles$3.statusErr,
               children: actionData.loginError
             }) : null, /* @__PURE__ */ jsx("button", {
               type: "submit",
               style: {
-                ...styles$2.buttonPrimary,
+                ...styles$3.buttonPrimary,
                 marginTop: 16
               },
               children: "Open Quote Review"
@@ -3274,28 +3274,28 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
   }
   return /* @__PURE__ */ jsxs("div", {
     style: {
-      ...styles$2.page,
-      padding: isMobile ? "20px 14px 120px" : styles$2.page.padding,
+      ...styles$3.page,
+      padding: isMobile ? "20px 14px 120px" : styles$3.page.padding,
       overflowX: "clip"
     },
     children: [/* @__PURE__ */ jsxs("div", {
-      style: styles$2.shell,
+      style: styles$3.shell,
       children: [isMobile ? /* @__PURE__ */ jsxs("div", {
         style: {
           marginBottom: 18
         },
         children: [/* @__PURE__ */ jsx("h1", {
           style: {
-            ...styles$2.title,
+            ...styles$3.title,
             fontSize: "2.2rem"
           },
           children: "Quote Review"
         }), /* @__PURE__ */ jsx("p", {
-          style: styles$2.subtitle,
+          style: styles$3.subtitle,
           children: "Search across customer info, address, notes, SKU, product titles, vendors, and saved quote details."
         })]
       }) : /* @__PURE__ */ jsx("div", {
-        style: styles$2.card,
+        style: styles$3.card,
         children: /* @__PURE__ */ jsxs("div", {
           style: {
             display: "flex",
@@ -3306,10 +3306,10 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
           },
           children: [/* @__PURE__ */ jsxs("div", {
             children: [/* @__PURE__ */ jsx("h1", {
-              style: styles$2.title,
+              style: styles$3.title,
               children: "Quote Review"
             }), /* @__PURE__ */ jsx("p", {
-              style: styles$2.subtitle,
+              style: styles$3.subtitle,
               children: "Search across customer info, address, notes, SKU, product titles, vendors, and saved quote details."
             })]
           }), /* @__PURE__ */ jsxs("div", {
@@ -3320,40 +3320,40 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
             },
             children: [/* @__PURE__ */ jsx("a", {
               href: mobileDashboardHref,
-              style: styles$2.buttonGhost,
+              style: styles$3.buttonGhost,
               children: "Dashboard"
             }), /* @__PURE__ */ jsx("a", {
               href: quoteToolHref,
-              style: styles$2.buttonGhost,
+              style: styles$3.buttonGhost,
               children: "Open Quote Tool"
             }), /* @__PURE__ */ jsx("a", {
               href: dispatchHref,
-              style: styles$2.buttonGhost,
+              style: styles$3.buttonGhost,
               children: "Dispatch"
             }), /* @__PURE__ */ jsx("a", {
               href: "?logout=1",
-              style: styles$2.buttonGhost,
+              style: styles$3.buttonGhost,
               children: "Log Out"
             })]
           })]
         })
       }), /* @__PURE__ */ jsxs("div", {
         style: {
-          ...styles$2.card,
+          ...styles$3.card,
           display: "grid",
           gap: 14,
-          padding: isMobile ? "18px" : styles$2.card.padding
+          padding: isMobile ? "18px" : styles$3.card.padding
         },
         children: [/* @__PURE__ */ jsxs("div", {
           children: [/* @__PURE__ */ jsx("label", {
-            style: styles$2.label,
+            style: styles$3.label,
             children: "Search Saved Quotes"
           }), /* @__PURE__ */ jsx("input", {
             type: "search",
             value: query,
             onChange: (event) => setQuery(event.target.value),
             placeholder: "Search by customer, email, city, ZIP, summary, SKU, vendor, quote ID...",
-            style: styles$2.input
+            style: styles$3.input
           })]
         }), /* @__PURE__ */ jsxs("div", {
           style: {
@@ -3371,10 +3371,10 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
         },
         children: [/* @__PURE__ */ jsx("div", {
           style: {
-            ...styles$2.card,
+            ...styles$3.card,
             maxHeight: isMobile ? "none" : "70vh",
             overflowY: isMobile ? "visible" : "auto",
-            padding: isMobile ? "18px" : styles$2.card.padding
+            padding: isMobile ? "18px" : styles$3.card.padding
           },
           children: /* @__PURE__ */ jsx("div", {
             style: {
@@ -3445,8 +3445,8 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
           })
         }), /* @__PURE__ */ jsx("div", {
           style: {
-            ...styles$2.card,
-            padding: isMobile ? "18px" : styles$2.card.padding
+            ...styles$3.card,
+            padding: isMobile ? "18px" : styles$3.card.padding
           },
           children: selectedQuote ? /* @__PURE__ */ jsxs(Fragment, {
             children: [/* @__PURE__ */ jsxs("div", {
@@ -3502,7 +3502,7 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
                   }), /* @__PURE__ */ jsx("button", {
                     type: "submit",
                     style: {
-                      ...styles$2.buttonPrimary,
+                      ...styles$3.buttonPrimary,
                       width: isMobile ? "100%" : void 0
                     },
                     children: draftOrderFetcher.state === "submitting" ? "Creating Draft Order..." : "Send To Shopify"
@@ -3545,21 +3545,21 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
               })]
             }), ((_d = draftOrderFetcher.data) == null ? void 0 : _d.message) ? /* @__PURE__ */ jsx("div", {
               style: {
-                ...draftOrderFetcher.data.ok ? styles$2.statusOk : styles$2.statusErr,
+                ...draftOrderFetcher.data.ok ? styles$3.statusOk : styles$3.statusErr,
                 fontSize: isMobile ? 16 : void 0,
                 fontWeight: isMobile ? 700 : void 0
               },
               children: draftOrderFetcher.data.message
             }) : null, ((_e = deleteQuoteFetcher.data) == null ? void 0 : _e.message) ? /* @__PURE__ */ jsx("div", {
               style: {
-                ...deleteQuoteFetcher.data.ok ? styles$2.statusOk : styles$2.statusErr,
+                ...deleteQuoteFetcher.data.ok ? styles$3.statusOk : styles$3.statusErr,
                 fontSize: isMobile ? 16 : void 0,
                 fontWeight: isMobile ? 700 : void 0
               },
               children: deleteQuoteFetcher.data.message
             }) : null, ((_f = updateQuoteFetcher.data) == null ? void 0 : _f.message) ? /* @__PURE__ */ jsx("div", {
               style: {
-                ...updateQuoteFetcher.data.ok ? styles$2.statusOk : styles$2.statusErr,
+                ...updateQuoteFetcher.data.ok ? styles$3.statusOk : styles$3.statusErr,
                 fontSize: isMobile ? 16 : void 0,
                 fontWeight: isMobile ? 700 : void 0
               },
@@ -3600,30 +3600,30 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
                 },
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$2.label,
+                    style: styles$3.label,
                     children: "Customer Name"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "customerName",
                     defaultValue: selectedQuote.customer_name || "",
-                    style: styles$2.input
+                    style: styles$3.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$2.label,
+                    style: styles$3.label,
                     children: "Email"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "customerEmail",
                     defaultValue: selectedQuote.customer_email || "",
-                    style: styles$2.input
+                    style: styles$3.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$2.label,
+                    style: styles$3.label,
                     children: "Phone"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "customerPhone",
                     defaultValue: selectedQuote.customer_phone || "",
-                    style: styles$2.input
+                    style: styles$3.input
                   })]
                 })]
               }), /* @__PURE__ */ jsxs("div", {
@@ -3634,58 +3634,58 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
                 },
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$2.label,
+                    style: styles$3.label,
                     children: "Address 1"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "address1",
                     defaultValue: selectedQuote.address1 || "",
-                    style: styles$2.input
+                    style: styles$3.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$2.label,
+                    style: styles$3.label,
                     children: "City"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "city",
                     defaultValue: selectedQuote.city || "",
-                    style: styles$2.input
+                    style: styles$3.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$2.label,
+                    style: styles$3.label,
                     children: "State"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "province",
                     defaultValue: selectedQuote.province || "",
-                    style: styles$2.input
+                    style: styles$3.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$2.label,
+                    style: styles$3.label,
                     children: "ZIP"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "postalCode",
                     defaultValue: selectedQuote.postal_code || "",
-                    style: styles$2.input
+                    style: styles$3.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$2.label,
+                    style: styles$3.label,
                     children: "Country"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "country",
                     defaultValue: selectedQuote.country || "US",
-                    style: styles$2.input
+                    style: styles$3.input
                   })]
                 })]
               }), /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$2.label,
+                  style: styles$3.label,
                   children: "Address 2"
                 }), /* @__PURE__ */ jsx("input", {
                   name: "address2",
                   defaultValue: selectedQuote.address2 || "",
-                  style: styles$2.input
+                  style: styles$3.input
                 })]
               }), /* @__PURE__ */ jsxs("div", {
                 style: {
@@ -3727,7 +3727,7 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$2.label,
+                      style: styles$3.label,
                       children: "Quantity"
                     }), /* @__PURE__ */ jsx("input", {
                       type: "number",
@@ -3735,7 +3735,7 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
                       step: "0.01",
                       name: `lineQuantity::${index}`,
                       defaultValue: line.quantity,
-                      style: styles$2.input
+                      style: styles$3.input
                     })]
                   })]
                 }, `${line.sku}-${index}`))]
@@ -3747,12 +3747,12 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
                 },
                 children: [/* @__PURE__ */ jsx("button", {
                   type: "submit",
-                  style: styles$2.buttonPrimary,
+                  style: styles$3.buttonPrimary,
                   children: updateQuoteFetcher.state === "submitting" ? "Regenerating..." : "Regenerate Quote"
                 }), /* @__PURE__ */ jsx("button", {
                   type: "button",
                   onClick: () => setEditingQuoteId(null),
-                  style: styles$2.buttonGhost,
+                  style: styles$3.buttonGhost,
                   children: "Cancel"
                 })]
               })]
@@ -3929,9 +3929,9 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
 });
 const route3 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$e,
+  action: action$f,
   default: quoteReview,
-  loader: loader$7
+  loader: loader$8
 }, Symbol.toStringTag, { value: "Module" }));
 const seedDispatchTrucks = [
   {
@@ -4119,6 +4119,7 @@ const ROUTES_TABLE = "dispatch_routes";
 const TRUCKS_TABLE = "dispatch_trucks";
 const EMPLOYEES_TABLE = "dispatch_employees";
 function normalizeOrder(row) {
+  const deliveryStatus = row.delivery_status === "en_route" || row.delivery_status === "arrived" || row.delivery_status === "delivered" || row.delivery_status === "issue" ? row.delivery_status : "not_started";
   return {
     id: String(row.id),
     source: row.source === "email" ? "email" : "manual",
@@ -4134,6 +4135,14 @@ function normalizeOrder(row) {
     notes: String(row.notes || ""),
     status: row.status === "scheduled" || row.status === "hold" ? row.status : "new",
     assignedRouteId: row.assigned_route_id || null,
+    stopSequence: row.stop_sequence === null || row.stop_sequence === void 0 ? null : Number(row.stop_sequence),
+    deliveryStatus,
+    eta: row.eta || null,
+    arrivedAt: row.arrived_at || null,
+    departedAt: row.departed_at || null,
+    deliveredAt: row.delivered_at || null,
+    proofName: row.proof_name || null,
+    proofNotes: row.proof_notes || null,
     created_at: row.created_at,
     updated_at: row.updated_at
   };
@@ -4208,7 +4217,9 @@ async function ensureSeedDispatchOrders() {
       truck_preference: order.truckPreference || null,
       notes: order.notes,
       status: order.status,
-      assigned_route_id: order.assignedRouteId || null
+      assigned_route_id: order.assignedRouteId || null,
+      stop_sequence: order.assignedRouteId ? 1 : null,
+      delivery_status: "not_started"
     }))
   );
   if (insertError) {
@@ -4224,19 +4235,19 @@ async function ensureSeedDispatchRoutes() {
     return;
   }
   const { error: insertError } = await supabaseAdmin.from(ROUTES_TABLE).insert(
-    seedDispatchRoutes.map((route30) => ({
-      id: route30.id,
-      code: route30.code,
-      truck_id: route30.truckId || null,
-      truck: route30.truck,
-      driver_id: route30.driverId || null,
-      driver: route30.driver,
-      helper_id: route30.helperId || null,
-      helper: route30.helper,
-      color: route30.color,
-      shift: route30.shift,
-      region: route30.region,
-      is_active: route30.isActive !== false
+    seedDispatchRoutes.map((route32) => ({
+      id: route32.id,
+      code: route32.code,
+      truck_id: route32.truckId || null,
+      truck: route32.truck,
+      driver_id: route32.driverId || null,
+      driver: route32.driver,
+      helper_id: route32.helperId || null,
+      helper: route32.helper,
+      color: route32.color,
+      shift: route32.shift,
+      region: route32.region,
+      is_active: route32.isActive !== false
     }))
   );
   if (insertError) {
@@ -4327,12 +4338,23 @@ async function createDispatchOrder(input) {
     truck_preference: input.truckPreference || null,
     notes: input.notes || "",
     status: "new",
-    assigned_route_id: null
+    assigned_route_id: null,
+    stop_sequence: null,
+    delivery_status: "not_started"
   }).select("*").single();
   if (error) {
     throw new Error(formatSupabaseError(error));
   }
   return normalizeOrder(data2);
+}
+async function getNextRouteStopSequence(routeId) {
+  var _a2;
+  const { data: data2, error } = await supabaseAdmin.from(ORDERS_TABLE).select("stop_sequence").eq("assigned_route_id", routeId).not("stop_sequence", "is", null).order("stop_sequence", { ascending: false }).limit(1);
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+  const currentMax = Number(((_a2 = data2 == null ? void 0 : data2[0]) == null ? void 0 : _a2.stop_sequence) || 0);
+  return currentMax + 1;
 }
 async function createDispatchRoute(input) {
   const id = `route-${Date.now().toString(36)}`;
@@ -4391,11 +4413,35 @@ async function updateDispatchOrder(id, patch) {
   if (patch.assignedRouteId !== void 0) {
     payload.assigned_route_id = patch.assignedRouteId;
   }
+  if (patch.stopSequence !== void 0) {
+    payload.stop_sequence = patch.stopSequence;
+  }
+  if (patch.deliveryStatus) payload.delivery_status = patch.deliveryStatus;
+  if (patch.eta !== void 0) payload.eta = patch.eta;
+  if (patch.arrivedAt !== void 0) payload.arrived_at = patch.arrivedAt;
+  if (patch.departedAt !== void 0) payload.departed_at = patch.departedAt;
+  if (patch.deliveredAt !== void 0) payload.delivered_at = patch.deliveredAt;
+  if (patch.proofName !== void 0) payload.proof_name = patch.proofName;
+  if (patch.proofNotes !== void 0) payload.proof_notes = patch.proofNotes;
   const { data: data2, error } = await supabaseAdmin.from(ORDERS_TABLE).update(payload).eq("id", id).select("*").single();
   if (error) {
     throw new Error(formatSupabaseError(error));
   }
   return normalizeOrder(data2);
+}
+function getDeliveryStatusLabel(status) {
+  if (status === "en_route") return "En route";
+  if (status === "arrived") return "Arrived";
+  if (status === "delivered") return "Delivered";
+  if (status === "issue") return "Issue";
+  return "Not started";
+}
+function getDeliveryStatusColor(status) {
+  if (status === "delivered") return "#22c55e";
+  if (status === "arrived") return "#38bdf8";
+  if (status === "en_route") return "#f97316";
+  if (status === "issue") return "#ef4444";
+  return "#64748b";
 }
 function metricCard(label, value, accent) {
   return /* @__PURE__ */ jsxs("div", {
@@ -4425,7 +4471,7 @@ function metricCard(label, value, accent) {
     })]
   });
 }
-function getDispatchPath(url) {
+function getDispatchPath$1(url) {
   return url.pathname.startsWith("/app/") ? "/app/dispatch" : "/dispatch";
 }
 async function loadDispatchState() {
@@ -4455,11 +4501,11 @@ async function loadDispatchState() {
     };
   }
 }
-async function loader$6({
+async function loader$7({
   request
 }) {
   const url = new URL(request.url);
-  const dispatchPath = getDispatchPath(url);
+  const dispatchPath = getDispatchPath$1(url);
   if (url.searchParams.get("logout") === "1") {
     return redirect(dispatchPath, {
       headers: {
@@ -4487,7 +4533,7 @@ async function loader$6({
     ...dispatchState
   });
 }
-async function action$d({
+async function action$e({
   request
 }) {
   const form = await request.formData();
@@ -4672,9 +4718,13 @@ async function action$d({
       if (!orderId || !routeId) {
         throw new Error("Missing order or route assignment details");
       }
+      const stopSequence = await getNextRouteStopSequence(routeId);
       await updateDispatchOrder(orderId, {
         status: "scheduled",
-        assignedRouteId: routeId
+        assignedRouteId: routeId,
+        stopSequence,
+        deliveryStatus: "not_started",
+        eta: String(form.get("eta") || "").trim() || null
       });
       const dispatchState = await loadDispatchState();
       return data({
@@ -4690,7 +4740,10 @@ async function action$d({
       if (!orderId) throw new Error("Missing order selection");
       await updateDispatchOrder(orderId, {
         status: "hold",
-        assignedRouteId: null
+        assignedRouteId: null,
+        stopSequence: null,
+        deliveryStatus: "not_started",
+        eta: null
       });
       const dispatchState = await loadDispatchState();
       return data({
@@ -4706,13 +4759,42 @@ async function action$d({
       if (!orderId) throw new Error("Missing order selection");
       await updateDispatchOrder(orderId, {
         status: "new",
-        assignedRouteId: null
+        assignedRouteId: null,
+        stopSequence: null,
+        deliveryStatus: "not_started",
+        eta: null
       });
       const dispatchState = await loadDispatchState();
       return data({
         allowed: true,
         ok: true,
         message: "Order moved back to inbox.",
+        selectedOrderId: orderId,
+        ...dispatchState
+      });
+    }
+    if (intent === "update-stop-status") {
+      const orderId = String(form.get("orderId") || "").trim();
+      const rawDeliveryStatus = String(form.get("deliveryStatus") || "").trim();
+      const deliveryStatus = rawDeliveryStatus === "en_route" || rawDeliveryStatus === "arrived" || rawDeliveryStatus === "delivered" || rawDeliveryStatus === "issue" ? rawDeliveryStatus : "not_started";
+      if (!orderId) throw new Error("Missing order selection");
+      const now = (/* @__PURE__ */ new Date()).toISOString();
+      const patch = {
+        deliveryStatus,
+        proofName: String(form.get("proofName") || "").trim() || null,
+        proofNotes: String(form.get("proofNotes") || "").trim() || null
+      };
+      if (deliveryStatus === "arrived") patch.arrivedAt = now;
+      if (deliveryStatus === "delivered") {
+        patch.departedAt = now;
+        patch.deliveredAt = now;
+      }
+      await updateDispatchOrder(orderId, patch);
+      const dispatchState = await loadDispatchState();
+      return data({
+        allowed: true,
+        ok: true,
+        message: `Stop marked ${getDeliveryStatusLabel(deliveryStatus).toLowerCase()}.`,
         selectedOrderId: orderId,
         ...dispatchState
       });
@@ -4748,6 +4830,7 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
   const reviewHref = isEmbeddedRoute ? "/app/quote-review" : "/quote-review";
   const mobileHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
+  const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
   const logoutHref = `${dispatchHref}?logout=1`;
   const orders = (actionData == null ? void 0 : actionData.orders) ?? loaderData.orders ?? [];
   const dispatchRoutes = (actionData == null ? void 0 : actionData.routes) ?? loaderData.routes ?? [];
@@ -4758,10 +4841,10 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
   const querySelectedOrderId = new URLSearchParams(location.search).get("order");
   const selectedOrderId = (actionData == null ? void 0 : actionData.selectedOrderId) || querySelectedOrderId || ((_a2 = orders[0]) == null ? void 0 : _a2.id);
   const selectedOrder = useMemo(() => orders.find((order) => order.id === selectedOrderId) || orders[0] || null, [orders, selectedOrderId]);
-  const routes2 = useMemo(() => dispatchRoutes.map((route30) => {
-    const routeOrders = orders.filter((order) => order.assignedRouteId === route30.id);
+  const routes2 = useMemo(() => dispatchRoutes.map((route32) => {
+    const routeOrders = orders.filter((order) => order.assignedRouteId === route32.id).sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999));
     return {
-      ...route30,
+      ...route32,
       stops: routeOrders.length,
       loadSummary: routeOrders.map((order) => `${order.quantity} ${order.unit} ${order.material}`).slice(0, 2).join(" • "),
       orders: routeOrders
@@ -4770,23 +4853,24 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
   const inboxOrders = orders.filter((order) => !order.assignedRouteId && order.status === "new");
   const holdOrders = orders.filter((order) => order.status === "hold");
   const scheduledOrders = orders.filter((order) => order.assignedRouteId);
+  const deliveredOrders = orders.filter((order) => order.deliveryStatus === "delivered");
   const drivers = employees.filter((employee) => employee.role === "driver");
   const helpers = employees.filter((employee) => employee.role === "helper");
   if (!allowed) {
     return /* @__PURE__ */ jsx("div", {
-      style: styles$1.page,
+      style: styles$2.page,
       children: /* @__PURE__ */ jsx("div", {
         style: {
-          ...styles$1.shell,
+          ...styles$2.shell,
           maxWidth: 520
         },
         children: /* @__PURE__ */ jsxs("div", {
-          style: styles$1.loginCard,
+          style: styles$2.loginCard,
           children: [/* @__PURE__ */ jsx("h1", {
-            style: styles$1.title,
+            style: styles$2.title,
             children: "Dispatch"
           }), /* @__PURE__ */ jsx("p", {
-            style: styles$1.subtitle,
+            style: styles$2.subtitle,
             children: "Enter the admin password to open the contractor dispatch workspace."
           }), /* @__PURE__ */ jsxs(Form, {
             method: "post",
@@ -4799,20 +4883,20 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
               name: "intent",
               value: "login"
             }), /* @__PURE__ */ jsx("label", {
-              style: styles$1.label,
+              style: styles$2.label,
               children: "Admin Password"
             }), /* @__PURE__ */ jsx("input", {
               type: "password",
               name: "password",
               autoComplete: "current-password",
-              style: styles$1.input
+              style: styles$2.input
             }), (actionData == null ? void 0 : actionData.loginError) ? /* @__PURE__ */ jsx("div", {
-              style: styles$1.statusErr,
+              style: styles$2.statusErr,
               children: actionData.loginError
             }) : null, /* @__PURE__ */ jsx("button", {
               type: "submit",
               style: {
-                ...styles$1.primaryButton,
+                ...styles$2.primaryButton,
                 width: "100%",
                 marginTop: 16
               },
@@ -4824,71 +4908,75 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
     });
   }
   return /* @__PURE__ */ jsx("div", {
-    style: styles$1.page,
+    style: styles$2.page,
     children: /* @__PURE__ */ jsxs("div", {
-      style: styles$1.shell,
+      style: styles$2.shell,
       children: [/* @__PURE__ */ jsxs("div", {
-        style: styles$1.hero,
+        style: styles$2.hero,
         children: [/* @__PURE__ */ jsxs("div", {
           children: [/* @__PURE__ */ jsx("div", {
-            style: styles$1.kicker,
+            style: styles$2.kicker,
             children: "Dispatch Workspace"
           }), /* @__PURE__ */ jsx("h1", {
-            style: styles$1.title,
+            style: styles$2.title,
             children: "Plan, intake, and assign deliveries"
           }), /* @__PURE__ */ jsx("p", {
-            style: styles$1.subtitle,
+            style: styles$2.subtitle,
             children: "Contractor-only dispatch slice with persistent intake, truck assignment, route boards, and the first foundation for email-driven scheduling."
           })]
         }), /* @__PURE__ */ jsxs("div", {
-          style: styles$1.heroActions,
+          style: styles$2.heroActions,
           children: [/* @__PURE__ */ jsx("a", {
             href: mobileHref,
-            style: styles$1.ghostButton,
+            style: styles$2.ghostButton,
             children: "Dashboard"
           }), /* @__PURE__ */ jsx("a", {
             href: quoteHref,
-            style: styles$1.ghostButton,
+            style: styles$2.ghostButton,
             children: "Quote Tool"
           }), /* @__PURE__ */ jsx("a", {
             href: reviewHref,
-            style: styles$1.ghostButton,
+            style: styles$2.ghostButton,
             children: "Review Quotes"
           }), /* @__PURE__ */ jsx("a", {
+            href: driverHref,
+            style: styles$2.ghostButton,
+            children: "Driver View"
+          }), /* @__PURE__ */ jsx("a", {
             href: logoutHref,
-            style: styles$1.ghostButton,
+            style: styles$2.ghostButton,
             children: "Log Out"
           })]
         })]
       }), !storageReady ? /* @__PURE__ */ jsxs("div", {
-        style: styles$1.statusWarn,
+        style: styles$2.statusWarn,
         children: ["Dispatch storage is not ready yet. Run", " ", /* @__PURE__ */ jsx("strong", {
           children: "`dispatch_schema.sql`"
         }), " ", "in Supabase SQL Editor, then refresh. Until then, you are seeing seed data.", storageError ? ` Storage error: ${storageError}` : ""]
       }) : null, (actionData == null ? void 0 : actionData.message) ? /* @__PURE__ */ jsx("div", {
-        style: actionData.ok ? styles$1.statusOk : styles$1.statusErr,
+        style: actionData.ok ? styles$2.statusOk : styles$2.statusErr,
         children: actionData.message
       }) : null, /* @__PURE__ */ jsxs("div", {
-        style: styles$1.metricsGrid,
-        children: [metricCard("Inbox", String(inboxOrders.length), "#f97316"), metricCard("Scheduled", String(scheduledOrders.length), "#22c55e"), metricCard("On Hold", String(holdOrders.length), "#eab308"), metricCard("Active Trucks", String(routes2.length), "#38bdf8")]
+        style: styles$2.metricsGrid,
+        children: [metricCard("Inbox", String(inboxOrders.length), "#f97316"), metricCard("Scheduled", String(scheduledOrders.length), "#22c55e"), metricCard("On Hold", String(holdOrders.length), "#eab308"), metricCard("Delivered", String(deliveredOrders.length), "#38bdf8")]
       }), /* @__PURE__ */ jsxs("div", {
-        style: styles$1.workspaceGrid,
+        style: styles$2.workspaceGrid,
         children: [/* @__PURE__ */ jsxs("div", {
-          style: styles$1.leftColumn,
+          style: styles$2.leftColumn,
           children: [/* @__PURE__ */ jsxs("div", {
-            style: styles$1.panel,
+            style: styles$2.panel,
             children: [/* @__PURE__ */ jsxs("div", {
-              style: styles$1.panelHeader,
+              style: styles$2.panelHeader,
               children: [/* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("h2", {
-                  style: styles$1.panelTitle,
+                  style: styles$2.panelTitle,
                   children: "Email Intake Queue"
                 }), /* @__PURE__ */ jsx("p", {
-                  style: styles$1.panelSub,
+                  style: styles$2.panelSub,
                   children: "Orders that came in by email or were typed in manually can be reviewed and routed here."
                 })]
               }), /* @__PURE__ */ jsx("div", {
-                style: styles$1.headerPill,
+                style: styles$2.headerPill,
                 children: "Today"
               })]
             }), /* @__PURE__ */ jsx("div", {
@@ -4898,11 +4986,11 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
               },
               children: orders.map((order) => {
                 const active = order.id === (selectedOrder == null ? void 0 : selectedOrder.id);
-                const route30 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
+                const route32 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
                 return /* @__PURE__ */ jsxs("a", {
                   href: `${dispatchHref}?order=${encodeURIComponent(order.id)}`,
                   style: {
-                    ...styles$1.queueCard,
+                    ...styles$2.queueCard,
                     borderColor: active ? "#38bdf8" : "rgba(51, 65, 85, 0.92)",
                     boxShadow: active ? "0 0 0 1px rgba(56, 189, 248, 0.45)" : "none",
                     textDecoration: "none"
@@ -4915,46 +5003,48 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
                     },
                     children: [/* @__PURE__ */ jsxs("div", {
                       children: [/* @__PURE__ */ jsx("div", {
-                        style: styles$1.queueTitle,
+                        style: styles$2.queueTitle,
                         children: order.customer
                       }), /* @__PURE__ */ jsxs("div", {
-                        style: styles$1.queueMeta,
+                        style: styles$2.queueMeta,
                         children: [order.address, ", ", order.city]
                       })]
                     }), /* @__PURE__ */ jsx("div", {
-                      style: styles$1.badge(order.status),
+                      style: styles$2.badge(order.status),
                       children: order.status
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
-                    style: styles$1.queueDetails,
+                    style: styles$2.queueDetails,
                     children: [/* @__PURE__ */ jsx("span", {
                       children: order.id
                     }), /* @__PURE__ */ jsxs("span", {
                       children: [order.quantity, " ", order.unit]
                     }), /* @__PURE__ */ jsx("span", {
                       children: order.material
-                    })]
+                    }), order.stopSequence ? /* @__PURE__ */ jsxs("span", {
+                      children: ["Stop ", order.stopSequence]
+                    }) : null]
                   }), /* @__PURE__ */ jsxs("div", {
-                    style: styles$1.queueFooter,
+                    style: styles$2.queueFooter,
                     children: [/* @__PURE__ */ jsx("span", {
                       children: order.requestedWindow
                     }), /* @__PURE__ */ jsx("span", {
-                      children: route30 ? `${route30.truck} / ${route30.driver}` : "Unassigned"
+                      children: route32 ? `${route32.truck} / ${getDeliveryStatusLabel(order.deliveryStatus)}` : "Unassigned"
                     })]
                   })]
                 }, order.id);
               })
             })]
           }), /* @__PURE__ */ jsxs("div", {
-            style: styles$1.panel,
+            style: styles$2.panel,
             children: [/* @__PURE__ */ jsx("div", {
-              style: styles$1.panelHeader,
+              style: styles$2.panelHeader,
               children: /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("h2", {
-                  style: styles$1.panelTitle,
+                  style: styles$2.panelTitle,
                   children: "Manual Intake"
                 }), /* @__PURE__ */ jsx("p", {
-                  style: styles$1.panelSub,
+                  style: styles$2.panelSub,
                   children: "Start the GoCanvas-style capture flow by typing in the order details dispatch needs to track."
                 })]
               })
@@ -4969,68 +5059,68 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
                 name: "intent",
                 value: "create-order"
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$1.formGridTwo,
+                style: styles$2.formGridTwo,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Customer"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "customer",
-                    style: styles$1.input
+                    style: styles$2.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Contact / Email"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "contact",
-                    style: styles$1.input
+                    style: styles$2.input
                   })]
                 })]
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$1.formGridTwo,
+                style: styles$2.formGridTwo,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Jobsite Address"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "address",
-                    style: styles$1.input
+                    style: styles$2.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "City"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "city",
-                    style: styles$1.input
+                    style: styles$2.input
                   })]
                 })]
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$1.formGridThree,
+                style: styles$2.formGridThree,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Material"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "material",
-                    style: styles$1.input
+                    style: styles$2.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Quantity"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "quantity",
-                    style: styles$1.input
+                    style: styles$2.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Unit"
                   }), /* @__PURE__ */ jsxs("select", {
                     name: "unit",
-                    style: styles$1.input,
+                    style: styles$2.input,
                     children: [/* @__PURE__ */ jsx("option", {
                       children: "TonS"
                     }), /* @__PURE__ */ jsx("option", {
@@ -5041,61 +5131,61 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
                   })]
                 })]
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$1.formGridTwo,
+                style: styles$2.formGridTwo,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Requested Window"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "requestedWindow",
                     placeholder: "Today 1:00p - 3:00p",
-                    style: styles$1.input
+                    style: styles$2.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Truck Preference"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "truckPreference",
                     placeholder: "Walking floor, tri-axle, etc.",
-                    style: styles$1.input
+                    style: styles$2.input
                   })]
                 })]
               }), /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$1.label,
+                  style: styles$2.label,
                   children: "Dispatch Notes"
                 }), /* @__PURE__ */ jsx("textarea", {
                   name: "notes",
                   rows: 4,
                   style: {
-                    ...styles$1.input,
+                    ...styles$2.input,
                     resize: "vertical"
                   }
                 })]
               }), /* @__PURE__ */ jsx("button", {
                 type: "submit",
-                style: styles$1.primaryButton,
+                style: styles$2.primaryButton,
                 children: "Add To Dispatch Queue"
               })]
             })]
           })]
         }), /* @__PURE__ */ jsxs("div", {
-          style: styles$1.centerColumn,
+          style: styles$2.centerColumn,
           children: [/* @__PURE__ */ jsxs("div", {
-            style: styles$1.panel,
+            style: styles$2.panel,
             children: [/* @__PURE__ */ jsxs("div", {
-              style: styles$1.panelHeader,
+              style: styles$2.panelHeader,
               children: [/* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("h2", {
-                  style: styles$1.panelTitle,
+                  style: styles$2.panelTitle,
                   children: "Routes & Fleet"
                 }), /* @__PURE__ */ jsx("p", {
-                  style: styles$1.panelSub,
+                  style: styles$2.panelSub,
                   children: "Active trucks, crew assignments, and current stop counts."
                 })]
               }), /* @__PURE__ */ jsx("div", {
-                style: styles$1.headerPill,
+                style: styles$2.headerPill,
                 children: "Live Board"
               })]
             }), /* @__PURE__ */ jsx("div", {
@@ -5103,8 +5193,8 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
                 display: "grid",
                 gap: 12
               },
-              children: routes2.map((route30) => /* @__PURE__ */ jsxs("div", {
-                style: styles$1.routeCard(route30.color),
+              children: routes2.map((route32) => /* @__PURE__ */ jsxs("div", {
+                style: styles$2.routeCard(route32.color),
                 children: [/* @__PURE__ */ jsxs("div", {
                   style: {
                     display: "flex",
@@ -5120,13 +5210,13 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
                         gap: 10
                       },
                       children: [/* @__PURE__ */ jsx("div", {
-                        style: styles$1.routeColor(route30.color)
+                        style: styles$2.routeColor(route32.color)
                       }), /* @__PURE__ */ jsx("div", {
-                        style: styles$1.routeCode,
-                        children: route30.code
+                        style: styles$2.routeCode,
+                        children: route32.code
                       }), /* @__PURE__ */ jsx("div", {
-                        style: styles$1.routeRegion,
-                        children: route30.region
+                        style: styles$2.routeRegion,
+                        children: route32.region
                       })]
                     }), /* @__PURE__ */ jsxs("div", {
                       style: {
@@ -5134,10 +5224,15 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
                         color: "#e2e8f0",
                         fontWeight: 700
                       },
-                      children: [route30.truck, " · ", route30.driver, " / ", route30.helper]
+                      children: [route32.truck, " · ", route32.driver, " / ", route32.helper]
                     })]
+                  }), /* @__PURE__ */ jsx("a", {
+                    href: `${driverHref}?route=${encodeURIComponent(route32.id)}`,
+                    style: styles$2.assignButton,
+                    children: "Driver View"
                   }), selectedOrder ? /* @__PURE__ */ jsxs(Form, {
                     method: "post",
+                    style: styles$2.assignForm,
                     children: [/* @__PURE__ */ jsx("input", {
                       type: "hidden",
                       name: "intent",
@@ -5149,49 +5244,74 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
                     }), /* @__PURE__ */ jsx("input", {
                       type: "hidden",
                       name: "routeId",
-                      value: route30.id
+                      value: route32.id
+                    }), /* @__PURE__ */ jsx("input", {
+                      name: "eta",
+                      placeholder: "ETA",
+                      defaultValue: selectedOrder.eta || "",
+                      style: styles$2.compactInput
                     }), /* @__PURE__ */ jsx("button", {
                       type: "submit",
-                      style: styles$1.assignButton,
+                      style: styles$2.assignButton,
                       children: "Assign Selected"
                     })]
                   }) : null]
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$1.routeStats,
+                  style: styles$2.routeStats,
                   children: [/* @__PURE__ */ jsx("span", {
-                    children: route30.shift
+                    children: route32.shift
                   }), /* @__PURE__ */ jsxs("span", {
-                    children: [route30.stops, " stops"]
+                    children: [route32.stops, " stops"]
                   }), /* @__PURE__ */ jsx("span", {
-                    children: route30.loadSummary || "No assigned loads yet"
+                    children: route32.loadSummary || "No assigned loads yet"
                   })]
-                })]
-              }, route30.id))
+                }), route32.orders.length ? /* @__PURE__ */ jsx("div", {
+                  style: styles$2.stopList,
+                  children: route32.orders.map((order) => /* @__PURE__ */ jsxs("a", {
+                    href: `${dispatchHref}?order=${encodeURIComponent(order.id)}`,
+                    style: styles$2.stopRow,
+                    children: [/* @__PURE__ */ jsx("span", {
+                      style: styles$2.stopNumber,
+                      children: order.stopSequence || "-"
+                    }), /* @__PURE__ */ jsxs("span", {
+                      style: styles$2.stopMain,
+                      children: [/* @__PURE__ */ jsx("strong", {
+                        children: order.customer
+                      }), /* @__PURE__ */ jsxs("small", {
+                        children: [order.city, " · ", order.material]
+                      })]
+                    }), /* @__PURE__ */ jsx("span", {
+                      style: styles$2.stopStatus(getDeliveryStatusColor(order.deliveryStatus)),
+                      children: getDeliveryStatusLabel(order.deliveryStatus)
+                    })]
+                  }, order.id))
+                }) : null]
+              }, route32.id))
             }), /* @__PURE__ */ jsxs(Form, {
               method: "post",
-              style: styles$1.routeCreateForm,
+              style: styles$2.routeCreateForm,
               children: [/* @__PURE__ */ jsx("input", {
                 type: "hidden",
                 name: "intent",
                 value: "create-route"
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$1.formGridThree,
+                style: styles$2.formGridThree,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Route Code"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "code",
                     placeholder: "R-22",
-                    style: styles$1.input
+                    style: styles$2.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Truck"
                   }), /* @__PURE__ */ jsxs("select", {
                     name: "truckId",
-                    style: styles$1.input,
+                    style: styles$2.input,
                     children: [/* @__PURE__ */ jsx("option", {
                       value: "",
                       children: "Select truck"
@@ -5202,24 +5322,24 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Color"
                   }), /* @__PURE__ */ jsx("input", {
                     type: "color",
                     name: "color",
                     defaultValue: "#38bdf8",
-                    style: styles$1.colorInput
+                    style: styles$2.colorInput
                   })]
                 })]
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$1.formGridThree,
+                style: styles$2.formGridThree,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Driver"
                   }), /* @__PURE__ */ jsxs("select", {
                     name: "driverId",
-                    style: styles$1.input,
+                    style: styles$2.input,
                     children: [/* @__PURE__ */ jsx("option", {
                       value: "",
                       children: "Select driver"
@@ -5230,11 +5350,11 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Helper"
                   }), /* @__PURE__ */ jsxs("select", {
                     name: "helperId",
-                    style: styles$1.input,
+                    style: styles$2.input,
                     children: [/* @__PURE__ */ jsx("option", {
                       value: "",
                       children: "No helper"
@@ -5245,24 +5365,24 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Shift"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "shift",
                     placeholder: "7:00a - 4:00p",
-                    style: styles$1.input
+                    style: styles$2.input
                   })]
                 })]
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$1.formGridTwo,
+                style: styles$2.formGridTwo,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Region"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "region",
                     placeholder: "North / Menomonee Falls",
-                    style: styles$1.input
+                    style: styles$2.input
                   })]
                 }), /* @__PURE__ */ jsx("div", {
                   style: {
@@ -5272,7 +5392,7 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
                   children: /* @__PURE__ */ jsx("button", {
                     type: "submit",
                     style: {
-                      ...styles$1.primaryButton,
+                      ...styles$2.primaryButton,
                       width: "100%"
                     },
                     children: "Add Route"
@@ -5281,92 +5401,92 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
               })]
             })]
           }), /* @__PURE__ */ jsxs("div", {
-            style: styles$1.panel,
+            style: styles$2.panel,
             children: [/* @__PURE__ */ jsxs("div", {
-              style: styles$1.panelHeader,
+              style: styles$2.panelHeader,
               children: [/* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("h2", {
-                  style: styles$1.panelTitle,
+                  style: styles$2.panelTitle,
                   children: "Fleet & Employees"
                 }), /* @__PURE__ */ jsx("p", {
-                  style: styles$1.panelSub,
+                  style: styles$2.panelSub,
                   children: "Add trucks and crew members before building route assignments."
                 })]
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$1.headerPill,
+                style: styles$2.headerPill,
                 children: [trucks.length, " trucks / ", employees.length, " people"]
               })]
             }), /* @__PURE__ */ jsxs("div", {
-              style: styles$1.resourceSummary,
+              style: styles$2.resourceSummary,
               children: [/* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("div", {
-                  style: styles$1.detailLabel,
+                  style: styles$2.detailLabel,
                   children: "Trucks"
                 }), /* @__PURE__ */ jsx("div", {
-                  style: styles$1.resourceList,
+                  style: styles$2.resourceList,
                   children: trucks.map((truck) => /* @__PURE__ */ jsx("span", {
-                    style: styles$1.resourcePill,
+                    style: styles$2.resourcePill,
                     children: truck.label
                   }, truck.id))
                 })]
               }), /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("div", {
-                  style: styles$1.detailLabel,
+                  style: styles$2.detailLabel,
                   children: "Drivers"
                 }), /* @__PURE__ */ jsx("div", {
-                  style: styles$1.resourceList,
+                  style: styles$2.resourceList,
                   children: drivers.map((employee) => /* @__PURE__ */ jsx("span", {
-                    style: styles$1.resourcePill,
+                    style: styles$2.resourcePill,
                     children: employee.name
                   }, employee.id))
                 })]
               })]
             }), /* @__PURE__ */ jsxs(Form, {
               method: "post",
-              style: styles$1.routeCreateForm,
+              style: styles$2.routeCreateForm,
               children: [/* @__PURE__ */ jsx("input", {
                 type: "hidden",
                 name: "intent",
                 value: "create-truck"
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$1.formGridThree,
+                style: styles$2.formGridThree,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Truck Name"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "label",
                     placeholder: "Truck 22",
-                    style: styles$1.input
+                    style: styles$2.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Type"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "truckType",
                     placeholder: "Tri-axle",
-                    style: styles$1.input
+                    style: styles$2.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Capacity"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "capacity",
                     placeholder: "22 TonS",
-                    style: styles$1.input
+                    style: styles$2.input
                   })]
                 })]
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$1.formGridTwo,
+                style: styles$2.formGridTwo,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Plate"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "licensePlate",
-                    style: styles$1.input
+                    style: styles$2.input
                   })]
                 }), /* @__PURE__ */ jsx("div", {
                   style: {
@@ -5376,7 +5496,7 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
                   children: /* @__PURE__ */ jsx("button", {
                     type: "submit",
                     style: {
-                      ...styles$1.secondaryButton,
+                      ...styles$2.secondaryButton,
                       width: "100%"
                     },
                     children: "Add Truck"
@@ -5385,28 +5505,28 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
               })]
             }), /* @__PURE__ */ jsxs(Form, {
               method: "post",
-              style: styles$1.routeCreateForm,
+              style: styles$2.routeCreateForm,
               children: [/* @__PURE__ */ jsx("input", {
                 type: "hidden",
                 name: "intent",
                 value: "create-employee"
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$1.formGridThree,
+                style: styles$2.formGridThree,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Name"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "name",
-                    style: styles$1.input
+                    style: styles$2.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Role"
                   }), /* @__PURE__ */ jsxs("select", {
                     name: "role",
-                    style: styles$1.input,
+                    style: styles$2.input,
                     children: [/* @__PURE__ */ jsx("option", {
                       value: "driver",
                       children: "Driver"
@@ -5420,23 +5540,23 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Phone"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "phone",
-                    style: styles$1.input
+                    style: styles$2.input
                   })]
                 })]
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$1.formGridTwo,
+                style: styles$2.formGridTwo,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$1.label,
+                    style: styles$2.label,
                     children: "Email"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "email",
                     type: "email",
-                    style: styles$1.input
+                    style: styles$2.input
                   })]
                 }), /* @__PURE__ */ jsx("div", {
                   style: {
@@ -5446,7 +5566,7 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
                   children: /* @__PURE__ */ jsx("button", {
                     type: "submit",
                     style: {
-                      ...styles$1.secondaryButton,
+                      ...styles$2.secondaryButton,
                       width: "100%"
                     },
                     children: "Add Employee"
@@ -5455,68 +5575,68 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
               })]
             })]
           }), /* @__PURE__ */ jsxs("div", {
-            style: styles$1.panel,
+            style: styles$2.panel,
             children: [/* @__PURE__ */ jsx("div", {
-              style: styles$1.panelHeader,
+              style: styles$2.panelHeader,
               children: /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("h2", {
-                  style: styles$1.panelTitle,
+                  style: styles$2.panelTitle,
                   children: "Route Map Preview"
                 }), /* @__PURE__ */ jsx("p", {
-                  style: styles$1.panelSub,
+                  style: styles$2.panelSub,
                   children: "Visual route planning mockup for the first dispatch tab. We can wire live geocoding and stop sequencing next."
                 })]
               })
             }), /* @__PURE__ */ jsxs("div", {
-              style: styles$1.mapStage,
+              style: styles$2.mapStage,
               children: [/* @__PURE__ */ jsx("div", {
-                style: styles$1.mapGrid
+                style: styles$2.mapGrid
               }), /* @__PURE__ */ jsx("div", {
-                style: styles$1.mapWater
-              }), routes2.map((route30, index) => /* @__PURE__ */ jsx("div", {
+                style: styles$2.mapWater
+              }), routes2.map((route32, index) => /* @__PURE__ */ jsx("div", {
                 style: {
-                  ...styles$1.mapRoute(route30.color),
+                  ...styles$2.mapRoute(route32.color),
                   top: 70 + index * 80,
                   left: 40 + index * 90,
                   width: 180 + index * 15
                 }
-              }, route30.id)), routes2.flatMap((route30, routeIndex) => route30.orders.map((order, orderIndex) => /* @__PURE__ */ jsx("div", {
-                title: `${order.customer} · ${route30.truck}`,
+              }, route32.id)), routes2.flatMap((route32, routeIndex) => route32.orders.map((order, orderIndex) => /* @__PURE__ */ jsx("div", {
+                title: `${order.customer} · ${route32.truck}`,
                 style: {
-                  ...styles$1.mapStop(route30.color),
+                  ...styles$2.mapStop(route32.color),
                   top: 82 + routeIndex * 80 + orderIndex * 24,
                   left: 90 + routeIndex * 92 + orderIndex * 34
                 },
                 children: orderIndex + 1
-              }, `${route30.id}-${order.id}`))), /* @__PURE__ */ jsx("div", {
-                style: styles$1.mapLegend,
-                children: routes2.map((route30) => /* @__PURE__ */ jsxs("div", {
+              }, `${route32.id}-${order.id}`))), /* @__PURE__ */ jsx("div", {
+                style: styles$2.mapLegend,
+                children: routes2.map((route32) => /* @__PURE__ */ jsxs("div", {
                   style: {
                     display: "flex",
                     alignItems: "center",
                     gap: 8
                   },
                   children: [/* @__PURE__ */ jsx("div", {
-                    style: styles$1.routeColor(route30.color)
+                    style: styles$2.routeColor(route32.color)
                   }), /* @__PURE__ */ jsx("span", {
-                    children: route30.truck
+                    children: route32.truck
                   })]
-                }, route30.id))
+                }, route32.id))
               })]
             })]
           })]
         }), /* @__PURE__ */ jsxs("div", {
-          style: styles$1.rightColumn,
+          style: styles$2.rightColumn,
           children: [/* @__PURE__ */ jsxs("div", {
-            style: styles$1.panel,
+            style: styles$2.panel,
             children: [/* @__PURE__ */ jsx("div", {
-              style: styles$1.panelHeader,
+              style: styles$2.panelHeader,
               children: /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("h2", {
-                  style: styles$1.panelTitle,
+                  style: styles$2.panelTitle,
                   children: "Dispatch Detail"
                 }), /* @__PURE__ */ jsx("p", {
-                  style: styles$1.panelSub,
+                  style: styles$2.panelSub,
                   children: "Review the selected order, then assign it to a truck and crew or place it on hold."
                 })]
               })
@@ -5527,54 +5647,73 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
               },
               children: [/* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("div", {
-                  style: styles$1.detailId,
+                  style: styles$2.detailId,
                   children: selectedOrder.id
                 }), /* @__PURE__ */ jsx("div", {
-                  style: styles$1.detailTitle,
+                  style: styles$2.detailTitle,
                   children: selectedOrder.customer
                 }), /* @__PURE__ */ jsx("div", {
-                  style: styles$1.detailMeta,
+                  style: styles$2.detailMeta,
                   children: selectedOrder.contact
                 })]
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$1.detailGrid,
+                style: styles$2.detailGrid,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("div", {
-                    style: styles$1.detailLabel,
+                    style: styles$2.detailLabel,
                     children: "Address"
                   }), /* @__PURE__ */ jsxs("div", {
-                    style: styles$1.detailValue,
+                    style: styles$2.detailValue,
                     children: [selectedOrder.address, ", ", selectedOrder.city]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("div", {
-                    style: styles$1.detailLabel,
+                    style: styles$2.detailLabel,
                     children: "Load"
                   }), /* @__PURE__ */ jsxs("div", {
-                    style: styles$1.detailValue,
+                    style: styles$2.detailValue,
                     children: [selectedOrder.quantity, " ", selectedOrder.unit, " ", selectedOrder.material]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("div", {
-                    style: styles$1.detailLabel,
+                    style: styles$2.detailLabel,
                     children: "Requested"
                   }), /* @__PURE__ */ jsx("div", {
-                    style: styles$1.detailValue,
+                    style: styles$2.detailValue,
                     children: selectedOrder.requestedWindow
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("div", {
-                    style: styles$1.detailLabel,
+                    style: styles$2.detailLabel,
                     children: "Truck Preference"
                   }), /* @__PURE__ */ jsx("div", {
-                    style: styles$1.detailValue,
+                    style: styles$2.detailValue,
                     children: selectedOrder.truckPreference || "No preference"
+                  })]
+                }), /* @__PURE__ */ jsxs("div", {
+                  children: [/* @__PURE__ */ jsx("div", {
+                    style: styles$2.detailLabel,
+                    children: "Route Stop"
+                  }), /* @__PURE__ */ jsx("div", {
+                    style: styles$2.detailValue,
+                    children: selectedOrder.assignedRouteId ? `Stop ${selectedOrder.stopSequence || "-"}` : "Unassigned"
+                  })]
+                }), /* @__PURE__ */ jsxs("div", {
+                  children: [/* @__PURE__ */ jsx("div", {
+                    style: styles$2.detailLabel,
+                    children: "Delivery Status"
+                  }), /* @__PURE__ */ jsxs("div", {
+                    style: {
+                      ...styles$2.detailValue,
+                      color: getDeliveryStatusColor(selectedOrder.deliveryStatus)
+                    },
+                    children: [getDeliveryStatusLabel(selectedOrder.deliveryStatus), selectedOrder.eta ? ` · ETA ${selectedOrder.eta}` : ""]
                   })]
                 })]
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$1.notesBlock,
+                style: styles$2.notesBlock,
                 children: [/* @__PURE__ */ jsx("div", {
-                  style: styles$1.detailLabel,
+                  style: styles$2.detailLabel,
                   children: "Notes"
                 }), /* @__PURE__ */ jsx("div", {
                   style: {
@@ -5582,6 +5721,69 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
                     lineHeight: 1.55
                   },
                   children: selectedOrder.notes || "No dispatch notes yet."
+                })]
+              }), /* @__PURE__ */ jsxs(Form, {
+                method: "post",
+                style: styles$2.stopStatusForm,
+                children: [/* @__PURE__ */ jsx("input", {
+                  type: "hidden",
+                  name: "intent",
+                  value: "update-stop-status"
+                }), /* @__PURE__ */ jsx("input", {
+                  type: "hidden",
+                  name: "orderId",
+                  value: selectedOrder.id
+                }), /* @__PURE__ */ jsxs("div", {
+                  children: [/* @__PURE__ */ jsx("label", {
+                    style: styles$2.label,
+                    children: "Stop Status"
+                  }), /* @__PURE__ */ jsxs("select", {
+                    name: "deliveryStatus",
+                    defaultValue: selectedOrder.deliveryStatus || "not_started",
+                    style: styles$2.input,
+                    children: [/* @__PURE__ */ jsx("option", {
+                      value: "not_started",
+                      children: "Not started"
+                    }), /* @__PURE__ */ jsx("option", {
+                      value: "en_route",
+                      children: "En route"
+                    }), /* @__PURE__ */ jsx("option", {
+                      value: "arrived",
+                      children: "Arrived"
+                    }), /* @__PURE__ */ jsx("option", {
+                      value: "delivered",
+                      children: "Delivered"
+                    }), /* @__PURE__ */ jsx("option", {
+                      value: "issue",
+                      children: "Issue"
+                    })]
+                  })]
+                }), /* @__PURE__ */ jsxs("div", {
+                  children: [/* @__PURE__ */ jsx("label", {
+                    style: styles$2.label,
+                    children: "Proof Name"
+                  }), /* @__PURE__ */ jsx("input", {
+                    name: "proofName",
+                    defaultValue: selectedOrder.proofName || "",
+                    style: styles$2.input
+                  })]
+                }), /* @__PURE__ */ jsxs("div", {
+                  children: [/* @__PURE__ */ jsx("label", {
+                    style: styles$2.label,
+                    children: "Proof Notes"
+                  }), /* @__PURE__ */ jsx("textarea", {
+                    name: "proofNotes",
+                    defaultValue: selectedOrder.proofNotes || "",
+                    rows: 3,
+                    style: {
+                      ...styles$2.input,
+                      resize: "vertical"
+                    }
+                  })]
+                }), /* @__PURE__ */ jsx("button", {
+                  type: "submit",
+                  style: styles$2.primaryButton,
+                  children: "Update Stop"
                 })]
               }), /* @__PURE__ */ jsxs("div", {
                 style: {
@@ -5600,7 +5802,7 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
                     value: selectedOrder.id
                   }), /* @__PURE__ */ jsx("button", {
                     type: "submit",
-                    style: styles$1.secondaryButton,
+                    style: styles$2.secondaryButton,
                     children: "Move Back To Inbox"
                   })]
                 }), /* @__PURE__ */ jsxs(Form, {
@@ -5615,7 +5817,7 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
                     value: selectedOrder.id
                   }), /* @__PURE__ */ jsx("button", {
                     type: "submit",
-                    style: styles$1.secondaryButton,
+                    style: styles$2.secondaryButton,
                     children: "Put On Hold"
                   })]
                 })]
@@ -5627,15 +5829,15 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
               children: "Select an order to view dispatch detail."
             })]
           }), /* @__PURE__ */ jsxs("div", {
-            style: styles$1.panel,
+            style: styles$2.panel,
             children: [/* @__PURE__ */ jsx("div", {
-              style: styles$1.panelHeader,
+              style: styles$2.panelHeader,
               children: /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("h2", {
-                  style: styles$1.panelTitle,
+                  style: styles$2.panelTitle,
                   children: "Phase 2 Targets"
                 }), /* @__PURE__ */ jsx("p", {
-                  style: styles$1.panelSub,
+                  style: styles$2.panelSub,
                   children: "Next steps to expand this into the full dispatch + field execution system."
                 })]
               })
@@ -5645,9 +5847,9 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
                 gap: 10
               },
               children: ["Email parser to read the order inbox and prefill dispatch cards", "Persistent trucks, employees, routes, and assigned stops in Supabase", "Driver mobile workflow: arrive, depart, signature, photos, tickets", "GoCanvas-style field forms for inspection, proof, and custom checklists", "Route optimization and live map sequencing"].map((item) => /* @__PURE__ */ jsxs("div", {
-                style: styles$1.todoItem,
+                style: styles$2.todoItem,
                 children: [/* @__PURE__ */ jsx("span", {
-                  style: styles$1.todoDot
+                  style: styles$2.todoDot
                 }), /* @__PURE__ */ jsx("span", {
                   children: item
                 })]
@@ -5659,7 +5861,7 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
     })
   });
 });
-const styles$1 = {
+const styles$2 = {
   page: {
     minHeight: "100vh",
     background: "radial-gradient(circle at top left, rgba(14, 165, 233, 0.14), transparent 26%), radial-gradient(circle at top right, rgba(249, 115, 22, 0.1), transparent 24%), linear-gradient(180deg, #09101d 0%, #0f172a 42%, #020617 100%)",
@@ -5871,6 +6073,18 @@ const styles$1 = {
     background: "rgba(15, 23, 42, 0.94)",
     cursor: "pointer"
   },
+  compactInput: {
+    width: 82,
+    boxSizing: "border-box",
+    minHeight: 42,
+    padding: "10px 12px",
+    borderRadius: 12,
+    border: "1px solid #334155",
+    background: "rgba(15, 23, 42, 0.94)",
+    color: "#f8fafc",
+    fontSize: 13,
+    outline: "none"
+  },
   primaryButton: {
     minHeight: 50,
     borderRadius: 15,
@@ -5952,15 +6166,83 @@ const styles$1 = {
     fontSize: 12,
     fontWeight: 700
   },
+  assignForm: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+    justifyContent: "flex-end"
+  },
   assignButton: {
     minHeight: 42,
     padding: "0 14px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 12,
     border: "1px solid rgba(34, 197, 94, 0.4)",
     background: "rgba(34, 197, 94, 0.12)",
     color: "#bbf7d0",
+    textDecoration: "none",
     fontWeight: 800,
     cursor: "pointer"
+  },
+  stopList: {
+    marginTop: 14,
+    display: "grid",
+    gap: 8
+  },
+  stopRow: {
+    display: "grid",
+    gridTemplateColumns: "32px minmax(0, 1fr) auto",
+    gap: 10,
+    alignItems: "center",
+    padding: "10px 12px",
+    borderRadius: 14,
+    background: "rgba(2, 6, 23, 0.62)",
+    border: "1px solid rgba(51, 65, 85, 0.78)",
+    textDecoration: "none",
+    color: "#f8fafc"
+  },
+  stopNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 999,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "rgba(15, 23, 42, 0.92)",
+    border: "1px solid rgba(51, 65, 85, 0.95)",
+    color: "#cbd5e1",
+    fontSize: 12,
+    fontWeight: 900
+  },
+  stopMain: {
+    display: "grid",
+    gap: 3,
+    minWidth: 0
+  },
+  stopStatus: (color) => ({
+    minHeight: 28,
+    padding: "0 9px",
+    borderRadius: 999,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color,
+    background: `${color}1f`,
+    border: `1px solid ${color}55`,
+    fontSize: 11,
+    fontWeight: 800,
+    whiteSpace: "nowrap"
+  }),
+  stopStatusForm: {
+    display: "grid",
+    gap: 12,
+    padding: 14,
+    borderRadius: 18,
+    background: "rgba(2, 6, 23, 0.62)",
+    border: "1px solid rgba(51, 65, 85, 0.82)"
   },
   mapStage: {
     position: "relative",
@@ -6135,8 +6417,668 @@ const styles$1 = {
 };
 const route4 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$d,
+  action: action$e,
   default: dispatch,
+  loader: loader$7
+}, Symbol.toStringTag, { value: "Module" }));
+function getDriverPath(url) {
+  return url.pathname.startsWith("/app/") ? "/app/dispatch/driver" : "/dispatch/driver";
+}
+function getDispatchPath(pathname) {
+  return pathname.startsWith("/app/") ? "/app/dispatch" : "/dispatch";
+}
+function getStatusLabel(status) {
+  if (status === "en_route") return "En route";
+  if (status === "arrived") return "Arrived";
+  if (status === "delivered") return "Delivered";
+  if (status === "issue") return "Issue";
+  return "Not started";
+}
+function getStatusColor(status) {
+  if (status === "delivered") return "#16a34a";
+  if (status === "arrived") return "#0284c7";
+  if (status === "en_route") return "#ea580c";
+  if (status === "issue") return "#dc2626";
+  return "#475569";
+}
+async function loadDriverState() {
+  try {
+    await ensureSeedDispatchTrucks();
+    await ensureSeedDispatchEmployees();
+    await ensureSeedDispatchOrders();
+    await ensureSeedDispatchRoutes();
+    return {
+      orders: await getDispatchOrders(),
+      routes: await getDispatchRoutes(),
+      storageReady: true,
+      storageError: null
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to load driver route data";
+    console.error("[DISPATCH DRIVER STORAGE ERROR]", message);
+    return {
+      orders: seedDispatchOrders,
+      routes: seedDispatchRoutes,
+      storageReady: false,
+      storageError: message
+    };
+  }
+}
+async function loader$6({
+  request
+}) {
+  const url = new URL(request.url);
+  const driverPath = getDriverPath(url);
+  if (url.searchParams.get("logout") === "1") {
+    return redirect(driverPath, {
+      headers: {
+        "Set-Cookie": await adminQuoteCookie.serialize("", {
+          maxAge: 0
+        })
+      }
+    });
+  }
+  const allowed = await hasAdminQuoteAccess(request);
+  if (!allowed) {
+    return data({
+      allowed: false,
+      orders: [],
+      routes: [],
+      storageReady: false,
+      storageError: null
+    });
+  }
+  return data({
+    allowed: true,
+    ...await loadDriverState()
+  });
+}
+async function action$d({
+  request
+}) {
+  const form = await request.formData();
+  const intent = String(form.get("intent") || "");
+  if (intent === "login") {
+    const password = String(form.get("password") || "");
+    const expected = getAdminQuotePassword();
+    if (!expected || password !== expected) {
+      return data({
+        allowed: false,
+        loginError: "Invalid password",
+        orders: [],
+        routes: []
+      }, {
+        status: 401
+      });
+    }
+    return data({
+      allowed: true,
+      loginError: null,
+      ...await loadDriverState()
+    }, {
+      headers: {
+        "Set-Cookie": await adminQuoteCookie.serialize("ok")
+      }
+    });
+  }
+  const allowed = await hasAdminQuoteAccess(request);
+  if (!allowed) {
+    return data({
+      allowed: false,
+      loginError: "Please log in",
+      orders: [],
+      routes: []
+    }, {
+      status: 401
+    });
+  }
+  if (intent !== "update-stop-status") {
+    return data({
+      allowed: true,
+      ok: false,
+      message: "Unknown driver action.",
+      ...await loadDriverState()
+    }, {
+      status: 400
+    });
+  }
+  const orderId = String(form.get("orderId") || "").trim();
+  const routeId = String(form.get("routeId") || "").trim();
+  const rawStatus = String(form.get("deliveryStatus") || "").trim();
+  const deliveryStatus = rawStatus === "en_route" || rawStatus === "arrived" || rawStatus === "delivered" || rawStatus === "issue" ? rawStatus : "not_started";
+  if (!orderId) {
+    return data({
+      allowed: true,
+      ok: false,
+      message: "Missing stop selection.",
+      selectedRouteId: routeId || null,
+      ...await loadDriverState()
+    }, {
+      status: 400
+    });
+  }
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  const patch = {
+    deliveryStatus,
+    proofName: String(form.get("proofName") || "").trim() || null,
+    proofNotes: String(form.get("proofNotes") || "").trim() || null
+  };
+  if (deliveryStatus === "arrived") patch.arrivedAt = now;
+  if (deliveryStatus === "delivered") {
+    patch.departedAt = now;
+    patch.deliveredAt = now;
+  }
+  await updateDispatchOrder(orderId, patch);
+  return data({
+    allowed: true,
+    ok: true,
+    message: `Stop marked ${getStatusLabel(deliveryStatus).toLowerCase()}.`,
+    selectedRouteId: routeId || null,
+    selectedOrderId: orderId,
+    ...await loadDriverState()
+  });
+}
+const dispatchDriver = UNSAFE_withComponentProps(function DispatchDriverPage() {
+  var _a2;
+  const loaderData = useLoaderData();
+  const actionData = useActionData();
+  const location = useLocation();
+  const allowed = (actionData == null ? void 0 : actionData.allowed) ?? loaderData.allowed;
+  const isEmbeddedRoute = location.pathname.startsWith("/app/");
+  const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
+  const dispatchHref = getDispatchPath(location.pathname);
+  const logoutHref = `${driverHref}?logout=1`;
+  const orders = (actionData == null ? void 0 : actionData.orders) ?? loaderData.orders ?? [];
+  const routes2 = (actionData == null ? void 0 : actionData.routes) ?? loaderData.routes ?? [];
+  const storageReady = (actionData == null ? void 0 : actionData.storageReady) ?? loaderData.storageReady ?? false;
+  const storageError = (actionData == null ? void 0 : actionData.storageError) ?? loaderData.storageError ?? null;
+  const searchParams = new URLSearchParams(location.search);
+  const selectedRouteId = (actionData == null ? void 0 : actionData.selectedRouteId) || searchParams.get("route") || ((_a2 = routes2[0]) == null ? void 0 : _a2.id) || "";
+  const selectedRoute = routes2.find((route32) => route32.id === selectedRouteId) || routes2[0] || null;
+  const routeStops = useMemo(() => selectedRoute ? orders.filter((order) => order.assignedRouteId === selectedRoute.id).sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999)) : [], [orders, selectedRoute]);
+  const completedCount = routeStops.filter((stop) => stop.deliveryStatus === "delivered").length;
+  if (!allowed) {
+    return /* @__PURE__ */ jsx("div", {
+      style: styles$1.page,
+      children: /* @__PURE__ */ jsxs("div", {
+        style: styles$1.loginCard,
+        children: [/* @__PURE__ */ jsx("h1", {
+          style: styles$1.title,
+          children: "Driver Route"
+        }), /* @__PURE__ */ jsx("p", {
+          style: styles$1.subtle,
+          children: "Enter the admin password to open route stops."
+        }), /* @__PURE__ */ jsxs(Form, {
+          method: "post",
+          style: {
+            display: "grid",
+            gap: 12,
+            marginTop: 18
+          },
+          children: [/* @__PURE__ */ jsx("input", {
+            type: "hidden",
+            name: "intent",
+            value: "login"
+          }), /* @__PURE__ */ jsx("label", {
+            style: styles$1.label,
+            children: "Admin Password"
+          }), /* @__PURE__ */ jsx("input", {
+            name: "password",
+            type: "password",
+            style: styles$1.input
+          }), (actionData == null ? void 0 : actionData.loginError) ? /* @__PURE__ */ jsx("div", {
+            style: styles$1.error,
+            children: actionData.loginError
+          }) : null, /* @__PURE__ */ jsx("button", {
+            type: "submit",
+            style: styles$1.primaryButton,
+            children: "Open Route"
+          })]
+        })]
+      })
+    });
+  }
+  return /* @__PURE__ */ jsx("div", {
+    style: styles$1.page,
+    children: /* @__PURE__ */ jsxs("div", {
+      style: styles$1.shell,
+      children: [/* @__PURE__ */ jsxs("header", {
+        style: styles$1.header,
+        children: [/* @__PURE__ */ jsxs("div", {
+          children: [/* @__PURE__ */ jsx("div", {
+            style: styles$1.kicker,
+            children: "Driver Mode"
+          }), /* @__PURE__ */ jsx("h1", {
+            style: styles$1.title,
+            children: (selectedRoute == null ? void 0 : selectedRoute.truck) || "Driver Route"
+          }), /* @__PURE__ */ jsx("p", {
+            style: styles$1.subtle,
+            children: selectedRoute ? `${selectedRoute.driver}${selectedRoute.helper ? ` / ${selectedRoute.helper}` : ""} · ${selectedRoute.shift || "Shift not set"}` : "No active route selected"
+          })]
+        }), /* @__PURE__ */ jsxs("div", {
+          style: styles$1.headerActions,
+          children: [/* @__PURE__ */ jsx("a", {
+            href: dispatchHref,
+            style: styles$1.ghostButton,
+            children: "Dispatch"
+          }), /* @__PURE__ */ jsx("a", {
+            href: logoutHref,
+            style: styles$1.ghostButton,
+            children: "Log Out"
+          })]
+        })]
+      }), !storageReady ? /* @__PURE__ */ jsxs("div", {
+        style: styles$1.warning,
+        children: ["Run `dispatch_schema.sql` in Supabase, then refresh.", storageError ? ` Storage error: ${storageError}` : ""]
+      }) : null, (actionData == null ? void 0 : actionData.message) ? /* @__PURE__ */ jsx("div", {
+        style: actionData.ok ? styles$1.success : styles$1.error,
+        children: actionData.message
+      }) : null, /* @__PURE__ */ jsx("section", {
+        style: styles$1.routePicker,
+        children: routes2.map((route32) => /* @__PURE__ */ jsxs("a", {
+          href: `${driverHref}?route=${encodeURIComponent(route32.id)}`,
+          style: {
+            ...styles$1.routeChip,
+            borderColor: route32.id === (selectedRoute == null ? void 0 : selectedRoute.id) ? route32.color : "rgba(203, 213, 225, 0.28)",
+            background: route32.id === (selectedRoute == null ? void 0 : selectedRoute.id) ? `${route32.color}22` : "#ffffff"
+          },
+          children: [/* @__PURE__ */ jsx("span", {
+            style: {
+              ...styles$1.routeDot,
+              background: route32.color
+            }
+          }), /* @__PURE__ */ jsx("span", {
+            children: route32.code
+          }), /* @__PURE__ */ jsx("small", {
+            children: route32.truck
+          })]
+        }, route32.id))
+      }), /* @__PURE__ */ jsxs("section", {
+        style: styles$1.summaryGrid,
+        children: [/* @__PURE__ */ jsxs("div", {
+          style: styles$1.summaryCard,
+          children: [/* @__PURE__ */ jsx("span", {
+            children: "Stops"
+          }), /* @__PURE__ */ jsx("strong", {
+            children: routeStops.length
+          })]
+        }), /* @__PURE__ */ jsxs("div", {
+          style: styles$1.summaryCard,
+          children: [/* @__PURE__ */ jsx("span", {
+            children: "Delivered"
+          }), /* @__PURE__ */ jsx("strong", {
+            children: completedCount
+          })]
+        }), /* @__PURE__ */ jsxs("div", {
+          style: styles$1.summaryCard,
+          children: [/* @__PURE__ */ jsx("span", {
+            children: "Remaining"
+          }), /* @__PURE__ */ jsx("strong", {
+            children: Math.max(routeStops.length - completedCount, 0)
+          })]
+        })]
+      }), /* @__PURE__ */ jsx("main", {
+        style: styles$1.stopList,
+        children: routeStops.length === 0 ? /* @__PURE__ */ jsx("div", {
+          style: styles$1.empty,
+          children: "No stops assigned to this route yet."
+        }) : routeStops.map((stop) => /* @__PURE__ */ jsxs("article", {
+          style: styles$1.stopCard,
+          children: [/* @__PURE__ */ jsxs("div", {
+            style: styles$1.stopTop,
+            children: [/* @__PURE__ */ jsx("div", {
+              style: styles$1.stopNumber,
+              children: stop.stopSequence || "-"
+            }), /* @__PURE__ */ jsxs("div", {
+              style: {
+                minWidth: 0
+              },
+              children: [/* @__PURE__ */ jsx("h2", {
+                style: styles$1.stopTitle,
+                children: stop.customer
+              }), /* @__PURE__ */ jsxs("p", {
+                style: styles$1.stopAddress,
+                children: [stop.address, ", ", stop.city]
+              })]
+            }), /* @__PURE__ */ jsx("span", {
+              style: {
+                ...styles$1.statusPill,
+                color: getStatusColor(stop.deliveryStatus),
+                borderColor: `${getStatusColor(stop.deliveryStatus)}55`,
+                background: `${getStatusColor(stop.deliveryStatus)}18`
+              },
+              children: getStatusLabel(stop.deliveryStatus)
+            })]
+          }), /* @__PURE__ */ jsxs("div", {
+            style: styles$1.stopMeta,
+            children: [/* @__PURE__ */ jsxs("span", {
+              children: [stop.quantity, " ", stop.unit, " ", stop.material]
+            }), /* @__PURE__ */ jsx("span", {
+              children: stop.requestedWindow
+            }), stop.eta ? /* @__PURE__ */ jsxs("span", {
+              children: ["ETA ", stop.eta]
+            }) : null]
+          }), stop.notes ? /* @__PURE__ */ jsx("p", {
+            style: styles$1.notes,
+            children: stop.notes
+          }) : null, /* @__PURE__ */ jsxs(Form, {
+            method: "post",
+            style: styles$1.stopForm,
+            children: [/* @__PURE__ */ jsx("input", {
+              type: "hidden",
+              name: "intent",
+              value: "update-stop-status"
+            }), /* @__PURE__ */ jsx("input", {
+              type: "hidden",
+              name: "routeId",
+              value: (selectedRoute == null ? void 0 : selectedRoute.id) || ""
+            }), /* @__PURE__ */ jsx("input", {
+              type: "hidden",
+              name: "orderId",
+              value: stop.id
+            }), /* @__PURE__ */ jsx("div", {
+              style: styles$1.statusButtons,
+              children: [["en_route", "En Route"], ["arrived", "Arrived"], ["delivered", "Delivered"], ["issue", "Issue"]].map(([value, label]) => /* @__PURE__ */ jsx("button", {
+                type: "submit",
+                name: "deliveryStatus",
+                value,
+                style: styles$1.statusButton,
+                children: label
+              }, value))
+            }), /* @__PURE__ */ jsxs("div", {
+              style: styles$1.formGrid,
+              children: [/* @__PURE__ */ jsxs("div", {
+                children: [/* @__PURE__ */ jsx("label", {
+                  style: styles$1.label,
+                  children: "Proof Name"
+                }), /* @__PURE__ */ jsx("input", {
+                  name: "proofName",
+                  defaultValue: stop.proofName || "",
+                  style: styles$1.input
+                })]
+              }), /* @__PURE__ */ jsxs("div", {
+                children: [/* @__PURE__ */ jsx("label", {
+                  style: styles$1.label,
+                  children: "Proof Notes"
+                }), /* @__PURE__ */ jsx("input", {
+                  name: "proofNotes",
+                  defaultValue: stop.proofNotes || "",
+                  style: styles$1.input
+                })]
+              })]
+            })]
+          })]
+        }, stop.id))
+      })]
+    })
+  });
+});
+const styles$1 = {
+  page: {
+    minHeight: "100vh",
+    background: "#f8fafc",
+    color: "#0f172a",
+    padding: "16px 14px 34px",
+    fontFamily: '"Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+  },
+  shell: {
+    maxWidth: 980,
+    margin: "0 auto",
+    display: "grid",
+    gap: 14
+  },
+  loginCard: {
+    maxWidth: 460,
+    margin: "12vh auto 0",
+    padding: 20,
+    borderRadius: 10,
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
+    boxShadow: "0 18px 45px rgba(15, 23, 42, 0.12)"
+  },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 14,
+    alignItems: "flex-start",
+    padding: 16,
+    borderRadius: 10,
+    background: "#ffffff",
+    border: "1px solid #e2e8f0"
+  },
+  headerActions: {
+    display: "flex",
+    gap: 8,
+    flexWrap: "wrap",
+    justifyContent: "flex-end"
+  },
+  kicker: {
+    color: "#0369a1",
+    fontSize: 12,
+    fontWeight: 800,
+    textTransform: "uppercase",
+    letterSpacing: "0.08em"
+  },
+  title: {
+    margin: "4px 0 0",
+    fontSize: 28,
+    lineHeight: 1.1,
+    fontWeight: 900,
+    letterSpacing: 0
+  },
+  subtle: {
+    margin: "6px 0 0",
+    color: "#64748b",
+    lineHeight: 1.45
+  },
+  ghostButton: {
+    minHeight: 40,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "0 12px",
+    borderRadius: 8,
+    border: "1px solid #cbd5e1",
+    background: "#ffffff",
+    color: "#0f172a",
+    textDecoration: "none",
+    fontWeight: 800,
+    fontSize: 13
+  },
+  routePicker: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+    gap: 10
+  },
+  routeChip: {
+    display: "grid",
+    gridTemplateColumns: "12px minmax(0, 1fr) auto",
+    gap: 8,
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 8,
+    border: "1px solid #cbd5e1",
+    color: "#0f172a",
+    textDecoration: "none",
+    fontWeight: 900
+  },
+  routeDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 999
+  },
+  summaryGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: 10
+  },
+  summaryCard: {
+    display: "grid",
+    gap: 4,
+    padding: 14,
+    borderRadius: 8,
+    background: "#ffffff",
+    border: "1px solid #e2e8f0"
+  },
+  stopList: {
+    display: "grid",
+    gap: 12
+  },
+  stopCard: {
+    padding: 14,
+    borderRadius: 10,
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
+    boxShadow: "0 10px 24px rgba(15, 23, 42, 0.07)"
+  },
+  stopTop: {
+    display: "grid",
+    gridTemplateColumns: "40px minmax(0, 1fr) auto",
+    gap: 10,
+    alignItems: "center"
+  },
+  stopNumber: {
+    width: 36,
+    height: 36,
+    borderRadius: 999,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "#0f172a",
+    color: "#ffffff",
+    fontWeight: 900
+  },
+  stopTitle: {
+    margin: 0,
+    fontSize: 17,
+    fontWeight: 900,
+    letterSpacing: 0
+  },
+  stopAddress: {
+    margin: "3px 0 0",
+    color: "#475569",
+    lineHeight: 1.35
+  },
+  statusPill: {
+    minHeight: 30,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "0 10px",
+    borderRadius: 999,
+    border: "1px solid",
+    fontSize: 12,
+    fontWeight: 900,
+    whiteSpace: "nowrap"
+  },
+  stopMeta: {
+    display: "flex",
+    gap: 8,
+    flexWrap: "wrap",
+    marginTop: 10,
+    color: "#334155",
+    fontSize: 13,
+    fontWeight: 700
+  },
+  notes: {
+    margin: "10px 0 0",
+    padding: 10,
+    borderRadius: 8,
+    background: "#f1f5f9",
+    color: "#334155",
+    lineHeight: 1.45
+  },
+  stopForm: {
+    display: "grid",
+    gap: 10,
+    marginTop: 12
+  },
+  statusButtons: {
+    display: "grid",
+    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+    gap: 8
+  },
+  statusButton: {
+    minHeight: 44,
+    borderRadius: 8,
+    border: "1px solid #cbd5e1",
+    background: "#f8fafc",
+    color: "#0f172a",
+    fontWeight: 900,
+    cursor: "pointer"
+  },
+  formGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 10
+  },
+  label: {
+    display: "block",
+    marginBottom: 6,
+    color: "#475569",
+    fontSize: 12,
+    fontWeight: 900,
+    textTransform: "uppercase",
+    letterSpacing: "0.04em"
+  },
+  input: {
+    width: "100%",
+    minHeight: 42,
+    boxSizing: "border-box",
+    borderRadius: 8,
+    border: "1px solid #cbd5e1",
+    background: "#ffffff",
+    color: "#0f172a",
+    padding: "10px 11px",
+    fontSize: 14
+  },
+  primaryButton: {
+    minHeight: 44,
+    borderRadius: 8,
+    border: "none",
+    background: "#0f172a",
+    color: "#ffffff",
+    fontWeight: 900,
+    cursor: "pointer"
+  },
+  success: {
+    padding: 12,
+    borderRadius: 8,
+    background: "#dcfce7",
+    border: "1px solid #86efac",
+    color: "#166534",
+    fontWeight: 800
+  },
+  warning: {
+    padding: 12,
+    borderRadius: 8,
+    background: "#fef3c7",
+    border: "1px solid #facc15",
+    color: "#854d0e",
+    fontWeight: 800
+  },
+  error: {
+    padding: 12,
+    borderRadius: 8,
+    background: "#fee2e2",
+    border: "1px solid #fca5a5",
+    color: "#991b1b",
+    fontWeight: 800
+  },
+  empty: {
+    padding: 18,
+    borderRadius: 10,
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
+    color: "#64748b",
+    fontWeight: 800,
+    textAlign: "center"
+  }
+};
+const route5 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  action: action$d,
+  default: dispatchDriver,
   loader: loader$6
 }, Symbol.toStringTag, { value: "Module" }));
 function formatMoney(cents) {
@@ -6369,6 +7311,7 @@ const mobileDashboard = UNSAFE_withComponentProps(function MobileDashboardPage()
   const reviewHref = isEmbeddedRoute ? "/app/quote-review" : "/quote-review";
   const dashboardHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
+  const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
   if (!allowed) {
     return /* @__PURE__ */ jsx("div", {
       style: styles.page,
@@ -6506,6 +7449,10 @@ const mobileDashboard = UNSAFE_withComponentProps(function MobileDashboardPage()
             style: styles.smallButton,
             children: "Dispatch"
           }), /* @__PURE__ */ jsx("a", {
+            href: driverHref,
+            style: styles.smallButton,
+            children: "Driver Route"
+          }), /* @__PURE__ */ jsx("a", {
             href: `${dashboardHref}?logout=1`,
             style: styles.smallButton,
             children: "Log Out"
@@ -6595,7 +7542,7 @@ const mobileDashboard = UNSAFE_withComponentProps(function MobileDashboardPage()
     })]
   });
 });
-const route5 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route6 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$c,
   default: mobileDashboard,
@@ -6659,7 +7606,7 @@ const route = UNSAFE_withComponentProps(function Auth() {
     })
   });
 });
-const route6 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route7 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$b,
   default: route,
@@ -6674,7 +7621,7 @@ async function loader$3({
 const auth_$ = UNSAFE_withComponentProps(function AuthCatchAll() {
   return null;
 });
-const route7 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route8 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: auth_$,
   loader: loader$3
@@ -6772,6 +7719,17 @@ const app = UNSAFE_withComponentProps(function AppLayout() {
           background: "#0f172a"
         },
         children: "Dispatch"
+      }), /* @__PURE__ */ jsx(Link, {
+        to: `/app/dispatch/driver${qs}`,
+        style: {
+          color: "#e5e7eb",
+          textDecoration: "none",
+          padding: "10px 14px",
+          borderRadius: "10px",
+          border: "1px solid #334155",
+          background: "#0f172a"
+        },
+        children: "Driver Route"
       }), /* @__PURE__ */ jsx("a", {
         href: "/custom-quote",
         target: "_blank",
@@ -6834,7 +7792,7 @@ const app = UNSAFE_withComponentProps(function AppLayout() {
     })]
   });
 });
-const route8 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route9 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   ErrorBoundary,
   default: app,
@@ -7130,7 +8088,7 @@ const app__index = UNSAFE_withComponentProps(function AppIndex() {
     })]
   });
 });
-const route9 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route10 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$a,
   default: app__index,
@@ -7603,7 +8561,7 @@ const app_admin = UNSAFE_withComponentProps(function AdminPage() {
     })]
   });
 });
-const route10 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$9,
   default: app_admin,
@@ -7644,29 +8602,35 @@ const app_additional = UNSAFE_withComponentProps(function AdditionalPage() {
     })]
   });
 });
-const route11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route12 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: app_additional
 }, Symbol.toStringTag, { value: "Module" }));
-const route12 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-  __proto__: null,
-  action: action$f,
-  default: customQuote,
-  loader: loader$8
-}, Symbol.toStringTag, { value: "Module" }));
 const route13 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$e,
-  default: quoteReview,
-  loader: loader$7
+  action: action$g,
+  default: customQuote,
+  loader: loader$9
 }, Symbol.toStringTag, { value: "Module" }));
 const route14 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$d,
-  default: dispatch,
-  loader: loader$6
+  action: action$f,
+  default: quoteReview,
+  loader: loader$8
 }, Symbol.toStringTag, { value: "Module" }));
 const route15 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  action: action$e,
+  default: dispatch,
+  loader: loader$7
+}, Symbol.toStringTag, { value: "Module" }));
+const route16 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  action: action$d,
+  default: dispatchDriver,
+  loader: loader$6
+}, Symbol.toStringTag, { value: "Module" }));
+const route17 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$c,
   default: mobileDashboard,
@@ -7712,7 +8676,7 @@ async function action$8({
     outsideDeliveryPhone: quote.outsideDeliveryPhone ?? "(262) 345-4001"
   });
 }
-const route16 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route18 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$8
 }, Symbol.toStringTag, { value: "Module" }));
@@ -7770,7 +8734,7 @@ async function action$7({
     }]
   });
 }
-const route17 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route19 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$7
 }, Symbol.toStringTag, { value: "Module" }));
@@ -7800,7 +8764,7 @@ async function action$6({
     });
   }
 }
-const route18 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route20 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$6
 }, Symbol.toStringTag, { value: "Module" }));
@@ -8072,11 +9036,11 @@ async function action$5({
     draftOrderAdminUrl: draftOrder.legacyResourceId ? `https://admin.shopify.com/store/${getStoreHandle(shop)}/draft_orders/${draftOrder.legacyResourceId}` : null
   });
 }
-const route24 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route26 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$5
 }, Symbol.toStringTag, { value: "Module" }));
-const route19 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route21 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$5
 }, Symbol.toStringTag, { value: "Module" }));
@@ -8124,11 +9088,11 @@ async function action$4({
     deletedQuoteId: quoteId
   });
 }
-const route25 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route27 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$4
 }, Symbol.toStringTag, { value: "Module" }));
-const route20 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route22 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$4
 }, Symbol.toStringTag, { value: "Module" }));
@@ -8263,19 +9227,19 @@ async function action$3({
     quote: updatedQuote
   });
 }
-const route26 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route28 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$3
 }, Symbol.toStringTag, { value: "Module" }));
-const route21 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route23 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$3
 }, Symbol.toStringTag, { value: "Module" }));
-const route22 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route24 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$8
 }, Symbol.toStringTag, { value: "Module" }));
-const route23 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route25 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$7
 }, Symbol.toStringTag, { value: "Module" }));
@@ -8315,7 +9279,7 @@ async function action$2({
   console.log("[WEBHOOK SYNC]", shop, product.title);
   return new Response();
 }
-const route27 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route29 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$2
 }, Symbol.toStringTag, { value: "Module" }));
@@ -8342,7 +9306,7 @@ const action$1 = async ({
   }
   return new Response();
 };
-const route28 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route30 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$1
 }, Symbol.toStringTag, { value: "Module" }));
@@ -8364,11 +9328,11 @@ const action = async ({
   }
   return new Response();
 };
-const route29 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route31 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action
 }, Symbol.toStringTag, { value: "Module" }));
-const serverManifest = { "entry": { "module": "/assets/entry.client-Hi1v893O.js", "imports": ["/assets/jsx-runtime-_y2a4OCT.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/root-DJaHMJOf.js", "imports": ["/assets/jsx-runtime-_y2a4OCT.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/_index/route": { "id": "routes/_index/route", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-CBBVwP4O.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/custom-quote": { "id": "routes/custom-quote", "parentId": "root", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/custom-quote-DP0QU3_S.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/quote-review": { "id": "routes/quote-review", "parentId": "root", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/quote-review-qPbAlat6.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch": { "id": "routes/dispatch", "parentId": "root", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-FU2sA85K.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/mobile-dashboard": { "id": "routes/mobile-dashboard", "parentId": "root", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/mobile-dashboard-DXg0ATcK.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.login/route": { "id": "routes/auth.login/route", "parentId": "root", "path": "auth/login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-CfMXwAFC.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.$": { "id": "routes/auth.$", "parentId": "root", "path": "auth/*", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/auth._-jWRsTZ3_.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app": { "id": "routes/app", "parentId": "root", "path": "app", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": true, "module": "/assets/app-DqmvE_W1.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app._index": { "id": "routes/app._index", "parentId": "routes/app", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app._index-GC_ws-sp.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.admin": { "id": "routes/app.admin", "parentId": "routes/app", "path": "admin", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.admin-BjiBp67i.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.additional": { "id": "routes/app.additional", "parentId": "routes/app", "path": "additional", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.additional-C3SA_ndc.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.custom-quote": { "id": "routes/app.custom-quote", "parentId": "routes/app", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.custom-quote-pFDwKQ2f.js", "imports": ["/assets/custom-quote-DP0QU3_S.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.quote-review": { "id": "routes/app.quote-review", "parentId": "routes/app", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.quote-review-KA8LGrfV.js", "imports": ["/assets/quote-review-qPbAlat6.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch": { "id": "routes/app.dispatch", "parentId": "routes/app", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-Cpy--N8U.js", "imports": ["/assets/dispatch-FU2sA85K.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.mobile": { "id": "routes/app.mobile", "parentId": "routes/app", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.mobile--ZYi3-6v.js", "imports": ["/assets/mobile-dashboard-DXg0ATcK.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.shipping-estimate": { "id": "routes/api.shipping-estimate", "parentId": "root", "path": "api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.carrier-service": { "id": "routes/api.carrier-service", "parentId": "root", "path": "api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.sync-products": { "id": "routes/api.sync-products", "parentId": "root", "path": "api/sync-products", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.sync-products-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.create-draft-order": { "id": "routes/api.create-draft-order", "parentId": "root", "path": "api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.delete-quote": { "id": "routes/api.delete-quote", "parentId": "root", "path": "api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.update-quote": { "id": "routes/api.update-quote", "parentId": "root", "path": "api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.shipping-estimate": { "id": "routes/app.api.shipping-estimate", "parentId": "root", "path": "app/api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.carrier-service": { "id": "routes/app.api.carrier-service", "parentId": "root", "path": "app/api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.create-draft-order": { "id": "routes/app.api.create-draft-order", "parentId": "root", "path": "app/api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.delete-quote": { "id": "routes/app.api.delete-quote", "parentId": "root", "path": "app/api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.update-quote": { "id": "routes/app.api.update-quote", "parentId": "root", "path": "app/api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.products.update": { "id": "routes/webhooks.products.update", "parentId": "root", "path": "webhooks/products/update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.products.update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.scopes_update": { "id": "routes/webhooks.app.scopes_update", "parentId": "root", "path": "webhooks/app/scopes_update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.scopes_update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.uninstalled": { "id": "routes/webhooks.app.uninstalled", "parentId": "root", "path": "webhooks/app/uninstalled", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.uninstalled-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-08e988d9.js", "version": "08e988d9", "sri": void 0 };
+const serverManifest = { "entry": { "module": "/assets/entry.client-Hi1v893O.js", "imports": ["/assets/jsx-runtime-_y2a4OCT.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/root-DJaHMJOf.js", "imports": ["/assets/jsx-runtime-_y2a4OCT.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/_index/route": { "id": "routes/_index/route", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-CBBVwP4O.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/custom-quote": { "id": "routes/custom-quote", "parentId": "root", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/custom-quote-DP0QU3_S.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/quote-review": { "id": "routes/quote-review", "parentId": "root", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/quote-review-qPbAlat6.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch": { "id": "routes/dispatch", "parentId": "root", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-BN7r7yvE.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch-driver": { "id": "routes/dispatch-driver", "parentId": "root", "path": "dispatch/driver", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-driver-ijY5UCWr.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/mobile-dashboard": { "id": "routes/mobile-dashboard", "parentId": "root", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/mobile-dashboard-DlKPGKqX.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.login/route": { "id": "routes/auth.login/route", "parentId": "root", "path": "auth/login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-CfMXwAFC.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.$": { "id": "routes/auth.$", "parentId": "root", "path": "auth/*", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/auth._-jWRsTZ3_.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app": { "id": "routes/app", "parentId": "root", "path": "app", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": true, "module": "/assets/app-DiAz9oqf.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app._index": { "id": "routes/app._index", "parentId": "routes/app", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app._index-GC_ws-sp.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.admin": { "id": "routes/app.admin", "parentId": "routes/app", "path": "admin", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.admin-BjiBp67i.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.additional": { "id": "routes/app.additional", "parentId": "routes/app", "path": "additional", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.additional-C3SA_ndc.js", "imports": ["/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.custom-quote": { "id": "routes/app.custom-quote", "parentId": "routes/app", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.custom-quote-pFDwKQ2f.js", "imports": ["/assets/custom-quote-DP0QU3_S.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.quote-review": { "id": "routes/app.quote-review", "parentId": "routes/app", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.quote-review-KA8LGrfV.js", "imports": ["/assets/quote-review-qPbAlat6.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch": { "id": "routes/app.dispatch", "parentId": "routes/app", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-DQ51XlzG.js", "imports": ["/assets/dispatch-BN7r7yvE.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch-driver": { "id": "routes/app.dispatch-driver", "parentId": "routes/app", "path": "dispatch/driver", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-driver-C1_Pqr-Y.js", "imports": ["/assets/dispatch-driver-ijY5UCWr.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.mobile": { "id": "routes/app.mobile", "parentId": "routes/app", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.mobile-DKfPrO18.js", "imports": ["/assets/mobile-dashboard-DlKPGKqX.js", "/assets/chunk-UVKPFVEO-CzJcqpLx.js", "/assets/jsx-runtime-_y2a4OCT.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.shipping-estimate": { "id": "routes/api.shipping-estimate", "parentId": "root", "path": "api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.carrier-service": { "id": "routes/api.carrier-service", "parentId": "root", "path": "api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.sync-products": { "id": "routes/api.sync-products", "parentId": "root", "path": "api/sync-products", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.sync-products-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.create-draft-order": { "id": "routes/api.create-draft-order", "parentId": "root", "path": "api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.delete-quote": { "id": "routes/api.delete-quote", "parentId": "root", "path": "api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.update-quote": { "id": "routes/api.update-quote", "parentId": "root", "path": "api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.shipping-estimate": { "id": "routes/app.api.shipping-estimate", "parentId": "root", "path": "app/api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.carrier-service": { "id": "routes/app.api.carrier-service", "parentId": "root", "path": "app/api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.create-draft-order": { "id": "routes/app.api.create-draft-order", "parentId": "root", "path": "app/api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.delete-quote": { "id": "routes/app.api.delete-quote", "parentId": "root", "path": "app/api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.update-quote": { "id": "routes/app.api.update-quote", "parentId": "root", "path": "app/api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.products.update": { "id": "routes/webhooks.products.update", "parentId": "root", "path": "webhooks/products/update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.products.update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.scopes_update": { "id": "routes/webhooks.app.scopes_update", "parentId": "root", "path": "webhooks/app/scopes_update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.scopes_update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.uninstalled": { "id": "routes/webhooks.app.uninstalled", "parentId": "root", "path": "webhooks/app/uninstalled", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.uninstalled-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-bc01c12d.js", "version": "bc01c12d", "sri": void 0 };
 const assetsBuildDirectory = "build/client";
 const basename = "/";
 const future = { "unstable_optimizeDeps": false, "unstable_passThroughRequests": false, "unstable_subResourceIntegrity": false, "unstable_trailingSlashAwareDataRequests": false, "unstable_previewServerPrerendering": false, "v8_middleware": false, "v8_splitRouteModules": false, "v8_viteEnvironmentApi": false };
@@ -8419,13 +9383,21 @@ const routes = {
     caseSensitive: void 0,
     module: route4
   },
+  "routes/dispatch-driver": {
+    id: "routes/dispatch-driver",
+    parentId: "root",
+    path: "dispatch/driver",
+    index: void 0,
+    caseSensitive: void 0,
+    module: route5
+  },
   "routes/mobile-dashboard": {
     id: "routes/mobile-dashboard",
     parentId: "root",
     path: "mobile",
     index: void 0,
     caseSensitive: void 0,
-    module: route5
+    module: route6
   },
   "routes/auth.login/route": {
     id: "routes/auth.login/route",
@@ -8433,7 +9405,7 @@ const routes = {
     path: "auth/login",
     index: void 0,
     caseSensitive: void 0,
-    module: route6
+    module: route7
   },
   "routes/auth.$": {
     id: "routes/auth.$",
@@ -8441,7 +9413,7 @@ const routes = {
     path: "auth/*",
     index: void 0,
     caseSensitive: void 0,
-    module: route7
+    module: route8
   },
   "routes/app": {
     id: "routes/app",
@@ -8449,7 +9421,7 @@ const routes = {
     path: "app",
     index: void 0,
     caseSensitive: void 0,
-    module: route8
+    module: route9
   },
   "routes/app._index": {
     id: "routes/app._index",
@@ -8457,7 +9429,7 @@ const routes = {
     path: void 0,
     index: true,
     caseSensitive: void 0,
-    module: route9
+    module: route10
   },
   "routes/app.admin": {
     id: "routes/app.admin",
@@ -8465,7 +9437,7 @@ const routes = {
     path: "admin",
     index: void 0,
     caseSensitive: void 0,
-    module: route10
+    module: route11
   },
   "routes/app.additional": {
     id: "routes/app.additional",
@@ -8473,7 +9445,7 @@ const routes = {
     path: "additional",
     index: void 0,
     caseSensitive: void 0,
-    module: route11
+    module: route12
   },
   "routes/app.custom-quote": {
     id: "routes/app.custom-quote",
@@ -8481,7 +9453,7 @@ const routes = {
     path: "custom-quote",
     index: void 0,
     caseSensitive: void 0,
-    module: route12
+    module: route13
   },
   "routes/app.quote-review": {
     id: "routes/app.quote-review",
@@ -8489,7 +9461,7 @@ const routes = {
     path: "quote-review",
     index: void 0,
     caseSensitive: void 0,
-    module: route13
+    module: route14
   },
   "routes/app.dispatch": {
     id: "routes/app.dispatch",
@@ -8497,7 +9469,15 @@ const routes = {
     path: "dispatch",
     index: void 0,
     caseSensitive: void 0,
-    module: route14
+    module: route15
+  },
+  "routes/app.dispatch-driver": {
+    id: "routes/app.dispatch-driver",
+    parentId: "routes/app",
+    path: "dispatch/driver",
+    index: void 0,
+    caseSensitive: void 0,
+    module: route16
   },
   "routes/app.mobile": {
     id: "routes/app.mobile",
@@ -8505,7 +9485,7 @@ const routes = {
     path: "mobile",
     index: void 0,
     caseSensitive: void 0,
-    module: route15
+    module: route17
   },
   "routes/api.shipping-estimate": {
     id: "routes/api.shipping-estimate",
@@ -8513,7 +9493,7 @@ const routes = {
     path: "api/shipping-estimate",
     index: void 0,
     caseSensitive: void 0,
-    module: route16
+    module: route18
   },
   "routes/api.carrier-service": {
     id: "routes/api.carrier-service",
@@ -8521,7 +9501,7 @@ const routes = {
     path: "api/carrier-service",
     index: void 0,
     caseSensitive: void 0,
-    module: route17
+    module: route19
   },
   "routes/api.sync-products": {
     id: "routes/api.sync-products",
@@ -8529,7 +9509,7 @@ const routes = {
     path: "api/sync-products",
     index: void 0,
     caseSensitive: void 0,
-    module: route18
+    module: route20
   },
   "routes/api.create-draft-order": {
     id: "routes/api.create-draft-order",
@@ -8537,7 +9517,7 @@ const routes = {
     path: "api/create-draft-order",
     index: void 0,
     caseSensitive: void 0,
-    module: route19
+    module: route21
   },
   "routes/api.delete-quote": {
     id: "routes/api.delete-quote",
@@ -8545,7 +9525,7 @@ const routes = {
     path: "api/delete-quote",
     index: void 0,
     caseSensitive: void 0,
-    module: route20
+    module: route22
   },
   "routes/api.update-quote": {
     id: "routes/api.update-quote",
@@ -8553,7 +9533,7 @@ const routes = {
     path: "api/update-quote",
     index: void 0,
     caseSensitive: void 0,
-    module: route21
+    module: route23
   },
   "routes/app.api.shipping-estimate": {
     id: "routes/app.api.shipping-estimate",
@@ -8561,7 +9541,7 @@ const routes = {
     path: "app/api/shipping-estimate",
     index: void 0,
     caseSensitive: void 0,
-    module: route22
+    module: route24
   },
   "routes/app.api.carrier-service": {
     id: "routes/app.api.carrier-service",
@@ -8569,7 +9549,7 @@ const routes = {
     path: "app/api/carrier-service",
     index: void 0,
     caseSensitive: void 0,
-    module: route23
+    module: route25
   },
   "routes/app.api.create-draft-order": {
     id: "routes/app.api.create-draft-order",
@@ -8577,7 +9557,7 @@ const routes = {
     path: "app/api/create-draft-order",
     index: void 0,
     caseSensitive: void 0,
-    module: route24
+    module: route26
   },
   "routes/app.api.delete-quote": {
     id: "routes/app.api.delete-quote",
@@ -8585,7 +9565,7 @@ const routes = {
     path: "app/api/delete-quote",
     index: void 0,
     caseSensitive: void 0,
-    module: route25
+    module: route27
   },
   "routes/app.api.update-quote": {
     id: "routes/app.api.update-quote",
@@ -8593,7 +9573,7 @@ const routes = {
     path: "app/api/update-quote",
     index: void 0,
     caseSensitive: void 0,
-    module: route26
+    module: route28
   },
   "routes/webhooks.products.update": {
     id: "routes/webhooks.products.update",
@@ -8601,7 +9581,7 @@ const routes = {
     path: "webhooks/products/update",
     index: void 0,
     caseSensitive: void 0,
-    module: route27
+    module: route29
   },
   "routes/webhooks.app.scopes_update": {
     id: "routes/webhooks.app.scopes_update",
@@ -8609,7 +9589,7 @@ const routes = {
     path: "webhooks/app/scopes_update",
     index: void 0,
     caseSensitive: void 0,
-    module: route28
+    module: route30
   },
   "routes/webhooks.app.uninstalled": {
     id: "routes/webhooks.app.uninstalled",
@@ -8617,7 +9597,7 @@ const routes = {
     path: "webhooks/app/uninstalled",
     index: void 0,
     caseSensitive: void 0,
-    module: route29
+    module: route31
   }
 };
 const allowedActionOrigins = false;

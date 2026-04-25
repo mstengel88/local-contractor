@@ -117,6 +117,20 @@ export default function AppLayout() {
           Dispatch
         </Link>
 
+        <Link
+          to={`/app/dispatch/driver${qs}`}
+          style={{
+            color: "#e5e7eb",
+            textDecoration: "none",
+            padding: "10px 14px",
+            borderRadius: "10px",
+            border: "1px solid #334155",
+            background: "#0f172a",
+          }}
+        >
+          Driver Route
+        </Link>
+
         <a
           href="/custom-quote"
           target="_blank"

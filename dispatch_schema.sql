@@ -13,9 +13,43 @@ create table if not exists public.dispatch_orders (
   notes text not null default '',
   status text not null default 'new' check (status in ('new', 'scheduled', 'hold')),
   assigned_route_id text,
+  stop_sequence integer,
+  delivery_status text not null default 'not_started' check (delivery_status in ('not_started', 'en_route', 'arrived', 'delivered', 'issue')),
+  eta text,
+  arrived_at timestamptz,
+  departed_at timestamptz,
+  delivered_at timestamptz,
+  proof_name text,
+  proof_notes text,
+  email_subject text,
+  raw_email text,
+  signature_name text,
+  signature_data text,
+  photo_urls text,
+  ticket_numbers text,
+  inspection_status text,
+  checklist_json text,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
+
+alter table public.dispatch_orders
+  add column if not exists stop_sequence integer,
+  add column if not exists delivery_status text not null default 'not_started',
+  add column if not exists eta text,
+  add column if not exists arrived_at timestamptz,
+  add column if not exists departed_at timestamptz,
+  add column if not exists delivered_at timestamptz,
+  add column if not exists proof_name text,
+  add column if not exists proof_notes text,
+  add column if not exists email_subject text,
+  add column if not exists raw_email text,
+  add column if not exists signature_name text,
+  add column if not exists signature_data text,
+  add column if not exists photo_urls text,
+  add column if not exists ticket_numbers text,
+  add column if not exists inspection_status text,
+  add column if not exists checklist_json text;
 
 create table if not exists public.dispatch_trucks (
   id text primary key,
@@ -44,6 +78,9 @@ create index if not exists dispatch_orders_status_idx
 
 create index if not exists dispatch_orders_assigned_route_idx
   on public.dispatch_orders (assigned_route_id);
+
+create index if not exists dispatch_orders_route_sequence_idx
+  on public.dispatch_orders (assigned_route_id, stop_sequence asc);
 
 create index if not exists dispatch_trucks_active_idx
   on public.dispatch_trucks (is_active, label asc);

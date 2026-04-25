@@ -2,6 +2,12 @@ import { supabaseAdmin } from "./supabase.server";
 
 export type DispatchSource = "email" | "manual";
 export type DispatchStatus = "new" | "scheduled" | "hold";
+export type DispatchDeliveryStatus =
+  | "not_started"
+  | "en_route"
+  | "arrived"
+  | "delivered"
+  | "issue";
 
 export type DispatchOrder = {
   id: string;
@@ -18,6 +24,22 @@ export type DispatchOrder = {
   notes: string;
   status: DispatchStatus;
   assignedRouteId?: string | null;
+  stopSequence?: number | null;
+  deliveryStatus?: DispatchDeliveryStatus;
+  eta?: string | null;
+  arrivedAt?: string | null;
+  departedAt?: string | null;
+  deliveredAt?: string | null;
+  proofName?: string | null;
+  proofNotes?: string | null;
+  emailSubject?: string | null;
+  rawEmail?: string | null;
+  signatureName?: string | null;
+  signatureData?: string | null;
+  photoUrls?: string | null;
+  ticketNumbers?: string | null;
+  inspectionStatus?: string | null;
+  checklistJson?: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -252,6 +274,14 @@ const TRUCKS_TABLE = "dispatch_trucks";
 const EMPLOYEES_TABLE = "dispatch_employees";
 
 function normalizeOrder(row: any): DispatchOrder {
+  const deliveryStatus =
+    row.delivery_status === "en_route" ||
+    row.delivery_status === "arrived" ||
+    row.delivery_status === "delivered" ||
+    row.delivery_status === "issue"
+      ? row.delivery_status
+      : "not_started";
+
   return {
     id: String(row.id),
     source: row.source === "email" ? "email" : "manual",
@@ -268,6 +298,25 @@ function normalizeOrder(row: any): DispatchOrder {
     status:
       row.status === "scheduled" || row.status === "hold" ? row.status : "new",
     assignedRouteId: row.assigned_route_id || null,
+    stopSequence:
+      row.stop_sequence === null || row.stop_sequence === undefined
+        ? null
+        : Number(row.stop_sequence),
+    deliveryStatus,
+    eta: row.eta || null,
+    arrivedAt: row.arrived_at || null,
+    departedAt: row.departed_at || null,
+    deliveredAt: row.delivered_at || null,
+    proofName: row.proof_name || null,
+    proofNotes: row.proof_notes || null,
+    emailSubject: row.email_subject || null,
+    rawEmail: row.raw_email || null,
+    signatureName: row.signature_name || null,
+    signatureData: row.signature_data || null,
+    photoUrls: row.photo_urls || null,
+    ticketNumbers: row.ticket_numbers || null,
+    inspectionStatus: row.inspection_status || null,
+    checklistJson: row.checklist_json || null,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -356,6 +405,8 @@ export async function ensureSeedDispatchOrders() {
       notes: order.notes,
       status: order.status,
       assigned_route_id: order.assignedRouteId || null,
+      stop_sequence: order.assignedRouteId ? 1 : null,
+      delivery_status: "not_started",
     })),
   );
 
@@ -523,6 +574,8 @@ export async function createDispatchOrder(input: {
   requestedWindow?: string;
   truckPreference?: string;
   notes?: string;
+  emailSubject?: string;
+  rawEmail?: string;
 }) {
   const id = `D-${Date.now().toString().slice(-6)}`;
 
@@ -541,8 +594,12 @@ export async function createDispatchOrder(input: {
       requested_window: input.requestedWindow || "Needs scheduling",
       truck_preference: input.truckPreference || null,
       notes: input.notes || "",
+      email_subject: input.emailSubject || null,
+      raw_email: input.rawEmail || null,
       status: "new",
       assigned_route_id: null,
+      stop_sequence: null,
+      delivery_status: "not_started",
     })
     .select("*")
     .single();
@@ -552,6 +609,23 @@ export async function createDispatchOrder(input: {
   }
 
   return normalizeOrder(data);
+}
+
+export async function getNextRouteStopSequence(routeId: string) {
+  const { data, error } = await supabaseAdmin
+    .from(ORDERS_TABLE)
+    .select("stop_sequence")
+    .eq("assigned_route_id", routeId)
+    .not("stop_sequence", "is", null)
+    .order("stop_sequence", { ascending: false })
+    .limit(1);
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+
+  const currentMax = Number(data?.[0]?.stop_sequence || 0);
+  return currentMax + 1;
 }
 
 export async function createDispatchRoute(input: {
@@ -655,6 +729,22 @@ export async function updateDispatchOrder(
   patch: {
     status?: DispatchStatus;
     assignedRouteId?: string | null;
+    stopSequence?: number | null;
+    deliveryStatus?: DispatchDeliveryStatus;
+    eta?: string | null;
+    arrivedAt?: string | null;
+    departedAt?: string | null;
+    deliveredAt?: string | null;
+    proofName?: string | null;
+    proofNotes?: string | null;
+    emailSubject?: string | null;
+    rawEmail?: string | null;
+    signatureName?: string | null;
+    signatureData?: string | null;
+    photoUrls?: string | null;
+    ticketNumbers?: string | null;
+    inspectionStatus?: string | null;
+    checklistJson?: string | null;
   },
 ) {
   const payload: Record<string, unknown> = {};
@@ -663,6 +753,24 @@ export async function updateDispatchOrder(
   if (patch.assignedRouteId !== undefined) {
     payload.assigned_route_id = patch.assignedRouteId;
   }
+  if (patch.stopSequence !== undefined) {
+    payload.stop_sequence = patch.stopSequence;
+  }
+  if (patch.deliveryStatus) payload.delivery_status = patch.deliveryStatus;
+  if (patch.eta !== undefined) payload.eta = patch.eta;
+  if (patch.arrivedAt !== undefined) payload.arrived_at = patch.arrivedAt;
+  if (patch.departedAt !== undefined) payload.departed_at = patch.departedAt;
+  if (patch.deliveredAt !== undefined) payload.delivered_at = patch.deliveredAt;
+  if (patch.proofName !== undefined) payload.proof_name = patch.proofName;
+  if (patch.proofNotes !== undefined) payload.proof_notes = patch.proofNotes;
+  if (patch.emailSubject !== undefined) payload.email_subject = patch.emailSubject;
+  if (patch.rawEmail !== undefined) payload.raw_email = patch.rawEmail;
+  if (patch.signatureName !== undefined) payload.signature_name = patch.signatureName;
+  if (patch.signatureData !== undefined) payload.signature_data = patch.signatureData;
+  if (patch.photoUrls !== undefined) payload.photo_urls = patch.photoUrls;
+  if (patch.ticketNumbers !== undefined) payload.ticket_numbers = patch.ticketNumbers;
+  if (patch.inspectionStatus !== undefined) payload.inspection_status = patch.inspectionStatus;
+  if (patch.checklistJson !== undefined) payload.checklist_json = patch.checklistJson;
 
   const { data, error } = await supabaseAdmin
     .from(ORDERS_TABLE)

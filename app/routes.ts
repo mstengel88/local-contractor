@@ -6,6 +6,7 @@ export default [
   route("custom-quote", "routes/custom-quote.tsx"),
   route("quote-review", "routes/quote-review.tsx"),
   route("dispatch", "routes/dispatch.tsx"),
+  route("dispatch/driver", "routes/dispatch-driver.tsx"),
   route("mobile", "routes/mobile-dashboard.tsx"),
 
   route("auth/login", "routes/auth.login/route.tsx"),
@@ -18,6 +19,7 @@ export default [
     route("custom-quote", "routes/app.custom-quote.tsx"),
     route("quote-review", "routes/app.quote-review.tsx"),
     route("dispatch", "routes/app.dispatch.tsx"),
+    route("dispatch/driver", "routes/app.dispatch-driver.tsx"),
     route("mobile", "routes/app.mobile.tsx"),
   ]),
 
