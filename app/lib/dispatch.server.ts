@@ -64,6 +64,9 @@ function decodeQuotedPrintable(raw: string) {
 
 function normalizeEmailText(raw: string) {
   return decodeQuotedPrintable(raw)
+    .replace(/<style[\s\S]*?<\/style>/gi, "\n")
+    .replace(/<script[\s\S]*?<\/script>/gi, "\n")
+    .replace(/<head[\s\S]*?<\/head>/gi, "\n")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/(p|div|tr|table|h\d|td|th|li)>/gi, "\n")
     .replace(/<[^>]+>/g, " ")
@@ -107,6 +110,8 @@ function isProductCandidate(value: string) {
   return (
     /[a-z]/i.test(line) &&
     !isProductHeader(line) &&
+    !/@media|template_|max-width|font-|color:|background|border|padding|margin|display:|width:/i.test(line) &&
+    !/[{};]/.test(line) &&
     !/^\(#?\d+\)$/i.test(line) &&
     !/^#?\d+$/.test(line) &&
     !/^order\s+#/i.test(line) &&

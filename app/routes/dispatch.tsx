@@ -945,96 +945,6 @@ export default function DispatchPage() {
             <div style={styles.panel}>
               <div style={styles.panelHeader}>
                 <div>
-                  <h2 style={styles.panelTitle}>Add / Import Order</h2>
-                  <p style={styles.panelSub}>Create a dispatch card manually or poll the mailbox.</p>
-                </div>
-              </div>
-
-              <Form method="post" style={{ display: "grid", gap: 12, marginBottom: 16 }}>
-                <input type="hidden" name="intent" value="poll-mailbox" />
-                <button type="submit" style={styles.primaryButton}>Poll Mailbox Now</button>
-              </Form>
-
-              <Form method="post" style={{ display: "grid", gap: 12 }}>
-                <input type="hidden" name="intent" value="create-order" />
-                <div style={styles.formGridTwo}>
-                  <div>
-                    <label style={styles.label}>Customer</label>
-                    <input name="customer" style={styles.input} />
-                  </div>
-                  <div>
-                    <label style={styles.label}>Contact / Email</label>
-                    <input name="contact" style={styles.input} />
-                  </div>
-                </div>
-                <div style={styles.formGridTwo}>
-                  <div>
-                    <label style={styles.label}>Jobsite Address</label>
-                    <input name="address" style={styles.input} />
-                  </div>
-                  <div>
-                    <label style={styles.label}>City</label>
-                    <input name="city" style={styles.input} />
-                  </div>
-                </div>
-                <div style={styles.formGridThree}>
-                  <div>
-                    <label style={styles.label}>Material</label>
-                    <input name="material" style={styles.input} />
-                  </div>
-                  <div>
-                    <label style={styles.label}>Quantity</label>
-                    <input name="quantity" style={styles.input} />
-                  </div>
-                  <div>
-                    <label style={styles.label}>Unit</label>
-                    <select name="unit" style={styles.input}>
-                      <option>TonS</option>
-                      <option>YardS</option>
-                      <option>GallonS</option>
-                    </select>
-                  </div>
-                </div>
-                <div style={styles.formGridTwo}>
-                  <div>
-                    <label style={styles.label}>Requested Window</label>
-                    <input name="requestedWindow" style={styles.input} />
-                  </div>
-                  <div>
-                    <label style={styles.label}>Time Preference</label>
-                    <select name="timePreference" style={styles.input}>
-                      <option value="">Infer from notes</option>
-                      <option value="Morning">Morning</option>
-                      <option value="Afternoon">Afternoon</option>
-                      <option value="Evening">Evening</option>
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label style={styles.label}>Notes</label>
-                  <textarea name="notes" rows={3} style={{ ...styles.input, resize: "vertical" }} />
-                </div>
-                <button type="submit" style={styles.primaryButton}>Add Order</button>
-              </Form>
-
-              <Form method="post" style={{ display: "grid", gap: 12, marginTop: 18 }}>
-                <input type="hidden" name="intent" value="parse-email-order" />
-                <label style={styles.label}>Paste Order Email</label>
-                <textarea
-                  name="rawEmail"
-                  rows={9}
-                  placeholder={"Subject: You've Got A New Order: #1234\nCustomer: Green Hills Supply\nAddress: 2543 W Applebrook Lane\nCity: Oak Creek, WI\nMaterial: Coarse Torpedo Sand\nQuantity: 12\nUnit: TonS\nRequested Window: Tomorrow 9a - 11a"}
-                  style={{ ...styles.input, resize: "vertical", minHeight: 180 }}
-                />
-                <button type="submit" style={styles.secondaryButton}>
-                  Parse Email Into Dispatch Card
-                </button>
-              </Form>
-            </div>
-
-            <div style={styles.panel}>
-              <div style={styles.panelHeader}>
-                <div>
                   <h2 style={styles.panelTitle}>Edit Selected Order</h2>
                   <p style={styles.panelSub}>
                     Update order details or delete the selected dispatch card.
@@ -1161,6 +1071,96 @@ export default function DispatchPage() {
               ) : (
                 <div style={{ color: "#94a3b8" }}>Select an order to edit it.</div>
               )}
+            </div>
+
+            <div style={styles.panel}>
+              <div style={styles.panelHeader}>
+                <div>
+                  <h2 style={styles.panelTitle}>Add / Import Order</h2>
+                  <p style={styles.panelSub}>Create a dispatch card manually or poll the mailbox.</p>
+                </div>
+              </div>
+
+              <Form method="post" style={{ display: "grid", gap: 12, marginBottom: 16 }}>
+                <input type="hidden" name="intent" value="poll-mailbox" />
+                <button type="submit" style={styles.primaryButton}>Poll Mailbox Now</button>
+              </Form>
+
+              <Form method="post" style={{ display: "grid", gap: 12 }}>
+                <input type="hidden" name="intent" value="create-order" />
+                <div style={styles.formGridTwo}>
+                  <div>
+                    <label style={styles.label}>Customer</label>
+                    <input name="customer" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Contact / Email</label>
+                    <input name="contact" style={styles.input} />
+                  </div>
+                </div>
+                <div style={styles.formGridTwo}>
+                  <div>
+                    <label style={styles.label}>Jobsite Address</label>
+                    <input name="address" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>City</label>
+                    <input name="city" style={styles.input} />
+                  </div>
+                </div>
+                <div style={styles.formGridThree}>
+                  <div>
+                    <label style={styles.label}>Material</label>
+                    <input name="material" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Quantity</label>
+                    <input name="quantity" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Unit</label>
+                    <select name="unit" style={styles.input}>
+                      <option>TonS</option>
+                      <option>YardS</option>
+                      <option>GallonS</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={styles.formGridTwo}>
+                  <div>
+                    <label style={styles.label}>Requested Window</label>
+                    <input name="requestedWindow" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Time Preference</label>
+                    <select name="timePreference" style={styles.input}>
+                      <option value="">Infer from notes</option>
+                      <option value="Morning">Morning</option>
+                      <option value="Afternoon">Afternoon</option>
+                      <option value="Evening">Evening</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label style={styles.label}>Notes</label>
+                  <textarea name="notes" rows={3} style={{ ...styles.input, resize: "vertical" }} />
+                </div>
+                <button type="submit" style={styles.primaryButton}>Add Order</button>
+              </Form>
+
+              <Form method="post" style={{ display: "grid", gap: 12, marginTop: 18 }}>
+                <input type="hidden" name="intent" value="parse-email-order" />
+                <label style={styles.label}>Paste Order Email</label>
+                <textarea
+                  name="rawEmail"
+                  rows={9}
+                  placeholder={"Subject: You've Got A New Order: #1234\nCustomer: Green Hills Supply\nAddress: 2543 W Applebrook Lane\nCity: Oak Creek, WI\nMaterial: Coarse Torpedo Sand\nQuantity: 12\nUnit: TonS\nRequested Window: Tomorrow 9a - 11a"}
+                  style={{ ...styles.input, resize: "vertical", minHeight: 180 }}
+                />
+                <button type="submit" style={styles.secondaryButton}>
+                  Parse Email Into Dispatch Card
+                </button>
+              </Form>
             </div>
           </div>
         ) : null}
