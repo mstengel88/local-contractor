@@ -1008,3 +1008,59 @@ export async function updateDispatchOrder(
 
   return normalizeOrder(data);
 }
+
+export async function updateDispatchOrderDetails(
+  id: string,
+  patch: {
+    customer?: string;
+    contact?: string;
+    address?: string;
+    city?: string;
+    material?: string;
+    quantity?: string;
+    unit?: string;
+    requestedWindow?: string;
+    truckPreference?: string | null;
+    notes?: string;
+    status?: DispatchStatus;
+  },
+) {
+  const payload: Record<string, unknown> = {};
+
+  if (patch.customer !== undefined) payload.customer = patch.customer;
+  if (patch.contact !== undefined) payload.contact = patch.contact;
+  if (patch.address !== undefined) payload.address = patch.address;
+  if (patch.city !== undefined) payload.city = patch.city;
+  if (patch.material !== undefined) payload.material = patch.material;
+  if (patch.quantity !== undefined) payload.quantity = patch.quantity;
+  if (patch.unit !== undefined) payload.unit = patch.unit;
+  if (patch.requestedWindow !== undefined) {
+    payload.requested_window = patch.requestedWindow;
+  }
+  if (patch.truckPreference !== undefined) {
+    payload.truck_preference = patch.truckPreference;
+  }
+  if (patch.notes !== undefined) payload.notes = patch.notes;
+  if (patch.status !== undefined) payload.status = patch.status;
+
+  const { data, error } = await supabaseAdmin
+    .from(ORDERS_TABLE)
+    .update(payload)
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+
+  return normalizeOrder(data);
+}
+
+export async function deleteDispatchOrder(id: string) {
+  const { error } = await supabaseAdmin.from(ORDERS_TABLE).delete().eq("id", id);
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+}

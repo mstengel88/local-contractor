@@ -11,6 +11,7 @@ import {
   createDispatchRoute,
   createDispatchTruck,
   createDispatchOrder,
+  deleteDispatchOrder,
   ensureSeedDispatchEmployees,
   ensureSeedDispatchOrders,
   ensureSeedDispatchRoutes,
@@ -30,6 +31,7 @@ import {
   seedDispatchRoutes,
   seedDispatchTrucks,
   updateDispatchOrder,
+  updateDispatchOrderDetails,
 } from "../lib/dispatch.server";
 import {
   maybeAutoPollDispatchMailbox,
@@ -326,6 +328,71 @@ export async function action({ request }: any) {
         ok: true,
         message: `Parsed email order for ${created.customer}.`,
         selectedOrderId: created.id,
+        ...dispatchState,
+      });
+    }
+
+    if (intent === "update-order") {
+      const orderId = String(form.get("orderId") || "").trim();
+      const customer = String(form.get("customer") || "").trim();
+      const address = String(form.get("address") || "").trim();
+      const material = String(form.get("material") || "").trim();
+      const rawStatus = String(form.get("status") || "new").trim();
+      const status =
+        rawStatus === "scheduled" || rawStatus === "hold" ? rawStatus : "new";
+
+      if (!orderId || !customer || !address || !material) {
+        const dispatchState = await loadDispatchState();
+        return data(
+          {
+            allowed: true,
+            ok: false,
+            message: "Order, customer, address, and material are required.",
+            selectedOrderId: orderId,
+            ...dispatchState,
+          },
+          { status: 400 },
+        );
+      }
+
+      const updated = await updateDispatchOrderDetails(orderId, {
+        customer,
+        contact: String(form.get("contact") || "").trim(),
+        address,
+        city: String(form.get("city") || "").trim(),
+        material,
+        quantity: String(form.get("quantity") || "").trim(),
+        unit: String(form.get("unit") || "").trim() || "UnitS",
+        requestedWindow:
+          String(form.get("requestedWindow") || "").trim() || "Needs scheduling",
+        truckPreference: String(form.get("truckPreference") || "").trim() || null,
+        notes: String(form.get("notes") || "").trim(),
+        status,
+      });
+
+      const dispatchState = await loadDispatchState();
+
+      return data({
+        allowed: true,
+        ok: true,
+        message: `Updated ${updated.customer}.`,
+        selectedOrderId: updated.id,
+        ...dispatchState,
+      });
+    }
+
+    if (intent === "delete-order") {
+      const orderId = String(form.get("orderId") || "").trim();
+      if (!orderId) throw new Error("Missing order selection");
+
+      await deleteDispatchOrder(orderId);
+      const dispatchState = await loadDispatchState();
+
+      return data({
+        allowed: true,
+        ok: true,
+        message: "Order deleted.",
+        selectedOrderId: dispatchState.orders[0]?.id,
         ...dispatchState,
       });
     }
@@ -936,6 +1003,122 @@ export default function DispatchPage() {
                   Parse Email Into Dispatch Card
                 </button>
               </Form>
+            </div>
+
+            <div style={styles.panel}>
+              <div style={styles.panelHeader}>
+                <div>
+                  <h2 style={styles.panelTitle}>Edit Selected Order</h2>
+                  <p style={styles.panelSub}>
+                    Update order details or delete the selected dispatch card.
+                  </p>
+                </div>
+              </div>
+
+              {selectedOrder ? (
+                <div style={{ display: "grid", gap: 14 }}>
+                  <Form method="post" style={{ display: "grid", gap: 12 }}>
+                    <input type="hidden" name="intent" value="update-order" />
+                    <input type="hidden" name="orderId" value={selectedOrder.id} />
+
+                    <div style={styles.formGridTwo}>
+                      <div>
+                        <label style={styles.label}>Customer</label>
+                        <input name="customer" defaultValue={selectedOrder.customer} style={styles.input} />
+                      </div>
+                      <div>
+                        <label style={styles.label}>Contact / Email</label>
+                        <input name="contact" defaultValue={selectedOrder.contact} style={styles.input} />
+                      </div>
+                    </div>
+
+                    <div style={styles.formGridTwo}>
+                      <div>
+                        <label style={styles.label}>Address</label>
+                        <input name="address" defaultValue={selectedOrder.address} style={styles.input} />
+                      </div>
+                      <div>
+                        <label style={styles.label}>City</label>
+                        <input name="city" defaultValue={selectedOrder.city} style={styles.input} />
+                      </div>
+                    </div>
+
+                    <div style={styles.formGridThree}>
+                      <div>
+                        <label style={styles.label}>Material</label>
+                        <input name="material" defaultValue={selectedOrder.material} style={styles.input} />
+                      </div>
+                      <div>
+                        <label style={styles.label}>Quantity</label>
+                        <input name="quantity" defaultValue={selectedOrder.quantity} style={styles.input} />
+                      </div>
+                      <div>
+                        <label style={styles.label}>Unit</label>
+                        <input name="unit" defaultValue={selectedOrder.unit} style={styles.input} />
+                      </div>
+                    </div>
+
+                    <div style={styles.formGridTwo}>
+                      <div>
+                        <label style={styles.label}>Requested Window</label>
+                        <input
+                          name="requestedWindow"
+                          defaultValue={selectedOrder.requestedWindow}
+                          style={styles.input}
+                        />
+                      </div>
+                      <div>
+                        <label style={styles.label}>Status</label>
+                        <select name="status" defaultValue={selectedOrder.status} style={styles.input}>
+                          <option value="new">New</option>
+                          <option value="scheduled">Scheduled</option>
+                          <option value="hold">Hold</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={styles.label}>Truck Preference</label>
+                      <input
+                        name="truckPreference"
+                        defaultValue={selectedOrder.truckPreference || ""}
+                        style={styles.input}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={styles.label}>Notes</label>
+                      <textarea
+                        name="notes"
+                        rows={4}
+                        defaultValue={selectedOrder.notes}
+                        style={{ ...styles.input, resize: "vertical" }}
+                      />
+                    </div>
+
+                    <button type="submit" style={styles.primaryButton}>
+                      Save Order Changes
+                    </button>
+                  </Form>
+
+                  <Form
+                    method="post"
+                    onSubmit={(event) => {
+                      if (!window.confirm("Delete this order? This cannot be undone.")) {
+                        event.preventDefault();
+                      }
+                    }}
+                  >
+                    <input type="hidden" name="intent" value="delete-order" />
+                    <input type="hidden" name="orderId" value={selectedOrder.id} />
+                    <button type="submit" style={styles.dangerButton}>
+                      Delete Order
+                    </button>
+                  </Form>
+                </div>
+              ) : (
+                <div style={{ color: "#94a3b8" }}>Select an order to edit it.</div>
+              )}
             </div>
           </div>
         ) : null}
@@ -1593,6 +1776,21 @@ export default function DispatchPage() {
                         Put On Hold
                       </button>
                     </Form>
+
+                    <Form
+                      method="post"
+                      onSubmit={(event) => {
+                        if (!window.confirm("Delete this order? This cannot be undone.")) {
+                          event.preventDefault();
+                        }
+                      }}
+                    >
+                      <input type="hidden" name="intent" value="delete-order" />
+                      <input type="hidden" name="orderId" value={selectedOrder.id} />
+                      <button type="submit" style={styles.dangerButton}>
+                        Delete Order
+                      </button>
+                    </Form>
                   </div>
                 </div>
               ) : (
@@ -1986,6 +2184,16 @@ const styles = {
     background: "rgba(2, 6, 23, 0.72)",
     color: "#e2e8f0",
     fontWeight: 700,
+    cursor: "pointer",
+  } as const,
+  dangerButton: {
+    width: "100%",
+    minHeight: 46,
+    borderRadius: 14,
+    border: "1px solid rgba(248, 113, 113, 0.55)",
+    background: "rgba(127, 29, 29, 0.42)",
+    color: "#fecaca",
+    fontWeight: 800,
     cursor: "pointer",
   } as const,
   routeCard: (color: string) =>
