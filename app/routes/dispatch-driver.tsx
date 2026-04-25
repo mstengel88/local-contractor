@@ -47,6 +47,10 @@ function getStatusColor(status?: DispatchDeliveryStatus) {
   return "#475569";
 }
 
+function getOrderDisplayNumber(order: DispatchOrder) {
+  return order.orderNumber ? `#${order.orderNumber}` : order.id;
+}
+
 function buildChecklistJson(form: FormData) {
   return JSON.stringify({
     siteSafe: form.get("siteSafe") === "on",
@@ -363,20 +367,6 @@ export default function DispatchDriverPage() {
                     <h2 style={styles.stopTitle}>{stop.customer}</h2>
                     <p style={styles.stopAddress}>{stop.address}, {stop.city}</p>
                   </div>
-                  <button
-                    type="button"
-                    style={styles.detailButton}
-                    onClick={() => {
-                      const url = `${detailHref}?order=${encodeURIComponent(stop.id)}`;
-                      window.open(
-                        url,
-                        `dispatch-stop-${stop.id}`,
-                        "width=720,height=860,menubar=no,toolbar=no,location=no,status=no",
-                      );
-                    }}
-                  >
-                    Details
-                  </button>
                   <span
                     style={{
                       ...styles.statusPill,
@@ -389,10 +379,30 @@ export default function DispatchDriverPage() {
                   </span>
                 </div>
 
-                <div style={styles.stopMeta}>
-                  <span>{stop.quantity} {stop.unit} {stop.material}</span>
-                  <span>{stop.requestedWindow}</span>
-                  {stop.eta ? <span>ETA {stop.eta}</span> : null}
+                <div style={styles.sheetGrid}>
+                  <section style={styles.sheetSection}>
+                    <h3 style={styles.sheetTitle}>Driver & Truck</h3>
+                    <SheetLine label="Truck" value={selectedRoute?.truck || "Not set"} />
+                    <SheetLine label="Driver" value={selectedRoute?.driver || "Not set"} />
+                    <SheetLine label="Order Number" value={getOrderDisplayNumber(stop)} />
+                    <SheetLine label="Requested Date" value={stop.requestedWindow || "Not set"} />
+                  </section>
+
+                  <section style={styles.sheetSection}>
+                    <h3 style={styles.sheetTitle}>Ordered Product</h3>
+                    <SheetLine label="Product Ordered" value={stop.material || "Not set"} />
+                    <SheetLine label="Product Type" value={stop.unit || "Not set"} />
+                    <SheetLine label="Quantity Ordered" value={`${stop.quantity || "-"} ${stop.unit || ""}`.trim()} />
+                    <SheetLine label="Truck Load" value={`${stop.quantity || "-"} ${stop.unit || ""}`.trim()} />
+                  </section>
+
+                  <section style={styles.sheetSection}>
+                    <h3 style={styles.sheetTitle}>Customer Information</h3>
+                    <SheetLine label="Customer Name" value={stop.customer || "Not set"} />
+                    <SheetLine label="Contact" value={stop.contact || "Not captured"} />
+                    <SheetLine label="Address" value={`${stop.address}, ${stop.city}`} />
+                    <SheetLine label="ETA" value={stop.eta || "Not set"} />
+                  </section>
                 </div>
 
                 {stop.notes ? <p style={styles.notes}>{stop.notes}</p> : null}
@@ -422,103 +432,67 @@ export default function DispatchDriverPage() {
                     ))}
                   </div>
 
-                  <div style={styles.formGrid}>
+                  <div style={styles.proofGrid}>
                     <div>
-                      <label style={styles.label}>Proof Name</label>
-                      <input
-                        name="proofName"
-                        defaultValue={stop.proofName || ""}
-                        style={styles.input}
-                      />
-                    </div>
-                    <div>
-                      <label style={styles.label}>Signature Name</label>
-                      <input
-                        name="signatureName"
-                        defaultValue={stop.signatureName || ""}
-                        style={styles.input}
-                      />
-                    </div>
-                  </div>
-
-                  <div style={styles.formGrid}>
-                    <div>
-                      <label style={styles.label}>Ticket Numbers</label>
+                      <label style={styles.label}>Ticket Number</label>
                       <input
                         name="ticketNumbers"
                         defaultValue={stop.ticketNumbers || ""}
-                        placeholder="Ticket #, scale #"
+                        placeholder="Ticket #"
                         style={styles.input}
                       />
                     </div>
                     <div>
-                      <label style={styles.label}>Inspection Status</label>
-                      <select
-                        name="inspectionStatus"
-                        defaultValue={stop.inspectionStatus || ""}
+                      <label style={styles.label}>Driver Signature / Name</label>
+                      <input
+                        name="signatureName"
+                        defaultValue={stop.signatureName || ""}
+                        placeholder="Driver name"
                         style={styles.input}
-                      >
-                        <option value="">Not completed</option>
-                        <option value="Passed">Passed</option>
-                        <option value="Needs review">Needs review</option>
-                        <option value="Blocked">Blocked</option>
-                      </select>
+                      />
                     </div>
                   </div>
 
                   <div>
-                    <label style={styles.label}>Photo Links / Ticket Photo References</label>
+                    <label style={styles.label}>Driver Notes Upon Delivery</label>
                     <textarea
-                      name="photoUrls"
-                      defaultValue={stop.photoUrls || ""}
-                      rows={3}
-                      placeholder="Paste links or file references, one per line"
-                      style={styles.textarea}
-                    />
-                  </div>
-
-                  <div style={styles.checklistGrid}>
-                    <label style={styles.checkboxLabel}>
-                      <input type="checkbox" name="siteSafe" /> Site safe
-                    </label>
-                    <label style={styles.checkboxLabel}>
-                      <input type="checkbox" name="loadMatchesTicket" /> Load matches ticket
-                    </label>
-                    <label style={styles.checkboxLabel}>
-                      <input type="checkbox" name="customerConfirmedPlacement" /> Placement confirmed
-                    </label>
-                    <label style={styles.checkboxLabel}>
-                      <input type="checkbox" name="photosTaken" /> Photos taken
-                    </label>
-                  </div>
-
-                  <div>
-                    <label style={styles.label}>Signature / Checklist Notes</label>
-                    <input
-                      name="signatureData"
-                      defaultValue={stop.signatureData || ""}
-                      placeholder="Typed signature confirmation or device note"
-                      style={styles.input}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={styles.label}>Custom Checklist Notes</label>
-                    <textarea
-                      name="customChecklist"
-                      rows={3}
-                      placeholder="Inspection findings, placement notes, blocked access, etc."
-                      style={styles.textarea}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={styles.label}>Proof Notes</label>
-                    <input
                       name="proofNotes"
                       defaultValue={stop.proofNotes || ""}
-                      style={styles.input}
+                      rows={3}
+                      placeholder="Gate code, placement note, blocked access, customer request..."
+                      style={styles.textarea}
                     />
+                  </div>
+
+                  <input type="hidden" name="proofName" value={stop.proofName || ""} />
+                  <input type="hidden" name="signatureData" value={stop.signatureData || ""} />
+                  <input type="hidden" name="photoUrls" value={stop.photoUrls || ""} />
+                  <input type="hidden" name="inspectionStatus" value={stop.inspectionStatus || ""} />
+                  <input type="hidden" name="customChecklist" value={stop.checklistJson || ""} />
+
+                  <div style={styles.utilityRow}>
+                    <a
+                      href={`https://maps.google.com/?q=${encodeURIComponent(`${stop.address}, ${stop.city}`)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={styles.mapButton}
+                    >
+                      Open Map
+                    </a>
+                    <button
+                      type="button"
+                      style={styles.detailButton}
+                      onClick={() => {
+                        const url = `${detailHref}?order=${encodeURIComponent(stop.id)}`;
+                        window.open(
+                          url,
+                          `dispatch-stop-${stop.id}`,
+                          "width=720,height=860,menubar=no,toolbar=no,location=no,status=no",
+                        );
+                      }}
+                    >
+                      Full Detail
+                    </button>
                   </div>
                 </Form>
               </article>
@@ -530,10 +504,19 @@ export default function DispatchDriverPage() {
   );
 }
 
+function SheetLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={styles.sheetLine}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
 const styles = {
   page: {
     minHeight: "100vh",
-    background: "#f8fafc",
+    background: "#f1f5f9",
     color: "#0f172a",
     padding: "16px 14px 34px",
     fontFamily:
@@ -643,15 +626,15 @@ const styles = {
     gap: 12,
   } as const,
   stopCard: {
-    padding: 14,
-    borderRadius: 10,
+    padding: 16,
+    borderRadius: 14,
     background: "#ffffff",
-    border: "1px solid #e2e8f0",
-    boxShadow: "0 10px 24px rgba(15, 23, 42, 0.07)",
+    border: "1px solid #cbd5e1",
+    boxShadow: "0 14px 28px rgba(15, 23, 42, 0.08)",
   } as const,
   stopTop: {
     display: "grid",
-    gridTemplateColumns: "40px minmax(0, 1fr) auto auto",
+    gridTemplateColumns: "40px minmax(0, 1fr) auto",
     gap: 10,
     alignItems: "center",
   } as const,
@@ -690,7 +673,7 @@ const styles = {
     whiteSpace: "nowrap" as const,
   },
   detailButton: {
-    minHeight: 32,
+    minHeight: 42,
     borderRadius: 999,
     border: "1px solid #bae6fd",
     background: "#e0f2fe",
@@ -700,6 +683,54 @@ const styles = {
     cursor: "pointer",
     padding: "0 12px",
     whiteSpace: "nowrap" as const,
+  } as const,
+  mapButton: {
+    minHeight: 42,
+    borderRadius: 999,
+    border: "1px solid #bbf7d0",
+    background: "#dcfce7",
+    color: "#166534",
+    fontSize: 12,
+    fontWeight: 900,
+    cursor: "pointer",
+    padding: "0 14px",
+    whiteSpace: "nowrap" as const,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    textDecoration: "none",
+  } as const,
+  sheetGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: 12,
+    marginTop: 14,
+  } as const,
+  sheetSection: {
+    borderRadius: 10,
+    border: "1px solid #dbe4ef",
+    background: "#fbfdff",
+    padding: 12,
+  } as const,
+  sheetTitle: {
+    margin: "0 0 10px",
+    paddingBottom: 8,
+    borderBottom: "2px solid #0f172a",
+    color: "#0f172a",
+    fontSize: 12,
+    fontWeight: 950,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase" as const,
+  },
+  sheetLine: {
+    display: "grid",
+    gridTemplateColumns: "minmax(100px, 0.8fr) minmax(0, 1.2fr)",
+    gap: 10,
+    alignItems: "baseline",
+    padding: "7px 0",
+    borderBottom: "1px solid #e2e8f0",
+    color: "#475569",
+    fontSize: 12,
   } as const,
   stopMeta: {
     display: "flex",
@@ -711,10 +742,11 @@ const styles = {
     fontWeight: 700,
   } as const,
   notes: {
-    margin: "10px 0 0",
-    padding: 10,
+    margin: "12px 0 0",
+    padding: 12,
     borderRadius: 8,
-    background: "#f1f5f9",
+    background: "#fff7ed",
+    border: "1px solid #fed7aa",
     color: "#334155",
     lineHeight: 1.45,
   },
@@ -725,11 +757,11 @@ const styles = {
   } as const,
   statusButtons: {
     display: "grid",
-    gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(112px, 1fr))",
     gap: 8,
   } as const,
   statusButton: {
-    minHeight: 44,
+    minHeight: 52,
     borderRadius: 8,
     border: "1px solid #cbd5e1",
     background: "#f8fafc",
@@ -741,6 +773,17 @@ const styles = {
     display: "grid",
     gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
     gap: 10,
+  } as const,
+  proofGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: 10,
+  } as const,
+  utilityRow: {
+    display: "flex",
+    gap: 10,
+    justifyContent: "flex-end",
+    flexWrap: "wrap" as const,
   } as const,
   label: {
     display: "block",
