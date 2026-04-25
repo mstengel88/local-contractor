@@ -1052,6 +1052,9 @@ export default function DispatchPage() {
   const orderEditorOpen =
     activeView === "orders" &&
     Boolean(selectedOrder && (querySelectedOrderId || actionData?.selectedOrderId));
+  const dispatchDetailOpen =
+    activeView === "dashboard" &&
+    Boolean(selectedOrder && (querySelectedOrderId || actionData?.selectedOrderId));
 
   if (!allowed) {
     return (
@@ -2109,8 +2112,9 @@ export default function DispatchPage() {
             </div>
           </div>
 
-          <div style={styles.rightColumn}>
-            <div style={styles.panel}>
+          {dispatchDetailOpen ? (
+          <div style={styles.modalOverlay}>
+            <div style={styles.dispatchModal}>
               <div style={styles.panelHeader}>
                 <div>
                   <h2 style={styles.panelTitle}>Dispatch Detail</h2>
@@ -2118,6 +2122,9 @@ export default function DispatchPage() {
                     Review the selected order, then assign it to a truck and crew or place it on hold.
                   </p>
                 </div>
+                <a href={dispatchViewHref("dashboard")} style={styles.modalCloseButton}>
+                  Close
+                </a>
               </div>
 
               {selectedOrder ? (
@@ -2355,33 +2362,8 @@ export default function DispatchPage() {
                 </div>
               )}
             </div>
-
-            <div style={styles.panel}>
-              <div style={styles.panelHeader}>
-                <div>
-                  <h2 style={styles.panelTitle}>Phase 2 Targets</h2>
-                  <p style={styles.panelSub}>
-                    Next steps to expand this into the full dispatch + field execution system.
-                  </p>
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gap: 10 }}>
-                {[
-                  "Email parser to read the order inbox and prefill dispatch cards",
-                  "Persistent trucks, employees, routes, and assigned stops in Supabase",
-                  "Driver mobile workflow: arrive, depart, signature, photos, tickets",
-                  "GoCanvas-style field forms for inspection, proof, and custom checklists",
-                  "Route optimization and live map sequencing",
-                ].map((item) => (
-                  <div key={item} style={styles.todoItem}>
-                    <span style={styles.todoDot} />
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
+          ) : null}
         </div>
         ) : null}
         </main>
@@ -2559,8 +2541,7 @@ const styles = {
   } as const,
   workspaceGrid: {
     display: "grid",
-    gridTemplateColumns:
-      "minmax(320px, 0.95fr) minmax(420px, 1.2fr) minmax(320px, 0.82fr)",
+    gridTemplateColumns: "minmax(320px, 0.9fr) minmax(520px, 1.25fr)",
     gap: 18,
     alignItems: "start",
   } as const,
@@ -2601,6 +2582,17 @@ const styles = {
   },
   orderModal: {
     width: "min(920px, 100%)",
+    maxHeight: "calc(100vh - 44px)",
+    overflowY: "auto" as const,
+    borderRadius: 30,
+    border: "1px solid rgba(56, 189, 248, 0.32)",
+    background:
+      "linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.96))",
+    padding: 24,
+    boxShadow: "0 34px 90px rgba(2, 6, 23, 0.68)",
+  } as const,
+  dispatchModal: {
+    width: "min(980px, 100%)",
     maxHeight: "calc(100vh - 44px)",
     overflowY: "auto" as const,
     borderRadius: 30,
