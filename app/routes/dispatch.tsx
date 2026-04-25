@@ -37,6 +37,7 @@ import {
   updateDispatchOrder,
   updateDispatchOrderDetails,
   updateDispatchEmployee,
+  updateDispatchRoute,
   updateDispatchTruck,
 } from "../lib/dispatch.server";
 import {
@@ -473,6 +474,54 @@ export async function action({ request }: any) {
         allowed: true,
         ok: true,
         message: `Added ${created.truck} to the route board.`,
+        ...dispatchState,
+      });
+    }
+
+    if (intent === "update-route") {
+      const routeId = String(form.get("routeId") || "").trim();
+      const code = String(form.get("code") || "").trim();
+      const truckId = String(form.get("truckId") || "").trim();
+      const driverId = String(form.get("driverId") || "").trim();
+      const helperId = String(form.get("helperId") || "").trim();
+      const trucks = await getDispatchTrucks();
+      const employees = await getDispatchEmployees();
+      const selectedTruck = trucks.find((truck) => truck.id === truckId);
+      const selectedDriver = employees.find((employee) => employee.id === driverId);
+      const selectedHelper = employees.find((employee) => employee.id === helperId);
+
+      if (!routeId || !code) {
+        const dispatchState = await loadDispatchState();
+        return data(
+          {
+            allowed: true,
+            ok: false,
+            message: "Route and route code are required.",
+            ...dispatchState,
+          },
+          { status: 400 },
+        );
+      }
+
+      const updated = await updateDispatchRoute(routeId, {
+        code,
+        truckId: selectedTruck?.id || null,
+        truck: selectedTruck?.label || "",
+        driverId: selectedDriver?.id || null,
+        driver: selectedDriver?.name || "",
+        helperId: selectedHelper?.id || null,
+        helper: selectedHelper?.name || "",
+        color: String(form.get("color") || "#38bdf8").trim(),
+        shift: String(form.get("shift") || "").trim(),
+        region: String(form.get("region") || "").trim(),
+      });
+
+      const dispatchState = await loadDispatchState();
+
+      return data({
+        allowed: true,
+        ok: true,
+        message: `Updated ${updated.code}.`,
         ...dispatchState,
       });
     }
@@ -1543,7 +1592,9 @@ export default function DispatchPage() {
               </div>
               <div style={{ display: "grid", gap: 12 }}>
                 {routes.map((route) => (
-                  <div key={route.id} style={styles.routeCard(route.color)}>
+                  <Form key={route.id} method="post" style={styles.routeCard(route.color)}>
+                    <input type="hidden" name="intent" value="update-route" />
+                    <input type="hidden" name="routeId" value={route.id} />
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -1552,17 +1603,65 @@ export default function DispatchPage() {
                           <div style={styles.routeRegion}>{route.region}</div>
                         </div>
                         <div style={{ marginTop: 8, color: "#e2e8f0", fontWeight: 700 }}>
-                          {route.truck} · {route.driver} / {route.helper}
+                          {route.truck || "No truck"} · {route.driver || "No driver"} / {route.helper || "No helper"}
                         </div>
                       </div>
                       <a href={`${driverHref}?route=${encodeURIComponent(route.id)}`} style={styles.assignButton}>Driver View</a>
+                    </div>
+                    <div style={{ ...styles.formGridThree, marginTop: 14 }}>
+                      <div>
+                        <label style={styles.label}>Route Code</label>
+                        <input name="code" defaultValue={route.code} style={styles.input} />
+                      </div>
+                      <div>
+                        <label style={styles.label}>Truck</label>
+                        <select name="truckId" defaultValue={route.truckId || ""} style={styles.input}>
+                          <option value="">Unassigned</option>
+                          {trucks.map((truck) => <option key={truck.id} value={truck.id}>{truck.label}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={styles.label}>Color</label>
+                        <input type="color" name="color" defaultValue={route.color} style={styles.colorInput} />
+                      </div>
+                    </div>
+                    <div style={{ ...styles.formGridThree, marginTop: 12 }}>
+                      <div>
+                        <label style={styles.label}>Driver</label>
+                        <select name="driverId" defaultValue={route.driverId || ""} style={styles.input}>
+                          <option value="">Unassigned</option>
+                          {drivers.map((employee) => <option key={employee.id} value={employee.id}>{employee.name}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={styles.label}>Helper</label>
+                        <select name="helperId" defaultValue={route.helperId || ""} style={styles.input}>
+                          <option value="">Unassigned</option>
+                          {helpers.map((employee) => <option key={employee.id} value={employee.id}>{employee.name}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={styles.label}>Shift</label>
+                        <input name="shift" defaultValue={route.shift} style={styles.input} />
+                      </div>
+                    </div>
+                    <div style={{ ...styles.formGridTwo, marginTop: 12 }}>
+                      <div>
+                        <label style={styles.label}>Region</label>
+                        <input name="region" defaultValue={route.region} style={styles.input} />
+                      </div>
+                      <div style={{ display: "flex", alignItems: "flex-end" }}>
+                        <button type="submit" style={{ ...styles.secondaryButton, width: "100%" }}>
+                          Save Route Assignments
+                        </button>
+                      </div>
                     </div>
                     <div style={styles.routeStats}>
                       <span>{route.shift}</span>
                       <span>{route.stops} stops</span>
                       <span>{route.loadSummary || "No assigned loads yet"}</span>
                     </div>
-                  </div>
+                  </Form>
                 ))}
               </div>
             </div>
@@ -1730,20 +1829,30 @@ export default function DispatchPage() {
                         Driver View
                       </a>
                       {selectedOrder ? (
-                        <Form method="post" style={styles.assignForm}>
-                          <input type="hidden" name="intent" value="assign-order" />
-                          <input type="hidden" name="orderId" value={selectedOrder.id} />
-                          <input type="hidden" name="routeId" value={route.id} />
-                          <input
-                            name="eta"
-                            placeholder="ETA"
-                            defaultValue={selectedOrder.eta || ""}
-                            style={styles.compactInput}
-                          />
-                          <button type="submit" style={styles.assignButton}>
-                            Assign Selected
-                          </button>
-                        </Form>
+                        selectedOrder.assignedRouteId === route.id ? (
+                          <Form method="post" style={styles.assignForm}>
+                            <input type="hidden" name="intent" value="unassign-order" />
+                            <input type="hidden" name="orderId" value={selectedOrder.id} />
+                            <button type="submit" style={styles.secondaryButton}>
+                              Unassign Selected
+                            </button>
+                          </Form>
+                        ) : (
+                          <Form method="post" style={styles.assignForm}>
+                            <input type="hidden" name="intent" value="assign-order" />
+                            <input type="hidden" name="orderId" value={selectedOrder.id} />
+                            <input type="hidden" name="routeId" value={route.id} />
+                            <input
+                              name="eta"
+                              placeholder="ETA"
+                              defaultValue={selectedOrder.eta || ""}
+                              style={styles.compactInput}
+                            />
+                            <button type="submit" style={styles.assignButton}>
+                              Assign Selected
+                            </button>
+                          </Form>
+                        )
                       ) : null}
                     </div>
 

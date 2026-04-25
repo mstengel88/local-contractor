@@ -1128,6 +1128,48 @@ export async function createDispatchRoute(input: {
   return normalizeRoute(data);
 }
 
+export async function updateDispatchRoute(
+  id: string,
+  patch: {
+    code?: string;
+    truckId?: string | null;
+    truck?: string;
+    driverId?: string | null;
+    driver?: string;
+    helperId?: string | null;
+    helper?: string;
+    color?: string;
+    shift?: string;
+    region?: string;
+  },
+) {
+  const payload: Record<string, unknown> = {};
+
+  if (patch.code !== undefined) payload.code = patch.code;
+  if (patch.truckId !== undefined) payload.truck_id = patch.truckId;
+  if (patch.truck !== undefined) payload.truck = patch.truck;
+  if (patch.driverId !== undefined) payload.driver_id = patch.driverId;
+  if (patch.driver !== undefined) payload.driver = patch.driver;
+  if (patch.helperId !== undefined) payload.helper_id = patch.helperId;
+  if (patch.helper !== undefined) payload.helper = patch.helper;
+  if (patch.color !== undefined) payload.color = patch.color;
+  if (patch.shift !== undefined) payload.shift = patch.shift;
+  if (patch.region !== undefined) payload.region = patch.region;
+
+  const { data, error } = await supabaseAdmin
+    .from(ROUTES_TABLE)
+    .update(payload)
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+
+  return normalizeRoute(data);
+}
+
 export async function createDispatchTruck(input: {
   label: string;
   truckType?: string;
