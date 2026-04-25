@@ -5180,6 +5180,25 @@ function getDeliveryStatusColor(status) {
 function getOrderDisplayNumber$1(order) {
   return order.orderNumber ? `#${order.orderNumber}` : order.id;
 }
+function getTruckCapacityForOrderUnit(truck, unit) {
+  if (/tons?/i.test(unit)) return Number(truck.tons || 0);
+  if (/yards?/i.test(unit)) return Number(truck.yards || 0);
+  return 0;
+}
+function getTruckCapacityLabel(unit) {
+  if (/tons?/i.test(unit)) return "tons";
+  if (/yards?/i.test(unit)) return "yards";
+  return "";
+}
+function getCapacityError(order, truck) {
+  if (!truck) return "This route does not have a truck assigned yet.";
+  const quantity = Number(order.quantity || 0);
+  const capacity = getTruckCapacityForOrderUnit(truck, order.unit);
+  const capacityLabel = getTruckCapacityLabel(order.unit);
+  if (!quantity || !capacity || !capacityLabel) return "";
+  if (quantity <= capacity) return "";
+  return `${order.customer} needs ${quantity} ${capacityLabel}, but ${truck.label} is set to ${capacity} ${capacityLabel}.`;
+}
 function buildChecklistJson$1(form) {
   return JSON.stringify({
     siteSafe: form.get("siteSafe") === "on",
@@ -5558,6 +5577,21 @@ async function action$e({
           status: 400
         });
       }
+      if (selectedTruck) {
+        const assignedOrders = (await getDispatchOrders()).filter((order) => order.assignedRouteId === routeId && order.status !== "delivered");
+        const capacityError = assignedOrders.map((order) => getCapacityError(order, selectedTruck)).find(Boolean);
+        if (capacityError) {
+          const dispatchState2 = await loadDispatchState();
+          return data({
+            allowed: true,
+            ok: false,
+            message: capacityError,
+            ...dispatchState2
+          }, {
+            status: 400
+          });
+        }
+      }
       const updated = await updateDispatchRoute(routeId, {
         code,
         truckId: (selectedTruck == null ? void 0 : selectedTruck.id) || null,
@@ -5743,6 +5777,23 @@ async function action$e({
       const routeId = String(form.get("routeId") || "").trim();
       if (!orderId || !routeId) {
         throw new Error("Missing order or route assignment details");
+      }
+      const [allOrders, allRoutes, allTrucks] = await Promise.all([getDispatchOrders(), getDispatchRoutes(), getDispatchTrucks()]);
+      const selectedOrder = allOrders.find((order) => order.id === orderId);
+      const selectedRoute = allRoutes.find((route35) => route35.id === routeId);
+      const selectedTruck = allTrucks.find((truck) => truck.id === (selectedRoute == null ? void 0 : selectedRoute.truckId));
+      const capacityError = selectedOrder ? getCapacityError(selectedOrder, selectedTruck) : "Order was not found.";
+      if (capacityError) {
+        const dispatchState2 = await loadDispatchState();
+        return data({
+          allowed: true,
+          ok: false,
+          message: capacityError,
+          selectedOrderId: orderId,
+          ...dispatchState2
+        }, {
+          status: 400
+        });
       }
       const stopSequence = await getNextRouteStopSequence(routeId);
       await updateDispatchOrder(orderId, {
