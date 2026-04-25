@@ -571,6 +571,20 @@ export async function getDispatchOrders() {
   return (data || []).map(normalizeOrder);
 }
 
+export async function getDispatchOrderByMailboxMessageId(messageId: string) {
+  const { data, error } = await supabaseAdmin
+    .from(ORDERS_TABLE)
+    .select("*")
+    .eq("mailbox_message_id", messageId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+
+  return data ? normalizeOrder(data) : null;
+}
+
 export async function getDispatchRoutes() {
   const { data, error } = await supabaseAdmin
     .from(ROUTES_TABLE)

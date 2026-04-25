@@ -29,6 +29,7 @@ export default [
   route("api/create-draft-order", "routes/api.create-draft-order.ts"),
   route("api/delete-quote", "routes/api.delete-quote.ts"),
   route("api/update-quote", "routes/api.update-quote.ts"),
+  route("api/dispatch-poll-mailbox", "routes/api.dispatch-poll-mailbox.ts"),
 
   route("app/api/shipping-estimate", "routes/app.api.shipping-estimate.ts"),
   route("app/api/carrier-service", "routes/app.api.carrier-service.ts"),

@@ -23,6 +23,7 @@ create table if not exists public.dispatch_orders (
   proof_notes text,
   email_subject text,
   raw_email text,
+  mailbox_message_id text,
   signature_name text,
   signature_data text,
   photo_urls text,
@@ -44,6 +45,7 @@ alter table public.dispatch_orders
   add column if not exists proof_notes text,
   add column if not exists email_subject text,
   add column if not exists raw_email text,
+  add column if not exists mailbox_message_id text,
   add column if not exists signature_name text,
   add column if not exists signature_data text,
   add column if not exists photo_urls text,
@@ -81,6 +83,10 @@ create index if not exists dispatch_orders_assigned_route_idx
 
 create index if not exists dispatch_orders_route_sequence_idx
   on public.dispatch_orders (assigned_route_id, stop_sequence asc);
+
+create unique index if not exists dispatch_orders_mailbox_message_id_idx
+  on public.dispatch_orders (mailbox_message_id)
+  where mailbox_message_id is not null;
 
 create index if not exists dispatch_trucks_active_idx
   on public.dispatch_trucks (is_active, label asc);

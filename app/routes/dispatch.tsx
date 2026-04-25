@@ -24,12 +24,17 @@ import {
   type DispatchOrder,
   type DispatchRoute,
   type DispatchTruck,
+  parseDispatchEmail,
   seedDispatchEmployees,
   seedDispatchOrders,
   seedDispatchRoutes,
   seedDispatchTrucks,
   updateDispatchOrder,
 } from "../lib/dispatch.server";
+import {
+  maybeAutoPollDispatchMailbox,
+  pollDispatchMailbox,
+} from "../lib/dispatch-mailbox.server";
 
 function getDeliveryStatusLabel(status?: DispatchOrder["deliveryStatus"]) {
   if (status === "en_route") return "En route";
@@ -45,55 +50,6 @@ function getDeliveryStatusColor(status?: DispatchOrder["deliveryStatus"]) {
   if (status === "en_route") return "#f97316";
   if (status === "issue") return "#ef4444";
   return "#64748b";
-}
-
-function readEmailField(raw: string, labels: string[]) {
-  for (const label of labels) {
-    const match = raw.match(new RegExp(`^\\s*${label}\\s*:?\\s*(.+)$`, "im"));
-    if (match?.[1]) return match[1].trim();
-  }
-  return "";
-}
-
-function parseDispatchEmail(raw: string) {
-  const subject = readEmailField(raw, ["Subject"]);
-  const contact =
-    readEmailField(raw, ["Email", "Contact", "Customer Email"]) ||
-    raw.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] ||
-    "";
-  const customer =
-    readEmailField(raw, ["Customer", "Client", "Name", "Company"]) ||
-    subject.replace(/^(order|delivery|quote)\s*[:-]\s*/i, "").trim();
-  const address = readEmailField(raw, [
-    "Address",
-    "Delivery Address",
-    "Jobsite",
-    "Job Site",
-    "Ship To",
-  ]);
-  const city = readEmailField(raw, ["City", "City/State", "Location"]);
-  const material = readEmailField(raw, ["Material", "Product", "Item"]);
-  const quantity = readEmailField(raw, ["Quantity", "Qty", "Amount"]);
-  const unit = readEmailField(raw, ["Unit", "UOM"]) || "TonS";
-  const requestedWindow =
-    readEmailField(raw, ["Requested Window", "Delivery Window", "Requested", "Date", "When"]) ||
-    "Needs scheduling";
-  const truckPreference = readEmailField(raw, ["Truck", "Truck Preference", "Equipment"]);
-  const notes = readEmailField(raw, ["Notes", "Instructions", "Special Instructions"]);
-
-  return {
-    subject,
-    customer: customer || "Email Order",
-    contact,
-    address,
-    city,
-    material,
-    quantity,
-    unit,
-    requestedWindow,
-    truckPreference,
-    notes,
-  };
 }
 
 function buildChecklistJson(form: FormData) {
@@ -199,10 +155,24 @@ export async function loader({ request }: any) {
     });
   }
 
+  let mailboxStatus = null;
+  try {
+    mailboxStatus = await maybeAutoPollDispatchMailbox();
+  } catch (error) {
+    mailboxStatus = {
+      configured: true,
+      imported: 0,
+      skipped: 0,
+      message: error instanceof Error ? error.message : "Mailbox auto-poll failed.",
+    };
+    console.error("[DISPATCH MAILBOX AUTO POLL ERROR]", error);
+  }
+
   const dispatchState = await loadDispatchState();
 
   return data({
     allowed: true,
+    mailboxStatus,
     ...dispatchState,
   });
 }
@@ -356,6 +326,19 @@ export async function action({ request }: any) {
         ok: true,
         message: `Parsed email order for ${created.customer}.`,
         selectedOrderId: created.id,
+        ...dispatchState,
+      });
+    }
+
+    if (intent === "poll-mailbox") {
+      const mailboxStatus = await pollDispatchMailbox();
+      const dispatchState = await loadDispatchState();
+
+      return data({
+        allowed: true,
+        ok: mailboxStatus.configured,
+        message: mailboxStatus.message,
+        mailboxStatus,
         ...dispatchState,
       });
     }
@@ -668,6 +651,7 @@ export default function DispatchPage() {
   const employees = (actionData?.employees ?? loaderData.employees ?? []) as DispatchEmployee[];
   const storageReady = actionData?.storageReady ?? loaderData.storageReady ?? false;
   const storageError = actionData?.storageError ?? loaderData.storageError ?? null;
+  const mailboxStatus = actionData?.mailboxStatus ?? loaderData.mailboxStatus ?? null;
 
   const querySelectedOrderId = new URLSearchParams(location.search).get("order");
   const selectedOrderId = actionData?.selectedOrderId || querySelectedOrderId || orders[0]?.id;
@@ -745,23 +729,46 @@ export default function DispatchPage() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.shell}>
-        <div style={styles.hero}>
+      <div style={styles.appFrame}>
+        <aside style={styles.sidebar}>
+          <div style={styles.brandBlock}>
+            <div style={styles.brandMark}>GH</div>
+            <div>
+              <div style={styles.brandTitle}>Contractor</div>
+              <div style={styles.brandSub}>Dispatch v2.0</div>
+            </div>
+          </div>
+
+          <nav style={styles.sideNav}>
+            <a href="#dashboard" style={styles.sideNavLink}>Dashboard</a>
+            <a href="#orders" style={styles.sideNavLink}>Orders</a>
+            <a href="#routes" style={styles.sideNavLink}>Routes</a>
+            <a href="#trucks" style={styles.sideNavLink}>Trucks</a>
+            <a href="#employees" style={styles.sideNavLink}>Employees</a>
+          </nav>
+
+          <div style={styles.sidebarFooter}>
+            <a href={driverHref} style={styles.sideUtility}>Driver Route</a>
+            <a href={quoteHref} style={styles.sideUtility}>Quote Tool</a>
+            <a href={logoutHref} style={styles.sideUtility}>Log Out</a>
+          </div>
+        </aside>
+
+        <main style={styles.shell}>
+        <div id="dashboard" style={styles.hero}>
           <div>
             <div style={styles.kicker}>Dispatch Workspace</div>
             <h1 style={styles.title}>Plan, intake, and assign deliveries</h1>
             <p style={styles.subtitle}>
-              Contractor-only dispatch slice with persistent intake, truck assignment,
-              route boards, and the first foundation for email-driven scheduling.
+              Live contractor operations board for mailbox intake, routing,
+              trucks, crews, and field proof.
             </p>
           </div>
 
           <div style={styles.heroActions}>
             <a href={mobileHref} style={styles.ghostButton}>Dashboard</a>
-            <a href={quoteHref} style={styles.ghostButton}>Quote Tool</a>
             <a href={reviewHref} style={styles.ghostButton}>Review Quotes</a>
             <a href={driverHref} style={styles.ghostButton}>Driver View</a>
-            <a href={logoutHref} style={styles.ghostButton}>Log Out</a>
           </div>
         </div>
 
@@ -782,6 +789,12 @@ export default function DispatchPage() {
           </div>
         ) : null}
 
+        {mailboxStatus ? (
+          <div style={mailboxStatus.configured ? styles.statusOk : styles.statusWarn}>
+            {mailboxStatus.message}
+          </div>
+        ) : null}
+
         <div style={styles.metricsGrid}>
           {metricCard("Inbox", String(inboxOrders.length), "#f97316")}
           {metricCard("Scheduled", String(scheduledOrders.length), "#22c55e")}
@@ -791,7 +804,7 @@ export default function DispatchPage() {
 
         <div style={styles.workspaceGrid}>
           <div style={styles.leftColumn}>
-            <div style={styles.panel}>
+            <div id="orders" style={styles.panel}>
               <div style={styles.panelHeader}>
                 <div>
                   <h2 style={styles.panelTitle}>Email Intake Queue</h2>
@@ -943,11 +956,18 @@ export default function DispatchPage() {
                 <div>
                   <h2 style={styles.panelTitle}>Email Parser</h2>
                   <p style={styles.panelSub}>
-                    Paste an order email here to prefill a dispatch card. Use labels like Customer:, Address:, Material:, Quantity:, and Requested Window: for best results.
+                    Auto-poll the mailbox or paste an order email to create dispatch cards. Use labels like Customer:, Address:, Material:, Quantity:, and Requested Window: for best results.
                   </p>
                 </div>
                 <div style={styles.headerPill}>Inbox Prep</div>
               </div>
+
+              <Form method="post" style={{ display: "grid", gap: 12, marginBottom: 12 }}>
+                <input type="hidden" name="intent" value="poll-mailbox" />
+                <button type="submit" style={styles.primaryButton}>
+                  Poll Mailbox Now
+                </button>
+              </Form>
 
               <Form method="post" style={{ display: "grid", gap: 12 }}>
                 <input type="hidden" name="intent" value="parse-email-order" />
@@ -965,7 +985,7 @@ export default function DispatchPage() {
           </div>
 
           <div style={styles.centerColumn}>
-            <div style={styles.panel}>
+            <div id="routes" style={styles.panel}>
               <div style={styles.panelHeader}>
                 <div>
                   <h2 style={styles.panelTitle}>Routes & Fleet</h2>
@@ -1151,7 +1171,7 @@ export default function DispatchPage() {
               </Form>
             </div>
 
-            <div style={styles.panel}>
+            <div id="trucks" style={styles.panel}>
               <div style={styles.panelHeader}>
                 <div>
                   <h2 style={styles.panelTitle}>Fleet & Employees</h2>
@@ -1216,7 +1236,7 @@ export default function DispatchPage() {
                 </div>
               </Form>
 
-              <Form method="post" style={styles.routeCreateForm}>
+              <Form id="employees" method="post" style={styles.routeCreateForm}>
                 <input type="hidden" name="intent" value="create-employee" />
                 <div style={styles.formGridThree}>
                   <div>
@@ -1551,8 +1571,9 @@ export default function DispatchPage() {
             </div>
           </div>
         </div>
+        </main>
       </div>
-    </div>
+      </div>
   );
 }
 
@@ -1560,15 +1581,97 @@ const styles = {
   page: {
     minHeight: "100vh",
     background:
-      "radial-gradient(circle at top left, rgba(14, 165, 233, 0.14), transparent 26%), radial-gradient(circle at top right, rgba(249, 115, 22, 0.1), transparent 24%), linear-gradient(180deg, #09101d 0%, #0f172a 42%, #020617 100%)",
+      "radial-gradient(circle at top left, rgba(14, 165, 233, 0.14), transparent 26%), radial-gradient(circle at top right, rgba(20, 184, 166, 0.12), transparent 24%), linear-gradient(180deg, #09101d 0%, #0f172a 42%, #020617 100%)",
     color: "#f8fafc",
-    padding: "24px 18px 42px",
+    padding: "18px",
     fontFamily:
       '"Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   } as const,
-  shell: {
-    maxWidth: 1540,
+  appFrame: {
+    maxWidth: 1740,
     margin: "0 auto",
+    display: "grid",
+    gridTemplateColumns: "230px minmax(0, 1fr)",
+    gap: 18,
+    alignItems: "start",
+  } as const,
+  sidebar: {
+    position: "sticky" as const,
+    top: 18,
+    minHeight: "calc(100vh - 36px)",
+    display: "grid",
+    gridTemplateRows: "auto 1fr auto",
+    gap: 22,
+    padding: 18,
+    borderRadius: 28,
+    border: "1px solid rgba(30, 41, 59, 0.95)",
+    background: "linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.96))",
+    boxShadow: "0 24px 60px rgba(2, 6, 23, 0.42)",
+  } as const,
+  brandBlock: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+  } as const,
+  brandMark: {
+    width: 42,
+    height: 42,
+    borderRadius: 16,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "linear-gradient(135deg, #0ea5e9, #14b8a6)",
+    color: "#ecfeff",
+    fontWeight: 900,
+    boxShadow: "0 12px 28px rgba(14, 165, 233, 0.28)",
+  } as const,
+  brandTitle: {
+    color: "#f8fafc",
+    fontSize: 16,
+    fontWeight: 900,
+    lineHeight: 1.1,
+  },
+  brandSub: {
+    marginTop: 3,
+    color: "#64748b",
+    fontSize: 12,
+    fontWeight: 800,
+  },
+  sideNav: {
+    display: "grid",
+    alignContent: "start",
+    gap: 8,
+  } as const,
+  sideNavLink: {
+    minHeight: 46,
+    display: "flex",
+    alignItems: "center",
+    padding: "0 13px",
+    borderRadius: 16,
+    color: "#cbd5e1",
+    textDecoration: "none",
+    fontWeight: 800,
+    border: "1px solid transparent",
+    background: "rgba(15, 23, 42, 0.35)",
+  } as const,
+  sidebarFooter: {
+    display: "grid",
+    gap: 8,
+  } as const,
+  sideUtility: {
+    minHeight: 40,
+    display: "flex",
+    alignItems: "center",
+    padding: "0 12px",
+    borderRadius: 14,
+    border: "1px solid rgba(51, 65, 85, 0.82)",
+    background: "rgba(2, 6, 23, 0.5)",
+    color: "#94a3b8",
+    textDecoration: "none",
+    fontSize: 13,
+    fontWeight: 800,
+  } as const,
+  shell: {
     display: "grid",
     gap: 20,
   } as const,
@@ -1581,12 +1684,13 @@ const styles = {
   } as const,
   hero: {
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1.4fr) minmax(320px, 0.8fr)",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
     gap: 18,
-    padding: 24,
+    padding: 22,
     borderRadius: 30,
     border: "1px solid rgba(51, 65, 85, 0.95)",
-    background: "linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.92))",
+    background:
+      "radial-gradient(circle at 10% 20%, rgba(14, 165, 233, 0.18), transparent 24%), linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.92))",
     boxShadow: "0 30px 60px rgba(2, 6, 23, 0.45)",
   } as const,
   kicker: {
@@ -1597,8 +1701,8 @@ const styles = {
     letterSpacing: "0.18em",
   },
   title: {
-    margin: "10px 0 0",
-    fontSize: "2.8rem",
+    margin: "8px 0 0",
+    fontSize: "2.35rem",
     lineHeight: 1.04,
     letterSpacing: "-0.04em",
     fontWeight: 900,
