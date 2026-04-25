@@ -653,7 +653,16 @@ export default function DispatchPage() {
   const storageError = actionData?.storageError ?? loaderData.storageError ?? null;
   const mailboxStatus = actionData?.mailboxStatus ?? loaderData.mailboxStatus ?? null;
 
-  const querySelectedOrderId = new URLSearchParams(location.search).get("order");
+  const searchParams = new URLSearchParams(location.search);
+  const rawView = searchParams.get("view") || "dashboard";
+  const activeView =
+    rawView === "orders" ||
+    rawView === "routes" ||
+    rawView === "trucks" ||
+    rawView === "employees"
+      ? rawView
+      : "dashboard";
+  const querySelectedOrderId = searchParams.get("order");
   const selectedOrderId = actionData?.selectedOrderId || querySelectedOrderId || orders[0]?.id;
 
   const selectedOrder = useMemo(
@@ -689,6 +698,7 @@ export default function DispatchPage() {
   const deliveredOrders = orders.filter((order) => order.deliveryStatus === "delivered");
   const drivers = employees.filter((employee) => employee.role === "driver");
   const helpers = employees.filter((employee) => employee.role === "helper");
+  const dispatchViewHref = (view: string) => `${dispatchHref}?view=${view}`;
 
   if (!allowed) {
     return (
@@ -740,11 +750,11 @@ export default function DispatchPage() {
           </div>
 
           <nav style={styles.sideNav}>
-            <a href="#dashboard" style={styles.sideNavLink}>Dashboard</a>
-            <a href="#orders" style={styles.sideNavLink}>Orders</a>
-            <a href="#routes" style={styles.sideNavLink}>Routes</a>
-            <a href="#trucks" style={styles.sideNavLink}>Trucks</a>
-            <a href="#employees" style={styles.sideNavLink}>Employees</a>
+            <a href={dispatchViewHref("dashboard")} style={styles.sideNavLink(activeView === "dashboard")}>Dashboard</a>
+            <a href={dispatchViewHref("orders")} style={styles.sideNavLink(activeView === "orders")}>Orders</a>
+            <a href={dispatchViewHref("routes")} style={styles.sideNavLink(activeView === "routes")}>Routes</a>
+            <a href={dispatchViewHref("trucks")} style={styles.sideNavLink(activeView === "trucks")}>Trucks</a>
+            <a href={dispatchViewHref("employees")} style={styles.sideNavLink(activeView === "employees")}>Employees</a>
           </nav>
 
           <div style={styles.sidebarFooter}>
@@ -802,6 +812,327 @@ export default function DispatchPage() {
           {metricCard("Delivered", String(deliveredOrders.length), "#38bdf8")}
         </div>
 
+        {activeView === "orders" ? (
+          <div style={styles.focusGrid}>
+            <div id="orders" style={styles.panel}>
+              <div style={styles.panelHeader}>
+                <div>
+                  <h2 style={styles.panelTitle}>Orders</h2>
+                  <p style={styles.panelSub}>View imported, manual, scheduled, and held dispatch orders.</p>
+                </div>
+                <div style={styles.headerPill}>{orders.length} orders</div>
+              </div>
+
+              <div style={{ display: "grid", gap: 10 }}>
+                {orders.map((order) => {
+                  const route = routes.find((entry) => entry.id === order.assignedRouteId);
+                  return (
+                    <a
+                      key={order.id}
+                      href={`${dispatchHref}?view=orders&order=${encodeURIComponent(order.id)}`}
+                      style={{ ...styles.queueCard, textDecoration: "none" }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                        <div>
+                          <div style={styles.queueTitle}>{order.customer}</div>
+                          <div style={styles.queueMeta}>{order.address}, {order.city}</div>
+                        </div>
+                        <div style={styles.badge(order.status)}>{order.status}</div>
+                      </div>
+                      <div style={styles.queueDetails}>
+                        <span>{order.id}</span>
+                        <span>{order.quantity} {order.unit}</span>
+                        <span>{order.material}</span>
+                        <span>{route ? route.truck : "Unassigned"}</span>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={styles.panel}>
+              <div style={styles.panelHeader}>
+                <div>
+                  <h2 style={styles.panelTitle}>Add / Import Order</h2>
+                  <p style={styles.panelSub}>Create a dispatch card manually or poll the mailbox.</p>
+                </div>
+              </div>
+
+              <Form method="post" style={{ display: "grid", gap: 12, marginBottom: 16 }}>
+                <input type="hidden" name="intent" value="poll-mailbox" />
+                <button type="submit" style={styles.primaryButton}>Poll Mailbox Now</button>
+              </Form>
+
+              <Form method="post" style={{ display: "grid", gap: 12 }}>
+                <input type="hidden" name="intent" value="create-order" />
+                <div style={styles.formGridTwo}>
+                  <div>
+                    <label style={styles.label}>Customer</label>
+                    <input name="customer" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Contact / Email</label>
+                    <input name="contact" style={styles.input} />
+                  </div>
+                </div>
+                <div style={styles.formGridTwo}>
+                  <div>
+                    <label style={styles.label}>Jobsite Address</label>
+                    <input name="address" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>City</label>
+                    <input name="city" style={styles.input} />
+                  </div>
+                </div>
+                <div style={styles.formGridThree}>
+                  <div>
+                    <label style={styles.label}>Material</label>
+                    <input name="material" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Quantity</label>
+                    <input name="quantity" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Unit</label>
+                    <select name="unit" style={styles.input}>
+                      <option>TonS</option>
+                      <option>YardS</option>
+                      <option>GallonS</option>
+                    </select>
+                  </div>
+                </div>
+                <button type="submit" style={styles.primaryButton}>Add Order</button>
+              </Form>
+
+              <Form method="post" style={{ display: "grid", gap: 12, marginTop: 18 }}>
+                <input type="hidden" name="intent" value="parse-email-order" />
+                <label style={styles.label}>Paste Order Email</label>
+                <textarea
+                  name="rawEmail"
+                  rows={9}
+                  placeholder={"Subject: You've Got A New Order: #1234\nCustomer: Green Hills Supply\nAddress: 2543 W Applebrook Lane\nCity: Oak Creek, WI\nMaterial: Coarse Torpedo Sand\nQuantity: 12\nUnit: TonS\nRequested Window: Tomorrow 9a - 11a"}
+                  style={{ ...styles.input, resize: "vertical", minHeight: 180 }}
+                />
+                <button type="submit" style={styles.secondaryButton}>
+                  Parse Email Into Dispatch Card
+                </button>
+              </Form>
+            </div>
+          </div>
+        ) : null}
+
+        {activeView === "trucks" ? (
+          <div style={styles.focusGrid}>
+            <div id="trucks" style={styles.panel}>
+              <div style={styles.panelHeader}>
+                <div>
+                  <h2 style={styles.panelTitle}>Fleet</h2>
+                  <p style={styles.panelSub}>View active trucks and capacity details.</p>
+                </div>
+                <div style={styles.headerPill}>{trucks.length} trucks</div>
+              </div>
+              <div style={styles.resourceList}>
+                {trucks.map((truck) => (
+                  <div key={truck.id} style={styles.resourceCard}>
+                    <strong>{truck.label}</strong>
+                    <span>{truck.truckType || "Truck"} · {truck.capacity || "Capacity not set"}</span>
+                    <span>{truck.licensePlate || "No plate"}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={styles.panel}>
+              <div style={styles.panelHeader}>
+                <div>
+                  <h2 style={styles.panelTitle}>Add Truck</h2>
+                  <p style={styles.panelSub}>Add trucks before assigning routes.</p>
+                </div>
+              </div>
+              <Form method="post" style={{ display: "grid", gap: 12 }}>
+                <input type="hidden" name="intent" value="create-truck" />
+                <div style={styles.formGridThree}>
+                  <div>
+                    <label style={styles.label}>Truck Name</label>
+                    <input name="label" placeholder="Truck 22" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Type</label>
+                    <input name="truckType" placeholder="Tri-axle" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Capacity</label>
+                    <input name="capacity" placeholder="22 TonS" style={styles.input} />
+                  </div>
+                </div>
+                <div style={styles.formGridTwo}>
+                  <div>
+                    <label style={styles.label}>Plate</label>
+                    <input name="licensePlate" style={styles.input} />
+                  </div>
+                  <div style={{ display: "flex", alignItems: "flex-end" }}>
+                    <button type="submit" style={{ ...styles.primaryButton, width: "100%" }}>Add Truck</button>
+                  </div>
+                </div>
+              </Form>
+            </div>
+          </div>
+        ) : null}
+
+        {activeView === "employees" ? (
+          <div style={styles.focusGrid}>
+            <div id="employees" style={styles.panel}>
+              <div style={styles.panelHeader}>
+                <div>
+                  <h2 style={styles.panelTitle}>Employees</h2>
+                  <p style={styles.panelSub}>View drivers, helpers, and dispatchers.</p>
+                </div>
+                <div style={styles.headerPill}>{employees.length} people</div>
+              </div>
+              <div style={styles.resourceList}>
+                {employees.map((employee) => (
+                  <div key={employee.id} style={styles.resourceCard}>
+                    <strong>{employee.name}</strong>
+                    <span>{employee.role}</span>
+                    <span>{employee.phone || "No phone"} · {employee.email || "No email"}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={styles.panel}>
+              <div style={styles.panelHeader}>
+                <div>
+                  <h2 style={styles.panelTitle}>Add Employee</h2>
+                  <p style={styles.panelSub}>Add drivers, helpers, or dispatch users.</p>
+                </div>
+              </div>
+              <Form method="post" style={{ display: "grid", gap: 12 }}>
+                <input type="hidden" name="intent" value="create-employee" />
+                <div style={styles.formGridThree}>
+                  <div>
+                    <label style={styles.label}>Name</label>
+                    <input name="name" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Role</label>
+                    <select name="role" style={styles.input}>
+                      <option value="driver">Driver</option>
+                      <option value="helper">Helper</option>
+                      <option value="dispatcher">Dispatcher</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={styles.label}>Phone</label>
+                    <input name="phone" style={styles.input} />
+                  </div>
+                </div>
+                <div style={styles.formGridTwo}>
+                  <div>
+                    <label style={styles.label}>Email</label>
+                    <input name="email" type="email" style={styles.input} />
+                  </div>
+                  <div style={{ display: "flex", alignItems: "flex-end" }}>
+                    <button type="submit" style={{ ...styles.primaryButton, width: "100%" }}>Add Employee</button>
+                  </div>
+                </div>
+              </Form>
+            </div>
+          </div>
+        ) : null}
+
+        {activeView === "routes" ? (
+          <div style={styles.focusGrid}>
+            <div id="routes" style={styles.panel}>
+              <div style={styles.panelHeader}>
+                <div>
+                  <h2 style={styles.panelTitle}>Routes</h2>
+                  <p style={styles.panelSub}>View route assignments, open driver view, and sequence stops.</p>
+                </div>
+                <div style={styles.headerPill}>{routes.length} routes</div>
+              </div>
+              <div style={{ display: "grid", gap: 12 }}>
+                {routes.map((route) => (
+                  <div key={route.id} style={styles.routeCard(route.color)}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div style={styles.routeColor(route.color)} />
+                          <div style={styles.routeCode}>{route.code}</div>
+                          <div style={styles.routeRegion}>{route.region}</div>
+                        </div>
+                        <div style={{ marginTop: 8, color: "#e2e8f0", fontWeight: 700 }}>
+                          {route.truck} · {route.driver} / {route.helper}
+                        </div>
+                      </div>
+                      <a href={`${driverHref}?route=${encodeURIComponent(route.id)}`} style={styles.assignButton}>Driver View</a>
+                    </div>
+                    <div style={styles.routeStats}>
+                      <span>{route.shift}</span>
+                      <span>{route.stops} stops</span>
+                      <span>{route.loadSummary || "No assigned loads yet"}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={styles.panel}>
+              <div style={styles.panelHeader}>
+                <div>
+                  <h2 style={styles.panelTitle}>Add Route</h2>
+                  <p style={styles.panelSub}>Create a route using an active truck and driver.</p>
+                </div>
+              </div>
+              <Form method="post" style={{ display: "grid", gap: 12 }}>
+                <input type="hidden" name="intent" value="create-route" />
+                <div style={styles.formGridThree}>
+                  <div>
+                    <label style={styles.label}>Route Code</label>
+                    <input name="code" placeholder="R-22" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Truck</label>
+                    <select name="truckId" style={styles.input}>
+                      <option value="">Select truck</option>
+                      {trucks.map((truck) => <option key={truck.id} value={truck.id}>{truck.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={styles.label}>Color</label>
+                    <input type="color" name="color" defaultValue="#38bdf8" style={styles.colorInput} />
+                  </div>
+                </div>
+                <div style={styles.formGridThree}>
+                  <div>
+                    <label style={styles.label}>Driver</label>
+                    <select name="driverId" style={styles.input}>
+                      <option value="">Select driver</option>
+                      {drivers.map((employee) => <option key={employee.id} value={employee.id}>{employee.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={styles.label}>Helper</label>
+                    <select name="helperId" style={styles.input}>
+                      <option value="">No helper</option>
+                      {helpers.map((employee) => <option key={employee.id} value={employee.id}>{employee.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={styles.label}>Shift</label>
+                    <input name="shift" placeholder="7:00a - 4:00p" style={styles.input} />
+                  </div>
+                </div>
+                <button type="submit" style={styles.primaryButton}>Add Route</button>
+              </Form>
+            </div>
+          </div>
+        ) : null}
+
+        {activeView === "dashboard" ? (
         <div style={styles.workspaceGrid}>
           <div style={styles.leftColumn}>
             <div id="orders" style={styles.panel}>
@@ -863,125 +1194,6 @@ export default function DispatchPage() {
               </div>
             </div>
 
-            <div style={styles.panel}>
-              <div style={styles.panelHeader}>
-                <div>
-                  <h2 style={styles.panelTitle}>Manual Intake</h2>
-                  <p style={styles.panelSub}>
-                    Start the GoCanvas-style capture flow by typing in the order details dispatch needs to track.
-                  </p>
-                </div>
-              </div>
-
-              <Form method="post" style={{ display: "grid", gap: 12 }}>
-                <input type="hidden" name="intent" value="create-order" />
-
-                <div style={styles.formGridTwo}>
-                  <div>
-                    <label style={styles.label}>Customer</label>
-                    <input name="customer" style={styles.input} />
-                  </div>
-                  <div>
-                    <label style={styles.label}>Contact / Email</label>
-                    <input name="contact" style={styles.input} />
-                  </div>
-                </div>
-
-                <div style={styles.formGridTwo}>
-                  <div>
-                    <label style={styles.label}>Jobsite Address</label>
-                    <input name="address" style={styles.input} />
-                  </div>
-                  <div>
-                    <label style={styles.label}>City</label>
-                    <input name="city" style={styles.input} />
-                  </div>
-                </div>
-
-                <div style={styles.formGridThree}>
-                  <div>
-                    <label style={styles.label}>Material</label>
-                    <input name="material" style={styles.input} />
-                  </div>
-                  <div>
-                    <label style={styles.label}>Quantity</label>
-                    <input name="quantity" style={styles.input} />
-                  </div>
-                  <div>
-                    <label style={styles.label}>Unit</label>
-                    <select name="unit" style={styles.input}>
-                      <option>TonS</option>
-                      <option>YardS</option>
-                      <option>GallonS</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div style={styles.formGridTwo}>
-                  <div>
-                    <label style={styles.label}>Requested Window</label>
-                    <input
-                      name="requestedWindow"
-                      placeholder="Today 1:00p - 3:00p"
-                      style={styles.input}
-                    />
-                  </div>
-                  <div>
-                    <label style={styles.label}>Truck Preference</label>
-                    <input
-                      name="truckPreference"
-                      placeholder="Walking floor, tri-axle, etc."
-                      style={styles.input}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label style={styles.label}>Dispatch Notes</label>
-                  <textarea
-                    name="notes"
-                    rows={4}
-                    style={{ ...styles.input, resize: "vertical" }}
-                  />
-                </div>
-
-                <button type="submit" style={styles.primaryButton}>
-                  Add To Dispatch Queue
-                </button>
-              </Form>
-            </div>
-
-            <div style={styles.panel}>
-              <div style={styles.panelHeader}>
-                <div>
-                  <h2 style={styles.panelTitle}>Email Parser</h2>
-                  <p style={styles.panelSub}>
-                    Auto-poll the mailbox or paste an order email to create dispatch cards. Use labels like Customer:, Address:, Material:, Quantity:, and Requested Window: for best results.
-                  </p>
-                </div>
-                <div style={styles.headerPill}>Inbox Prep</div>
-              </div>
-
-              <Form method="post" style={{ display: "grid", gap: 12, marginBottom: 12 }}>
-                <input type="hidden" name="intent" value="poll-mailbox" />
-                <button type="submit" style={styles.primaryButton}>
-                  Poll Mailbox Now
-                </button>
-              </Form>
-
-              <Form method="post" style={{ display: "grid", gap: 12 }}>
-                <input type="hidden" name="intent" value="parse-email-order" />
-                <textarea
-                  name="rawEmail"
-                  rows={9}
-                  placeholder={"Subject: Delivery order\nCustomer: Green Hills Supply\nAddress: 2543 W Applebrook Lane\nCity: Oak Creek, WI\nMaterial: Coarse Torpedo Sand\nQuantity: 12\nUnit: TonS\nRequested Window: Tomorrow 9a - 11a"}
-                  style={{ ...styles.input, resize: "vertical", minHeight: 180 }}
-                />
-                <button type="submit" style={styles.secondaryButton}>
-                  Parse Email Into Dispatch Card
-                </button>
-              </Form>
-            </div>
           </div>
 
           <div style={styles.centerColumn}>
@@ -1098,176 +1310,6 @@ export default function DispatchPage() {
                 ))}
               </div>
 
-              <Form method="post" style={styles.routeCreateForm}>
-                <input type="hidden" name="intent" value="create-route" />
-
-                <div style={styles.formGridThree}>
-                  <div>
-                    <label style={styles.label}>Route Code</label>
-                    <input name="code" placeholder="R-22" style={styles.input} />
-                  </div>
-                  <div>
-                    <label style={styles.label}>Truck</label>
-                    <select name="truckId" style={styles.input}>
-                      <option value="">Select truck</option>
-                      {trucks.map((truck) => (
-                        <option key={truck.id} value={truck.id}>
-                          {truck.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label style={styles.label}>Color</label>
-                    <input
-                      type="color"
-                      name="color"
-                      defaultValue="#38bdf8"
-                      style={styles.colorInput}
-                    />
-                  </div>
-                </div>
-
-                <div style={styles.formGridThree}>
-                  <div>
-                    <label style={styles.label}>Driver</label>
-                    <select name="driverId" style={styles.input}>
-                      <option value="">Select driver</option>
-                      {drivers.map((employee) => (
-                        <option key={employee.id} value={employee.id}>
-                          {employee.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label style={styles.label}>Helper</label>
-                    <select name="helperId" style={styles.input}>
-                      <option value="">No helper</option>
-                      {helpers.map((employee) => (
-                        <option key={employee.id} value={employee.id}>
-                          {employee.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label style={styles.label}>Shift</label>
-                    <input name="shift" placeholder="7:00a - 4:00p" style={styles.input} />
-                  </div>
-                </div>
-
-                <div style={styles.formGridTwo}>
-                  <div>
-                    <label style={styles.label}>Region</label>
-                    <input name="region" placeholder="North / Menomonee Falls" style={styles.input} />
-                  </div>
-                  <div style={{ display: "flex", alignItems: "flex-end" }}>
-                    <button type="submit" style={{ ...styles.primaryButton, width: "100%" }}>
-                      Add Route
-                    </button>
-                  </div>
-                </div>
-              </Form>
-            </div>
-
-            <div id="trucks" style={styles.panel}>
-              <div style={styles.panelHeader}>
-                <div>
-                  <h2 style={styles.panelTitle}>Fleet & Employees</h2>
-                  <p style={styles.panelSub}>
-                    Add trucks and crew members before building route assignments.
-                  </p>
-                </div>
-                <div style={styles.headerPill}>
-                  {trucks.length} trucks / {employees.length} people
-                </div>
-              </div>
-
-              <div style={styles.resourceSummary}>
-                <div>
-                  <div style={styles.detailLabel}>Trucks</div>
-                  <div style={styles.resourceList}>
-                    {trucks.map((truck) => (
-                      <span key={truck.id} style={styles.resourcePill}>
-                        {truck.label}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <div style={styles.detailLabel}>Drivers</div>
-                  <div style={styles.resourceList}>
-                    {drivers.map((employee) => (
-                      <span key={employee.id} style={styles.resourcePill}>
-                        {employee.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <Form method="post" style={styles.routeCreateForm}>
-                <input type="hidden" name="intent" value="create-truck" />
-                <div style={styles.formGridThree}>
-                  <div>
-                    <label style={styles.label}>Truck Name</label>
-                    <input name="label" placeholder="Truck 22" style={styles.input} />
-                  </div>
-                  <div>
-                    <label style={styles.label}>Type</label>
-                    <input name="truckType" placeholder="Tri-axle" style={styles.input} />
-                  </div>
-                  <div>
-                    <label style={styles.label}>Capacity</label>
-                    <input name="capacity" placeholder="22 TonS" style={styles.input} />
-                  </div>
-                </div>
-                <div style={styles.formGridTwo}>
-                  <div>
-                    <label style={styles.label}>Plate</label>
-                    <input name="licensePlate" style={styles.input} />
-                  </div>
-                  <div style={{ display: "flex", alignItems: "flex-end" }}>
-                    <button type="submit" style={{ ...styles.secondaryButton, width: "100%" }}>
-                      Add Truck
-                    </button>
-                  </div>
-                </div>
-              </Form>
-
-              <Form id="employees" method="post" style={styles.routeCreateForm}>
-                <input type="hidden" name="intent" value="create-employee" />
-                <div style={styles.formGridThree}>
-                  <div>
-                    <label style={styles.label}>Name</label>
-                    <input name="name" style={styles.input} />
-                  </div>
-                  <div>
-                    <label style={styles.label}>Role</label>
-                    <select name="role" style={styles.input}>
-                      <option value="driver">Driver</option>
-                      <option value="helper">Helper</option>
-                      <option value="dispatcher">Dispatcher</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={styles.label}>Phone</label>
-                    <input name="phone" style={styles.input} />
-                  </div>
-                </div>
-                <div style={styles.formGridTwo}>
-                  <div>
-                    <label style={styles.label}>Email</label>
-                    <input name="email" type="email" style={styles.input} />
-                  </div>
-                  <div style={{ display: "flex", alignItems: "flex-end" }}>
-                    <button type="submit" style={{ ...styles.secondaryButton, width: "100%" }}>
-                      Add Employee
-                    </button>
-                  </div>
-                </div>
-              </Form>
             </div>
 
             <div style={styles.panel}>
@@ -1571,6 +1613,7 @@ export default function DispatchPage() {
             </div>
           </div>
         </div>
+        ) : null}
         </main>
       </div>
       </div>
@@ -1642,18 +1685,23 @@ const styles = {
     alignContent: "start",
     gap: 8,
   } as const,
-  sideNavLink: {
-    minHeight: 46,
-    display: "flex",
-    alignItems: "center",
-    padding: "0 13px",
-    borderRadius: 16,
-    color: "#cbd5e1",
-    textDecoration: "none",
-    fontWeight: 800,
-    border: "1px solid transparent",
-    background: "rgba(15, 23, 42, 0.35)",
-  } as const,
+  sideNavLink: (active: boolean) =>
+    ({
+      minHeight: 46,
+      display: "flex",
+      alignItems: "center",
+      padding: "0 13px",
+      borderRadius: 16,
+      color: active ? "#ecfeff" : "#cbd5e1",
+      textDecoration: "none",
+      fontWeight: 800,
+      border: active
+        ? "1px solid rgba(14, 165, 233, 0.42)"
+        : "1px solid transparent",
+      background: active
+        ? "linear-gradient(135deg, rgba(14, 165, 233, 0.24), rgba(20, 184, 166, 0.16))"
+        : "rgba(15, 23, 42, 0.35)",
+    }) as const,
   sidebarFooter: {
     display: "grid",
     gap: 8,
@@ -1743,6 +1791,12 @@ const styles = {
     display: "grid",
     gridTemplateColumns:
       "minmax(320px, 0.95fr) minmax(420px, 1.2fr) minmax(320px, 0.82fr)",
+    gap: 18,
+    alignItems: "start",
+  } as const,
+  focusGrid: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1.1fr) minmax(360px, 0.9fr)",
     gap: 18,
     alignItems: "start",
   } as const,
@@ -1977,6 +2031,16 @@ const styles = {
     flexWrap: "wrap" as const,
     marginTop: 8,
   },
+  resourceCard: {
+    minWidth: 220,
+    display: "grid",
+    gap: 5,
+    padding: 14,
+    borderRadius: 16,
+    background: "rgba(2, 6, 23, 0.62)",
+    border: "1px solid rgba(51, 65, 85, 0.82)",
+    color: "#e2e8f0",
+  } as const,
   resourcePill: {
     display: "inline-flex",
     alignItems: "center",

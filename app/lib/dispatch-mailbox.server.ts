@@ -13,6 +13,7 @@ type ImapConfig = {
   mailbox: string;
   limit: number;
   markSeen: boolean;
+  subjectPrefix: string;
 };
 
 type ImapEmail = {
@@ -23,6 +24,7 @@ type ImapEmail = {
 };
 
 let lastAutoPollAt = 0;
+const DEFAULT_ORDER_SUBJECT_PREFIX = "You've Got A New Order: #";
 
 function getMailboxConfig(): ImapConfig | null {
   const host = process.env.DISPATCH_MAILBOX_HOST || "";
@@ -39,6 +41,9 @@ function getMailboxConfig(): ImapConfig | null {
     mailbox: process.env.DISPATCH_MAILBOX_NAME || "INBOX",
     limit: Number(process.env.DISPATCH_MAILBOX_LIMIT || 10),
     markSeen: process.env.DISPATCH_MAILBOX_MARK_SEEN === "true",
+    subjectPrefix:
+      process.env.DISPATCH_MAILBOX_SUBJECT_PREFIX ||
+      DEFAULT_ORDER_SUBJECT_PREFIX,
   };
 }
 
@@ -141,7 +146,9 @@ async function fetchUnreadEmails(config: ImapConfig) {
   await client.connect();
   await client.command(`LOGIN ${escapeImapString(config.user)} ${escapeImapString(config.password)}`);
   await client.command(`SELECT ${escapeImapString(config.mailbox)}`);
-  const searchResponse = await client.command("UID SEARCH UNSEEN");
+  const searchResponse = await client.command(
+    `UID SEARCH UNSEEN SUBJECT ${escapeImapString(config.subjectPrefix)}`,
+  );
   const uids = parseSearchResponse(searchResponse).slice(-config.limit);
 
   for (const uid of uids) {
@@ -173,8 +180,14 @@ export async function pollDispatchMailbox() {
   const emails = await fetchUnreadEmails(config);
   let imported = 0;
   let skipped = 0;
+  let skippedSubject = 0;
 
   for (const email of emails) {
+    if (!email.subject.startsWith(config.subjectPrefix)) {
+      skippedSubject += 1;
+      continue;
+    }
+
     const existing = await getDispatchOrderByMailboxMessageId(email.messageId);
     if (existing) {
       skipped += 1;
@@ -210,7 +223,8 @@ export async function pollDispatchMailbox() {
     configured: true,
     imported,
     skipped,
-    message: `Mailbox poll complete: ${imported} imported, ${skipped} skipped.`,
+    skippedSubject,
+    message: `Mailbox poll complete: ${imported} imported, ${skipped} skipped, ${skippedSubject} ignored by subject.`,
   };
 }
 
