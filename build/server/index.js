@@ -3944,16 +3944,27 @@ function readEmailField(raw, labels) {
   }
   return "";
 }
+function decodeQuotedPrintable(raw) {
+  return raw.replace(/=\r?\n/g, "").replace(
+    /=([0-9A-F]{2})/gi,
+    (_, hex) => String.fromCharCode(parseInt(hex, 16))
+  );
+}
 function normalizeEmailText(raw) {
-  return raw.replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|div|tr|table|h\d)>/gi, "\n").replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&#215;|&times;/gi, "x").replace(/\r/g, "").replace(/[ \t]+/g, " ").replace(/\n\s+/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  return decodeQuotedPrintable(raw).replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|div|tr|table|h\d|td|th|li)>/gi, "\n").replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&#215;|&times;/gi, "x").replace(/&quot;/gi, '"').replace(/&#39;/gi, "'").replace(/\r/g, "").replace(/^\s*=\s*$/gm, "").replace(/\s+=\s*$/gm, "").replace(/[ \t]+/g, " ").replace(/\n\s+/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 function textLines(raw) {
   return normalizeEmailText(raw).split("\n").map((line) => line.trim()).filter(Boolean);
 }
 function parseShopifyCustomer(raw) {
-  var _a2, _b, _c, _d;
+  var _a2, _b;
   const text = normalizeEmailText(raw);
-  return ((_b = (_a2 = text.match(/new order from\s+([^:.\n]+)/i)) == null ? void 0 : _a2[1]) == null ? void 0 : _b.trim()) || ((_d = (_c = text.match(/Shipping address\s+([^\n]+)/i)) == null ? void 0 : _c[1]) == null ? void 0 : _d.trim()) || "";
+  return ((_b = (_a2 = text.match(/new order from\s+([^:.\n]+)/i)) == null ? void 0 : _a2[1]) == null ? void 0 : _b.trim()) || "";
+}
+function isProductHeader(value) {
+  return /^(product|quantity|price|unit|units|price units?|order summary)$/i.test(
+    value.trim()
+  );
 }
 function parseShopifyProduct(raw) {
   var _a2;
@@ -3963,13 +3974,13 @@ function parseShopifyProduct(raw) {
   let material = "";
   if (quantityLineIndex >= 0) {
     const sameLineMaterial = lines[quantityLineIndex].replace(/(?:x|\u00d7)\s*\d+(?:\.\d+)?[\s\S]*$/i, "").trim();
-    if (sameLineMaterial && !/^(quantity|price)$/i.test(sameLineMaterial) && /[a-z]/i.test(sameLineMaterial)) {
+    if (sameLineMaterial && !isProductHeader(sameLineMaterial) && /[a-z]/i.test(sameLineMaterial)) {
       material = sameLineMaterial;
     }
     for (let index = quantityLineIndex - 1; index >= 0; index -= 1) {
       if (material) break;
       const candidate = lines[index];
-      if (/^(product|quantity|price|order summary)$/i.test(candidate) || /^\(#?\d+\)$/i.test(candidate) || /^order\s+#/i.test(candidate)) {
+      if (isProductHeader(candidate) || /^\(#?\d+\)$/i.test(candidate) || /^order\s+#/i.test(candidate)) {
         continue;
       }
       material = candidate;
@@ -3979,7 +3990,7 @@ function parseShopifyProduct(raw) {
   if (!material) {
     const productIndex = lines.findIndex((line) => /^product$/i.test(line));
     material = lines.slice(productIndex >= 0 ? productIndex + 1 : 0).find(
-      (line) => !/^(quantity|price)$/i.test(line) && !/^\(#?\d+\)$/i.test(line) && !/^(subtotal|shipping|tax|total):/i.test(line)
+      (line) => !/^(quantity|price)$/i.test(line) && !isProductHeader(line) && !/^\(#?\d+\)$/i.test(line) && !/^(subtotal|shipping|tax|total):/i.test(line)
     ) || "";
   }
   return { material, quantity };
@@ -3992,12 +4003,13 @@ function parseShopifyShipping(raw) {
   for (const line of lines.slice(start)) {
     if (block.length && /^what happens next\??$/i.test(line)) break;
     if (block.length && /^billing address\b/i.test(line)) break;
-    block.push(line.replace(/^shipping address\s*/i, "").trim());
+    const stripped = line.replace(/^shipping address\s*/i, "").trim();
+    if (stripped) block.push(stripped);
   }
   const cleaned = block.flatMap((line) => line.split(/\s{2,}/)).map((line) => line.trim()).filter(Boolean);
   const contact = cleaned.find((line) => /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(line)) || "";
-  const customer = cleaned.find((line) => !/\d/.test(line) && !/address/i.test(line)) || "";
-  const address = cleaned.find((line) => /\d/.test(line) && !/^\d{7,}$/.test(line) && !/@/.test(line)) || "";
+  const customer = cleaned.find((line) => !/\d/.test(line) && !/address/i.test(line) && !/,/.test(line)) || "";
+  const address = cleaned.find((line) => /\d/.test(line) && !/^\d{7,}$/.test(line) && !/@/.test(line) && !/\b[A-Z]{2}\s+\d{5}/i.test(line)) || "";
   const city = cleaned.find((line) => /,\s*[A-Z]{2}\s+\d{5}/i.test(line)) || cleaned.find((line) => /\b[A-Z]{2}\s+\d{5}/i.test(line)) || "";
   return { customer, address, city, contact };
 }
@@ -4005,6 +4017,9 @@ function parseShopifyDeliveryNotes(raw) {
   var _a2, _b;
   const text = normalizeEmailText(raw);
   return ((_b = (_a2 = text.match(/Please describe where you would like your order dropped off:\s*([\s\S]+?)(?:Billing address|Shipping address|What Happens Next\?|$)/i)) == null ? void 0 : _a2[1]) == null ? void 0 : _b.trim()) || "";
+}
+function isBadParsedValue(value) {
+  return !value || /^=?\s*$/.test(value) || /^(price|price units?|unit|units)$/i.test(value);
 }
 function parseDispatchEmail(raw) {
   var _a2, _b, _c;
@@ -4023,10 +4038,12 @@ function parseDispatchEmail(raw) {
     "Ship To"
   ]) || shipping.address;
   const city = readEmailField(normalized, ["City", "City/State", "Location"]) || shipping.city;
-  const material = readEmailField(normalized, ["Material", "Product", "Item"]) || shopifyProduct.material;
-  const quantity = readEmailField(normalized, ["Quantity", "Qty", "Amount"]) || shopifyProduct.quantity;
+  const labelledMaterial = readEmailField(normalized, ["Material", "Product", "Item"]);
+  const labelledQuantity = readEmailField(normalized, ["Quantity", "Qty", "Amount"]);
+  const material = isBadParsedValue(labelledMaterial) ? shopifyProduct.material : labelledMaterial;
+  const quantity = isBadParsedValue(labelledQuantity) ? shopifyProduct.quantity : labelledQuantity;
   const unit = readEmailField(normalized, ["Unit", "UOM"]) || "UnitS";
-  const requestedWindow = readEmailField(normalized, ["Requested Window", "Delivery Window", "Requested", "Date", "When"]) || ((_c = (_b = normalized.match(/Delivery or Pickup Preference Date:\s*([^\n]+)/i)) == null ? void 0 : _b[1]) == null ? void 0 : _c.trim()) || "Needs scheduling";
+  const requestedWindow = ((_c = (_b = normalized.match(/Delivery or Pickup Preference Date:\s*([^\n]+)/i)) == null ? void 0 : _b[1]) == null ? void 0 : _c.trim()) || readEmailField(normalized, ["Requested Window", "Delivery Window", "Requested Date", "Date", "When"]) || "Needs scheduling";
   const truckPreference = readEmailField(normalized, ["Truck", "Truck Preference", "Equipment"]);
   const notes = readEmailField(normalized, ["Notes", "Instructions", "Special Instructions"]) || shopifyNotes;
   return {
