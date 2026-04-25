@@ -1191,6 +1191,22 @@ export async function updateDispatchTruck(
   return normalizeTruck(data);
 }
 
+export async function deleteDispatchTruck(id: string) {
+  const { data, error } = await supabaseAdmin
+    .from(TRUCKS_TABLE)
+    .update({ is_active: false })
+    .eq("id", id)
+    .select("id");
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+
+  if (!data?.length) {
+    throw new Error(`No dispatch truck found for ${id}`);
+  }
+}
+
 export async function createDispatchEmployee(input: {
   name: string;
   role: DispatchEmployee["role"];
@@ -1247,6 +1263,22 @@ export async function updateDispatchEmployee(
   }
 
   return normalizeEmployee(data);
+}
+
+export async function deleteDispatchEmployee(id: string) {
+  const { data, error } = await supabaseAdmin
+    .from(EMPLOYEES_TABLE)
+    .update({ is_active: false })
+    .eq("id", id)
+    .select("id");
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+
+  if (!data?.length) {
+    throw new Error(`No dispatch employee found for ${id}`);
+  }
 }
 
 export async function updateDispatchOrder(

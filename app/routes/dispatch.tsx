@@ -11,7 +11,9 @@ import {
   createDispatchRoute,
   createDispatchTruck,
   createDispatchOrder,
+  deleteDispatchEmployee,
   deleteDispatchOrder,
+  deleteDispatchTruck,
   detectTimePreference,
   ensureSeedDispatchEmployees,
   ensureSeedDispatchOrders,
@@ -542,6 +544,32 @@ export async function action({ request }: any) {
       });
     }
 
+    if (intent === "delete-truck") {
+      const truckId = String(form.get("truckId") || "").trim();
+      if (!truckId) {
+        const dispatchState = await loadDispatchState();
+        return data(
+          {
+            allowed: true,
+            ok: false,
+            message: "Truck is required.",
+            ...dispatchState,
+          },
+          { status: 400 },
+        );
+      }
+
+      await deleteDispatchTruck(truckId);
+      const dispatchState = await loadDispatchState();
+
+      return data({
+        allowed: true,
+        ok: true,
+        message: "Deleted truck from active fleet.",
+        ...dispatchState,
+      });
+    }
+
     if (intent === "create-employee") {
       const name = String(form.get("name") || "").trim();
       const rawRole = String(form.get("role") || "driver").trim();
@@ -611,6 +639,32 @@ export async function action({ request }: any) {
         allowed: true,
         ok: true,
         message: `Updated ${updated.name}.`,
+        ...dispatchState,
+      });
+    }
+
+    if (intent === "delete-employee") {
+      const employeeId = String(form.get("employeeId") || "").trim();
+      if (!employeeId) {
+        const dispatchState = await loadDispatchState();
+        return data(
+          {
+            allowed: true,
+            ok: false,
+            message: "Employee is required.",
+            ...dispatchState,
+          },
+          { status: 400 },
+        );
+      }
+
+      await deleteDispatchEmployee(employeeId);
+      const dispatchState = await loadDispatchState();
+
+      return data({
+        allowed: true,
+        ok: true,
+        message: "Deleted employee from active roster.",
         ...dispatchState,
       });
     }
@@ -1281,8 +1335,20 @@ export default function DispatchPage() {
               </div>
               <div style={styles.resourceList}>
                 {trucks.map((truck) => (
-                  <Form key={truck.id} method="post" style={{ ...styles.resourceCard, gap: 12 }}>
-                    <input type="hidden" name="intent" value="update-truck" />
+                  <Form
+                    key={truck.id}
+                    method="post"
+                    style={{ ...styles.resourceCard, gap: 12 }}
+                    onSubmit={(event) => {
+                      const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+                      if (
+                        submitter?.value === "delete-truck" &&
+                        !window.confirm("Delete this truck from the active fleet? Existing routes and history will remain.")
+                      ) {
+                        event.preventDefault();
+                      }
+                    }}
+                  >
                     <input type="hidden" name="truckId" value={truck.id} />
                     <div style={styles.formGridThree}>
                       <div>
@@ -1307,9 +1373,12 @@ export default function DispatchPage() {
                         <label style={styles.label}>Yards</label>
                         <input name="yards" defaultValue={truck.yards || ""} style={styles.input} />
                       </div>
-                      <div style={{ display: "flex", alignItems: "flex-end" }}>
-                        <button type="submit" style={{ ...styles.secondaryButton, width: "100%" }}>
+                      <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+                        <button type="submit" name="intent" value="update-truck" style={{ ...styles.secondaryButton, width: "100%" }}>
                           Save Truck
+                        </button>
+                        <button type="submit" name="intent" value="delete-truck" style={{ ...styles.dangerButton, width: "100%" }}>
+                          Delete
                         </button>
                       </div>
                     </div>
@@ -1369,8 +1438,20 @@ export default function DispatchPage() {
               </div>
               <div style={styles.resourceList}>
                 {employees.map((employee) => (
-                  <Form key={employee.id} method="post" style={{ ...styles.resourceCard, gap: 12 }}>
-                    <input type="hidden" name="intent" value="update-employee" />
+                  <Form
+                    key={employee.id}
+                    method="post"
+                    style={{ ...styles.resourceCard, gap: 12 }}
+                    onSubmit={(event) => {
+                      const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+                      if (
+                        submitter?.value === "delete-employee" &&
+                        !window.confirm("Delete this employee from the active roster? Existing routes and history will remain.")
+                      ) {
+                        event.preventDefault();
+                      }
+                    }}
+                  >
                     <input type="hidden" name="employeeId" value={employee.id} />
                     <div style={styles.formGridThree}>
                       <div>
@@ -1395,9 +1476,12 @@ export default function DispatchPage() {
                         <label style={styles.label}>Email</label>
                         <input name="email" type="email" defaultValue={employee.email || ""} style={styles.input} />
                       </div>
-                      <div style={{ display: "flex", alignItems: "flex-end" }}>
-                        <button type="submit" style={{ ...styles.secondaryButton, width: "100%" }}>
+                      <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+                        <button type="submit" name="intent" value="update-employee" style={{ ...styles.secondaryButton, width: "100%" }}>
                           Save Employee
+                        </button>
+                        <button type="submit" name="intent" value="delete-employee" style={{ ...styles.dangerButton, width: "100%" }}>
+                          Delete
                         </button>
                       </div>
                     </div>
