@@ -2202,6 +2202,54 @@ export default function DispatchPage() {
                     </div>
                   </div>
 
+                  <div style={styles.assignmentPanel}>
+                    <div>
+                      <div style={styles.detailLabel}>Assigned Route</div>
+                      <div style={styles.detailValue}>
+                        {selectedOrderRoute
+                          ? `${selectedOrderRoute.code} · ${selectedOrderRoute.truck} · ${selectedOrderRoute.driver}`
+                          : "Unassigned"}
+                      </div>
+                    </div>
+
+                    <Form method="post" style={styles.assignmentForm}>
+                      <input type="hidden" name="intent" value="assign-order" />
+                      <input type="hidden" name="orderId" value={selectedOrder.id} />
+                      <div style={styles.formGridTwo}>
+                        <div>
+                          <label style={styles.label}>Assign To Route / Driver</label>
+                          <select
+                            name="routeId"
+                            defaultValue={selectedOrder.assignedRouteId || ""}
+                            style={styles.input}
+                            required
+                          >
+                            <option value="" disabled>
+                              Select route
+                            </option>
+                            {routes.map((route) => (
+                              <option key={route.id} value={route.id}>
+                                {route.code} - {route.truck} - {route.driver}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label style={styles.label}>ETA</label>
+                          <input
+                            name="eta"
+                            defaultValue={selectedOrder.eta || ""}
+                            placeholder="Optional"
+                            style={styles.input}
+                          />
+                        </div>
+                      </div>
+                      <button type="submit" style={styles.primaryButton}>
+                        {selectedOrder.assignedRouteId ? "Reassign Order" : "Assign Order"}
+                      </button>
+                    </Form>
+                  </div>
+
                   <Form method="post" style={styles.stopStatusForm}>
                     <input type="hidden" name="intent" value="update-stop-status" />
                     <input type="hidden" name="orderId" value={selectedOrder.id} />
@@ -2924,6 +2972,19 @@ const styles = {
     borderRadius: 18,
     background: "rgba(2, 6, 23, 0.62)",
     border: "1px solid rgba(51, 65, 85, 0.82)",
+  } as const,
+  assignmentPanel: {
+    display: "grid",
+    gap: 12,
+    padding: 14,
+    borderRadius: 18,
+    background:
+      "linear-gradient(145deg, rgba(14, 165, 233, 0.14), rgba(2, 6, 23, 0.68))",
+    border: "1px solid rgba(56, 189, 248, 0.32)",
+  } as const,
+  assignmentForm: {
+    display: "grid",
+    gap: 12,
   } as const,
   checklistGrid: {
     display: "grid",
