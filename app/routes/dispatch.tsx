@@ -1011,7 +1011,12 @@ export default function DispatchPage() {
     () =>
       dispatchRoutes.map((route) => {
         const routeOrders = orders
-          .filter((order) => order.assignedRouteId === route.id && order.status !== "delivered")
+          .filter(
+            (order) =>
+              order.assignedRouteId === route.id &&
+              order.status !== "delivered" &&
+              order.deliveryStatus !== "delivered",
+          )
           .sort(
             (a, b) =>
               Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999),
@@ -1029,10 +1034,17 @@ export default function DispatchPage() {
     [dispatchRoutes, orders],
   );
 
-  const activeOrders = orders.filter((order) => order.status !== "delivered");
+  const activeOrders = orders.filter(
+    (order) => order.status !== "delivered" && order.deliveryStatus !== "delivered",
+  );
   const inboxOrders = orders.filter((order) => !order.assignedRouteId && order.status === "new");
   const holdOrders = orders.filter((order) => order.status === "hold");
-  const scheduledOrders = orders.filter((order) => order.assignedRouteId && order.status !== "delivered");
+  const scheduledOrders = orders.filter(
+    (order) =>
+      order.assignedRouteId &&
+      order.status !== "delivered" &&
+      order.deliveryStatus !== "delivered",
+  );
   const deliveredOrders = orders.filter((order) => order.status === "delivered" || order.deliveryStatus === "delivered");
   const drivers = employees.filter((employee) => employee.role === "driver");
   const helpers = employees.filter((employee) => employee.role === "helper");
@@ -1860,7 +1872,7 @@ export default function DispatchPage() {
               </div>
 
               <div style={{ display: "grid", gap: 10 }}>
-                {orders.map((order) => {
+                {activeOrders.map((order) => {
                   const active = order.id === selectedOrder?.id;
                   const route = routes.find((entry) => entry.id === order.assignedRouteId);
                   return (

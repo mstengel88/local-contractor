@@ -247,7 +247,12 @@ export default function DispatchDriverPage() {
     () =>
       selectedRoute
         ? orders
-            .filter((order) => order.assignedRouteId === selectedRoute.id)
+            .filter(
+              (order) =>
+                order.assignedRouteId === selectedRoute.id &&
+                order.status !== "delivered" &&
+                order.deliveryStatus !== "delivered",
+            )
             .sort(
               (a, b) =>
                 Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999),
