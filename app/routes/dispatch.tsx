@@ -1119,6 +1119,7 @@ export default function DispatchPage() {
                         <span>{getOrderDisplayNumber(order)}</span>
                         <span>{order.quantity} {order.unit}</span>
                         <span>{order.material}</span>
+                        {order.travelMinutes ? <span>{order.travelMinutes} min RT</span> : null}
                         <span>{route ? route.truck : "Unassigned"}</span>
                       </div>
                     </a>
@@ -1763,6 +1764,7 @@ export default function DispatchPage() {
                         <span>{getOrderDisplayNumber(order)}</span>
                         <span>{order.quantity} {order.unit}</span>
                         <span>{order.material}</span>
+                        {order.travelMinutes ? <span>{order.travelMinutes} min RT</span> : null}
                         {order.timePreference ? <span>{order.timePreference}</span> : null}
                         {order.stopSequence ? <span>Stop {order.stopSequence}</span> : null}
                       </div>
@@ -2003,6 +2005,12 @@ export default function DispatchPage() {
                       <div style={styles.detailLabel}>Time Preference</div>
                       <div style={styles.detailValue}>
                         {selectedOrder.timePreference || "No preference"}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={styles.detailLabel}>Travel Time</div>
+                      <div style={styles.detailValue}>
+                        {selectedOrder.travelSummary || "Not calculated yet"}
                       </div>
                     </div>
                     <div>

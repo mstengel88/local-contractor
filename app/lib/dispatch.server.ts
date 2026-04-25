@@ -1,3 +1,4 @@
+import { getDispatchTravelEstimate } from "./quote-engine.server";
 import { supabaseAdmin } from "./supabase.server";
 
 export type DispatchSource = "email" | "manual";
@@ -29,6 +30,9 @@ export type DispatchOrder = {
   stopSequence?: number | null;
   deliveryStatus?: DispatchDeliveryStatus;
   eta?: string | null;
+  travelMinutes?: number | null;
+  travelMiles?: number | null;
+  travelSummary?: string | null;
   arrivedAt?: string | null;
   departedAt?: string | null;
   deliveredAt?: string | null;
@@ -732,6 +736,15 @@ function normalizeOrder(row: any): DispatchOrder {
         : Number(row.stop_sequence),
     deliveryStatus,
     eta: row.eta || null,
+    travelMinutes:
+      row.travel_minutes === null || row.travel_minutes === undefined
+        ? null
+        : Number(row.travel_minutes),
+    travelMiles:
+      row.travel_miles === null || row.travel_miles === undefined
+        ? null
+        : Number(row.travel_miles),
+    travelSummary: row.travel_summary || null,
     arrivedAt: row.arrived_at || null,
     departedAt: row.departed_at || null,
     deliveredAt: row.delivered_at || null,
@@ -805,6 +818,36 @@ function normalizeEmployee(row: any): DispatchEmployee {
 function formatSupabaseError(error: any) {
   if (!error) return "Unknown storage error";
   return error.message || error.details || error.hint || "Unknown storage error";
+}
+
+function buildDispatchDestinationAddress(address?: string | null, city?: string | null) {
+  return [address, city].map((part) => String(part || "").trim()).filter(Boolean).join(", ");
+}
+
+async function buildDispatchTravelPayload(address?: string | null, city?: string | null) {
+  const destination = buildDispatchDestinationAddress(address, city);
+  if (!destination) {
+    return {
+      travel_minutes: null,
+      travel_miles: null,
+      travel_summary: null,
+    };
+  }
+
+  const estimate = await getDispatchTravelEstimate(destination);
+  if (!estimate || estimate.error) {
+    return {
+      travel_minutes: null,
+      travel_miles: null,
+      travel_summary: estimate?.summary || estimate?.error || null,
+    };
+  }
+
+  return {
+    travel_minutes: estimate.minutes,
+    travel_miles: estimate.miles,
+    travel_summary: estimate.summary,
+  };
 }
 
 export async function ensureSeedDispatchOrders() {
@@ -1035,6 +1078,7 @@ export async function createDispatchOrder(input: {
   mailboxMessageId?: string;
 }) {
   const id = `D-${Date.now().toString().slice(-6)}`;
+  const travelPayload = await buildDispatchTravelPayload(input.address, input.city);
 
   const { data, error } = await supabaseAdmin
     .from(ORDERS_TABLE)
@@ -1060,6 +1104,7 @@ export async function createDispatchOrder(input: {
       assigned_route_id: null,
       stop_sequence: null,
       delivery_status: "not_started",
+      ...travelPayload,
     })
     .select("*")
     .single();
@@ -1426,6 +1471,26 @@ export async function updateDispatchOrderDetails(
   }
   if (patch.notes !== undefined) payload.notes = patch.notes;
   if (patch.status !== undefined) payload.status = patch.status;
+
+  if (patch.address !== undefined || patch.city !== undefined) {
+    const { data: current, error: currentError } = await supabaseAdmin
+      .from(ORDERS_TABLE)
+      .select("address, city")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (currentError) {
+      throw new Error(formatSupabaseError(currentError));
+    }
+
+    Object.assign(
+      payload,
+      await buildDispatchTravelPayload(
+        patch.address !== undefined ? patch.address : current?.address,
+        patch.city !== undefined ? patch.city : current?.city,
+      ),
+    );
+  }
 
   const { data, error } = await supabaseAdmin
     .from(ORDERS_TABLE)

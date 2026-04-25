@@ -89,6 +89,19 @@ type DistanceMatrixResult = {
   error?: string;
 };
 
+export type DispatchTravelEstimate = {
+  originLabel: string;
+  originAddress: string;
+  minutes: number;
+  miles: number;
+  oneWayMinutes: number;
+  oneWayMiles: number;
+  returnMinutes: number;
+  returnMiles: number;
+  summary: string;
+  error?: string;
+};
+
 const TTL_SHORT = 60_000;
 const TTL_LONG = 10 * 60_000;
 
@@ -362,6 +375,83 @@ async function getDistanceMatrix(
 
   distanceMatrixCache.set(cacheKey, setCache(matrix, TTL_LONG));
   return { matrix };
+}
+
+export async function getDispatchTravelEstimate(
+  customerAddress: string,
+): Promise<DispatchTravelEstimate | null> {
+  const destination = customerAddress.trim();
+  if (!destination) {
+    return {
+      originLabel: "",
+      originAddress: "",
+      minutes: 0,
+      miles: 0,
+      oneWayMinutes: 0,
+      oneWayMiles: 0,
+      returnMinutes: 0,
+      returnMiles: 0,
+      summary: "Missing destination address",
+      error: "Missing destination address",
+    };
+  }
+
+  const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!googleMapsApiKey) {
+    return {
+      originLabel: "",
+      originAddress: "",
+      minutes: 0,
+      miles: 0,
+      oneWayMinutes: 0,
+      oneWayMiles: 0,
+      returnMinutes: 0,
+      returnMiles: 0,
+      summary: "Google Maps API key is not configured",
+      error: "Google Maps API key is not configured",
+    };
+  }
+
+  const origin = await getActiveOriginAddress();
+  const result = await getDistanceMatrix(
+    [origin.address, destination],
+    [destination, origin.address],
+    googleMapsApiKey,
+  );
+
+  const oneWay = result.matrix?.[0]?.[0] || null;
+  const returnTrip = result.matrix?.[1]?.[1] || null;
+
+  if (!oneWay || !returnTrip) {
+    const error = result.error || "Unable to calculate travel time";
+    return {
+      originLabel: origin.label,
+      originAddress: origin.address,
+      minutes: 0,
+      miles: 0,
+      oneWayMinutes: 0,
+      oneWayMiles: 0,
+      returnMinutes: 0,
+      returnMiles: 0,
+      summary: error,
+      error,
+    };
+  }
+
+  const minutes = Math.round(oneWay.minutes + returnTrip.minutes);
+  const miles = Math.round((oneWay.miles + returnTrip.miles) * 10) / 10;
+
+  return {
+    originLabel: origin.label,
+    originAddress: origin.address,
+    minutes,
+    miles,
+    oneWayMinutes: Math.round(oneWay.minutes),
+    oneWayMiles: oneWay.miles,
+    returnMinutes: Math.round(returnTrip.minutes),
+    returnMiles: returnTrip.miles,
+    summary: `${minutes} min round trip (${miles} mi)`,
+  };
 }
 
 export async function getQuote(input: QuoteInput): Promise<QuoteResult> {
