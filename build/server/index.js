@@ -4018,6 +4018,11 @@ function normalizeDispatchUnit(value, fallback = "UnitS") {
   if (/units?/i.test(unit)) return "UnitS";
   return unit;
 }
+function parseQuantityFromEmail(raw) {
+  var _a2, _b;
+  const normalized = normalizeEmailText(raw);
+  return ((_a2 = normalized.match(/(?:^|\s)(?:x|\u00d7)\s*(\d+(?:\.\d+)?)(?:\s|$)/i)) == null ? void 0 : _a2[1]) || ((_b = normalized.match(/\bQuantity\b[\s:]+(\d+(?:\.\d+)?)/i)) == null ? void 0 : _b[1]) || "";
+}
 function parseShopifyProduct(raw) {
   var _a2;
   const lines = textLines(raw);
@@ -4056,6 +4061,9 @@ function parseShopifyProduct(raw) {
     const materialIndex = lines.findIndex((line) => line.includes(material));
     const nearbyLines = materialIndex >= 0 ? lines.slice(materialIndex + 1, Math.min(lines.length, materialIndex + 8)) : lines;
     parsedQuantity = nearbyLines.map((line) => cleanQuantityValue(line)).find(Boolean) || "";
+  }
+  if (!parsedQuantity) {
+    parsedQuantity = parseQuantityFromEmail(raw);
   }
   return { material, quantity: parsedQuantity };
 }
@@ -4332,6 +4340,13 @@ const TRUCKS_TABLE = "dispatch_trucks";
 const EMPLOYEES_TABLE = "dispatch_employees";
 function normalizeOrder(row) {
   const deliveryStatus = row.delivery_status === "en_route" || row.delivery_status === "arrived" || row.delivery_status === "delivered" || row.delivery_status === "issue" ? row.delivery_status : "not_started";
+  const requestedWindow = String(row.requested_window || "");
+  const notes = String(row.notes || "");
+  const rawEmail = row.raw_email || null;
+  const derivedQuantity = String(row.quantity || "") || (rawEmail ? parseQuantityFromEmail(String(rawEmail)) : "");
+  const derivedTimePreference = row.time_preference || detectTimePreference(`${requestedWindow}
+${notes}
+${rawEmail || ""}`) || null;
   return {
     id: String(row.id),
     orderNumber: row.order_number || null,
@@ -4341,12 +4356,12 @@ function normalizeOrder(row) {
     address: String(row.address || ""),
     city: String(row.city || ""),
     material: String(row.material || ""),
-    quantity: String(row.quantity || ""),
+    quantity: derivedQuantity,
     unit: String(row.unit || ""),
-    requestedWindow: String(row.requested_window || ""),
-    timePreference: row.time_preference || null,
+    requestedWindow,
+    timePreference: derivedTimePreference,
     truckPreference: row.truck_preference || null,
-    notes: String(row.notes || ""),
+    notes,
     status: row.status === "scheduled" || row.status === "hold" ? row.status : "new",
     assignedRouteId: row.assigned_route_id || null,
     stopSequence: row.stop_sequence === null || row.stop_sequence === void 0 ? null : Number(row.stop_sequence),
@@ -4358,7 +4373,7 @@ function normalizeOrder(row) {
     proofName: row.proof_name || null,
     proofNotes: row.proof_notes || null,
     emailSubject: row.email_subject || null,
-    rawEmail: row.raw_email || null,
+    rawEmail,
     mailboxMessageId: row.mailbox_message_id || null,
     signatureName: row.signature_name || null,
     signatureData: row.signature_data || null,

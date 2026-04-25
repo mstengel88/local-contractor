@@ -188,6 +188,15 @@ function normalizeDispatchUnit(value: string, fallback = "UnitS") {
   return unit;
 }
 
+function parseQuantityFromEmail(raw: string) {
+  const normalized = normalizeEmailText(raw);
+  return (
+    normalized.match(/(?:^|\s)(?:x|\u00d7)\s*(\d+(?:\.\d+)?)(?:\s|$)/i)?.[1] ||
+    normalized.match(/\bQuantity\b[\s:]+(\d+(?:\.\d+)?)/i)?.[1] ||
+    ""
+  );
+}
+
 function parseShopifyProduct(raw: string) {
   const lines = textLines(raw);
   const quantityLineIndex = lines.findIndex((line, index) => {
@@ -256,6 +265,10 @@ function parseShopifyProduct(raw: string) {
       nearbyLines
         .map((line) => cleanQuantityValue(line))
         .find(Boolean) || "";
+  }
+
+  if (!parsedQuantity) {
+    parsedQuantity = parseQuantityFromEmail(raw);
   }
 
   return { material, quantity: parsedQuantity };
@@ -613,6 +626,16 @@ function normalizeOrder(row: any): DispatchOrder {
     row.delivery_status === "issue"
       ? row.delivery_status
       : "not_started";
+  const requestedWindow = String(row.requested_window || "");
+  const notes = String(row.notes || "");
+  const rawEmail = row.raw_email || null;
+  const derivedQuantity =
+    String(row.quantity || "") ||
+    (rawEmail ? parseQuantityFromEmail(String(rawEmail)) : "");
+  const derivedTimePreference =
+    row.time_preference ||
+    detectTimePreference(`${requestedWindow}\n${notes}\n${rawEmail || ""}`) ||
+    null;
 
   return {
     id: String(row.id),
@@ -623,12 +646,12 @@ function normalizeOrder(row: any): DispatchOrder {
     address: String(row.address || ""),
     city: String(row.city || ""),
     material: String(row.material || ""),
-    quantity: String(row.quantity || ""),
+    quantity: derivedQuantity,
     unit: String(row.unit || ""),
-    requestedWindow: String(row.requested_window || ""),
-    timePreference: row.time_preference || null,
+    requestedWindow,
+    timePreference: derivedTimePreference,
     truckPreference: row.truck_preference || null,
-    notes: String(row.notes || ""),
+    notes,
     status:
       row.status === "scheduled" || row.status === "hold" ? row.status : "new",
     assignedRouteId: row.assigned_route_id || null,
@@ -644,7 +667,7 @@ function normalizeOrder(row: any): DispatchOrder {
     proofName: row.proof_name || null,
     proofNotes: row.proof_notes || null,
     emailSubject: row.email_subject || null,
-    rawEmail: row.raw_email || null,
+    rawEmail,
     mailboxMessageId: row.mailbox_message_id || null,
     signatureName: row.signature_name || null,
     signatureData: row.signature_data || null,
