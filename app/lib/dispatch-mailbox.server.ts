@@ -23,6 +23,12 @@ type ImapEmail = {
   raw: string;
 };
 
+type SkipReason = {
+  uid: string;
+  subject: string;
+  reason: string;
+};
+
 let lastAutoPollAt = 0;
 const DEFAULT_ORDER_SUBJECT_PREFIX = "You've Got A New Order: #";
 
@@ -139,6 +145,15 @@ function parseFetchResponse(uid: string, response: string): ImapEmail | null {
   };
 }
 
+function summarizeSkipReasons(skipReasons: SkipReason[]) {
+  const counts = skipReasons.reduce<Record<string, number>>((summary, item) => {
+    summary[item.reason] = (summary[item.reason] || 0) + 1;
+    return summary;
+  }, {});
+
+  return Object.entries(counts).map(([reason, count]) => `${count} ${reason}`);
+}
+
 async function fetchUnreadEmails(config: ImapConfig) {
   const client = new SimpleImapClient(config);
   const emails: ImapEmail[] = [];
@@ -173,30 +188,47 @@ export async function pollDispatchMailbox() {
       configured: false,
       imported: 0,
       skipped: 0,
+      skipReasons: [],
+      skipSummary: [],
       message: "Mailbox polling is not configured yet.",
     };
   }
 
   const emails = await fetchUnreadEmails(config);
   let imported = 0;
-  let skipped = 0;
-  let skippedSubject = 0;
+  const skipReasons: SkipReason[] = [];
 
   for (const email of emails) {
     if (!email.subject.startsWith(config.subjectPrefix)) {
-      skippedSubject += 1;
+      skipReasons.push({
+        uid: email.uid,
+        subject: email.subject || "(No subject)",
+        reason: `ignored because subject does not start with "${config.subjectPrefix}"`,
+      });
       continue;
     }
 
     const existing = await getDispatchOrderByMailboxMessageId(email.messageId);
     if (existing) {
-      skipped += 1;
+      skipReasons.push({
+        uid: email.uid,
+        subject: email.subject || "(No subject)",
+        reason: "skipped because it was already imported",
+      });
       continue;
     }
 
     const parsed = parseDispatchEmail(email.raw);
     if (!parsed.address || !parsed.material) {
-      skipped += 1;
+      const missing = [
+        !parsed.address ? "address" : "",
+        !parsed.material ? "material" : "",
+      ].filter(Boolean);
+      skipReasons.push({
+        uid: email.uid,
+        subject: email.subject || "(No subject)",
+        reason: `skipped because it is missing ${missing.join(" and ")}`,
+      });
       continue;
     }
 
@@ -219,12 +251,17 @@ export async function pollDispatchMailbox() {
     imported += 1;
   }
 
+  const skipSummary = summarizeSkipReasons(skipReasons);
+
   return {
     configured: true,
     imported,
-    skipped,
-    skippedSubject,
-    message: `Mailbox poll complete: ${imported} imported, ${skipped} skipped, ${skippedSubject} ignored by subject.`,
+    skipped: skipReasons.length,
+    skipReasons,
+    skipSummary,
+    message: `Mailbox poll complete: ${imported} imported, ${skipReasons.length} skipped${
+      skipSummary.length ? ` (${skipSummary.join("; ")})` : ""
+    }.`,
   };
 }
 

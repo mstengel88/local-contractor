@@ -802,6 +802,22 @@ export default function DispatchPage() {
         {mailboxStatus ? (
           <div style={mailboxStatus.configured ? styles.statusOk : styles.statusWarn}>
             {mailboxStatus.message}
+            {mailboxStatus.skipReasons?.length ? (
+              <div style={styles.skipReasonList}>
+                {mailboxStatus.skipReasons.slice(0, 5).map((item: any) => (
+                  <div key={`${item.uid}-${item.reason}`} style={styles.skipReasonItem}>
+                    <strong>{item.subject}</strong>
+                    <span>{item.reason}</span>
+                  </div>
+                ))}
+                {mailboxStatus.skipReasons.length > 5 ? (
+                  <div style={styles.skipReasonItem}>
+                    <strong>More skipped emails</strong>
+                    <span>{mailboxStatus.skipReasons.length - 5} additional skipped emails not shown.</span>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -2293,6 +2309,22 @@ const styles = {
     border: "1px solid rgba(248, 113, 113, 0.5)",
     color: "#fee2e2",
     fontWeight: 700,
+  } as const,
+  skipReasonList: {
+    display: "grid",
+    gap: 8,
+    marginTop: 12,
+  } as const,
+  skipReasonItem: {
+    display: "grid",
+    gap: 3,
+    padding: "10px 12px",
+    borderRadius: 12,
+    background: "rgba(2, 6, 23, 0.28)",
+    border: "1px solid rgba(255, 255, 255, 0.12)",
+    color: "inherit",
+    fontSize: 13,
+    lineHeight: 1.35,
   } as const,
   badge: (status: DispatchOrder["status"]) => {
     const palette =
