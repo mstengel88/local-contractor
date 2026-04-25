@@ -1,5 +1,6 @@
 create table if not exists public.dispatch_orders (
   id text primary key,
+  order_number text,
   source text not null check (source in ('email', 'manual')),
   customer text not null default '',
   contact text not null default '',
@@ -36,6 +37,7 @@ create table if not exists public.dispatch_orders (
 );
 
 alter table public.dispatch_orders
+  add column if not exists order_number text,
   add column if not exists stop_sequence integer,
   add column if not exists delivery_status text not null default 'not_started',
   add column if not exists eta text,
@@ -79,6 +81,9 @@ create table if not exists public.dispatch_employees (
 
 create index if not exists dispatch_orders_status_idx
   on public.dispatch_orders (status, created_at desc);
+
+create index if not exists dispatch_orders_order_number_idx
+  on public.dispatch_orders (order_number);
 
 create index if not exists dispatch_orders_assigned_route_idx
   on public.dispatch_orders (assigned_route_id);

@@ -234,6 +234,7 @@ export async function pollDispatchMailbox() {
 
     await createDispatchOrder({
       source: "email",
+      orderNumber: parsed.orderNumber,
       customer: parsed.customer,
       contact: parsed.contact,
       address: parsed.address,

@@ -55,6 +55,10 @@ function getDeliveryStatusColor(status?: DispatchOrder["deliveryStatus"]) {
   return "#64748b";
 }
 
+function getOrderDisplayNumber(order: DispatchOrder) {
+  return order.orderNumber ? `#${order.orderNumber}` : order.id;
+}
+
 function buildChecklistJson(form: FormData) {
   return JSON.stringify({
     siteSafe: form.get("siteSafe") === "on",
@@ -254,6 +258,7 @@ export async function action({ request }: any) {
 
       const created = await createDispatchOrder({
         source: "manual",
+        orderNumber: String(form.get("orderNumber") || "").trim(),
         customer,
         contact: String(form.get("contact") || "").trim(),
         address,
@@ -311,6 +316,7 @@ export async function action({ request }: any) {
 
       const created = await createDispatchOrder({
         source: "email",
+        orderNumber: parsed.orderNumber,
         customer: parsed.customer,
         contact: parsed.contact,
         address: parsed.address,
@@ -361,6 +367,7 @@ export async function action({ request }: any) {
       }
 
       const updated = await updateDispatchOrderDetails(orderId, {
+        orderNumber: String(form.get("orderNumber") || "").trim() || null,
         customer,
         contact: String(form.get("contact") || "").trim(),
         address,
@@ -931,7 +938,7 @@ export default function DispatchPage() {
                         <div style={styles.badge(order.status)}>{order.status}</div>
                       </div>
                       <div style={styles.queueDetails}>
-                        <span>{order.id}</span>
+                        <span>{getOrderDisplayNumber(order)}</span>
                         <span>{order.quantity} {order.unit}</span>
                         <span>{order.material}</span>
                         <span>{route ? route.truck : "Unassigned"}</span>
@@ -957,6 +964,22 @@ export default function DispatchPage() {
                   <Form method="post" style={{ display: "grid", gap: 12 }}>
                     <input type="hidden" name="intent" value="update-order" />
                     <input type="hidden" name="orderId" value={selectedOrder.id} />
+
+                    <div style={styles.formGridTwo}>
+                      <div>
+                        <label style={styles.label}>Order Number</label>
+                        <input
+                          name="orderNumber"
+                          defaultValue={selectedOrder.orderNumber || ""}
+                          placeholder="8789"
+                          style={styles.input}
+                        />
+                      </div>
+                      <div>
+                        <label style={styles.label}>Internal Dispatch ID</label>
+                        <input value={selectedOrder.id} readOnly style={{ ...styles.input, opacity: 0.75 }} />
+                      </div>
+                    </div>
 
                     <div style={styles.formGridTwo}>
                       <div>
@@ -1088,6 +1111,10 @@ export default function DispatchPage() {
 
               <Form method="post" style={{ display: "grid", gap: 12 }}>
                 <input type="hidden" name="intent" value="create-order" />
+                <div>
+                  <label style={styles.label}>Order Number</label>
+                  <input name="orderNumber" placeholder="8789" style={styles.input} />
+                </div>
                 <div style={styles.formGridTwo}>
                   <div>
                     <label style={styles.label}>Customer</label>
@@ -1415,7 +1442,7 @@ export default function DispatchPage() {
                       </div>
 
                       <div style={styles.queueDetails}>
-                        <span>{order.id}</span>
+                        <span>{getOrderDisplayNumber(order)}</span>
                         <span>{order.quantity} {order.unit}</span>
                         <span>{order.material}</span>
                         {order.timePreference ? <span>{order.timePreference}</span> : null}
@@ -1622,7 +1649,7 @@ export default function DispatchPage() {
               {selectedOrder ? (
                 <div style={{ display: "grid", gap: 14 }}>
                   <div>
-                    <div style={styles.detailId}>{selectedOrder.id}</div>
+                    <div style={styles.detailId}>{getOrderDisplayNumber(selectedOrder)}</div>
                     <div style={styles.detailTitle}>{selectedOrder.customer}</div>
                     <div style={styles.detailMeta}>{selectedOrder.contact}</div>
                   </div>

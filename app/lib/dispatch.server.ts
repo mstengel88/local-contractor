@@ -11,6 +11,7 @@ export type DispatchDeliveryStatus =
 
 export type DispatchOrder = {
   id: string;
+  orderNumber?: string | null;
   source: DispatchSource;
   customer: string;
   contact: string;
@@ -99,6 +100,21 @@ function parseShopifyCustomer(raw: string) {
   );
 }
 
+function parseShopifyOrderNumber(raw: string, subject = "") {
+  const text = normalizeEmailText(raw);
+  return (
+    subject.match(/new order:\s*#?([A-Z0-9-]+)/i)?.[1]?.trim() ||
+    text.match(/new order:\s*#?([A-Z0-9-]+)/i)?.[1]?.trim() ||
+    text.match(/order\s+#?([A-Z0-9-]+)\s*\(/i)?.[1]?.trim() ||
+    text.match(/\border\s+#?([A-Z0-9-]+)/i)?.[1]?.trim() ||
+    ""
+  );
+}
+
+function cleanOrderNumber(value: string) {
+  return value.match(/#?\s*([A-Z0-9-]+)/i)?.[1]?.trim() || "";
+}
+
 function isProductHeader(value: string) {
   return /^(product|quantity|price|unit|units|price units?|order summary)$/i.test(
     value.trim(),
@@ -118,6 +134,58 @@ function isProductCandidate(value: string) {
     !/^(subtotal|shipping|tax|total|payment method):/i.test(line) &&
     !/^\$/.test(line)
   );
+}
+
+function cleanCityValue(value: string) {
+  return value
+    .replace(/\bUSA\b\.?/gi, "")
+    .replace(/\s*,\s*$/, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function splitStreetAndCity(value: string) {
+  const cleaned = value.trim();
+  const cityStateZipMatch = cleaned.match(
+    /^(.*?),\s*([^,]+,\s*[A-Z]{2}(?:\s+\d{5}(?:-\d{4})?)?)(?:,\s*USA)?$/i,
+  );
+  if (cityStateZipMatch) {
+    return {
+      address: cityStateZipMatch[1].trim(),
+      city: cleanCityValue(cityStateZipMatch[2]),
+    };
+  }
+
+  const stateZipMatch = cleaned.match(
+    /^(.*?)(?:,|\s{2,})\s*([^,\d]+,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?)(?:,\s*USA)?$/i,
+  );
+  if (stateZipMatch) {
+    return {
+      address: stateZipMatch[1].trim(),
+      city: cleanCityValue(stateZipMatch[2]),
+    };
+  }
+
+  return { address: cleaned, city: "" };
+}
+
+function cleanQuantityValue(value: string) {
+  const line = value.trim();
+  return (
+    line.match(/(?:x|\u00d7)\s*(\d+(?:\.\d+)?)/i)?.[1] ||
+    line.match(/^(\d+(?:\.\d+)?)\s*(?:unit|units|ton|tons|yard|yards|gallon|gallons)?\b/i)?.[1] ||
+    ""
+  );
+}
+
+function normalizeDispatchUnit(value: string, fallback = "UnitS") {
+  const unit = value.trim();
+  if (!unit || /^(price|quantity|product|amount)$/i.test(unit)) return fallback;
+  if (/yards?/i.test(unit)) return "YardS";
+  if (/tons?/i.test(unit)) return "TonS";
+  if (/gallons?/i.test(unit)) return "GallonS";
+  if (/units?/i.test(unit)) return "UnitS";
+  return unit;
 }
 
 function parseShopifyProduct(raw: string) {
@@ -177,7 +245,20 @@ function parseShopifyProduct(raw: string) {
         ) || "";
   }
 
-  return { material, quantity };
+  let parsedQuantity = quantity;
+  if (!parsedQuantity && material) {
+    const materialIndex = lines.findIndex((line) => line.includes(material));
+    const nearbyLines =
+      materialIndex >= 0
+        ? lines.slice(materialIndex + 1, Math.min(lines.length, materialIndex + 8))
+        : lines;
+    parsedQuantity =
+      nearbyLines
+        .map((line) => cleanQuantityValue(line))
+        .find(Boolean) || "";
+  }
+
+  return { material, quantity: parsedQuantity };
 }
 
 function parseShopifyShipping(raw: string) {
@@ -199,13 +280,15 @@ function parseShopifyShipping(raw: string) {
     .filter(Boolean);
   const contact = cleaned.find((line) => /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(line)) || "";
   const customer = cleaned.find((line) => !/\d/.test(line) && !/address/i.test(line) && !/,/.test(line)) || "";
-  const address = cleaned.find((line) => /\d/.test(line) && !/^\d{7,}$/.test(line) && !/@/.test(line) && !/\b[A-Z]{2}\s+\d{5}/i.test(line)) || "";
-  const city =
+  const rawAddress = cleaned.find((line) => /\d/.test(line) && !/^\d{7,}$/.test(line) && !/@/.test(line) && !/^\s*[A-Z]{2}\s+\d{5}/i.test(line)) || "";
+  const splitAddress = splitStreetAndCity(rawAddress);
+  const rawCity =
     cleaned.find((line) => /,\s*[A-Z]{2}\s+\d{5}/i.test(line)) ||
     cleaned.find((line) => /\b[A-Z]{2}\s+\d{5}/i.test(line)) ||
     "";
+  const city = splitAddress.city || cleanCityValue(rawCity);
 
-  return { customer, address, city, contact };
+  return { customer, address: splitAddress.address, city, contact };
 }
 
 function parseShopifyDeliveryNotes(raw: string) {
@@ -234,6 +317,10 @@ export function parseDispatchEmail(raw: string) {
   const shopifyProduct = parseShopifyProduct(raw);
   const shopifyNotes = parseShopifyDeliveryNotes(raw);
   const subject = readEmailField(normalized, ["Subject"]);
+  const orderNumber = cleanOrderNumber(
+    readEmailField(normalized, ["Order Number", "Order No"]) ||
+      parseShopifyOrderNumber(raw, subject),
+  );
   const contact =
     readEmailField(normalized, ["Email", "Contact", "Customer Email"]) ||
     shipping.contact ||
@@ -251,12 +338,17 @@ export function parseDispatchEmail(raw: string) {
     "Job Site",
     "Ship To",
   ]) || shipping.address;
-  const city = readEmailField(normalized, ["City", "City/State", "Location"]) || shipping.city;
+  const rawCity = readEmailField(normalized, ["City", "City/State", "Location"]) || shipping.city;
   const labelledMaterial = readEmailField(normalized, ["Material", "Product", "Item"]);
   const labelledQuantity = readEmailField(normalized, ["Quantity", "Qty", "Amount"]);
   const material = isBadParsedValue(labelledMaterial) ? shopifyProduct.material : labelledMaterial;
-  const quantity = isBadParsedValue(labelledQuantity) ? shopifyProduct.quantity : labelledQuantity;
-  const unit = readEmailField(normalized, ["Unit", "UOM"]) || "UnitS";
+  const quantity = cleanQuantityValue(
+    isBadParsedValue(labelledQuantity) ? shopifyProduct.quantity : labelledQuantity,
+  );
+  const unit = normalizeDispatchUnit(readEmailField(normalized, ["Unit", "UOM"]), "UnitS");
+  const splitAddress = splitStreetAndCity(address);
+  const cleanAddress = splitAddress.address;
+  const city = cleanCityValue(splitAddress.city || rawCity);
   const requestedWindow =
     normalized.match(/Delivery or Pickup Preference Date:\s*([^\n]+)/i)?.[1]?.trim() ||
     readEmailField(normalized, ["Requested Window", "Delivery Window", "Requested Date", "Date", "When"]) ||
@@ -265,13 +357,14 @@ export function parseDispatchEmail(raw: string) {
   const notes =
     readEmailField(normalized, ["Notes", "Instructions", "Special Instructions"]) ||
     shopifyNotes;
-  const timePreference = detectTimePreference(`${requestedWindow}\n${notes}`);
+  const timePreference = detectTimePreference(`${requestedWindow}\n${notes}\n${normalized}`);
 
   return {
     subject,
+    orderNumber,
     customer: customer || "Email Order",
     contact,
-    address,
+    address: cleanAddress,
     city,
     material,
     quantity,
@@ -523,6 +616,7 @@ function normalizeOrder(row: any): DispatchOrder {
 
   return {
     id: String(row.id),
+    orderNumber: row.order_number || null,
     source: row.source === "email" ? "email" : "manual",
     customer: String(row.customer || ""),
     contact: String(row.contact || ""),
@@ -637,6 +731,7 @@ export async function ensureSeedDispatchOrders() {
   const { error: insertError } = await supabaseAdmin.from(ORDERS_TABLE).insert(
     seedDispatchOrders.map((order) => ({
       id: order.id,
+      order_number: order.orderNumber || null,
       source: order.source,
       customer: order.customer,
       contact: order.contact,
@@ -824,6 +919,7 @@ export async function getDispatchEmployees() {
 
 export async function createDispatchOrder(input: {
   source: DispatchSource;
+  orderNumber?: string;
   customer: string;
   contact?: string;
   address: string;
@@ -845,6 +941,7 @@ export async function createDispatchOrder(input: {
     .from(ORDERS_TABLE)
     .insert({
       id,
+      order_number: input.orderNumber || null,
       source: input.source,
       customer: input.customer,
       contact: input.contact || "",
@@ -1055,6 +1152,7 @@ export async function updateDispatchOrder(
 export async function updateDispatchOrderDetails(
   id: string,
   patch: {
+    orderNumber?: string | null;
     customer?: string;
     contact?: string;
     address?: string;
@@ -1071,6 +1169,7 @@ export async function updateDispatchOrderDetails(
 ) {
   const payload: Record<string, unknown> = {};
 
+  if (patch.orderNumber !== undefined) payload.order_number = patch.orderNumber;
   if (patch.customer !== undefined) payload.customer = patch.customer;
   if (patch.contact !== undefined) payload.contact = patch.contact;
   if (patch.address !== undefined) payload.address = patch.address;
