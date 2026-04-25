@@ -46,19 +46,15 @@ import {
 } from "../lib/dispatch-mailbox.server";
 
 function getDeliveryStatusLabel(status?: DispatchOrder["deliveryStatus"]) {
-  if (status === "en_route") return "En route";
-  if (status === "arrived") return "Arrived";
+  if (status === "en_route") return "Enroute";
   if (status === "delivered") return "Delivered";
-  if (status === "issue") return "Issue";
-  return "Not started";
+  return "Dispatched";
 }
 
 function getDeliveryStatusColor(status?: DispatchOrder["deliveryStatus"]) {
   if (status === "delivered") return "#22c55e";
-  if (status === "arrived") return "#38bdf8";
   if (status === "en_route") return "#f97316";
-  if (status === "issue") return "#ef4444";
-  return "#64748b";
+  return "#38bdf8";
 }
 
 function getOrderDisplayNumber(order: DispatchOrder) {
@@ -907,9 +903,8 @@ export async function action({ request }: any) {
       const rawDeliveryStatus = String(form.get("deliveryStatus") || "").trim();
       const deliveryStatus =
         rawDeliveryStatus === "en_route" ||
-        rawDeliveryStatus === "arrived" ||
         rawDeliveryStatus === "delivered" ||
-        rawDeliveryStatus === "issue"
+        rawDeliveryStatus === "not_started"
           ? rawDeliveryStatus
           : "not_started";
 
@@ -923,15 +918,14 @@ export async function action({ request }: any) {
         signatureName: String(form.get("signatureName") || "").trim() || null,
         signatureData: String(form.get("signatureData") || "").trim() || null,
         photoUrls: String(form.get("photoUrls") || "").trim() || null,
-        ticketNumbers: String(form.get("ticketNumbers") || "").trim() || null,
         inspectionStatus: String(form.get("inspectionStatus") || "").trim() || null,
         checklistJson: buildChecklistJson(form),
       };
 
-      if (deliveryStatus === "arrived") patch.arrivedAt = now;
+      if (deliveryStatus === "en_route") patch.departedAt = now;
       if (deliveryStatus === "delivered") {
         patch.status = "delivered";
-        patch.departedAt = now;
+        patch.departedAt = patch.departedAt || now;
         patch.deliveredAt = now;
       }
 
@@ -1033,6 +1027,9 @@ export default function DispatchPage() {
       }),
     [dispatchRoutes, orders],
   );
+  const selectedOrderRoute = selectedOrder?.assignedRouteId
+    ? routes.find((route) => route.id === selectedOrder.assignedRouteId) || null
+    : null;
 
   const activeOrders = orders.filter(
     (order) => order.status !== "delivered" && order.deliveryStatus !== "delivered",
@@ -2191,12 +2188,6 @@ export default function DispatchPage() {
                       </div>
                     </div>
                     <div>
-                      <div style={styles.detailLabel}>Tickets</div>
-                      <div style={styles.detailValue}>
-                        {selectedOrder.ticketNumbers || "Not captured"}
-                      </div>
-                    </div>
-                    <div>
                       <div style={styles.detailLabel}>Inspection</div>
                       <div style={styles.detailValue}>
                         {selectedOrder.inspectionStatus || "Not completed"}
@@ -2222,11 +2213,9 @@ export default function DispatchPage() {
                         defaultValue={selectedOrder.deliveryStatus || "not_started"}
                         style={styles.input}
                       >
-                        <option value="not_started">Not started</option>
-                        <option value="en_route">En route</option>
-                        <option value="arrived">Arrived</option>
+                        <option value="not_started">Dispatched</option>
+                        <option value="en_route">Enroute</option>
                         <option value="delivered">Delivered</option>
-                        <option value="issue">Issue</option>
                       </select>
                     </div>
 
@@ -2243,17 +2232,7 @@ export default function DispatchPage() {
                       <label style={styles.label}>Signature / Authorized Name</label>
                       <input
                         name="signatureName"
-                        defaultValue={selectedOrder.signatureName || ""}
-                        style={styles.input}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={styles.label}>Ticket Numbers</label>
-                      <input
-                        name="ticketNumbers"
-                        defaultValue={selectedOrder.ticketNumbers || ""}
-                        placeholder="Ticket #12345, Scale #7781"
+                        defaultValue={selectedOrder.signatureName || selectedOrderRoute?.driver || ""}
                         style={styles.input}
                       />
                     </div>

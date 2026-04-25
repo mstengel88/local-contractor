@@ -32,19 +32,15 @@ function getDispatchPath(pathname: string) {
 }
 
 function getStatusLabel(status?: DispatchDeliveryStatus) {
-  if (status === "en_route") return "En route";
-  if (status === "arrived") return "Arrived";
+  if (status === "en_route") return "Enroute";
   if (status === "delivered") return "Delivered";
-  if (status === "issue") return "Issue";
-  return "Not started";
+  return "Dispatched";
 }
 
 function getStatusColor(status?: DispatchDeliveryStatus) {
   if (status === "delivered") return "#16a34a";
-  if (status === "arrived") return "#0284c7";
   if (status === "en_route") return "#ea580c";
-  if (status === "issue") return "#dc2626";
-  return "#475569";
+  return "#0284c7";
 }
 
 function getOrderDisplayNumber(order: DispatchOrder) {
@@ -171,9 +167,8 @@ export async function action({ request }: any) {
   const rawStatus = String(form.get("deliveryStatus") || "").trim();
   const deliveryStatus: DispatchDeliveryStatus =
     rawStatus === "en_route" ||
-    rawStatus === "arrived" ||
     rawStatus === "delivered" ||
-    rawStatus === "issue"
+    rawStatus === "not_started"
       ? rawStatus
       : "not_started";
 
@@ -192,19 +187,17 @@ export async function action({ request }: any) {
 
   const now = new Date().toISOString();
   const patch: Parameters<typeof updateDispatchOrder>[1] = {
-    deliveryStatus: rawStatus === "departed" ? "en_route" : deliveryStatus,
+    deliveryStatus,
     proofName: String(form.get("proofName") || "").trim() || null,
     proofNotes: String(form.get("proofNotes") || "").trim() || null,
     signatureName: String(form.get("signatureName") || "").trim() || null,
     signatureData: String(form.get("signatureData") || "").trim() || null,
     photoUrls: String(form.get("photoUrls") || "").trim() || null,
-    ticketNumbers: String(form.get("ticketNumbers") || "").trim() || null,
     inspectionStatus: String(form.get("inspectionStatus") || "").trim() || null,
     checklistJson: buildChecklistJson(form),
   };
 
-  if (deliveryStatus === "arrived") patch.arrivedAt = now;
-  if (rawStatus === "departed") patch.departedAt = now;
+  if (deliveryStatus === "en_route") patch.departedAt = now;
   if (deliveryStatus === "delivered") {
     patch.status = "delivered";
     patch.departedAt = patch.departedAt || now;
@@ -216,10 +209,7 @@ export async function action({ request }: any) {
   return data({
     allowed: true,
     ok: true,
-    message:
-      rawStatus === "departed"
-        ? "Stop marked departed."
-        : `Stop marked ${getStatusLabel(deliveryStatus).toLowerCase()}.`,
+    message: `Stop marked ${getStatusLabel(deliveryStatus).toLowerCase()}.`,
     selectedRouteId: routeId || null,
     selectedOrderId: orderId,
     ...(await loadDriverState()),
@@ -414,11 +404,9 @@ export default function DispatchDriverPage() {
 
                   <div style={styles.statusButtons}>
                     {[
-                      ["en_route", "En Route"],
-                      ["arrived", "Arrived"],
-                      ["departed", "Depart"],
+                      ["not_started", "Dispatched"],
+                      ["en_route", "Enroute"],
                       ["delivered", "Delivered"],
-                      ["issue", "Issue"],
                     ].map(([value, label]) => (
                       <button
                         key={value}
@@ -434,19 +422,10 @@ export default function DispatchDriverPage() {
 
                   <div style={styles.proofGrid}>
                     <div>
-                      <label style={styles.label}>Ticket Number</label>
-                      <input
-                        name="ticketNumbers"
-                        defaultValue={stop.ticketNumbers || ""}
-                        placeholder="Ticket #"
-                        style={styles.input}
-                      />
-                    </div>
-                    <div>
                       <label style={styles.label}>Driver Signature / Name</label>
                       <input
                         name="signatureName"
-                        defaultValue={stop.signatureName || ""}
+                        defaultValue={stop.signatureName || selectedRoute?.driver || ""}
                         placeholder="Driver name"
                         style={styles.input}
                       />

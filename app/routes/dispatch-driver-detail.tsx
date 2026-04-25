@@ -21,19 +21,15 @@ function getDetailPath(url: URL) {
 }
 
 function getStatusLabel(status?: DispatchDeliveryStatus) {
-  if (status === "en_route") return "En route";
-  if (status === "arrived") return "Arrived";
+  if (status === "en_route") return "Enroute";
   if (status === "delivered") return "Delivered";
-  if (status === "issue") return "Issue";
-  return "Not started";
+  return "Dispatched";
 }
 
 function getStatusColor(status?: DispatchDeliveryStatus) {
   if (status === "delivered") return "#16a34a";
-  if (status === "arrived") return "#0284c7";
   if (status === "en_route") return "#ea580c";
-  if (status === "issue") return "#dc2626";
-  return "#475569";
+  return "#0284c7";
 }
 
 function getOrderDisplayNumber(order: DispatchOrder) {
@@ -128,7 +124,6 @@ export default function DispatchDriverDetailPage() {
           <Info label="Travel Time" value={order.travelSummary || "Not calculated"} />
           <Info label="ETA" value={order.eta || "Not set"} />
           <Info label="Stop" value={order.stopSequence ? `Stop ${order.stopSequence}` : "Unassigned"} />
-          <Info label="Tickets" value={order.ticketNumbers || "Not captured"} />
           <Info label="Inspection" value={order.inspectionStatus || "Not completed"} />
           <Info label="Proof Name" value={order.proofName || "Not captured"} />
         </div>
