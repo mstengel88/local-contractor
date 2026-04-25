@@ -12,6 +12,7 @@ import {
   createDispatchTruck,
   createDispatchOrder,
   deleteDispatchOrder,
+  detectTimePreference,
   ensureSeedDispatchEmployees,
   ensureSeedDispatchOrders,
   ensureSeedDispatchRoutes,
@@ -261,6 +262,9 @@ export async function action({ request }: any) {
         quantity: String(form.get("quantity") || "").trim(),
         unit: String(form.get("unit") || "TonS").trim() || "TonS",
         requestedWindow: String(form.get("requestedWindow") || "").trim(),
+        timePreference:
+          String(form.get("timePreference") || "").trim() ||
+          detectTimePreference(String(form.get("notes") || "")),
         truckPreference: String(form.get("truckPreference") || "").trim(),
         notes: String(form.get("notes") || "").trim(),
       });
@@ -315,6 +319,7 @@ export async function action({ request }: any) {
         quantity: parsed.quantity,
         unit: parsed.unit,
         requestedWindow: parsed.requestedWindow,
+        timePreference: parsed.timePreference,
         truckPreference: parsed.truckPreference,
         notes: parsed.notes || "Parsed from order email.",
         emailSubject: parsed.subject,
@@ -365,6 +370,9 @@ export async function action({ request }: any) {
         unit: String(form.get("unit") || "").trim() || "UnitS",
         requestedWindow:
           String(form.get("requestedWindow") || "").trim() || "Needs scheduling",
+        timePreference:
+          String(form.get("timePreference") || "").trim() ||
+          detectTimePreference(String(form.get("notes") || "")),
         truckPreference: String(form.get("truckPreference") || "").trim() || null,
         notes: String(form.get("notes") || "").trim(),
         status,
@@ -987,6 +995,25 @@ export default function DispatchPage() {
                     </select>
                   </div>
                 </div>
+                <div style={styles.formGridTwo}>
+                  <div>
+                    <label style={styles.label}>Requested Window</label>
+                    <input name="requestedWindow" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Time Preference</label>
+                    <select name="timePreference" style={styles.input}>
+                      <option value="">Infer from notes</option>
+                      <option value="Morning">Morning</option>
+                      <option value="Afternoon">Afternoon</option>
+                      <option value="Evening">Evening</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label style={styles.label}>Notes</label>
+                  <textarea name="notes" rows={3} style={{ ...styles.input, resize: "vertical" }} />
+                </div>
                 <button type="submit" style={styles.primaryButton}>Add Order</button>
               </Form>
 
@@ -1068,6 +1095,22 @@ export default function DispatchPage() {
                         />
                       </div>
                       <div>
+                        <label style={styles.label}>Time Preference</label>
+                        <select
+                          name="timePreference"
+                          defaultValue={selectedOrder.timePreference || ""}
+                          style={styles.input}
+                        >
+                          <option value="">Infer from notes</option>
+                          <option value="Morning">Morning</option>
+                          <option value="Afternoon">Afternoon</option>
+                          <option value="Evening">Evening</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={styles.formGridTwo}>
+                      <div>
                         <label style={styles.label}>Status</label>
                         <select name="status" defaultValue={selectedOrder.status} style={styles.input}>
                           <option value="new">New</option>
@@ -1075,15 +1118,14 @@ export default function DispatchPage() {
                           <option value="hold">Hold</option>
                         </select>
                       </div>
-                    </div>
-
-                    <div>
-                      <label style={styles.label}>Truck Preference</label>
-                      <input
-                        name="truckPreference"
-                        defaultValue={selectedOrder.truckPreference || ""}
-                        style={styles.input}
-                      />
+                      <div>
+                        <label style={styles.label}>Truck Preference</label>
+                        <input
+                          name="truckPreference"
+                          defaultValue={selectedOrder.truckPreference || ""}
+                          style={styles.input}
+                        />
+                      </div>
                     </div>
 
                     <div>
@@ -1376,6 +1418,7 @@ export default function DispatchPage() {
                         <span>{order.id}</span>
                         <span>{order.quantity} {order.unit}</span>
                         <span>{order.material}</span>
+                        {order.timePreference ? <span>{order.timePreference}</span> : null}
                         {order.stopSequence ? <span>Stop {order.stopSequence}</span> : null}
                       </div>
 
@@ -1600,6 +1643,12 @@ export default function DispatchPage() {
                     <div>
                       <div style={styles.detailLabel}>Requested</div>
                       <div style={styles.detailValue}>{selectedOrder.requestedWindow}</div>
+                    </div>
+                    <div>
+                      <div style={styles.detailLabel}>Time Preference</div>
+                      <div style={styles.detailValue}>
+                        {selectedOrder.timePreference || "No preference"}
+                      </div>
                     </div>
                     <div>
                       <div style={styles.detailLabel}>Truck Preference</div>

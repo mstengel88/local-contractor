@@ -20,6 +20,7 @@ export type DispatchOrder = {
   quantity: string;
   unit: string;
   requestedWindow: string;
+  timePreference?: string | null;
   truckPreference?: string | null;
   notes: string;
   status: DispatchStatus;
@@ -101,9 +102,28 @@ function isProductHeader(value: string) {
   );
 }
 
+function isProductCandidate(value: string) {
+  const line = value.trim();
+  return (
+    /[a-z]/i.test(line) &&
+    !isProductHeader(line) &&
+    !/^\(#?\d+\)$/i.test(line) &&
+    !/^#?\d+$/.test(line) &&
+    !/^order\s+#/i.test(line) &&
+    !/^(subtotal|shipping|tax|total|payment method):/i.test(line) &&
+    !/^\$/.test(line)
+  );
+}
+
 function parseShopifyProduct(raw: string) {
   const lines = textLines(raw);
-  const quantityLineIndex = lines.findIndex((line) => /(?:x|\u00d7)\s*\d+/i.test(line));
+  const quantityLineIndex = lines.findIndex((line, index) => {
+    if (!/(?:x|\u00d7)\s*\d+/i.test(line)) return false;
+    const window = lines
+      .slice(Math.max(0, index - 4), Math.min(lines.length, index + 3))
+      .join(" ");
+    return /product|price|\(#?\d+\)|subtotal|shipping|tax|total/i.test(window);
+  });
   const quantity =
     quantityLineIndex >= 0
       ? lines[quantityLineIndex].match(/(?:x|\u00d7)\s*(\d+(?:\.\d+)?)/i)?.[1] || ""
@@ -111,13 +131,22 @@ function parseShopifyProduct(raw: string) {
 
   let material = "";
   if (quantityLineIndex >= 0) {
+    const sameLineBeforeQuantity = lines[quantityLineIndex]
+      .split(/(?:x|\u00d7)\s*\d+/i)[0]
+      .trim();
+    const sameLineCandidates = sameLineBeforeQuantity
+      .split(/\s{2,}/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+    material = sameLineCandidates.find(isProductCandidate) || "";
+
     const sameLineMaterial = lines[quantityLineIndex]
       .replace(/(?:x|\u00d7)\s*\d+(?:\.\d+)?[\s\S]*$/i, "")
       .trim();
     if (
+      !material &&
       sameLineMaterial &&
-      !isProductHeader(sameLineMaterial) &&
-      /[a-z]/i.test(sameLineMaterial)
+      isProductCandidate(sameLineMaterial)
     ) {
       material = sameLineMaterial;
     }
@@ -125,15 +154,10 @@ function parseShopifyProduct(raw: string) {
     for (let index = quantityLineIndex - 1; index >= 0; index -= 1) {
       if (material) break;
       const candidate = lines[index];
-      if (
-        isProductHeader(candidate) ||
-        /^\(#?\d+\)$/i.test(candidate) ||
-        /^order\s+#/i.test(candidate)
-      ) {
-        continue;
+      if (isProductCandidate(candidate)) {
+        material = candidate;
+        break;
       }
-      material = candidate;
-      break;
     }
   }
 
@@ -144,10 +168,7 @@ function parseShopifyProduct(raw: string) {
         .slice(productIndex >= 0 ? productIndex + 1 : 0)
         .find(
           (line) =>
-            !/^(quantity|price)$/i.test(line) &&
-            !isProductHeader(line) &&
-            !/^\(#?\d+\)$/i.test(line) &&
-            !/^(subtotal|shipping|tax|total):/i.test(line),
+            isProductCandidate(line),
         ) || "";
   }
 
@@ -192,7 +213,14 @@ function parseShopifyDeliveryNotes(raw: string) {
 }
 
 function isBadParsedValue(value: string) {
-  return !value || /^=?\s*$/.test(value) || /^(price|price units?|unit|units)$/i.test(value);
+  return !value || /^=?\s*$/.test(value) || /^(price|price units?|quantity|unit|units)$/i.test(value);
+}
+
+export function detectTimePreference(text: string) {
+  if (/\bmorning\b|\bam\b|a\.m\./i.test(text)) return "Morning";
+  if (/\bafternoon\b|\bnoon\b|\bpm\b|p\.m\./i.test(text)) return "Afternoon";
+  if (/\bevening\b|\bnight\b/i.test(text)) return "Evening";
+  return "";
 }
 
 export function parseDispatchEmail(raw: string) {
@@ -232,6 +260,7 @@ export function parseDispatchEmail(raw: string) {
   const notes =
     readEmailField(normalized, ["Notes", "Instructions", "Special Instructions"]) ||
     shopifyNotes;
+  const timePreference = detectTimePreference(`${requestedWindow}\n${notes}`);
 
   return {
     subject,
@@ -243,6 +272,7 @@ export function parseDispatchEmail(raw: string) {
     quantity,
     unit,
     requestedWindow,
+    timePreference,
     truckPreference,
     notes,
   };
@@ -497,6 +527,7 @@ function normalizeOrder(row: any): DispatchOrder {
     quantity: String(row.quantity || ""),
     unit: String(row.unit || ""),
     requestedWindow: String(row.requested_window || ""),
+    timePreference: row.time_preference || null,
     truckPreference: row.truck_preference || null,
     notes: String(row.notes || ""),
     status:
@@ -581,6 +612,10 @@ function formatSupabaseError(error: any) {
 }
 
 export async function ensureSeedDispatchOrders() {
+  if (process.env.DISPATCH_SEED_EXAMPLE_ORDERS !== "true") {
+    return;
+  }
+
   const { data, error } = await supabaseAdmin
     .from(ORDERS_TABLE)
     .select("id", { count: "exact", head: false })
@@ -606,6 +641,7 @@ export async function ensureSeedDispatchOrders() {
       quantity: order.quantity,
       unit: order.unit,
       requested_window: order.requestedWindow,
+      time_preference: order.timePreference || null,
       truck_preference: order.truckPreference || null,
       notes: order.notes,
       status: order.status,
@@ -791,6 +827,7 @@ export async function createDispatchOrder(input: {
   quantity?: string;
   unit?: string;
   requestedWindow?: string;
+  timePreference?: string;
   truckPreference?: string;
   notes?: string;
   emailSubject?: string;
@@ -812,6 +849,7 @@ export async function createDispatchOrder(input: {
       quantity: input.quantity || "",
       unit: input.unit || "TonS",
       requested_window: input.requestedWindow || "Needs scheduling",
+      time_preference: input.timePreference || null,
       truck_preference: input.truckPreference || null,
       notes: input.notes || "",
       email_subject: input.emailSubject || null,
@@ -1020,6 +1058,7 @@ export async function updateDispatchOrderDetails(
     quantity?: string;
     unit?: string;
     requestedWindow?: string;
+    timePreference?: string | null;
     truckPreference?: string | null;
     notes?: string;
     status?: DispatchStatus;
@@ -1036,6 +1075,9 @@ export async function updateDispatchOrderDetails(
   if (patch.unit !== undefined) payload.unit = patch.unit;
   if (patch.requestedWindow !== undefined) {
     payload.requested_window = patch.requestedWindow;
+  }
+  if (patch.timePreference !== undefined) {
+    payload.time_preference = patch.timePreference;
   }
   if (patch.truckPreference !== undefined) {
     payload.truck_preference = patch.truckPreference;
@@ -1058,9 +1100,17 @@ export async function updateDispatchOrderDetails(
 }
 
 export async function deleteDispatchOrder(id: string) {
-  const { error } = await supabaseAdmin.from(ORDERS_TABLE).delete().eq("id", id);
+  const { data, error } = await supabaseAdmin
+    .from(ORDERS_TABLE)
+    .delete()
+    .eq("id", id)
+    .select("id");
 
   if (error) {
     throw new Error(formatSupabaseError(error));
+  }
+
+  if (!data?.length) {
+    throw new Error(`No dispatch order found for ${id}`);
   }
 }
