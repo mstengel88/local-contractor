@@ -356,7 +356,9 @@ export async function action({ request }: any) {
       const material = String(form.get("material") || "").trim();
       const rawStatus = String(form.get("status") || "new").trim();
       const status =
-        rawStatus === "scheduled" || rawStatus === "hold" ? rawStatus : "new";
+        rawStatus === "scheduled" || rawStatus === "hold" || rawStatus === "delivered"
+          ? rawStatus
+          : "new";
 
       if (!orderId || !customer || !address || !material) {
         const dispatchState = await loadDispatchState();
@@ -855,6 +857,7 @@ export async function action({ request }: any) {
 
       if (deliveryStatus === "arrived") patch.arrivedAt = now;
       if (deliveryStatus === "delivered") {
+        patch.status = "delivered";
         patch.departedAt = now;
         patch.deliveredAt = now;
       }
@@ -919,7 +922,8 @@ export default function DispatchPage() {
     rawView === "orders" ||
     rawView === "routes" ||
     rawView === "trucks" ||
-    rawView === "employees"
+    rawView === "employees" ||
+    rawView === "delivered"
       ? rawView
       : "dashboard";
   const querySelectedOrderId = searchParams.get("order");
@@ -934,7 +938,7 @@ export default function DispatchPage() {
     () =>
       dispatchRoutes.map((route) => {
         const routeOrders = orders
-          .filter((order) => order.assignedRouteId === route.id)
+          .filter((order) => order.assignedRouteId === route.id && order.status !== "delivered")
           .sort(
             (a, b) =>
               Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999),
@@ -952,10 +956,11 @@ export default function DispatchPage() {
     [dispatchRoutes, orders],
   );
 
+  const activeOrders = orders.filter((order) => order.status !== "delivered");
   const inboxOrders = orders.filter((order) => !order.assignedRouteId && order.status === "new");
   const holdOrders = orders.filter((order) => order.status === "hold");
-  const scheduledOrders = orders.filter((order) => order.assignedRouteId);
-  const deliveredOrders = orders.filter((order) => order.deliveryStatus === "delivered");
+  const scheduledOrders = orders.filter((order) => order.assignedRouteId && order.status !== "delivered");
+  const deliveredOrders = orders.filter((order) => order.status === "delivered" || order.deliveryStatus === "delivered");
   const drivers = employees.filter((employee) => employee.role === "driver");
   const helpers = employees.filter((employee) => employee.role === "helper");
   const dispatchViewHref = (view: string) => `${dispatchHref}?view=${view}`;
@@ -1015,6 +1020,7 @@ export default function DispatchPage() {
             <a href={dispatchViewHref("routes")} style={styles.sideNavLink(activeView === "routes")}>Routes</a>
             <a href={dispatchViewHref("trucks")} style={styles.sideNavLink(activeView === "trucks")}>Trucks</a>
             <a href={dispatchViewHref("employees")} style={styles.sideNavLink(activeView === "employees")}>Employees</a>
+            <a href={dispatchViewHref("delivered")} style={styles.sideNavLink(activeView === "delivered")}>Delivered</a>
           </nav>
 
           <div style={styles.sidebarFooter}>
@@ -1096,11 +1102,11 @@ export default function DispatchPage() {
                   <h2 style={styles.panelTitle}>Orders</h2>
                   <p style={styles.panelSub}>View imported, manual, scheduled, and held dispatch orders.</p>
                 </div>
-                <div style={styles.headerPill}>{orders.length} orders</div>
+                <div style={styles.headerPill}>{activeOrders.length} orders</div>
               </div>
 
               <div style={{ display: "grid", gap: 10 }}>
-                {orders.map((order) => {
+                {activeOrders.map((order) => {
                   const route = routes.find((entry) => entry.id === order.assignedRouteId);
                   return (
                     <a
@@ -1228,6 +1234,7 @@ export default function DispatchPage() {
                           <option value="new">New</option>
                           <option value="scheduled">Scheduled</option>
                           <option value="hold">Hold</option>
+                          <option value="delivered">Delivered</option>
                         </select>
                       </div>
                       <div>
@@ -1369,6 +1376,52 @@ export default function DispatchPage() {
                   Parse Email Into Dispatch Card
                 </button>
               </Form>
+            </div>
+          </div>
+        ) : null}
+
+        {activeView === "delivered" ? (
+          <div style={styles.focusGrid}>
+            <div id="delivered" style={styles.panel}>
+              <div style={styles.panelHeader}>
+                <div>
+                  <h2 style={styles.panelTitle}>Delivered</h2>
+                  <p style={styles.panelSub}>Completed orders that drivers marked delivered.</p>
+                </div>
+                <div style={styles.headerPill}>{deliveredOrders.length} delivered</div>
+              </div>
+
+              <div style={{ display: "grid", gap: 10 }}>
+                {deliveredOrders.length === 0 ? (
+                  <div style={{ color: "#94a3b8" }}>No delivered orders yet.</div>
+                ) : (
+                  deliveredOrders.map((order) => {
+                    const route = routes.find((entry) => entry.id === order.assignedRouteId);
+                    return (
+                      <a
+                        key={order.id}
+                        href={`${dispatchHref}?view=delivered&order=${encodeURIComponent(order.id)}`}
+                        style={{ ...styles.queueCard, textDecoration: "none" }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                          <div>
+                            <div style={styles.queueTitle}>{order.customer}</div>
+                            <div style={styles.queueMeta}>{order.address}, {order.city}</div>
+                          </div>
+                          <div style={styles.badge("delivered")}>delivered</div>
+                        </div>
+                        <div style={styles.queueDetails}>
+                          <span>{getOrderDisplayNumber(order)}</span>
+                          <span>{order.quantity} {order.unit}</span>
+                          <span>{order.material}</span>
+                          {order.deliveredAt ? <span>{new Date(order.deliveredAt).toLocaleString()}</span> : null}
+                          <span>{route ? route.truck || route.code : "No route"}</span>
+                        </div>
+                      </a>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
         ) : null}
@@ -2953,6 +3006,12 @@ const styles = {
             color: "#bbf7d0",
             border: "rgba(34, 197, 94, 0.35)",
             bg: "rgba(34, 197, 94, 0.12)",
+          }
+        : status === "delivered"
+        ? {
+            color: "#bae6fd",
+            border: "rgba(56, 189, 248, 0.35)",
+            bg: "rgba(56, 189, 248, 0.12)",
           }
         : status === "hold"
         ? {

@@ -202,6 +202,7 @@ export async function action({ request }: any) {
   if (deliveryStatus === "arrived") patch.arrivedAt = now;
   if (rawStatus === "departed") patch.departedAt = now;
   if (deliveryStatus === "delivered") {
+    patch.status = "delivered";
     patch.departedAt = patch.departedAt || now;
     patch.deliveredAt = now;
   }
@@ -228,6 +229,9 @@ export default function DispatchDriverPage() {
   const allowed = actionData?.allowed ?? loaderData.allowed;
   const isEmbeddedRoute = location.pathname.startsWith("/app/");
   const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
+  const detailHref = isEmbeddedRoute
+    ? "/app/dispatch/driver/detail"
+    : "/dispatch/driver/detail";
   const dispatchHref = getDispatchPath(location.pathname);
   const logoutHref = `${driverHref}?logout=1`;
   const orders = (actionData?.orders ?? loaderData.orders ?? []) as DispatchOrder[];
@@ -354,6 +358,20 @@ export default function DispatchDriverPage() {
                     <h2 style={styles.stopTitle}>{stop.customer}</h2>
                     <p style={styles.stopAddress}>{stop.address}, {stop.city}</p>
                   </div>
+                  <button
+                    type="button"
+                    style={styles.detailButton}
+                    onClick={() => {
+                      const url = `${detailHref}?order=${encodeURIComponent(stop.id)}`;
+                      window.open(
+                        url,
+                        `dispatch-stop-${stop.id}`,
+                        "width=720,height=860,menubar=no,toolbar=no,location=no,status=no",
+                      );
+                    }}
+                  >
+                    Details
+                  </button>
                   <span
                     style={{
                       ...styles.statusPill,
@@ -628,7 +646,7 @@ const styles = {
   } as const,
   stopTop: {
     display: "grid",
-    gridTemplateColumns: "40px minmax(0, 1fr) auto",
+    gridTemplateColumns: "40px minmax(0, 1fr) auto auto",
     gap: 10,
     alignItems: "center",
   } as const,
@@ -666,6 +684,18 @@ const styles = {
     fontWeight: 900,
     whiteSpace: "nowrap" as const,
   },
+  detailButton: {
+    minHeight: 32,
+    borderRadius: 999,
+    border: "1px solid #bae6fd",
+    background: "#e0f2fe",
+    color: "#075985",
+    fontSize: 12,
+    fontWeight: 900,
+    cursor: "pointer",
+    padding: "0 12px",
+    whiteSpace: "nowrap" as const,
+  } as const,
   stopMeta: {
     display: "flex",
     gap: 8,

@@ -13,7 +13,7 @@ create table if not exists public.dispatch_orders (
   time_preference text,
   truck_preference text,
   notes text not null default '',
-  status text not null default 'new' check (status in ('new', 'scheduled', 'hold')),
+  status text not null default 'new' check (status in ('new', 'scheduled', 'hold', 'delivered')),
   assigned_route_id text,
   stop_sequence integer,
   delivery_status text not null default 'not_started' check (delivery_status in ('not_started', 'en_route', 'arrived', 'delivered', 'issue')),
@@ -62,6 +62,13 @@ alter table public.dispatch_orders
   add column if not exists ticket_numbers text,
   add column if not exists inspection_status text,
   add column if not exists checklist_json text;
+
+alter table public.dispatch_orders
+  drop constraint if exists dispatch_orders_status_check;
+
+alter table public.dispatch_orders
+  add constraint dispatch_orders_status_check
+  check (status in ('new', 'scheduled', 'hold', 'delivered'));
 
 create table if not exists public.dispatch_trucks (
   id text primary key,

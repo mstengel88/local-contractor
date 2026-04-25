@@ -7,6 +7,7 @@ export default [
   route("quote-review", "routes/quote-review.tsx"),
   route("dispatch", "routes/dispatch.tsx"),
   route("dispatch/driver", "routes/dispatch-driver.tsx"),
+  route("dispatch/driver/detail", "routes/dispatch-driver-detail.tsx"),
   route("mobile", "routes/mobile-dashboard.tsx"),
 
   route("auth/login", "routes/auth.login/route.tsx"),
@@ -20,6 +21,7 @@ export default [
     route("quote-review", "routes/app.quote-review.tsx"),
     route("dispatch", "routes/app.dispatch.tsx"),
     route("dispatch/driver", "routes/app.dispatch-driver.tsx"),
+    route("dispatch/driver/detail", "routes/app.dispatch-driver-detail.tsx"),
     route("mobile", "routes/app.mobile.tsx"),
   ]),
 

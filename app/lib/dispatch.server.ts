@@ -2,7 +2,7 @@ import { getDispatchTravelEstimate } from "./quote-engine.server";
 import { supabaseAdmin } from "./supabase.server";
 
 export type DispatchSource = "email" | "manual";
-export type DispatchStatus = "new" | "scheduled" | "hold";
+export type DispatchStatus = "new" | "scheduled" | "hold" | "delivered";
 export type DispatchDeliveryStatus =
   | "not_started"
   | "en_route"
@@ -728,7 +728,9 @@ function normalizeOrder(row: any): DispatchOrder {
     truckPreference: row.truck_preference || null,
     notes,
     status:
-      row.status === "scheduled" || row.status === "hold" ? row.status : "new",
+      row.status === "scheduled" || row.status === "hold" || row.status === "delivered"
+        ? row.status
+        : "new",
     assignedRouteId: row.assigned_route_id || null,
     stopSequence:
       row.stop_sequence === null || row.stop_sequence === undefined
