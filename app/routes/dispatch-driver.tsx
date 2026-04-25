@@ -47,6 +47,16 @@ function getStatusColor(status?: DispatchDeliveryStatus) {
   return "#475569";
 }
 
+function buildChecklistJson(form: FormData) {
+  return JSON.stringify({
+    siteSafe: form.get("siteSafe") === "on",
+    loadMatchesTicket: form.get("loadMatchesTicket") === "on",
+    customerConfirmedPlacement: form.get("customerConfirmedPlacement") === "on",
+    photosTaken: form.get("photosTaken") === "on",
+    customChecklist: String(form.get("customChecklist") || "").trim(),
+  });
+}
+
 async function loadDriverState() {
   try {
     await ensureSeedDispatchTrucks();
@@ -178,14 +188,21 @@ export async function action({ request }: any) {
 
   const now = new Date().toISOString();
   const patch: Parameters<typeof updateDispatchOrder>[1] = {
-    deliveryStatus,
+    deliveryStatus: rawStatus === "departed" ? "en_route" : deliveryStatus,
     proofName: String(form.get("proofName") || "").trim() || null,
     proofNotes: String(form.get("proofNotes") || "").trim() || null,
+    signatureName: String(form.get("signatureName") || "").trim() || null,
+    signatureData: String(form.get("signatureData") || "").trim() || null,
+    photoUrls: String(form.get("photoUrls") || "").trim() || null,
+    ticketNumbers: String(form.get("ticketNumbers") || "").trim() || null,
+    inspectionStatus: String(form.get("inspectionStatus") || "").trim() || null,
+    checklistJson: buildChecklistJson(form),
   };
 
   if (deliveryStatus === "arrived") patch.arrivedAt = now;
+  if (rawStatus === "departed") patch.departedAt = now;
   if (deliveryStatus === "delivered") {
-    patch.departedAt = now;
+    patch.departedAt = patch.departedAt || now;
     patch.deliveredAt = now;
   }
 
@@ -194,7 +211,10 @@ export async function action({ request }: any) {
   return data({
     allowed: true,
     ok: true,
-    message: `Stop marked ${getStatusLabel(deliveryStatus).toLowerCase()}.`,
+    message:
+      rawStatus === "departed"
+        ? "Stop marked departed."
+        : `Stop marked ${getStatusLabel(deliveryStatus).toLowerCase()}.`,
     selectedRouteId: routeId || null,
     selectedOrderId: orderId,
     ...(await loadDriverState()),
@@ -363,6 +383,7 @@ export default function DispatchDriverPage() {
                     {[
                       ["en_route", "En Route"],
                       ["arrived", "Arrived"],
+                      ["departed", "Depart"],
                       ["delivered", "Delivered"],
                       ["issue", "Issue"],
                     ].map(([value, label]) => (
@@ -388,13 +409,93 @@ export default function DispatchDriverPage() {
                       />
                     </div>
                     <div>
-                      <label style={styles.label}>Proof Notes</label>
+                      <label style={styles.label}>Signature Name</label>
                       <input
-                        name="proofNotes"
-                        defaultValue={stop.proofNotes || ""}
+                        name="signatureName"
+                        defaultValue={stop.signatureName || ""}
                         style={styles.input}
                       />
                     </div>
+                  </div>
+
+                  <div style={styles.formGrid}>
+                    <div>
+                      <label style={styles.label}>Ticket Numbers</label>
+                      <input
+                        name="ticketNumbers"
+                        defaultValue={stop.ticketNumbers || ""}
+                        placeholder="Ticket #, scale #"
+                        style={styles.input}
+                      />
+                    </div>
+                    <div>
+                      <label style={styles.label}>Inspection Status</label>
+                      <select
+                        name="inspectionStatus"
+                        defaultValue={stop.inspectionStatus || ""}
+                        style={styles.input}
+                      >
+                        <option value="">Not completed</option>
+                        <option value="Passed">Passed</option>
+                        <option value="Needs review">Needs review</option>
+                        <option value="Blocked">Blocked</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={styles.label}>Photo Links / Ticket Photo References</label>
+                    <textarea
+                      name="photoUrls"
+                      defaultValue={stop.photoUrls || ""}
+                      rows={3}
+                      placeholder="Paste links or file references, one per line"
+                      style={styles.textarea}
+                    />
+                  </div>
+
+                  <div style={styles.checklistGrid}>
+                    <label style={styles.checkboxLabel}>
+                      <input type="checkbox" name="siteSafe" /> Site safe
+                    </label>
+                    <label style={styles.checkboxLabel}>
+                      <input type="checkbox" name="loadMatchesTicket" /> Load matches ticket
+                    </label>
+                    <label style={styles.checkboxLabel}>
+                      <input type="checkbox" name="customerConfirmedPlacement" /> Placement confirmed
+                    </label>
+                    <label style={styles.checkboxLabel}>
+                      <input type="checkbox" name="photosTaken" /> Photos taken
+                    </label>
+                  </div>
+
+                  <div>
+                    <label style={styles.label}>Signature / Checklist Notes</label>
+                    <input
+                      name="signatureData"
+                      defaultValue={stop.signatureData || ""}
+                      placeholder="Typed signature confirmation or device note"
+                      style={styles.input}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={styles.label}>Custom Checklist Notes</label>
+                    <textarea
+                      name="customChecklist"
+                      rows={3}
+                      placeholder="Inspection findings, placement notes, blocked access, etc."
+                      style={styles.textarea}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={styles.label}>Proof Notes</label>
+                    <input
+                      name="proofNotes"
+                      defaultValue={stop.proofNotes || ""}
+                      style={styles.input}
+                    />
                   </div>
                 </Form>
               </article>
@@ -589,7 +690,7 @@ const styles = {
   } as const,
   statusButtons: {
     display: "grid",
-    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+    gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
     gap: 8,
   } as const,
   statusButton: {
@@ -626,6 +727,35 @@ const styles = {
     padding: "10px 11px",
     fontSize: 14,
   },
+  textarea: {
+    width: "100%",
+    boxSizing: "border-box" as const,
+    borderRadius: 8,
+    border: "1px solid #cbd5e1",
+    background: "#ffffff",
+    color: "#0f172a",
+    padding: "10px 11px",
+    fontSize: 14,
+    resize: "vertical" as const,
+  },
+  checklistGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 8,
+  } as const,
+  checkboxLabel: {
+    minHeight: 38,
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "8px 10px",
+    borderRadius: 8,
+    border: "1px solid #cbd5e1",
+    background: "#f8fafc",
+    color: "#334155",
+    fontWeight: 800,
+    fontSize: 12,
+  } as const,
   primaryButton: {
     minHeight: 44,
     borderRadius: 8,

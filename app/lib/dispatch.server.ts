@@ -34,6 +34,7 @@ export type DispatchOrder = {
   proofNotes?: string | null;
   emailSubject?: string | null;
   rawEmail?: string | null;
+  mailboxMessageId?: string | null;
   signatureName?: string | null;
   signatureData?: string | null;
   photoUrls?: string | null;
@@ -43,6 +44,55 @@ export type DispatchOrder = {
   created_at?: string;
   updated_at?: string;
 };
+
+function readEmailField(raw: string, labels: string[]) {
+  for (const label of labels) {
+    const match = raw.match(new RegExp(`^\\s*${label}\\s*:?\\s*(.+)$`, "im"));
+    if (match?.[1]) return match[1].trim();
+  }
+  return "";
+}
+
+export function parseDispatchEmail(raw: string) {
+  const subject = readEmailField(raw, ["Subject"]);
+  const contact =
+    readEmailField(raw, ["Email", "Contact", "Customer Email"]) ||
+    raw.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] ||
+    "";
+  const customer =
+    readEmailField(raw, ["Customer", "Client", "Name", "Company"]) ||
+    subject.replace(/^(order|delivery|quote)\s*[:-]\s*/i, "").trim();
+  const address = readEmailField(raw, [
+    "Address",
+    "Delivery Address",
+    "Jobsite",
+    "Job Site",
+    "Ship To",
+  ]);
+  const city = readEmailField(raw, ["City", "City/State", "Location"]);
+  const material = readEmailField(raw, ["Material", "Product", "Item"]);
+  const quantity = readEmailField(raw, ["Quantity", "Qty", "Amount"]);
+  const unit = readEmailField(raw, ["Unit", "UOM"]) || "TonS";
+  const requestedWindow =
+    readEmailField(raw, ["Requested Window", "Delivery Window", "Requested", "Date", "When"]) ||
+    "Needs scheduling";
+  const truckPreference = readEmailField(raw, ["Truck", "Truck Preference", "Equipment"]);
+  const notes = readEmailField(raw, ["Notes", "Instructions", "Special Instructions"]);
+
+  return {
+    subject,
+    customer: customer || "Email Order",
+    contact,
+    address,
+    city,
+    material,
+    quantity,
+    unit,
+    requestedWindow,
+    truckPreference,
+    notes,
+  };
+}
 
 export type DispatchRoute = {
   id: string;
@@ -311,6 +361,7 @@ function normalizeOrder(row: any): DispatchOrder {
     proofNotes: row.proof_notes || null,
     emailSubject: row.email_subject || null,
     rawEmail: row.raw_email || null,
+    mailboxMessageId: row.mailbox_message_id || null,
     signatureName: row.signature_name || null,
     signatureData: row.signature_data || null,
     photoUrls: row.photo_urls || null,
@@ -576,6 +627,7 @@ export async function createDispatchOrder(input: {
   notes?: string;
   emailSubject?: string;
   rawEmail?: string;
+  mailboxMessageId?: string;
 }) {
   const id = `D-${Date.now().toString().slice(-6)}`;
 
@@ -596,6 +648,7 @@ export async function createDispatchOrder(input: {
       notes: input.notes || "",
       email_subject: input.emailSubject || null,
       raw_email: input.rawEmail || null,
+      mailbox_message_id: input.mailboxMessageId || null,
       status: "new",
       assigned_route_id: null,
       stop_sequence: null,
@@ -739,6 +792,7 @@ export async function updateDispatchOrder(
     proofNotes?: string | null;
     emailSubject?: string | null;
     rawEmail?: string | null;
+    mailboxMessageId?: string | null;
     signatureName?: string | null;
     signatureData?: string | null;
     photoUrls?: string | null;
@@ -765,6 +819,7 @@ export async function updateDispatchOrder(
   if (patch.proofNotes !== undefined) payload.proof_notes = patch.proofNotes;
   if (patch.emailSubject !== undefined) payload.email_subject = patch.emailSubject;
   if (patch.rawEmail !== undefined) payload.raw_email = patch.rawEmail;
+  if (patch.mailboxMessageId !== undefined) payload.mailbox_message_id = patch.mailboxMessageId;
   if (patch.signatureName !== undefined) payload.signature_name = patch.signatureName;
   if (patch.signatureData !== undefined) payload.signature_data = patch.signatureData;
   if (patch.photoUrls !== undefined) payload.photo_urls = patch.photoUrls;
