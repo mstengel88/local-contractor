@@ -53,31 +53,160 @@ function readEmailField(raw: string, labels: string[]) {
   return "";
 }
 
+function normalizeEmailText(raw: string) {
+  return raw
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|tr|table|h\d)>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&#215;|&times;/gi, "x")
+    .replace(/\r/g, "")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n\s+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function textLines(raw: string) {
+  return normalizeEmailText(raw)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function parseShopifyCustomer(raw: string) {
+  const text = normalizeEmailText(raw);
+  return (
+    text.match(/new order from\s+([^:.\n]+)/i)?.[1]?.trim() ||
+    text.match(/Shipping address\s+([^\n]+)/i)?.[1]?.trim() ||
+    ""
+  );
+}
+
+function parseShopifyProduct(raw: string) {
+  const lines = textLines(raw);
+  const quantityLineIndex = lines.findIndex((line) => /(?:x|\u00d7)\s*\d+/i.test(line));
+  const quantity =
+    quantityLineIndex >= 0
+      ? lines[quantityLineIndex].match(/(?:x|\u00d7)\s*(\d+(?:\.\d+)?)/i)?.[1] || ""
+      : "";
+
+  let material = "";
+  if (quantityLineIndex >= 0) {
+    const sameLineMaterial = lines[quantityLineIndex]
+      .replace(/(?:x|\u00d7)\s*\d+(?:\.\d+)?[\s\S]*$/i, "")
+      .trim();
+    if (
+      sameLineMaterial &&
+      !/^(quantity|price)$/i.test(sameLineMaterial) &&
+      /[a-z]/i.test(sameLineMaterial)
+    ) {
+      material = sameLineMaterial;
+    }
+
+    for (let index = quantityLineIndex - 1; index >= 0; index -= 1) {
+      if (material) break;
+      const candidate = lines[index];
+      if (
+        /^(product|quantity|price|order summary)$/i.test(candidate) ||
+        /^\(#?\d+\)$/i.test(candidate) ||
+        /^order\s+#/i.test(candidate)
+      ) {
+        continue;
+      }
+      material = candidate;
+      break;
+    }
+  }
+
+  if (!material) {
+    const productIndex = lines.findIndex((line) => /^product$/i.test(line));
+    material =
+      lines
+        .slice(productIndex >= 0 ? productIndex + 1 : 0)
+        .find(
+          (line) =>
+            !/^(quantity|price)$/i.test(line) &&
+            !/^\(#?\d+\)$/i.test(line) &&
+            !/^(subtotal|shipping|tax|total):/i.test(line),
+        ) || "";
+  }
+
+  return { material, quantity };
+}
+
+function parseShopifyShipping(raw: string) {
+  const lines = textLines(raw);
+  const start = lines.findIndex((line) => /^shipping address\b/i.test(line));
+  if (start < 0) return { customer: "", address: "", city: "", contact: "" };
+
+  const block: string[] = [];
+  for (const line of lines.slice(start)) {
+    if (block.length && /^what happens next\??$/i.test(line)) break;
+    if (block.length && /^billing address\b/i.test(line)) break;
+    block.push(line.replace(/^shipping address\s*/i, "").trim());
+  }
+
+  const cleaned = block
+    .flatMap((line) => line.split(/\s{2,}/))
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const contact = cleaned.find((line) => /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(line)) || "";
+  const customer = cleaned.find((line) => !/\d/.test(line) && !/address/i.test(line)) || "";
+  const address = cleaned.find((line) => /\d/.test(line) && !/^\d{7,}$/.test(line) && !/@/.test(line)) || "";
+  const city =
+    cleaned.find((line) => /,\s*[A-Z]{2}\s+\d{5}/i.test(line)) ||
+    cleaned.find((line) => /\b[A-Z]{2}\s+\d{5}/i.test(line)) ||
+    "";
+
+  return { customer, address, city, contact };
+}
+
+function parseShopifyDeliveryNotes(raw: string) {
+  const text = normalizeEmailText(raw);
+  return (
+    text
+      .match(/Please describe where you would like your order dropped off:\s*([\s\S]+?)(?:Billing address|Shipping address|What Happens Next\?|$)/i)?.[1]
+      ?.trim() || ""
+  );
+}
+
 export function parseDispatchEmail(raw: string) {
-  const subject = readEmailField(raw, ["Subject"]);
+  const normalized = normalizeEmailText(raw);
+  const shipping = parseShopifyShipping(raw);
+  const shopifyProduct = parseShopifyProduct(raw);
+  const shopifyNotes = parseShopifyDeliveryNotes(raw);
+  const subject = readEmailField(normalized, ["Subject"]);
   const contact =
-    readEmailField(raw, ["Email", "Contact", "Customer Email"]) ||
-    raw.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] ||
+    readEmailField(normalized, ["Email", "Contact", "Customer Email"]) ||
+    shipping.contact ||
+    normalized.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] ||
     "";
   const customer =
-    readEmailField(raw, ["Customer", "Client", "Name", "Company"]) ||
+    readEmailField(normalized, ["Customer", "Client", "Name", "Company"]) ||
+    parseShopifyCustomer(raw) ||
+    shipping.customer ||
     subject.replace(/^(order|delivery|quote)\s*[:-]\s*/i, "").trim();
-  const address = readEmailField(raw, [
+  const address = readEmailField(normalized, [
     "Address",
     "Delivery Address",
     "Jobsite",
     "Job Site",
     "Ship To",
-  ]);
-  const city = readEmailField(raw, ["City", "City/State", "Location"]);
-  const material = readEmailField(raw, ["Material", "Product", "Item"]);
-  const quantity = readEmailField(raw, ["Quantity", "Qty", "Amount"]);
-  const unit = readEmailField(raw, ["Unit", "UOM"]) || "TonS";
+  ]) || shipping.address;
+  const city = readEmailField(normalized, ["City", "City/State", "Location"]) || shipping.city;
+  const material = readEmailField(normalized, ["Material", "Product", "Item"]) || shopifyProduct.material;
+  const quantity = readEmailField(normalized, ["Quantity", "Qty", "Amount"]) || shopifyProduct.quantity;
+  const unit = readEmailField(normalized, ["Unit", "UOM"]) || "UnitS";
   const requestedWindow =
-    readEmailField(raw, ["Requested Window", "Delivery Window", "Requested", "Date", "When"]) ||
+    readEmailField(normalized, ["Requested Window", "Delivery Window", "Requested", "Date", "When"]) ||
+    normalized.match(/Delivery or Pickup Preference Date:\s*([^\n]+)/i)?.[1]?.trim() ||
     "Needs scheduling";
-  const truckPreference = readEmailField(raw, ["Truck", "Truck Preference", "Equipment"]);
-  const notes = readEmailField(raw, ["Notes", "Instructions", "Special Instructions"]);
+  const truckPreference = readEmailField(normalized, ["Truck", "Truck Preference", "Equipment"]);
+  const notes =
+    readEmailField(normalized, ["Notes", "Instructions", "Special Instructions"]) ||
+    shopifyNotes;
 
   return {
     subject,
