@@ -62,11 +62,17 @@ create table if not exists public.dispatch_trucks (
   label text not null default '',
   truck_type text not null default '',
   capacity text not null default '',
+  tons text,
+  yards text,
   license_plate text,
   is_active boolean not null default true,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
+
+alter table public.dispatch_trucks
+  add column if not exists tons text,
+  add column if not exists yards text;
 
 create table if not exists public.dispatch_employees (
   id text primary key,

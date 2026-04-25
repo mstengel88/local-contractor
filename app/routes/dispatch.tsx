@@ -34,6 +34,8 @@ import {
   seedDispatchTrucks,
   updateDispatchOrder,
   updateDispatchOrderDetails,
+  updateDispatchEmployee,
+  updateDispatchTruck,
 } from "../lib/dispatch.server";
 import {
   maybeAutoPollDispatchMailbox,
@@ -491,7 +493,8 @@ export async function action({ request }: any) {
       const created = await createDispatchTruck({
         label,
         truckType: String(form.get("truckType") || "").trim(),
-        capacity: String(form.get("capacity") || "").trim(),
+        tons: String(form.get("tons") || "").trim(),
+        yards: String(form.get("yards") || "").trim(),
         licensePlate: String(form.get("licensePlate") || "").trim(),
       });
 
@@ -501,6 +504,40 @@ export async function action({ request }: any) {
         allowed: true,
         ok: true,
         message: `Added ${created.label} to the fleet.`,
+        ...dispatchState,
+      });
+    }
+
+    if (intent === "update-truck") {
+      const truckId = String(form.get("truckId") || "").trim();
+      const label = String(form.get("label") || "").trim();
+      if (!truckId || !label) {
+        const dispatchState = await loadDispatchState();
+        return data(
+          {
+            allowed: true,
+            ok: false,
+            message: "Truck and truck name are required.",
+            ...dispatchState,
+          },
+          { status: 400 },
+        );
+      }
+
+      const updated = await updateDispatchTruck(truckId, {
+        label,
+        truckType: String(form.get("truckType") || "").trim(),
+        tons: String(form.get("tons") || "").trim() || null,
+        yards: String(form.get("yards") || "").trim() || null,
+        licensePlate: String(form.get("licensePlate") || "").trim() || null,
+      });
+
+      const dispatchState = await loadDispatchState();
+
+      return data({
+        allowed: true,
+        ok: true,
+        message: `Updated ${updated.label}.`,
         ...dispatchState,
       });
     }
@@ -537,6 +574,43 @@ export async function action({ request }: any) {
         allowed: true,
         ok: true,
         message: `Added ${created.name} to employees.`,
+        ...dispatchState,
+      });
+    }
+
+    if (intent === "update-employee") {
+      const employeeId = String(form.get("employeeId") || "").trim();
+      const name = String(form.get("name") || "").trim();
+      const rawRole = String(form.get("role") || "driver").trim();
+      const role =
+        rawRole === "helper" || rawRole === "dispatcher" ? rawRole : "driver";
+
+      if (!employeeId || !name) {
+        const dispatchState = await loadDispatchState();
+        return data(
+          {
+            allowed: true,
+            ok: false,
+            message: "Employee and employee name are required.",
+            ...dispatchState,
+          },
+          { status: 400 },
+        );
+      }
+
+      const updated = await updateDispatchEmployee(employeeId, {
+        name,
+        role,
+        phone: String(form.get("phone") || "").trim() || null,
+        email: String(form.get("email") || "").trim() || null,
+      });
+
+      const dispatchState = await loadDispatchState();
+
+      return data({
+        allowed: true,
+        ok: true,
+        message: `Updated ${updated.name}.`,
         ...dispatchState,
       });
     }
@@ -1201,17 +1275,45 @@ export default function DispatchPage() {
               <div style={styles.panelHeader}>
                 <div>
                   <h2 style={styles.panelTitle}>Fleet</h2>
-                  <p style={styles.panelSub}>View active trucks and capacity details.</p>
+                  <p style={styles.panelSub}>View and edit active trucks, ton limits, and yard limits.</p>
                 </div>
                 <div style={styles.headerPill}>{trucks.length} trucks</div>
               </div>
               <div style={styles.resourceList}>
                 {trucks.map((truck) => (
-                  <div key={truck.id} style={styles.resourceCard}>
-                    <strong>{truck.label}</strong>
-                    <span>{truck.truckType || "Truck"} · {truck.capacity || "Capacity not set"}</span>
-                    <span>{truck.licensePlate || "No plate"}</span>
-                  </div>
+                  <Form key={truck.id} method="post" style={{ ...styles.resourceCard, gap: 12 }}>
+                    <input type="hidden" name="intent" value="update-truck" />
+                    <input type="hidden" name="truckId" value={truck.id} />
+                    <div style={styles.formGridThree}>
+                      <div>
+                        <label style={styles.label}>Truck Name</label>
+                        <input name="label" defaultValue={truck.label} style={styles.input} />
+                      </div>
+                      <div>
+                        <label style={styles.label}>Type</label>
+                        <input name="truckType" defaultValue={truck.truckType} style={styles.input} />
+                      </div>
+                      <div>
+                        <label style={styles.label}>Plate</label>
+                        <input name="licensePlate" defaultValue={truck.licensePlate || ""} style={styles.input} />
+                      </div>
+                    </div>
+                    <div style={styles.formGridThree}>
+                      <div>
+                        <label style={styles.label}>Tons</label>
+                        <input name="tons" defaultValue={truck.tons || ""} style={styles.input} />
+                      </div>
+                      <div>
+                        <label style={styles.label}>Yards</label>
+                        <input name="yards" defaultValue={truck.yards || ""} style={styles.input} />
+                      </div>
+                      <div style={{ display: "flex", alignItems: "flex-end" }}>
+                        <button type="submit" style={{ ...styles.secondaryButton, width: "100%" }}>
+                          Save Truck
+                        </button>
+                      </div>
+                    </div>
+                  </Form>
                 ))}
               </div>
             </div>
@@ -1225,7 +1327,7 @@ export default function DispatchPage() {
               </div>
               <Form method="post" style={{ display: "grid", gap: 12 }}>
                 <input type="hidden" name="intent" value="create-truck" />
-                <div style={styles.formGridThree}>
+                <div style={styles.formGridTwo}>
                   <div>
                     <label style={styles.label}>Truck Name</label>
                     <input name="label" placeholder="Truck 22" style={styles.input} />
@@ -1234,20 +1336,22 @@ export default function DispatchPage() {
                     <label style={styles.label}>Type</label>
                     <input name="truckType" placeholder="Tri-axle" style={styles.input} />
                   </div>
-                  <div>
-                    <label style={styles.label}>Capacity</label>
-                    <input name="capacity" placeholder="22 TonS" style={styles.input} />
-                  </div>
                 </div>
-                <div style={styles.formGridTwo}>
+                <div style={styles.formGridThree}>
+                  <div>
+                    <label style={styles.label}>Tons</label>
+                    <input name="tons" placeholder="22" style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Yards</label>
+                    <input name="yards" placeholder="18" style={styles.input} />
+                  </div>
                   <div>
                     <label style={styles.label}>Plate</label>
                     <input name="licensePlate" style={styles.input} />
                   </div>
-                  <div style={{ display: "flex", alignItems: "flex-end" }}>
-                    <button type="submit" style={{ ...styles.primaryButton, width: "100%" }}>Add Truck</button>
-                  </div>
                 </div>
+                <button type="submit" style={{ ...styles.primaryButton, width: "100%" }}>Add Truck</button>
               </Form>
             </div>
           </div>
@@ -1265,11 +1369,39 @@ export default function DispatchPage() {
               </div>
               <div style={styles.resourceList}>
                 {employees.map((employee) => (
-                  <div key={employee.id} style={styles.resourceCard}>
-                    <strong>{employee.name}</strong>
-                    <span>{employee.role}</span>
-                    <span>{employee.phone || "No phone"} · {employee.email || "No email"}</span>
-                  </div>
+                  <Form key={employee.id} method="post" style={{ ...styles.resourceCard, gap: 12 }}>
+                    <input type="hidden" name="intent" value="update-employee" />
+                    <input type="hidden" name="employeeId" value={employee.id} />
+                    <div style={styles.formGridThree}>
+                      <div>
+                        <label style={styles.label}>Name</label>
+                        <input name="name" defaultValue={employee.name} style={styles.input} />
+                      </div>
+                      <div>
+                        <label style={styles.label}>Role</label>
+                        <select name="role" defaultValue={employee.role} style={styles.input}>
+                          <option value="driver">Driver</option>
+                          <option value="helper">Helper</option>
+                          <option value="dispatcher">Dispatcher</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={styles.label}>Phone</label>
+                        <input name="phone" defaultValue={employee.phone || ""} style={styles.input} />
+                      </div>
+                    </div>
+                    <div style={styles.formGridTwo}>
+                      <div>
+                        <label style={styles.label}>Email</label>
+                        <input name="email" type="email" defaultValue={employee.email || ""} style={styles.input} />
+                      </div>
+                      <div style={{ display: "flex", alignItems: "flex-end" }}>
+                        <button type="submit" style={{ ...styles.secondaryButton, width: "100%" }}>
+                          Save Employee
+                        </button>
+                      </div>
+                    </div>
+                  </Form>
                 ))}
               </div>
             </div>

@@ -465,12 +465,22 @@ export type DispatchTruck = {
   id: string;
   label: string;
   truckType: string;
-  capacity: string;
+  tons?: string | null;
+  yards?: string | null;
+  capacity?: string;
   licensePlate?: string | null;
   isActive?: boolean;
   created_at?: string;
   updated_at?: string;
 };
+
+function getLegacyTruckTons(capacity?: string | null) {
+  return String(capacity || "").match(/(\d+(?:\.\d+)?)\s*tons?/i)?.[1] || "";
+}
+
+function getLegacyTruckYards(capacity?: string | null) {
+  return String(capacity || "").match(/(\d+(?:\.\d+)?)\s*yards?/i)?.[1] || "";
+}
 
 export type DispatchEmployee = {
   id: string;
@@ -488,6 +498,8 @@ export const seedDispatchTrucks: DispatchTruck[] = [
     id: "truck-12",
     label: "Truck 12",
     truckType: "Tri-axle",
+    tons: "22",
+    yards: "",
     capacity: "22 TonS",
     licensePlate: "GHS-12",
     isActive: true,
@@ -496,6 +508,8 @@ export const seedDispatchTrucks: DispatchTruck[] = [
     id: "truck-18",
     label: "Truck 18",
     truckType: "Walking floor",
+    tons: "",
+    yards: "25",
     capacity: "25 YardS",
     licensePlate: "GHS-18",
     isActive: true,
@@ -504,6 +518,8 @@ export const seedDispatchTrucks: DispatchTruck[] = [
     id: "truck-05",
     label: "Truck 05",
     truckType: "Tri-axle",
+    tons: "22",
+    yards: "",
     capacity: "22 TonS",
     licensePlate: "GHS-05",
     isActive: true,
@@ -755,11 +771,14 @@ function normalizeRoute(row: any): DispatchRoute {
 }
 
 function normalizeTruck(row: any): DispatchTruck {
+  const capacity = String(row.capacity || "");
   return {
     id: String(row.id),
     label: String(row.label || ""),
     truckType: String(row.truck_type || ""),
-    capacity: String(row.capacity || ""),
+    tons: row.tons === null || row.tons === undefined ? getLegacyTruckTons(capacity) : String(row.tons),
+    yards: row.yards === null || row.yards === undefined ? getLegacyTruckYards(capacity) : String(row.yards),
+    capacity,
     licensePlate: row.license_plate || null,
     isActive: row.is_active !== false,
     created_at: row.created_at,
@@ -887,7 +906,9 @@ export async function ensureSeedDispatchTrucks() {
       id: truck.id,
       label: truck.label,
       truck_type: truck.truckType,
-      capacity: truck.capacity,
+      capacity: truck.capacity || "",
+      tons: truck.tons || null,
+      yards: truck.yards || null,
       license_plate: truck.licensePlate || null,
       is_active: truck.isActive !== false,
     })),
@@ -1110,7 +1131,8 @@ export async function createDispatchRoute(input: {
 export async function createDispatchTruck(input: {
   label: string;
   truckType?: string;
-  capacity?: string;
+  tons?: string;
+  yards?: string;
   licensePlate?: string;
 }) {
   const id = `truck-${Date.now().toString(36)}`;
@@ -1121,10 +1143,44 @@ export async function createDispatchTruck(input: {
       id,
       label: input.label,
       truck_type: input.truckType || "",
-      capacity: input.capacity || "",
+      capacity: "",
+      tons: input.tons || null,
+      yards: input.yards || null,
       license_plate: input.licensePlate || null,
       is_active: true,
     })
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+
+  return normalizeTruck(data);
+}
+
+export async function updateDispatchTruck(
+  id: string,
+  patch: {
+    label?: string;
+    truckType?: string;
+    tons?: string | null;
+    yards?: string | null;
+    licensePlate?: string | null;
+  },
+) {
+  const payload: Record<string, unknown> = {};
+
+  if (patch.label !== undefined) payload.label = patch.label;
+  if (patch.truckType !== undefined) payload.truck_type = patch.truckType;
+  if (patch.tons !== undefined) payload.tons = patch.tons;
+  if (patch.yards !== undefined) payload.yards = patch.yards;
+  if (patch.licensePlate !== undefined) payload.license_plate = patch.licensePlate;
+
+  const { data, error } = await supabaseAdmin
+    .from(TRUCKS_TABLE)
+    .update(payload)
+    .eq("id", id)
     .select("*")
     .single();
 
@@ -1153,6 +1209,36 @@ export async function createDispatchEmployee(input: {
       email: input.email || null,
       is_active: true,
     })
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+
+  return normalizeEmployee(data);
+}
+
+export async function updateDispatchEmployee(
+  id: string,
+  patch: {
+    name?: string;
+    role?: DispatchEmployee["role"];
+    phone?: string | null;
+    email?: string | null;
+  },
+) {
+  const payload: Record<string, unknown> = {};
+
+  if (patch.name !== undefined) payload.name = patch.name;
+  if (patch.role !== undefined) payload.role = patch.role;
+  if (patch.phone !== undefined) payload.phone = patch.phone;
+  if (patch.email !== undefined) payload.email = patch.email;
+
+  const { data, error } = await supabaseAdmin
+    .from(EMPLOYEES_TABLE)
+    .update(payload)
+    .eq("id", id)
     .select("*")
     .single();
 
