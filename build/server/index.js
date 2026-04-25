@@ -3945,13 +3945,14 @@ function readEmailField(raw, labels) {
   return "";
 }
 function decodeQuotedPrintable(raw) {
-  return raw.replace(/=\r?\n/g, "").replace(
-    /=([0-9A-F]{2})/gi,
-    (_, hex) => String.fromCharCode(parseInt(hex, 16))
-  );
+  return raw.replace(/=\r?\n/g, "").replace(/(?:=[0-9A-F]{2})+/gi, (encoded) => {
+    var _a2;
+    const bytes = (_a2 = encoded.match(/=([0-9A-F]{2})/gi)) == null ? void 0 : _a2.map((part) => parseInt(part.slice(1), 16));
+    return bytes ? Buffer.from(bytes).toString("utf8") : encoded;
+  });
 }
 function normalizeEmailText(raw) {
-  return decodeQuotedPrintable(raw).replace(/<style[\s\S]*?<\/style>/gi, "\n").replace(/<script[\s\S]*?<\/script>/gi, "\n").replace(/<head[\s\S]*?<\/head>/gi, "\n").replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|div|tr|table|h\d|td|th|li)>/gi, "\n").replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&#215;|&times;/gi, "x").replace(/&quot;/gi, '"').replace(/&#39;/gi, "'").replace(/\r/g, "").replace(/^\s*=\s*$/gm, "").replace(/\s+=\s*$/gm, "").replace(/[ \t]+/g, " ").replace(/\n\s+/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  return decodeQuotedPrintable(raw).replace(/<style[\s\S]*?<\/style>/gi, "\n").replace(/<script[\s\S]*?<\/script>/gi, "\n").replace(/<head[\s\S]*?<\/head>/gi, "\n").replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|div|tr|table|h\d|td|th|li)>/gi, "\n").replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&#215;|&#xD7;|&times;/gi, "x").replace(/&quot;/gi, '"').replace(/&#39;/gi, "'").replace(/\r/g, "").replace(/^\s*=\s*$/gm, "").replace(/\s+=\s*$/gm, "").replace(/[ \t]+/g, " ").replace(/\n\s+/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 function textLines(raw) {
   return normalizeEmailText(raw).split("\n").map((line) => line.trim()).filter(Boolean);

@@ -58,9 +58,12 @@ function readEmailField(raw: string, labels: string[]) {
 function decodeQuotedPrintable(raw: string) {
   return raw
     .replace(/=\r?\n/g, "")
-    .replace(/=([0-9A-F]{2})/gi, (_, hex) =>
-      String.fromCharCode(parseInt(hex, 16)),
-    );
+    .replace(/(?:=[0-9A-F]{2})+/gi, (encoded) => {
+      const bytes = encoded
+        .match(/=([0-9A-F]{2})/gi)
+        ?.map((part) => parseInt(part.slice(1), 16));
+      return bytes ? Buffer.from(bytes).toString("utf8") : encoded;
+    });
 }
 
 function normalizeEmailText(raw: string) {
@@ -73,7 +76,7 @@ function normalizeEmailText(raw: string) {
     .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;/gi, " ")
     .replace(/&amp;/gi, "&")
-    .replace(/&#215;|&times;/gi, "x")
+    .replace(/&#215;|&#xD7;|&times;/gi, "x")
     .replace(/&quot;/gi, "\"")
     .replace(/&#39;/gi, "'")
     .replace(/\r/g, "")
