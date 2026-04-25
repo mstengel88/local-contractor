@@ -18,6 +18,7 @@ import {
   ensureSeedDispatchRoutes,
   ensureSeedDispatchTrucks,
   getDispatchEmployees,
+  getDispatchUnitForMaterial,
   getNextRouteStopSequence,
   getDispatchOrders,
   getDispatchRoutes,
@@ -265,7 +266,7 @@ export async function action({ request }: any) {
         city: String(form.get("city") || "").trim(),
         material,
         quantity: String(form.get("quantity") || "").trim(),
-        unit: String(form.get("unit") || "TonS").trim() || "TonS",
+        unit: String(form.get("unit") || "Ton").trim() || "Ton",
         requestedWindow: String(form.get("requestedWindow") || "").trim(),
         timePreference:
           String(form.get("timePreference") || "").trim() ||
@@ -323,7 +324,7 @@ export async function action({ request }: any) {
         city: parsed.city,
         material: parsed.material,
         quantity: parsed.quantity,
-        unit: parsed.unit,
+        unit: (await getDispatchUnitForMaterial(parsed.material)) || parsed.unit,
         requestedWindow: parsed.requestedWindow,
         timePreference: parsed.timePreference,
         truckPreference: parsed.truckPreference,
@@ -374,7 +375,7 @@ export async function action({ request }: any) {
         city: String(form.get("city") || "").trim(),
         material,
         quantity: String(form.get("quantity") || "").trim(),
-        unit: String(form.get("unit") || "").trim() || "UnitS",
+        unit: String(form.get("unit") || "").trim() || "Unit",
         requestedWindow:
           String(form.get("requestedWindow") || "").trim() || "Needs scheduling",
         timePreference:
@@ -1147,9 +1148,11 @@ export default function DispatchPage() {
                   <div>
                     <label style={styles.label}>Unit</label>
                     <select name="unit" style={styles.input}>
-                      <option>TonS</option>
-                      <option>YardS</option>
-                      <option>GallonS</option>
+                      <option>Ton</option>
+                      <option>Yard</option>
+                      <option>Gallons</option>
+                      <option>Bags</option>
+                      <option>Unit</option>
                     </select>
                   </div>
                 </div>
@@ -1181,7 +1184,7 @@ export default function DispatchPage() {
                 <textarea
                   name="rawEmail"
                   rows={9}
-                  placeholder={"Subject: You've Got A New Order: #1234\nCustomer: Green Hills Supply\nAddress: 2543 W Applebrook Lane\nCity: Oak Creek, WI\nMaterial: Coarse Torpedo Sand\nQuantity: 12\nUnit: TonS\nRequested Window: Tomorrow 9a - 11a"}
+                  placeholder={"Subject: You've Got A New Order: #1234\nCustomer: Green Hills Supply\nAddress: 2543 W Applebrook Lane\nCity: Oak Creek, WI\nMaterial: Coarse Torpedo Sand\nQuantity: 12\nUnit: Ton\nRequested Window: Tomorrow 9a - 11a"}
                   style={{ ...styles.input, resize: "vertical", minHeight: 180 }}
                 />
                 <button type="submit" style={styles.secondaryButton}>

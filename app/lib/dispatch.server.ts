@@ -181,14 +181,66 @@ function cleanQuantityValue(value: string) {
   );
 }
 
-function normalizeDispatchUnit(value: string, fallback = "UnitS") {
+function normalizeDispatchUnit(value: string, fallback = "Unit") {
   const unit = value.trim();
   if (!unit || /^(price|quantity|product|amount)$/i.test(unit)) return fallback;
-  if (/yards?/i.test(unit)) return "YardS";
-  if (/tons?/i.test(unit)) return "TonS";
-  if (/gallons?/i.test(unit)) return "GallonS";
-  if (/units?/i.test(unit)) return "UnitS";
+  if (/yards?/i.test(unit)) return "Yard";
+  if (/tons?/i.test(unit)) return "Ton";
+  if (/gallons?/i.test(unit)) return "Gallons";
+  if (/bags?/i.test(unit)) return "Bags";
+  if (/units?/i.test(unit)) return "Unit";
   return unit;
+}
+
+function normalizeProductLookupText(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function mapPriceUnitLabelToDispatchUnit(value?: string | null) {
+  const label = String(value || "").trim();
+  if (/per\s+ton\b/i.test(label)) return "Ton";
+  if (/per\s+yard\b/i.test(label)) return "Yard";
+  if (/per\s+bag\b/i.test(label)) return "Bags";
+  if (/per\s+gallon\b/i.test(label)) return "Gallons";
+  return "";
+}
+
+export async function getDispatchUnitForMaterial(material: string) {
+  const normalizedMaterial = normalizeProductLookupText(material);
+  if (!normalizedMaterial) return "";
+
+  const { data, error } = await supabaseAdmin
+    .from("product_source_map")
+    .select("product_title, unit_label, price_unit_label");
+
+  if (error) {
+    console.error("[DISPATCH UNIT LOOKUP ERROR]", error);
+    return "";
+  }
+
+  const rows = ((data || []) as Array<{
+    product_title?: string | null;
+    unit_label?: string | null;
+    price_unit_label?: string | null;
+  }>).filter((row) => row.product_title);
+
+  const exactMatch = rows.find(
+    (row) => normalizeProductLookupText(row.product_title || "") === normalizedMaterial,
+  );
+  const containsMatch =
+    exactMatch ||
+    rows.find((row) => {
+      const title = normalizeProductLookupText(row.product_title || "");
+      return title.includes(normalizedMaterial) || normalizedMaterial.includes(title);
+    });
+
+  return mapPriceUnitLabelToDispatchUnit(
+    containsMatch?.unit_label || containsMatch?.price_unit_label,
+  );
 }
 
 function parseQuantityFromEmail(raw: string) {
@@ -361,7 +413,7 @@ export function parseDispatchEmail(raw: string) {
   const quantity = cleanQuantityValue(
     isBadParsedValue(labelledQuantity) ? shopifyProduct.quantity : labelledQuantity,
   );
-  const unit = normalizeDispatchUnit(readEmailField(normalized, ["Unit", "UOM"]), "UnitS");
+  const unit = normalizeDispatchUnit(readEmailField(normalized, ["Unit", "UOM"]), "Unit");
   const splitAddress = splitStreetAndCity(address);
   const cleanAddress = splitAddress.address;
   const city = cleanCityValue(splitAddress.city || rawCity);
@@ -975,7 +1027,7 @@ export async function createDispatchOrder(input: {
       city: input.city || "",
       material: input.material,
       quantity: input.quantity || "",
-      unit: input.unit || "TonS",
+      unit: input.unit || "Ton",
       requested_window: input.requestedWindow || "Needs scheduling",
       time_preference: input.timePreference || null,
       truck_preference: input.truckPreference || null,

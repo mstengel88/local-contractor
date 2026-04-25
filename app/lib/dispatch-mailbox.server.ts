@@ -2,6 +2,7 @@ import tls from "node:tls";
 import {
   createDispatchOrder,
   getDispatchOrderByMailboxMessageId,
+  getDispatchUnitForMaterial,
   parseDispatchEmail,
 } from "./dispatch.server";
 
@@ -241,7 +242,7 @@ export async function pollDispatchMailbox() {
       city: parsed.city,
       material: parsed.material,
       quantity: parsed.quantity,
-      unit: parsed.unit,
+      unit: (await getDispatchUnitForMaterial(parsed.material)) || parsed.unit,
       requestedWindow: parsed.requestedWindow,
       truckPreference: parsed.truckPreference,
       notes: parsed.notes || "Imported from mailbox.",
