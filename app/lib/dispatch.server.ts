@@ -268,63 +268,32 @@ function parseQuantityFromEmail(raw: string) {
 
 function parseShopifyProduct(raw: string) {
   const lines = textLines(raw);
-  const quantityLineIndex = lines.findIndex((line, index) => {
-    if (!/(?:x|\u00d7)\s*\d+/i.test(line)) return false;
-    const window = lines
-      .slice(Math.max(0, index - 4), Math.min(lines.length, index + 3))
-      .join(" ");
-    return /product|price|\(#?\d+\)|subtotal|shipping|tax|total/i.test(window);
-  });
-  const quantity =
-    quantityLineIndex >= 0
-      ? lines[quantityLineIndex].match(/(?:x|\u00d7)\s*(\d+(?:\.\d+)?)/i)?.[1] || ""
-      : "";
+  const quantityLineIndexes = lines
+    .map((line, index) => ({ line, index }))
+    .filter(({ line, index }) => {
+      if (!/(?:x|\u00d7)\s*\d+/i.test(line)) return false;
+      const window = lines
+        .slice(Math.max(0, index - 4), Math.min(lines.length, index + 3))
+        .join(" ");
+      return /product|price|\(#?\d+\)|subtotal|shipping|tax|total/i.test(window);
+    })
+    .map(({ index }) => index);
+  const quantityLineIndex = quantityLineIndexes[0] ?? -1;
 
-  let material = "";
-  if (quantityLineIndex >= 0) {
-    const sameLineBeforeQuantity = lines[quantityLineIndex]
-      .split(/(?:x|\u00d7)\s*\d+/i)[0]
-      .trim();
-    const sameLineCandidates = sameLineBeforeQuantity
-      .split(/\s{2,}/)
-      .map((part) => part.trim())
-      .filter(Boolean);
-    material = sameLineCandidates.find(isProductCandidate) || "";
+  const product = parseShopifyProductAtLine(raw, quantityLineIndex);
+  if (product.material || product.quantity) return product;
 
-    const sameLineMaterial = lines[quantityLineIndex]
-      .replace(/(?:x|\u00d7)\s*\d+(?:\.\d+)?[\s\S]*$/i, "")
-      .trim();
-    if (
-      !material &&
-      sameLineMaterial &&
-      isProductCandidate(sameLineMaterial)
-    ) {
-      material = sameLineMaterial;
-    }
+  const productIndex = lines.findIndex((line) => /^product$/i.test(line));
+  const material =
+    lines
+      .slice(productIndex >= 0 ? productIndex + 1 : 0)
+      .find(
+        (line) =>
+          isProductCandidate(line),
+      ) || "";
 
-    for (let index = quantityLineIndex - 1; index >= 0; index -= 1) {
-      if (material) break;
-      const candidate = lines[index];
-      if (isProductCandidate(candidate)) {
-        material = candidate;
-        break;
-      }
-    }
-  }
-
-  if (!material) {
-    const productIndex = lines.findIndex((line) => /^product$/i.test(line));
-    material =
-      lines
-        .slice(productIndex >= 0 ? productIndex + 1 : 0)
-        .find(
-          (line) =>
-            isProductCandidate(line),
-        ) || "";
-  }
-
-  let parsedQuantity = quantity;
-  if (!parsedQuantity && material) {
+  let parsedQuantity = "";
+  if (material) {
     const materialIndex = lines.findIndex((line) => line.includes(material));
     const nearbyLines =
       materialIndex >= 0
@@ -341,6 +310,74 @@ function parseShopifyProduct(raw: string) {
   }
 
   return { material: cleanProductMaterial(material), quantity: parsedQuantity };
+}
+
+function parseShopifyProductAtLine(raw: string, quantityLineIndex: number) {
+  const lines = textLines(raw);
+  if (quantityLineIndex < 0) return { material: "", quantity: "" };
+
+  const quantity =
+    lines[quantityLineIndex].match(/(?:x|\u00d7)\s*(\d+(?:\.\d+)?)/i)?.[1] || "";
+
+  let material = "";
+  const sameLineBeforeQuantity = lines[quantityLineIndex]
+    .split(/(?:x|\u00d7)\s*\d+/i)[0]
+    .trim();
+  const sameLineCandidates = sameLineBeforeQuantity
+    .split(/\s{2,}/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  material = sameLineCandidates.find(isProductCandidate) || "";
+
+  const sameLineMaterial = lines[quantityLineIndex]
+    .replace(/(?:x|\u00d7)\s*\d+(?:\.\d+)?[\s\S]*$/i, "")
+    .trim();
+  if (
+    !material &&
+    sameLineMaterial &&
+    isProductCandidate(sameLineMaterial)
+  ) {
+    material = sameLineMaterial;
+  }
+
+  for (let index = quantityLineIndex - 1; index >= 0; index -= 1) {
+    if (material) break;
+    const candidate = lines[index];
+    if (isProductCandidate(candidate)) {
+      material = candidate;
+      break;
+    }
+  }
+
+  return { material: cleanProductMaterial(material), quantity };
+}
+
+function parseShopifyProducts(raw: string) {
+  const lines = textLines(raw);
+  const quantityLineIndexes = lines
+    .map((line, index) => ({ line, index }))
+    .filter(({ line, index }) => {
+    if (!/(?:x|\u00d7)\s*\d+/i.test(line)) return false;
+    const window = lines
+      .slice(Math.max(0, index - 4), Math.min(lines.length, index + 3))
+      .join(" ");
+    return /product|price|\(#?\d+\)|subtotal|shipping|tax|total/i.test(window);
+  })
+    .map(({ index }) => index);
+
+  const products = quantityLineIndexes
+    .map((index) => parseShopifyProductAtLine(raw, index))
+    .filter((product) => product.material && product.quantity);
+
+  const seen = new Set<string>();
+  const uniqueProducts = products.filter((product) => {
+    const key = `${product.material.toLowerCase()}::${product.quantity}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  return uniqueProducts.length ? uniqueProducts : [parseShopifyProduct(raw)].filter((product) => product.material);
 }
 
 function parseShopifyShipping(raw: string) {
@@ -397,6 +434,7 @@ export function parseDispatchEmail(raw: string) {
   const normalized = normalizeEmailText(raw);
   const shipping = parseShopifyShipping(raw);
   const shopifyProduct = parseShopifyProduct(raw);
+  const shopifyProducts = parseShopifyProducts(raw);
   const shopifyNotes = parseShopifyDeliveryNotes(raw);
   const subject = readEmailField(normalized, ["Subject"]);
   const orderNumber = cleanOrderNumber(
@@ -430,6 +468,12 @@ export function parseDispatchEmail(raw: string) {
     isBadParsedValue(labelledQuantity) ? shopifyProduct.quantity : labelledQuantity,
   );
   const unit = normalizeDispatchUnit(readEmailField(normalized, ["Unit", "UOM"]), "Unit");
+  const products = isBadParsedValue(labelledMaterial)
+    ? shopifyProducts.map((product) => ({
+        material: cleanProductMaterial(product.material),
+        quantity: cleanQuantityValue(product.quantity),
+      }))
+    : [{ material, quantity }];
   const splitAddress = splitStreetAndCity(address);
   const cleanAddress = splitAddress.address;
   const city = cleanCityValue(splitAddress.city || rawCity);
@@ -452,6 +496,7 @@ export function parseDispatchEmail(raw: string) {
     city,
     material,
     quantity,
+    products: products.filter((product) => product.material),
     unit,
     requestedWindow,
     timePreference,

@@ -65,6 +65,11 @@ function getOrderDisplayNumber(order: DispatchOrder) {
   return order.orderNumber ? `#${order.orderNumber}` : order.id;
 }
 
+function suffixOrderNumber(orderNumber: string, index: number, total: number) {
+  if (!orderNumber || total <= 1) return orderNumber;
+  return `${orderNumber}${String.fromCharCode(97 + index)}`;
+}
+
 function getTruckCapacityForOrderUnit(truck: DispatchTruck, unit: string) {
   if (/tons?/i.test(unit)) return Number(truck.tons || 0);
   if (/yards?/i.test(unit)) return Number(truck.yards || 0);
@@ -686,7 +691,12 @@ export async function action({ request }: any) {
       }
 
       const parsed = parseDispatchEmail(rawEmail);
-      if (!parsed.address || !parsed.material) {
+      const parsedProducts = parsed.products?.length
+        ? parsed.products
+        : [{ material: parsed.material, quantity: parsed.quantity }];
+      const validProducts = parsedProducts.filter((product) => product.material);
+
+      if (!parsed.address || !validProducts.length) {
         const dispatchState = await loadDispatchState();
         return data(
           {
@@ -699,31 +709,38 @@ export async function action({ request }: any) {
         );
       }
 
-      const created = await createDispatchOrder({
-        source: "email",
-        orderNumber: parsed.orderNumber,
-        customer: parsed.customer,
-        contact: parsed.contact,
-        address: parsed.address,
-        city: parsed.city,
-        material: parsed.material,
-        quantity: parsed.quantity,
-        unit: (await getDispatchUnitForMaterial(parsed.material)) || parsed.unit,
-        requestedWindow: parsed.requestedWindow,
-        timePreference: parsed.timePreference,
-        truckPreference: parsed.truckPreference,
-        notes: parsed.notes || "Parsed from order email.",
-        emailSubject: parsed.subject,
-        rawEmail,
-      });
+      const createdOrders = [];
+      for (const [index, product] of validProducts.entries()) {
+        const created = await createDispatchOrder({
+          source: "email",
+          orderNumber: suffixOrderNumber(parsed.orderNumber, index, validProducts.length),
+          customer: parsed.customer,
+          contact: parsed.contact,
+          address: parsed.address,
+          city: parsed.city,
+          material: product.material,
+          quantity: product.quantity,
+          unit: (await getDispatchUnitForMaterial(product.material)) || parsed.unit,
+          requestedWindow: parsed.requestedWindow,
+          timePreference: parsed.timePreference,
+          truckPreference: parsed.truckPreference,
+          notes: parsed.notes || "Parsed from order email.",
+          emailSubject: parsed.subject,
+          rawEmail,
+        });
+        createdOrders.push(created);
+      }
 
       const dispatchState = await loadDispatchState();
 
       return data({
         allowed: true,
         ok: true,
-        message: `Parsed email order for ${created.customer}.`,
-        selectedOrderId: created.id,
+        message:
+          createdOrders.length > 1
+            ? `Parsed ${createdOrders.length} tickets from order ${parsed.orderNumber}.`
+            : `Parsed email order for ${createdOrders[0].customer}.`,
+        selectedOrderId: createdOrders[0].id,
         ...dispatchState,
       });
     }
@@ -1968,10 +1985,9 @@ export default function DispatchPage() {
                   deliveredOrders.map((order) => {
                     const route = routes.find((entry) => entry.id === order.assignedRouteId);
                     return (
-                      <a
+                      <div
                         key={order.id}
-                        href={`${dispatchHref}?view=delivered&order=${encodeURIComponent(order.id)}`}
-                        style={{ ...styles.queueCard, textDecoration: "none" }}
+                        style={styles.queueCard}
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                           <div>
@@ -1987,7 +2003,29 @@ export default function DispatchPage() {
                           {order.deliveredAt ? <span>{new Date(order.deliveredAt).toLocaleString()}</span> : null}
                           <span>{route ? route.truck || route.code : "No route"}</span>
                         </div>
-                      </a>
+                        <div style={styles.deliveredActions}>
+                          <a
+                            href={`${dispatchHref}?view=delivered&order=${encodeURIComponent(order.id)}`}
+                            style={styles.detailButton}
+                          >
+                            Open
+                          </a>
+                          <Form
+                            method="post"
+                            onSubmit={(event) => {
+                              if (!window.confirm("Delete this delivered order? This cannot be undone.")) {
+                                event.preventDefault();
+                              }
+                            }}
+                          >
+                            <input type="hidden" name="intent" value="delete-order" />
+                            <input type="hidden" name="orderId" value={order.id} />
+                            <button type="submit" style={styles.smallDangerButton}>
+                              Delete
+                            </button>
+                          </Form>
+                        </div>
+                      </div>
                     );
                   })
                 )}
@@ -3299,6 +3337,24 @@ const styles = {
     color: "#fecaca",
     fontWeight: 800,
     cursor: "pointer",
+  } as const,
+  smallDangerButton: {
+    minHeight: 36,
+    padding: "0 12px",
+    borderRadius: 12,
+    border: "1px solid rgba(248, 113, 113, 0.55)",
+    background: "rgba(127, 29, 29, 0.42)",
+    color: "#fecaca",
+    fontSize: 12,
+    fontWeight: 900,
+    cursor: "pointer",
+  } as const,
+  deliveredActions: {
+    marginTop: 14,
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: 8,
+    flexWrap: "wrap" as const,
   } as const,
   routeCard: (color: string) =>
     ({

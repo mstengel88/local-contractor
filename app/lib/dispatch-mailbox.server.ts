@@ -155,6 +155,16 @@ function summarizeSkipReasons(skipReasons: SkipReason[]) {
   return Object.entries(counts).map(([reason, count]) => `${count} ${reason}`);
 }
 
+function suffixOrderNumber(orderNumber: string, index: number, total: number) {
+  if (!orderNumber || total <= 1) return orderNumber;
+  return `${orderNumber}${String.fromCharCode(97 + index)}`;
+}
+
+function suffixMailboxMessageId(messageId: string, index: number, total: number) {
+  if (!messageId || total <= 1) return messageId;
+  return `${messageId}#${String.fromCharCode(97 + index)}`;
+}
+
 async function fetchUnreadEmails(config: ImapConfig) {
   const client = new SimpleImapClient(config);
   const emails: ImapEmail[] = [];
@@ -209,7 +219,9 @@ export async function pollDispatchMailbox() {
       continue;
     }
 
-    const existing = await getDispatchOrderByMailboxMessageId(email.messageId);
+    const existing =
+      (await getDispatchOrderByMailboxMessageId(email.messageId)) ||
+      (await getDispatchOrderByMailboxMessageId(`${email.messageId}#a`));
     if (existing) {
       skipReasons.push({
         uid: email.uid,
@@ -220,10 +232,14 @@ export async function pollDispatchMailbox() {
     }
 
     const parsed = parseDispatchEmail(email.raw);
-    if (!parsed.address || !parsed.material) {
+    const products = parsed.products?.length
+      ? parsed.products
+      : [{ material: parsed.material, quantity: parsed.quantity }];
+
+    if (!parsed.address || products.every((product) => !product.material)) {
       const missing = [
         !parsed.address ? "address" : "",
-        !parsed.material ? "material" : "",
+        products.every((product) => !product.material) ? "material" : "",
       ].filter(Boolean);
       skipReasons.push({
         uid: email.uid,
@@ -233,24 +249,33 @@ export async function pollDispatchMailbox() {
       continue;
     }
 
-    await createDispatchOrder({
-      source: "email",
-      orderNumber: parsed.orderNumber,
-      customer: parsed.customer,
-      contact: parsed.contact,
-      address: parsed.address,
-      city: parsed.city,
-      material: parsed.material,
-      quantity: parsed.quantity,
-      unit: (await getDispatchUnitForMaterial(parsed.material)) || parsed.unit,
-      requestedWindow: parsed.requestedWindow,
-      truckPreference: parsed.truckPreference,
-      notes: parsed.notes || "Imported from mailbox.",
-      emailSubject: parsed.subject || email.subject,
-      rawEmail: email.raw,
-      mailboxMessageId: email.messageId,
-    });
-    imported += 1;
+    const validProducts = products.filter((product) => product.material);
+
+    for (const [index, product] of validProducts.entries()) {
+      await createDispatchOrder({
+        source: "email",
+        orderNumber: suffixOrderNumber(parsed.orderNumber, index, validProducts.length),
+        customer: parsed.customer,
+        contact: parsed.contact,
+        address: parsed.address,
+        city: parsed.city,
+        material: product.material,
+        quantity: product.quantity,
+        unit: (await getDispatchUnitForMaterial(product.material)) || parsed.unit,
+        requestedWindow: parsed.requestedWindow,
+        timePreference: parsed.timePreference,
+        truckPreference: parsed.truckPreference,
+        notes: parsed.notes || "Imported from mailbox.",
+        emailSubject: parsed.subject || email.subject,
+        rawEmail: email.raw,
+        mailboxMessageId: suffixMailboxMessageId(
+          email.messageId,
+          index,
+          validProducts.length,
+        ),
+      });
+      imported += 1;
+    }
   }
 
   const skipSummary = summarizeSkipReasons(skipReasons);
