@@ -244,7 +244,36 @@ function mapPriceUnitLabelToDispatchUnit(value?: string | null) {
   if (/per\s+yard\b/i.test(label)) return "Yard";
   if (/per\s+bag\b/i.test(label)) return "Bags";
   if (/per\s+gallon\b/i.test(label)) return "Gallons";
-  return "";
+  return normalizeDispatchUnit(label, "");
+}
+
+function getLookupTokens(value: string) {
+  return normalizeProductLookupText(value)
+    .split(" ")
+    .filter((token) => token.length > 1 && !/^\d+$/.test(token));
+}
+
+function getProductMatchScore(material: string, row: {
+  sku?: string | null;
+  product_title?: string | null;
+}) {
+  const normalizedMaterial = normalizeProductLookupText(material);
+  const normalizedTitle = normalizeProductLookupText(row.product_title || "");
+  const normalizedSku = normalizeProductLookupText(row.sku || "");
+
+  if (!normalizedMaterial || (!normalizedTitle && !normalizedSku)) return 0;
+  if (normalizedTitle === normalizedMaterial || normalizedSku === normalizedMaterial) return 100;
+  if (normalizedTitle.includes(normalizedMaterial)) return 90;
+  if (normalizedMaterial.includes(normalizedTitle) && normalizedTitle.length > 3) return 80;
+  if (normalizedSku && normalizedMaterial.includes(normalizedSku)) return 75;
+
+  const materialTokens = getLookupTokens(material);
+  const titleTokens = new Set(getLookupTokens(row.product_title || ""));
+  if (!materialTokens.length || !titleTokens.size) return 0;
+
+  const matched = materialTokens.filter((token) => titleTokens.has(token)).length;
+  const score = Math.round((matched / materialTokens.length) * 60);
+  return matched >= Math.min(2, materialTokens.length) ? score : 0;
 }
 
 export async function getDispatchUnitForMaterial(material: string) {
@@ -253,7 +282,7 @@ export async function getDispatchUnitForMaterial(material: string) {
 
   const { data, error } = await supabaseAdmin
     .from("product_source_map")
-    .select("product_title, unit_label, price_unit_label");
+    .select("sku, product_title, unit_label, price_unit_label");
 
   if (error) {
     console.error("[DISPATCH UNIT LOOKUP ERROR]", error);
@@ -261,23 +290,22 @@ export async function getDispatchUnitForMaterial(material: string) {
   }
 
   const rows = ((data || []) as Array<{
+    sku?: string | null;
     product_title?: string | null;
     unit_label?: string | null;
     price_unit_label?: string | null;
   }>).filter((row) => row.product_title);
 
-  const exactMatch = rows.find(
-    (row) => normalizeProductLookupText(row.product_title || "") === normalizedMaterial,
-  );
-  const containsMatch =
-    exactMatch ||
-    rows.find((row) => {
-      const title = normalizeProductLookupText(row.product_title || "");
-      return title.includes(normalizedMaterial) || normalizedMaterial.includes(title);
-    });
+  const bestMatch = rows
+    .map((row) => ({
+      row,
+      score: getProductMatchScore(material, row),
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score)[0]?.row;
 
   return mapPriceUnitLabelToDispatchUnit(
-    containsMatch?.unit_label || containsMatch?.price_unit_label,
+    bestMatch?.unit_label || bestMatch?.price_unit_label,
   );
 }
 

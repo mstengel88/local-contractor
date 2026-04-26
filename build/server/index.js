@@ -4304,26 +4304,43 @@ function mapPriceUnitLabelToDispatchUnit(value) {
   if (/per\s+yard\b/i.test(label)) return "Yard";
   if (/per\s+bag\b/i.test(label)) return "Bags";
   if (/per\s+gallon\b/i.test(label)) return "Gallons";
-  return "";
+  return normalizeDispatchUnit(label, "");
+}
+function getLookupTokens(value) {
+  return normalizeProductLookupText(value).split(" ").filter((token) => token.length > 1 && !/^\d+$/.test(token));
+}
+function getProductMatchScore(material, row) {
+  const normalizedMaterial = normalizeProductLookupText(material);
+  const normalizedTitle = normalizeProductLookupText(row.product_title || "");
+  const normalizedSku = normalizeProductLookupText(row.sku || "");
+  if (!normalizedMaterial || !normalizedTitle && !normalizedSku) return 0;
+  if (normalizedTitle === normalizedMaterial || normalizedSku === normalizedMaterial) return 100;
+  if (normalizedTitle.includes(normalizedMaterial)) return 90;
+  if (normalizedMaterial.includes(normalizedTitle) && normalizedTitle.length > 3) return 80;
+  if (normalizedSku && normalizedMaterial.includes(normalizedSku)) return 75;
+  const materialTokens = getLookupTokens(material);
+  const titleTokens = new Set(getLookupTokens(row.product_title || ""));
+  if (!materialTokens.length || !titleTokens.size) return 0;
+  const matched = materialTokens.filter((token) => titleTokens.has(token)).length;
+  const score = Math.round(matched / materialTokens.length * 60);
+  return matched >= Math.min(2, materialTokens.length) ? score : 0;
 }
 async function getDispatchUnitForMaterial(material) {
+  var _a2;
   const normalizedMaterial = normalizeProductLookupText(material);
   if (!normalizedMaterial) return "";
-  const { data: data2, error } = await supabaseAdmin.from("product_source_map").select("product_title, unit_label, price_unit_label");
+  const { data: data2, error } = await supabaseAdmin.from("product_source_map").select("sku, product_title, unit_label, price_unit_label");
   if (error) {
     console.error("[DISPATCH UNIT LOOKUP ERROR]", error);
     return "";
   }
   const rows = (data2 || []).filter((row) => row.product_title);
-  const exactMatch = rows.find(
-    (row) => normalizeProductLookupText(row.product_title || "") === normalizedMaterial
-  );
-  const containsMatch = exactMatch || rows.find((row) => {
-    const title = normalizeProductLookupText(row.product_title || "");
-    return title.includes(normalizedMaterial) || normalizedMaterial.includes(title);
-  });
+  const bestMatch = (_a2 = rows.map((row) => ({
+    row,
+    score: getProductMatchScore(material, row)
+  })).filter((entry2) => entry2.score > 0).sort((a, b) => b.score - a.score)[0]) == null ? void 0 : _a2.row;
   return mapPriceUnitLabelToDispatchUnit(
-    (containsMatch == null ? void 0 : containsMatch.unit_label) || (containsMatch == null ? void 0 : containsMatch.price_unit_label)
+    (bestMatch == null ? void 0 : bestMatch.unit_label) || (bestMatch == null ? void 0 : bestMatch.price_unit_label)
   );
 }
 function parseQuantityFromEmail(raw) {
