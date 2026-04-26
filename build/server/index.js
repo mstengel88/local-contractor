@@ -4198,7 +4198,10 @@ async function sendDeliveryConfirmationEmail({
 }
 function readEmailField(raw, labels) {
   for (const label of labels) {
-    const match = raw.match(new RegExp(`^\\s*${label}\\s*:?\\s*(.+)$`, "im"));
+    const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const match = raw.match(
+      new RegExp(`^\\s*${escapedLabel}(?![\\w/.-])\\s*:?\\s*(.+)$`, "im")
+    );
     if (match == null ? void 0 : match[1]) return match[1].trim();
   }
   return "";
@@ -4281,6 +4284,7 @@ function cleanQuantityValue(value) {
 function normalizeDispatchUnit(value, fallback = "Unit") {
   const unit = value.trim();
   if (!unit || /^(price|quantity|product|amount)$/i.test(unit)) return fallback;
+  if (isCountryOrAddressFragment(unit)) return fallback;
   if (/yards?/i.test(unit)) return "Yard";
   if (/tons?/i.test(unit)) return "Ton";
   if (/gallons?/i.test(unit)) return "Gallons";
@@ -4716,7 +4720,7 @@ ${rawEmail || ""}`) || null;
     city: String(row.city || ""),
     material: String(row.material || ""),
     quantity: derivedQuantity,
-    unit: String(row.unit || ""),
+    unit: normalizeDispatchUnit(String(row.unit || ""), "Unit"),
     requestedWindow,
     timePreference: derivedTimePreference,
     truckPreference: row.truck_preference || null,
