@@ -280,16 +280,22 @@ export async function getDispatchUnitForMaterial(material: string) {
   const normalizedMaterial = normalizeProductLookupText(material);
   if (!normalizedMaterial) return "";
 
-  const { data, error } = await supabaseAdmin
+  let result = await supabaseAdmin
     .from("product_source_map")
     .select("sku, product_title, unit_label, price_unit_label");
 
-  if (error) {
-    console.error("[DISPATCH UNIT LOOKUP ERROR]", error);
+  if (result.error?.code === "42703") {
+    result = await supabaseAdmin
+      .from("product_source_map")
+      .select("sku, product_title, unit_label");
+  }
+
+  if (result.error) {
+    console.error("[DISPATCH UNIT LOOKUP ERROR]", result.error);
     return "";
   }
 
-  const rows = ((data || []) as Array<{
+  const rows = ((result.data || []) as Array<{
     sku?: string | null;
     product_title?: string | null;
     unit_label?: string | null;

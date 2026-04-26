@@ -4326,19 +4326,22 @@ function getProductMatchScore(material, row) {
   return matched >= Math.min(2, materialTokens.length) ? score : 0;
 }
 async function getDispatchUnitForMaterial(material) {
-  var _a2;
+  var _a2, _b;
   const normalizedMaterial = normalizeProductLookupText(material);
   if (!normalizedMaterial) return "";
-  const { data: data2, error } = await supabaseAdmin.from("product_source_map").select("sku, product_title, unit_label, price_unit_label");
-  if (error) {
-    console.error("[DISPATCH UNIT LOOKUP ERROR]", error);
+  let result = await supabaseAdmin.from("product_source_map").select("sku, product_title, unit_label, price_unit_label");
+  if (((_a2 = result.error) == null ? void 0 : _a2.code) === "42703") {
+    result = await supabaseAdmin.from("product_source_map").select("sku, product_title, unit_label");
+  }
+  if (result.error) {
+    console.error("[DISPATCH UNIT LOOKUP ERROR]", result.error);
     return "";
   }
-  const rows = (data2 || []).filter((row) => row.product_title);
-  const bestMatch = (_a2 = rows.map((row) => ({
+  const rows = (result.data || []).filter((row) => row.product_title);
+  const bestMatch = (_b = rows.map((row) => ({
     row,
     score: getProductMatchScore(material, row)
-  })).filter((entry2) => entry2.score > 0).sort((a, b) => b.score - a.score)[0]) == null ? void 0 : _a2.row;
+  })).filter((entry2) => entry2.score > 0).sort((a, b) => b.score - a.score)[0]) == null ? void 0 : _b.row;
   return mapPriceUnitLabelToDispatchUnit(
     (bestMatch == null ? void 0 : bestMatch.unit_label) || (bestMatch == null ? void 0 : bestMatch.price_unit_label)
   );
