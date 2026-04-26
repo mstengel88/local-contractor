@@ -595,11 +595,17 @@ export async function action({ request }: any) {
       const address = splitAddress.address;
       const city = splitAddress.city || String(form.get("city") || "").trim();
       const material = String(form.get("material") || "").trim();
+      const unit =
+        (await getDispatchUnitForMaterial(material)) ||
+        String(form.get("unit") || "").trim() ||
+        "Unit";
       const rawStatus = String(form.get("status") || "new").trim();
       const status =
         rawStatus === "scheduled" || rawStatus === "hold" || rawStatus === "delivered"
           ? rawStatus
           : "new";
+      const routeId = String(form.get("routeId") || "").trim();
+      const eta = String(form.get("eta") || "").trim() || null;
 
       if (!orderId || !customer || !address || !material) {
         const dispatchState = await loadDispatchState();
@@ -623,10 +629,7 @@ export async function action({ request }: any) {
         city,
         material,
         quantity: String(form.get("quantity") || "").trim(),
-        unit:
-          (await getDispatchUnitForMaterial(material)) ||
-          String(form.get("unit") || "").trim() ||
-          "Unit",
+        unit,
         requestedWindow:
           String(form.get("requestedWindow") || "").trim() || "Needs scheduling",
         timePreference:
@@ -637,13 +640,66 @@ export async function action({ request }: any) {
         status,
       });
 
+      let finalOrder = updated;
+      if (form.has("routeId")) {
+        if (routeId) {
+          const [allRoutes, allTrucks] = await Promise.all([
+            getDispatchRoutes(),
+            getDispatchTrucks(),
+          ]);
+          const selectedRoute = allRoutes.find((route) => route.id === routeId);
+          const selectedTruck = allTrucks.find(
+            (truck) => truck.id === selectedRoute?.truckId,
+          );
+          const capacityError = getCapacityError(updated, selectedTruck);
+
+          if (!selectedRoute || capacityError) {
+            const dispatchState = await loadDispatchState();
+            return data(
+              {
+                allowed: true,
+                ok: false,
+                message: !selectedRoute
+                  ? "Select a valid route before assigning this order."
+                  : capacityError,
+                selectedOrderId: orderId,
+                ...dispatchState,
+              },
+              { status: 400 },
+            );
+          }
+
+          const stopSequence =
+            updated.assignedRouteId === routeId && updated.stopSequence
+              ? updated.stopSequence
+              : await getNextRouteStopSequence(routeId);
+
+          finalOrder = await updateDispatchOrder(orderId, {
+            status: status === "delivered" ? "delivered" : "scheduled",
+            assignedRouteId: routeId,
+            stopSequence,
+            deliveryStatus:
+              status === "delivered" ? "delivered" : updated.deliveryStatus || "not_started",
+            eta,
+          });
+        } else {
+          finalOrder = await updateDispatchOrder(orderId, {
+            status: status === "delivered" || status === "hold" ? status : "new",
+            assignedRouteId: null,
+            stopSequence: null,
+            deliveryStatus: status === "delivered" ? "delivered" : "not_started",
+            eta: null,
+          });
+        }
+      }
+
       const dispatchState = await loadDispatchState();
 
       return data({
         allowed: true,
         ok: true,
-        message: `Updated ${updated.customer}.`,
-        selectedOrderId: updated.id,
+        message: `Updated ${finalOrder.customer}.`,
+        selectedOrderId: finalOrder.id,
         ...dispatchState,
       });
     }
@@ -1677,6 +1733,33 @@ export default function DispatchPage() {
                       <input
                         name="truckPreference"
                         defaultValue={selectedOrder.truckPreference || ""}
+                        style={styles.input}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={styles.formGridTwo}>
+                    <div>
+                      <label style={styles.label}>Assigned Route / Driver</label>
+                      <select
+                        name="routeId"
+                        defaultValue={selectedOrder.assignedRouteId || ""}
+                        style={styles.input}
+                      >
+                        <option value="">Unassigned</option>
+                        {routes.map((route) => (
+                          <option key={route.id} value={route.id}>
+                            {route.code} - {route.truck} - {route.driver}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={styles.label}>ETA</label>
+                      <input
+                        name="eta"
+                        defaultValue={selectedOrder.eta || ""}
+                        placeholder="Optional"
                         style={styles.input}
                       />
                     </div>
