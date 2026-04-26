@@ -48,6 +48,7 @@ import {
   maybeAutoPollDispatchMailbox,
   pollDispatchMailbox,
 } from "../lib/dispatch-mailbox.server";
+import { attachAddressAutocomplete, loadGooglePlaces } from "../lib/google-places";
 
 function getDeliveryStatusLabel(status?: DispatchOrder["deliveryStatus"]) {
   if (status === "en_route") return "Enroute";
@@ -113,6 +114,15 @@ function getRequestedDeliverySortValue(order: DispatchOrder) {
   return Number.isNaN(parsed.getTime())
     ? Number.MAX_SAFE_INTEGER
     : startOfLocalDay(parsed);
+}
+
+function formatRequestedWindow(value: string) {
+  const trimmed = value.trim();
+  const dateInput = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (!dateInput) return trimmed;
+
+  return `${dateInput[2]}/${dateInput[3]}/${dateInput[1]}`;
 }
 
 function getTruckCapacityForOrderUnit(truck: DispatchTruck, unit: string) {
@@ -701,7 +711,9 @@ export async function action({ request }: any) {
           (await getDispatchUnitForMaterial(material)) ||
           String(form.get("unit") || "Ton").trim() ||
           "Ton",
-        requestedWindow: String(form.get("requestedWindow") || "").trim(),
+        requestedWindow: formatRequestedWindow(
+          String(form.get("requestedWindow") || ""),
+        ),
         timePreference:
           String(form.get("timePreference") || "").trim() ||
           detectTimePreference(String(form.get("notes") || "")),
@@ -1498,6 +1510,26 @@ export default function DispatchPage() {
     rawView === "delivered"
       ? rawView
       : "dashboard";
+
+  useEffect(() => {
+    if (!allowed || !googleMapsApiKey || activeView !== "orders") return;
+
+    loadGooglePlaces(googleMapsApiKey)
+      .then(() => {
+        attachAddressAutocomplete({
+          address1Id: "dispatch-address",
+          cityId: "dispatch-city",
+          provinceId: "dispatch-province",
+          postalCodeId: "dispatch-postal-code",
+          countryId: "dispatch-country",
+          cityFormat: "cityStateZip",
+        });
+      })
+      .catch((error) => {
+        console.error("[DISPATCH GOOGLE PLACES LOAD ERROR]", error);
+      });
+  }, [allowed, googleMapsApiKey, activeView]);
+
   const querySelectedOrderId = searchParams.get("order");
   const queryDashboardSelectedOrderId = searchParams.get("selected");
   const selectedOrderId =
@@ -1806,11 +1838,24 @@ export default function DispatchPage() {
                 <div style={styles.formGridTwo}>
                   <div>
                     <label style={styles.label}>Jobsite Address</label>
-                    <input name="address" style={styles.input} />
+                    <input
+                      id="dispatch-address"
+                      name="address"
+                      placeholder="Start typing the street address"
+                      style={styles.input}
+                    />
                   </div>
                   <div>
                     <label style={styles.label}>City</label>
-                    <input name="city" style={styles.input} />
+                    <input
+                      id="dispatch-city"
+                      name="city"
+                      placeholder="City, ST ZIP"
+                      style={styles.input}
+                    />
+                    <input id="dispatch-province" name="province" type="hidden" />
+                    <input id="dispatch-postal-code" name="postalCode" type="hidden" />
+                    <input id="dispatch-country" name="country" type="hidden" defaultValue="US" />
                   </div>
                 </div>
                 <div style={styles.formGridThree}>
@@ -1836,7 +1881,7 @@ export default function DispatchPage() {
                 <div style={styles.formGridTwo}>
                   <div>
                     <label style={styles.label}>Requested Window</label>
-                    <input name="requestedWindow" style={styles.input} />
+                    <input name="requestedWindow" type="date" style={styles.input} />
                   </div>
                   <div>
                     <label style={styles.label}>Time Preference</label>

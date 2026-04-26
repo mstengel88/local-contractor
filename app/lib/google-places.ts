@@ -61,6 +61,7 @@ export function attachAddressAutocomplete(options: {
   provinceId: string;
   postalCodeId: string;
   countryId: string;
+  cityFormat?: "city" | "cityStateZip";
 }) {
   if (typeof window === "undefined" || !window.google?.maps?.places) {
     console.error("[GOOGLE PLACES] places library not available");
@@ -111,7 +112,12 @@ export function attachAddressAutocomplete(options: {
     }
 
     address1.value = [streetNumber, route].filter(Boolean).join(" ").trim();
-    city.value = locality;
+    city.value =
+      options.cityFormat === "cityStateZip"
+        ? [locality, [administrativeArea, zip].filter(Boolean).join(" ")]
+            .filter(Boolean)
+            .join(", ")
+        : locality;
     province.value = administrativeArea;
     postalCode.value = zip;
     country.value = countryCode;
