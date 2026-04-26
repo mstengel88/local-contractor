@@ -36,6 +36,7 @@ import {
   seedDispatchOrders,
   seedDispatchRoutes,
   seedDispatchTrucks,
+  splitStreetAndCity,
   updateDispatchOrder,
   updateDispatchOrderDetails,
   updateDispatchEmployee,
@@ -143,7 +144,9 @@ async function loadDispatchState() {
     await ensureSeedDispatchEmployees();
     await ensureSeedDispatchOrders();
     await ensureSeedDispatchRoutes();
-    await resetDispatchRoutesForNewDay();
+    if (process.env.DISPATCH_AUTO_DAILY_RESET === "true") {
+      await resetDispatchRoutesForNewDay();
+    }
     return {
       orders: await getDispatchOrders(),
       routes: await getDispatchRoutes(),
@@ -268,11 +271,16 @@ export async function action({ request }: any) {
   }
 
   try {
-    await resetDispatchRoutesForNewDay();
+    if (process.env.DISPATCH_AUTO_DAILY_RESET === "true") {
+      await resetDispatchRoutesForNewDay();
+    }
 
     if (intent === "create-order") {
       const customer = String(form.get("customer") || "").trim();
-      const address = String(form.get("address") || "").trim();
+      const rawAddress = String(form.get("address") || "").trim();
+      const splitAddress = splitStreetAndCity(rawAddress);
+      const address = splitAddress.address;
+      const city = splitAddress.city || String(form.get("city") || "").trim();
       const material = String(form.get("material") || "").trim();
 
       if (!customer || !address || !material) {
@@ -294,10 +302,13 @@ export async function action({ request }: any) {
         customer,
         contact: String(form.get("contact") || "").trim(),
         address,
-        city: String(form.get("city") || "").trim(),
+        city,
         material,
         quantity: String(form.get("quantity") || "").trim(),
-        unit: String(form.get("unit") || "Ton").trim() || "Ton",
+        unit:
+          (await getDispatchUnitForMaterial(material)) ||
+          String(form.get("unit") || "Ton").trim() ||
+          "Ton",
         requestedWindow: String(form.get("requestedWindow") || "").trim(),
         timePreference:
           String(form.get("timePreference") || "").trim() ||
@@ -378,7 +389,10 @@ export async function action({ request }: any) {
     if (intent === "update-order") {
       const orderId = String(form.get("orderId") || "").trim();
       const customer = String(form.get("customer") || "").trim();
-      const address = String(form.get("address") || "").trim();
+      const rawAddress = String(form.get("address") || "").trim();
+      const splitAddress = splitStreetAndCity(rawAddress);
+      const address = splitAddress.address;
+      const city = splitAddress.city || String(form.get("city") || "").trim();
       const material = String(form.get("material") || "").trim();
       const rawStatus = String(form.get("status") || "new").trim();
       const status =
@@ -405,10 +419,13 @@ export async function action({ request }: any) {
         customer,
         contact: String(form.get("contact") || "").trim(),
         address,
-        city: String(form.get("city") || "").trim(),
+        city,
         material,
         quantity: String(form.get("quantity") || "").trim(),
-        unit: String(form.get("unit") || "").trim() || "Unit",
+        unit:
+          (await getDispatchUnitForMaterial(material)) ||
+          String(form.get("unit") || "").trim() ||
+          "Unit",
         requestedWindow:
           String(form.get("requestedWindow") || "").trim() || "Needs scheduling",
         timePreference:

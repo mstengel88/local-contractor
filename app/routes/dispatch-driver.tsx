@@ -65,7 +65,9 @@ async function loadDriverState() {
     await ensureSeedDispatchEmployees();
     await ensureSeedDispatchOrders();
     await ensureSeedDispatchRoutes();
-    await resetDispatchRoutesForNewDay();
+    if (process.env.DISPATCH_AUTO_DAILY_RESET === "true") {
+      await resetDispatchRoutesForNewDay();
+    }
 
     return {
       orders: await getDispatchOrders(),

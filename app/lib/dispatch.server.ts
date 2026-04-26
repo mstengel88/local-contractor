@@ -151,7 +151,7 @@ function cleanCityValue(value: string) {
     .trim();
 }
 
-function splitStreetAndCity(value: string) {
+export function splitStreetAndCity(value: string) {
   const cleaned = value.trim();
   const cityStateZipMatch = cleaned.match(
     /^(.*?),\s*([^,]+,\s*[A-Z]{2}(?:\s+\d{5}(?:-\d{4})?)?)(?:,\s*USA)?$/i,
