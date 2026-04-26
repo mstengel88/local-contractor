@@ -839,6 +839,24 @@ function buildDispatchDestinationAddress(address?: string | null, city?: string 
   return [address, city].map((part) => String(part || "").trim()).filter(Boolean).join(", ");
 }
 
+export async function getDispatchOriginAddress() {
+  const { data, error } = await supabaseAdmin
+    .from("origin_addresses")
+    .select("address")
+    .eq("is_active", true)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.warn("[DISPATCH MAP ORIGIN ERROR]", formatSupabaseError(error));
+  }
+
+  return (
+    String(data?.address || "").trim() ||
+    "W185 N7487 Narrow Ln, Menomonee Falls, WI 53051"
+  );
+}
+
 async function buildDispatchTravelPayload(address?: string | null, city?: string | null) {
   const destination = buildDispatchDestinationAddress(address, city);
   if (!destination) {

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Form, useActionData, useLoaderData, useLocation } from "react-router";
 import { data, redirect } from "react-router";
 import {
@@ -21,6 +21,7 @@ import {
   ensureSeedDispatchRoutes,
   ensureSeedDispatchTrucks,
   getDispatchEmployees,
+  getDispatchOriginAddress,
   getDispatchUnitForMaterial,
   getNextRouteStopSequence,
   getDispatchOrders,
@@ -134,8 +135,198 @@ function metricCard(label: string, value: string, accent: string) {
   );
 }
 
+let googleMapsLoaderPromise: Promise<void> | null = null;
+
+function loadGoogleMaps(apiKey: string) {
+  if (typeof window === "undefined") return Promise.resolve();
+  if ((window as any).google?.maps) return Promise.resolve();
+  if (googleMapsLoaderPromise) return googleMapsLoaderPromise;
+
+  googleMapsLoaderPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(
+      'script[data-dispatch-google-maps="true"]',
+    );
+
+    if (existing) {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener(
+        "error",
+        () => reject(new Error("Failed to load Google Maps")),
+        { once: true },
+      );
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.dataset.dispatchGoogleMaps = "true";
+    script.async = true;
+    script.defer = true;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}`;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load Google Maps"));
+    document.head.appendChild(script);
+  });
+
+  return googleMapsLoaderPromise;
+}
+
+function RouteMapPreview({
+  googleMapsApiKey,
+  originAddress,
+  routes,
+}: {
+  googleMapsApiKey: string;
+  originAddress: string;
+  routes: Array<DispatchRoute & { orders: DispatchOrder[] }>;
+}) {
+  const mapRef = useRef<HTMLDivElement | null>(null);
+  const renderersRef = useRef<any[]>([]);
+  const [status, setStatus] = useState("");
+
+  const routePlan = useMemo(
+    () =>
+      routes
+        .map((route) => ({
+          id: route.id,
+          color: route.color || "#38bdf8",
+          label: `${route.code} · ${route.truck}`,
+          stops: route.orders
+            .map((order) =>
+              [order.address, order.city]
+                .map((part) => String(part || "").trim())
+                .filter(Boolean)
+                .join(", "),
+            )
+            .filter(Boolean),
+        }))
+        .filter((route) => route.stops.length > 0),
+    [routes],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function drawMap() {
+      if (!mapRef.current) return;
+      if (!googleMapsApiKey) {
+        setStatus("Add GOOGLE_MAPS_BROWSER_API_KEY to show the live route map.");
+        return;
+      }
+      if (!originAddress) {
+        setStatus("Set an active origin address before drawing routes.");
+        return;
+      }
+      if (routePlan.length === 0) {
+        setStatus("Assign orders to routes to preview truck paths.");
+        return;
+      }
+
+      setStatus("Loading route map...");
+
+      try {
+        await loadGoogleMaps(googleMapsApiKey);
+        if (cancelled || !mapRef.current) return;
+
+        const google = (window as any).google;
+        renderersRef.current.forEach((renderer) => renderer.setMap(null));
+        renderersRef.current = [];
+
+        const map = new google.maps.Map(mapRef.current, {
+          center: { lat: 43.1789, lng: -88.1173 },
+          zoom: 10,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: true,
+        });
+        const bounds = new google.maps.LatLngBounds();
+        const directionsService = new google.maps.DirectionsService();
+
+        await Promise.all(
+          routePlan.map(
+            (route) =>
+              new Promise<void>((resolve) => {
+                const renderer = new google.maps.DirectionsRenderer({
+                  map,
+                  preserveViewport: true,
+                  suppressMarkers: false,
+                  polylineOptions: {
+                    strokeColor: route.color,
+                    strokeOpacity: 0.9,
+                    strokeWeight: 6,
+                  },
+                });
+                renderersRef.current.push(renderer);
+
+                directionsService.route(
+                  {
+                    origin: originAddress,
+                    destination: originAddress,
+                    waypoints: route.stops.map((stop) => ({
+                      location: stop,
+                      stopover: true,
+                    })),
+                    optimizeWaypoints: false,
+                    travelMode: google.maps.TravelMode.DRIVING,
+                  },
+                  (result: any, routeStatus: string) => {
+                    if (result && routeStatus === "OK") {
+                      renderer.setDirections(result);
+                      result.routes?.[0]?.legs?.forEach((leg: any) => {
+                        if (leg.start_location) bounds.extend(leg.start_location);
+                        if (leg.end_location) bounds.extend(leg.end_location);
+                      });
+                    } else {
+                      console.warn("[DISPATCH MAP ROUTE ERROR]", route.label, routeStatus);
+                    }
+                    resolve();
+                  },
+                );
+              }),
+          ),
+        );
+
+        if (!bounds.isEmpty()) {
+          map.fitBounds(bounds);
+        }
+        setStatus("");
+      } catch (error) {
+        setStatus(error instanceof Error ? error.message : "Unable to load route map.");
+      }
+    }
+
+    drawMap();
+
+    return () => {
+      cancelled = true;
+      renderersRef.current.forEach((renderer) => renderer.setMap(null));
+      renderersRef.current = [];
+    };
+  }, [googleMapsApiKey, originAddress, routePlan]);
+
+  return (
+    <div style={styles.mapStage}>
+      <div ref={mapRef} style={styles.googleMapCanvas} />
+      {status ? <div style={styles.mapStatus}>{status}</div> : null}
+      {routePlan.length ? (
+        <div style={styles.mapLegend}>
+          {routePlan.map((route) => (
+            <div key={route.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={styles.routeColor(route.color)} />
+              <span>{route.label}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function getDispatchPath(url: URL) {
   return url.pathname.startsWith("/app/") ? "/app/dispatch" : "/dispatch";
+}
+
+function getBrowserGoogleMapsApiKey() {
+  return process.env.GOOGLE_MAPS_BROWSER_API_KEY || "";
 }
 
 async function loadDispatchState() {
@@ -152,6 +343,7 @@ async function loadDispatchState() {
       routes: await getDispatchRoutes(),
       trucks: await getDispatchTrucks(),
       employees: await getDispatchEmployees(),
+      mapOriginAddress: await getDispatchOriginAddress(),
       storageReady: true,
       storageError: null,
     };
@@ -164,6 +356,7 @@ async function loadDispatchState() {
       routes: seedDispatchRoutes,
       trucks: seedDispatchTrucks,
       employees: seedDispatchEmployees,
+      mapOriginAddress: "W185 N7487 Narrow Ln, Menomonee Falls, WI 53051",
       storageReady: false,
       storageError: message,
     };
@@ -190,6 +383,8 @@ export async function loader({ request }: any) {
       routes: [],
       trucks: [],
       employees: [],
+      googleMapsApiKey: getBrowserGoogleMapsApiKey(),
+      mapOriginAddress: "",
       storageReady: false,
       storageError: null,
     });
@@ -213,6 +408,7 @@ export async function loader({ request }: any) {
   return data({
     allowed: true,
     mailboxStatus,
+    googleMapsApiKey: getBrowserGoogleMapsApiKey(),
     ...dispatchState,
   });
 }
@@ -234,6 +430,8 @@ export async function action({ request }: any) {
           routes: [],
           trucks: [],
           employees: [],
+          googleMapsApiKey: getBrowserGoogleMapsApiKey(),
+          mapOriginAddress: "",
         },
         { status: 401 },
       );
@@ -245,6 +443,7 @@ export async function action({ request }: any) {
       {
         allowed: true,
         loginError: null,
+        googleMapsApiKey: getBrowserGoogleMapsApiKey(),
         ...dispatchState,
       },
       {
@@ -265,6 +464,8 @@ export async function action({ request }: any) {
         routes: [],
         trucks: [],
         employees: [],
+        googleMapsApiKey: getBrowserGoogleMapsApiKey(),
+        mapOriginAddress: "",
       },
       { status: 401 },
     );
@@ -1022,6 +1223,10 @@ export default function DispatchPage() {
   const storageReady = actionData?.storageReady ?? loaderData.storageReady ?? false;
   const storageError = actionData?.storageError ?? loaderData.storageError ?? null;
   const mailboxStatus = actionData?.mailboxStatus ?? loaderData.mailboxStatus ?? null;
+  const googleMapsApiKey =
+    actionData?.googleMapsApiKey ?? loaderData.googleMapsApiKey ?? "";
+  const mapOriginAddress =
+    actionData?.mapOriginAddress ?? loaderData.mapOriginAddress ?? "";
 
   const searchParams = new URLSearchParams(location.search);
   const rawView = searchParams.get("view") || "dashboard";
@@ -2100,52 +2305,16 @@ export default function DispatchPage() {
                 <div>
                   <h2 style={styles.panelTitle}>Route Map Preview</h2>
                   <p style={styles.panelSub}>
-                    Visual route planning mockup for the first dispatch tab. We can wire live geocoding and stop sequencing next.
+                    Live Google route preview from the shop to each assigned stop and back.
                   </p>
                 </div>
               </div>
 
-              <div style={styles.mapStage}>
-                <div style={styles.mapGrid} />
-                <div style={styles.mapWater} />
-                {routes.map((route, index) => (
-                  <div
-                    key={route.id}
-                    style={{
-                      ...styles.mapRoute(route.color),
-                      top: 70 + index * 80,
-                      left: 40 + index * 90,
-                      width: 180 + index * 15,
-                    }}
-                  />
-                ))}
-                {routes.flatMap((route, routeIndex) =>
-                  route.orders.map((order, orderIndex) => (
-                    <div
-                      key={`${route.id}-${order.id}`}
-                      title={`${order.customer} · ${route.truck}`}
-                      style={{
-                        ...styles.mapStop(route.color),
-                        top: 82 + routeIndex * 80 + orderIndex * 24,
-                        left: 90 + routeIndex * 92 + orderIndex * 34,
-                      }}
-                    >
-                      {orderIndex + 1}
-                    </div>
-                  )),
-                )}
-                <div style={styles.mapLegend}>
-                  {routes.map((route) => (
-                    <div
-                      key={route.id}
-                      style={{ display: "flex", alignItems: "center", gap: 8 }}
-                    >
-                      <div style={styles.routeColor(route.color)} />
-                      <span>{route.truck}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <RouteMapPreview
+                googleMapsApiKey={googleMapsApiKey}
+                originAddress={mapOriginAddress}
+                routes={routes}
+              />
             </div>
           </div>
 
@@ -3050,50 +3219,27 @@ const styles = {
     borderRadius: 24,
     overflow: "hidden",
     border: "1px solid rgba(51, 65, 85, 0.95)",
-    background:
-      "radial-gradient(circle at 10% 10%, rgba(255,255,255,0.08), transparent 18%), linear-gradient(180deg, #d6e4f2 0%, #bdd6ea 36%, #bed5d5 100%)",
+    background: "#0f172a",
   },
-  mapGrid: {
+  googleMapCanvas: {
     position: "absolute" as const,
     inset: 0,
-    backgroundImage:
-      "linear-gradient(rgba(15,23,42,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.08) 1px, transparent 1px)",
-    backgroundSize: "58px 58px",
-  },
-  mapWater: {
+    minHeight: 380,
+  } as const,
+  mapStatus: {
     position: "absolute" as const,
-    right: -20,
-    top: 40,
-    width: 220,
-    height: 260,
-    borderRadius: "54% 46% 42% 58% / 48% 58% 42% 52%",
-    background: "rgba(56, 189, 248, 0.22)",
-    filter: "blur(1px)",
-  },
-  mapRoute: (color: string) =>
-    ({
-      position: "absolute" as const,
-      height: 0,
-      borderTop: `8px solid ${color}`,
-      borderRadius: 999,
-      transform: "rotate(-12deg)",
-      opacity: 0.88,
-    }) as const,
-  mapStop: (color: string) =>
-    ({
-      position: "absolute" as const,
-      width: 28,
-      height: 28,
-      borderRadius: 999,
-      background: color,
-      color: "#fff",
-      fontSize: 12,
-      fontWeight: 900,
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      boxShadow: `0 8px 18px ${color}55`,
-    }) as const,
+    inset: 0,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+    background:
+      "radial-gradient(circle at 20% 20%, rgba(14,165,233,0.18), transparent 26%), rgba(2, 6, 23, 0.86)",
+    color: "#e2e8f0",
+    fontSize: 14,
+    fontWeight: 800,
+    textAlign: "center" as const,
+  } as const,
   mapLegend: {
     position: "absolute" as const,
     left: 16,
