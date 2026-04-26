@@ -21,6 +21,7 @@ import {
   ensureSeedDispatchRoutes,
   ensureSeedDispatchTrucks,
   getDispatchEmployees,
+  getDispatchMaterialOptions,
   getDispatchOriginAddress,
   getDispatchUnitForMaterial,
   getNextRouteStopSequence,
@@ -544,6 +545,7 @@ async function loadDispatchState() {
       routes: await getDispatchRoutes(),
       trucks: await getDispatchTrucks(),
       employees: await getDispatchEmployees(),
+      materialOptions: await getDispatchMaterialOptions(),
       mapOriginAddress: await getDispatchOriginAddress(),
       storageReady: true,
       storageError: null,
@@ -557,6 +559,7 @@ async function loadDispatchState() {
       routes: seedDispatchRoutes,
       trucks: seedDispatchTrucks,
       employees: seedDispatchEmployees,
+      materialOptions: [],
       mapOriginAddress: "W185 N7487 Narrow Ln, Menomonee Falls, WI 53051",
       storageReady: false,
       storageError: message,
@@ -584,6 +587,7 @@ export async function loader({ request }: any) {
       routes: [],
       trucks: [],
       employees: [],
+      materialOptions: [],
       googleMapsApiKey: getBrowserGoogleMapsApiKey(),
       mapOriginAddress: "",
       storageReady: false,
@@ -631,6 +635,7 @@ export async function action({ request }: any) {
           routes: [],
           trucks: [],
           employees: [],
+          materialOptions: [],
           googleMapsApiKey: getBrowserGoogleMapsApiKey(),
           mapOriginAddress: "",
         },
@@ -665,6 +670,7 @@ export async function action({ request }: any) {
         routes: [],
         trucks: [],
         employees: [],
+        materialOptions: [],
         googleMapsApiKey: getBrowserGoogleMapsApiKey(),
         mapOriginAddress: "",
       },
@@ -1491,6 +1497,9 @@ export default function DispatchPage() {
   const dispatchRoutes = (actionData?.routes ?? loaderData.routes ?? []) as DispatchRoute[];
   const trucks = (actionData?.trucks ?? loaderData.trucks ?? []) as DispatchTruck[];
   const employees = (actionData?.employees ?? loaderData.employees ?? []) as DispatchEmployee[];
+  const materialOptions = (actionData?.materialOptions ??
+    loaderData.materialOptions ??
+    []) as string[];
   const storageReady = actionData?.storageReady ?? loaderData.storageReady ?? false;
   const storageError = actionData?.storageError ?? loaderData.storageError ?? null;
   const mailboxStatus = actionData?.mailboxStatus ?? loaderData.mailboxStatus ?? null;
@@ -1861,7 +1870,17 @@ export default function DispatchPage() {
                 <div style={styles.formGridThree}>
                   <div>
                     <label style={styles.label}>Material</label>
-                    <input name="material" style={styles.input} />
+                    <input
+                      name="material"
+                      list="dispatch-material-options"
+                      placeholder="Start typing a synced material"
+                      style={styles.input}
+                    />
+                    <datalist id="dispatch-material-options">
+                      {materialOptions.map((material) => (
+                        <option key={material} value={material} />
+                      ))}
+                    </datalist>
                   </div>
                   <div>
                     <label style={styles.label}>Quantity</label>

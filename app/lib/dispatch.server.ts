@@ -315,6 +315,28 @@ export async function getDispatchUnitForMaterial(material: string) {
   );
 }
 
+export async function getDispatchMaterialOptions() {
+  const result = await supabaseAdmin
+    .from("product_source_map")
+    .select("product_title")
+    .order("product_title", { ascending: true });
+
+  if (result.error) {
+    console.error("[DISPATCH MATERIAL OPTIONS ERROR]", result.error);
+    return [];
+  }
+
+  const seen = new Set<string>();
+  return ((result.data || []) as Array<{ product_title?: string | null }>)
+    .map((row) => String(row.product_title || "").trim())
+    .filter((title) => {
+      const key = title.toLowerCase();
+      if (!title || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
 function parseQuantityFromEmail(raw: string) {
   const normalized = normalizeEmailText(raw);
   return (
