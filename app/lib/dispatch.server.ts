@@ -1074,6 +1074,18 @@ export async function resetDispatchRoutesForNewDay() {
     return { reset: false, date: today };
   }
 
+  const { error: upsertError } = await supabaseAdmin
+    .from(SETTINGS_TABLE)
+    .upsert({
+      key: settingKey,
+      value: today,
+      updated_at: new Date().toISOString(),
+    });
+
+  if (upsertError) {
+    throw new Error(formatSupabaseError(upsertError));
+  }
+
   const { error: ordersError } = await supabaseAdmin
     .from(ORDERS_TABLE)
     .update({
@@ -1098,18 +1110,6 @@ export async function resetDispatchRoutesForNewDay() {
 
   if (routesError) {
     throw new Error(formatSupabaseError(routesError));
-  }
-
-  const { error: upsertError } = await supabaseAdmin
-    .from(SETTINGS_TABLE)
-    .upsert({
-      key: settingKey,
-      value: today,
-      updated_at: new Date().toISOString(),
-    });
-
-  if (upsertError) {
-    throw new Error(formatSupabaseError(upsertError));
   }
 
   return { reset: true, date: today };

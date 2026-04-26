@@ -4923,6 +4923,14 @@ async function resetDispatchRoutesForNewDay() {
   if ((setting == null ? void 0 : setting.value) === today) {
     return { reset: false, date: today };
   }
+  const { error: upsertError } = await supabaseAdmin.from(SETTINGS_TABLE).upsert({
+    key: settingKey,
+    value: today,
+    updated_at: (/* @__PURE__ */ new Date()).toISOString()
+  });
+  if (upsertError) {
+    throw new Error(formatSupabaseError(upsertError));
+  }
   const { error: ordersError } = await supabaseAdmin.from(ORDERS_TABLE).update({
     status: "new",
     assigned_route_id: null,
@@ -4938,14 +4946,6 @@ async function resetDispatchRoutesForNewDay() {
   const { error: routesError } = await supabaseAdmin.from(ROUTES_TABLE).update({ is_active: false }).eq("is_active", true);
   if (routesError) {
     throw new Error(formatSupabaseError(routesError));
-  }
-  const { error: upsertError } = await supabaseAdmin.from(SETTINGS_TABLE).upsert({
-    key: settingKey,
-    value: today,
-    updated_at: (/* @__PURE__ */ new Date()).toISOString()
-  });
-  if (upsertError) {
-    throw new Error(formatSupabaseError(upsertError));
   }
   return { reset: true, date: today };
 }
