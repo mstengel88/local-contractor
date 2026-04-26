@@ -180,8 +180,9 @@ function RouteMapPreview({
   routes: Array<DispatchRoute & { orders: DispatchOrder[] }>;
 }) {
   const mapRef = useRef<HTMLDivElement | null>(null);
-  const renderersRef = useRef<any[]>([]);
+  const mapObjectsRef = useRef<any[]>([]);
   const [status, setStatus] = useState("");
+  const [routeWarnings, setRouteWarnings] = useState<string[]>([]);
 
   const routePlan = useMemo(
     () =>
@@ -222,14 +223,15 @@ function RouteMapPreview({
       }
 
       setStatus("Loading route map...");
+      setRouteWarnings([]);
 
       try {
         await loadGoogleMaps(googleMapsApiKey);
         if (cancelled || !mapRef.current) return;
 
         const google = (window as any).google;
-        renderersRef.current.forEach((renderer) => renderer.setMap(null));
-        renderersRef.current = [];
+        mapObjectsRef.current.forEach((object) => object.setMap(null));
+        mapObjectsRef.current = [];
 
         const map = new google.maps.Map(mapRef.current, {
           center: { lat: 43.1789, lng: -88.1173 },
@@ -240,6 +242,57 @@ function RouteMapPreview({
         });
         const bounds = new google.maps.LatLngBounds();
         const directionsService = new google.maps.DirectionsService();
+        const geocoder = new google.maps.Geocoder();
+        const warnings: string[] = [];
+
+        const geocodeAddress = (address: string) =>
+          new Promise<any | null>((resolve) => {
+            geocoder.geocode({ address }, (results: any[], geocodeStatus: string) => {
+              if (geocodeStatus === "OK" && results?.[0]?.geometry?.location) {
+                resolve(results[0].geometry.location);
+                return;
+              }
+              console.warn("[DISPATCH MAP GEOCODE ERROR]", address, geocodeStatus);
+              resolve(null);
+            });
+          });
+
+        const drawFallbackRoute = async (route: (typeof routePlan)[number]) => {
+          const points = (
+            await Promise.all(
+              [originAddress, ...route.stops, originAddress].map((address) =>
+                geocodeAddress(address),
+              ),
+            )
+          ).filter(Boolean);
+
+          if (points.length < 2) return false;
+
+          const polyline = new google.maps.Polyline({
+            map,
+            path: points,
+            strokeColor: route.color,
+            strokeOpacity: 0.82,
+            strokeWeight: 5,
+          });
+          mapObjectsRef.current.push(polyline);
+
+          points.forEach((point: any, index: number) => {
+            const marker = new google.maps.Marker({
+              map,
+              position: point,
+              label: index === 0 || index === points.length - 1 ? "Y" : String(index),
+              title:
+                index === 0 || index === points.length - 1
+                  ? "Yard"
+                  : route.stops[index - 1],
+            });
+            mapObjectsRef.current.push(marker);
+            bounds.extend(point);
+          });
+
+          return true;
+        };
 
         await Promise.all(
           routePlan.map(
@@ -255,7 +308,7 @@ function RouteMapPreview({
                     strokeWeight: 6,
                   },
                 });
-                renderersRef.current.push(renderer);
+                mapObjectsRef.current.push(renderer);
 
                 directionsService.route(
                   {
@@ -268,7 +321,7 @@ function RouteMapPreview({
                     optimizeWaypoints: false,
                     travelMode: google.maps.TravelMode.DRIVING,
                   },
-                  (result: any, routeStatus: string) => {
+                  async (result: any, routeStatus: string) => {
                     if (result && routeStatus === "OK") {
                       renderer.setDirections(result);
                       result.routes?.[0]?.legs?.forEach((leg: any) => {
@@ -277,6 +330,13 @@ function RouteMapPreview({
                       });
                     } else {
                       console.warn("[DISPATCH MAP ROUTE ERROR]", route.label, routeStatus);
+                      renderer.setMap(null);
+                      const drewFallback = await drawFallbackRoute(route);
+                      warnings.push(
+                        drewFallback
+                          ? `${route.label}: showing fallback stop-to-stop lines because Google Directions returned ${routeStatus}.`
+                          : `${route.label}: Google Directions returned ${routeStatus}, and the stop addresses could not be geocoded.`,
+                      );
                     }
                     resolve();
                   },
@@ -289,6 +349,7 @@ function RouteMapPreview({
           map.fitBounds(bounds);
         }
         setStatus("");
+        setRouteWarnings(warnings);
       } catch (error) {
         setStatus(error instanceof Error ? error.message : "Unable to load route map.");
       }
@@ -298,8 +359,8 @@ function RouteMapPreview({
 
     return () => {
       cancelled = true;
-      renderersRef.current.forEach((renderer) => renderer.setMap(null));
-      renderersRef.current = [];
+      mapObjectsRef.current.forEach((object) => object.setMap(null));
+      mapObjectsRef.current = [];
     };
   }, [googleMapsApiKey, originAddress, routePlan]);
 
@@ -307,6 +368,13 @@ function RouteMapPreview({
     <div style={styles.mapStage}>
       <div ref={mapRef} style={styles.googleMapCanvas} />
       {status ? <div style={styles.mapStatus}>{status}</div> : null}
+      {routeWarnings.length ? (
+        <div style={styles.mapNotice}>
+          {routeWarnings.slice(0, 2).map((warning) => (
+            <div key={warning}>{warning}</div>
+          ))}
+        </div>
+      ) : null}
       {routePlan.length ? (
         <div style={styles.mapLegend}>
           {routePlan.map((route) => (
@@ -3322,6 +3390,22 @@ const styles = {
     fontSize: 14,
     fontWeight: 800,
     textAlign: "center" as const,
+  } as const,
+  mapNotice: {
+    position: "absolute" as const,
+    top: 16,
+    left: 16,
+    right: 16,
+    display: "grid",
+    gap: 6,
+    padding: "10px 12px",
+    borderRadius: 14,
+    background: "rgba(15, 23, 42, 0.9)",
+    border: "1px solid rgba(251, 146, 60, 0.55)",
+    color: "#fed7aa",
+    fontSize: 12,
+    fontWeight: 800,
+    zIndex: 2,
   } as const,
   mapLegend: {
     position: "absolute" as const,
