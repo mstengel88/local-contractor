@@ -36,6 +36,13 @@ function getOrderDisplayNumber(order: DispatchOrder) {
   return order.orderNumber ? `#${order.orderNumber}` : order.id;
 }
 
+function isImageProof(value?: string | null) {
+  return (
+    /^data:image\//i.test(String(value || "")) ||
+    /^https?:\/\/.+\.(?:png|jpe?g|webp|gif)(?:\?.*)?$/i.test(String(value || ""))
+  );
+}
+
 async function loadOrder(orderId: string) {
   await ensureSeedDispatchTrucks();
   await ensureSeedDispatchEmployees();
@@ -138,7 +145,17 @@ export default function DispatchDriverDetailPage() {
             <div style={styles.label}>Driver Proof</div>
             {order.signatureName ? <p style={styles.noteText}>Signature: {order.signatureName}</p> : null}
             {order.proofNotes ? <p style={styles.noteText}>Proof notes: {order.proofNotes}</p> : null}
-            {order.photoUrls ? <p style={styles.noteText}>Photos: {order.photoUrls}</p> : null}
+            {order.photoUrls ? (
+              isImageProof(order.photoUrls) ? (
+                <img
+                  src={order.photoUrls}
+                  alt="Delivered material proof"
+                  style={styles.photoPreview}
+                />
+              ) : (
+                <p style={styles.noteText}>Photos: {order.photoUrls}</p>
+              )
+            ) : null}
           </section>
         ) : null}
       </section>
@@ -246,5 +263,14 @@ const styles = {
     color: "#334155",
     lineHeight: 1.45,
     whiteSpace: "pre-wrap" as const,
+  },
+  photoPreview: {
+    width: "100%",
+    maxHeight: 460,
+    marginTop: 8,
+    borderRadius: 10,
+    objectFit: "contain" as const,
+    background: "#e2e8f0",
+    border: "1px solid #cbd5e1",
   },
 };

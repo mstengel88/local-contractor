@@ -448,6 +448,35 @@ function SheetLine({ label, value }: { label: string; value: string }) {
   );
 }
 
+function isImageProof(value: string) {
+  return /^data:image\//i.test(value) || /^https?:\/\/.+\.(?:png|jpe?g|webp|gif)(?:\?.*)?$/i.test(value);
+}
+
+function readCompressedImageDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Unable to read selected photo."));
+    reader.onload = () => {
+      const originalDataUrl = String(reader.result || "");
+      const image = new Image();
+      image.onerror = () => resolve(originalDataUrl);
+      image.onload = () => {
+        const maxDimension = 1280;
+        const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+        const width = Math.max(1, Math.round(image.width * scale));
+        const height = Math.max(1, Math.round(image.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d")?.drawImage(image, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.78));
+      };
+      image.src = originalDataUrl;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function StopDeliveryForm({
   stop,
   routeId,
@@ -461,7 +490,7 @@ function StopDeliveryForm({
 }) {
   const [photoProof, setPhotoProof] = useState(stop.photoUrls || "");
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState(
-    stop.photoUrls && /^https?:\/\//i.test(stop.photoUrls) ? stop.photoUrls : "",
+    stop.photoUrls && isImageProof(stop.photoUrls) ? stop.photoUrls : "",
   );
   const [gpsProof, setGpsProof] = useState(stop.signatureData || "");
   const [gpsStatus, setGpsStatus] = useState("");
@@ -541,16 +570,19 @@ function StopDeliveryForm({
               onChange={(event) => {
                 const file = event.currentTarget.files?.[0];
                 if (file) {
-                  const nextPreviewUrl = URL.createObjectURL(file);
-                  setPhotoPreviewUrl((currentPreviewUrl) => {
-                    if (currentPreviewUrl.startsWith("blob:")) {
-                      URL.revokeObjectURL(currentPreviewUrl);
-                    }
-                    return nextPreviewUrl;
-                  });
-                  setPhotoProof(
-                    `Photo captured: ${file.name} (${Math.round(file.size / 1024)} KB)`,
-                  );
+                  readCompressedImageDataUrl(file)
+                    .then((dataUrl) => {
+                      setPhotoPreviewUrl((currentPreviewUrl) => {
+                        if (currentPreviewUrl.startsWith("blob:")) {
+                          URL.revokeObjectURL(currentPreviewUrl);
+                        }
+                        return dataUrl;
+                      });
+                      setPhotoProof(dataUrl);
+                    })
+                    .catch((error) => {
+                      setPhotoProof(error instanceof Error ? error.message : "Unable to load photo.");
+                    });
                 }
               }}
             />

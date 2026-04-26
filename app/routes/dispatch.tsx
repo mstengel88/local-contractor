@@ -67,6 +67,13 @@ function getOrderDisplayNumber(order: DispatchOrder) {
   return order.orderNumber ? `#${order.orderNumber}` : order.id;
 }
 
+function isImageProof(value?: string | null) {
+  return (
+    /^data:image\//i.test(String(value || "")) ||
+    /^https?:\/\/.+\.(?:png|jpe?g|webp|gif)(?:\?.*)?$/i.test(String(value || ""))
+  );
+}
+
 function suffixOrderNumber(orderNumber: string, index: number, total: number) {
   if (!orderNumber || total <= 1) return orderNumber;
   return `${orderNumber}${String.fromCharCode(97 + index)}`;
@@ -2335,10 +2342,18 @@ export default function DispatchPage() {
 
                 {selectedOrder.photoUrls ? (
                   <div style={styles.notesBlock}>
-                    <div style={styles.detailLabel}>Photo Links</div>
-                    <div style={{ color: "#e2e8f0", lineHeight: 1.55, whiteSpace: "pre-wrap" }}>
-                      {selectedOrder.photoUrls}
-                    </div>
+                    <div style={styles.detailLabel}>Photo Proof</div>
+                    {isImageProof(selectedOrder.photoUrls) ? (
+                      <img
+                        src={selectedOrder.photoUrls}
+                        alt="Delivered material proof"
+                        style={styles.deliveredPhoto}
+                      />
+                    ) : (
+                      <div style={{ color: "#e2e8f0", lineHeight: 1.55, whiteSpace: "pre-wrap" }}>
+                        {selectedOrder.photoUrls}
+                      </div>
+                    )}
                   </div>
                 ) : null}
               </div>
@@ -4001,6 +4016,15 @@ const styles = {
     background: "rgba(2, 6, 23, 0.72)",
     border: "1px solid rgba(51, 65, 85, 0.95)",
   } as const,
+  deliveredPhoto: {
+    width: "100%",
+    maxHeight: 520,
+    marginTop: 10,
+    borderRadius: 16,
+    objectFit: "contain" as const,
+    background: "rgba(15, 23, 42, 0.92)",
+    border: "1px solid rgba(51, 65, 85, 0.95)",
+  },
   todoItem: {
     display: "flex",
     gap: 10,
