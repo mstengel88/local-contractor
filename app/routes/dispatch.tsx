@@ -184,6 +184,11 @@ function RouteMapPreview({
   const [status, setStatus] = useState("");
   const [routeWarnings, setRouteWarnings] = useState<string[]>([]);
 
+  const getTravelLabel = (order: DispatchOrder) => {
+    if (order.travelMinutes) return `${order.travelMinutes} min RT`;
+    return order.travelSummary || "RT not calculated";
+  };
+
   const routePlan = useMemo(
     () =>
       routes
@@ -192,13 +197,15 @@ function RouteMapPreview({
           color: route.color || "#38bdf8",
           label: `${route.code} · ${route.truck}`,
           stops: route.orders
-            .map((order) =>
-              [order.address, order.city]
+            .map((order) => ({
+              address: [order.address, order.city]
                 .map((part) => String(part || "").trim())
                 .filter(Boolean)
                 .join(", "),
-            )
-            .filter(Boolean),
+              customer: order.customer,
+              travelLabel: getTravelLabel(order),
+            }))
+            .filter((stop) => stop.address),
         }))
         .filter((route) => route.stops.length > 0),
     [routes],
@@ -245,6 +252,55 @@ function RouteMapPreview({
         const geocoder = new google.maps.Geocoder();
         const warnings: string[] = [];
 
+        const addTimeBadge = (position: any, text: string, color: string) => {
+          const badge = document.createElement("div");
+          badge.textContent = text;
+          badge.style.position = "absolute";
+          badge.style.transform = "translate(12px, -34px)";
+          badge.style.padding = "5px 8px";
+          badge.style.borderRadius = "999px";
+          badge.style.background = "rgba(15, 23, 42, 0.92)";
+          badge.style.border = `1px solid ${color}99`;
+          badge.style.boxShadow = "0 8px 18px rgba(2, 6, 23, 0.28)";
+          badge.style.color = "#f8fafc";
+          badge.style.fontSize = "11px";
+          badge.style.fontWeight = "800";
+          badge.style.whiteSpace = "nowrap";
+
+          const overlay = new google.maps.OverlayView();
+          overlay.onAdd = () => {
+            overlay.getPanes()?.overlayMouseTarget.appendChild(badge);
+          };
+          overlay.draw = () => {
+            const point = overlay.getProjection()?.fromLatLngToDivPixel(position);
+            if (!point) return;
+            badge.style.left = `${point.x}px`;
+            badge.style.top = `${point.y}px`;
+          };
+          overlay.onRemove = () => {
+            badge.remove();
+          };
+          overlay.setMap(map);
+          mapObjectsRef.current.push(overlay);
+        };
+
+        const addStopMarker = (
+          position: any,
+          route: (typeof routePlan)[number],
+          stop: (typeof routePlan)[number]["stops"][number],
+          stopIndex: number,
+        ) => {
+          const marker = new google.maps.Marker({
+            map,
+            position,
+            label: String(stopIndex + 1),
+            title: `${stop.customer} · ${stop.travelLabel}`,
+          });
+          mapObjectsRef.current.push(marker);
+          addTimeBadge(position, stop.travelLabel, route.color);
+          bounds.extend(position);
+        };
+
         const geocodeAddress = (address: string) =>
           new Promise<any | null>((resolve) => {
             geocoder.geocode({ address }, (results: any[], geocodeStatus: string) => {
@@ -260,7 +316,7 @@ function RouteMapPreview({
         const drawFallbackRoute = async (route: (typeof routePlan)[number]) => {
           const points = (
             await Promise.all(
-              [originAddress, ...route.stops, originAddress].map((address) =>
+              [originAddress, ...route.stops.map((stop) => stop.address), originAddress].map((address) =>
                 geocodeAddress(address),
               ),
             )
@@ -278,16 +334,17 @@ function RouteMapPreview({
           mapObjectsRef.current.push(polyline);
 
           points.forEach((point: any, index: number) => {
+            const isYard = index === 0 || index === points.length - 1;
             const marker = new google.maps.Marker({
               map,
               position: point,
-              label: index === 0 || index === points.length - 1 ? "Y" : String(index),
-              title:
-                index === 0 || index === points.length - 1
-                  ? "Yard"
-                  : route.stops[index - 1],
+              label: isYard ? "Y" : String(index),
+              title: isYard ? "Yard" : `${route.stops[index - 1].customer} · ${route.stops[index - 1].travelLabel}`,
             });
             mapObjectsRef.current.push(marker);
+            if (!isYard) {
+              addTimeBadge(point, route.stops[index - 1].travelLabel, route.color);
+            }
             bounds.extend(point);
           });
 
@@ -301,7 +358,7 @@ function RouteMapPreview({
                 const renderer = new google.maps.DirectionsRenderer({
                   map,
                   preserveViewport: true,
-                  suppressMarkers: false,
+                  suppressMarkers: true,
                   polylineOptions: {
                     strokeColor: route.color,
                     strokeOpacity: 0.9,
@@ -315,7 +372,7 @@ function RouteMapPreview({
                     origin: originAddress,
                     destination: originAddress,
                     waypoints: route.stops.map((stop) => ({
-                      location: stop,
+                      location: stop.address,
                       stopover: true,
                     })),
                     optimizeWaypoints: false,
@@ -327,6 +384,22 @@ function RouteMapPreview({
                       result.routes?.[0]?.legs?.forEach((leg: any) => {
                         if (leg.start_location) bounds.extend(leg.start_location);
                         if (leg.end_location) bounds.extend(leg.end_location);
+                      });
+                      const firstLeg = result.routes?.[0]?.legs?.[0];
+                      if (firstLeg?.start_location) {
+                        const yardMarker = new google.maps.Marker({
+                          map,
+                          position: firstLeg.start_location,
+                          label: "Y",
+                          title: "Yard",
+                        });
+                        mapObjectsRef.current.push(yardMarker);
+                      }
+                      route.stops.forEach((stop, stopIndex) => {
+                        const leg = result.routes?.[0]?.legs?.[stopIndex];
+                        if (leg?.end_location) {
+                          addStopMarker(leg.end_location, route, stop, stopIndex);
+                        }
                       });
                     } else {
                       console.warn("[DISPATCH MAP ROUTE ERROR]", route.label, routeStatus);
