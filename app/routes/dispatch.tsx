@@ -1593,6 +1593,10 @@ export default function DispatchPage() {
     activeView === "dashboard" &&
     searchParams.get("detail") === "1" &&
     Boolean(selectedOrder && querySelectedOrderId);
+  const deliveredDetailOpen =
+    activeView === "delivered" &&
+    searchParams.get("detail") === "1" &&
+    Boolean(selectedOrder && querySelectedOrderId);
 
   if (!allowed) {
     return (
@@ -2147,7 +2151,7 @@ export default function DispatchPage() {
                         </div>
                         <div style={styles.deliveredActions}>
                           <a
-                            href={`${dispatchHref}?view=delivered&order=${encodeURIComponent(order.id)}`}
+                            href={`${dispatchHref}?view=delivered&order=${encodeURIComponent(order.id)}&detail=1`}
                             style={styles.detailButton}
                           >
                             Open
@@ -2171,6 +2175,108 @@ export default function DispatchPage() {
                     );
                   })
                 )}
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {deliveredDetailOpen && selectedOrder ? (
+          <div style={styles.modalOverlay}>
+            <div style={styles.dispatchModal}>
+              <div style={styles.panelHeader}>
+                <div>
+                  <h2 style={styles.panelTitle}>Delivered Order</h2>
+                  <p style={styles.panelSub}>
+                    Review the completed delivery details and proof notes.
+                  </p>
+                </div>
+                <a href={dispatchViewHref("delivered")} style={styles.modalCloseButton}>
+                  Close
+                </a>
+              </div>
+
+              <div style={{ display: "grid", gap: 14 }}>
+                <div>
+                  <div style={styles.detailId}>{getOrderDisplayNumber(selectedOrder)}</div>
+                  <div style={styles.detailTitle}>{selectedOrder.customer}</div>
+                  <div style={styles.detailMeta}>{selectedOrder.contact}</div>
+                </div>
+
+                <div style={styles.detailGrid}>
+                  <div>
+                    <div style={styles.detailLabel}>Address</div>
+                    <div style={styles.detailValue}>
+                      {selectedOrder.address}, {selectedOrder.city}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={styles.detailLabel}>Load</div>
+                    <div style={styles.detailValue}>
+                      {selectedOrder.quantity} {selectedOrder.unit} {selectedOrder.material}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={styles.detailLabel}>Requested</div>
+                    <div style={styles.detailValue}>{selectedOrder.requestedWindow}</div>
+                  </div>
+                  <div>
+                    <div style={styles.detailLabel}>Time Preference</div>
+                    <div style={styles.detailValue}>
+                      {selectedOrder.timePreference || "No preference"}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={styles.detailLabel}>Travel Time</div>
+                    <div style={styles.detailValue}>
+                      {selectedOrder.travelSummary || "Not calculated yet"}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={styles.detailLabel}>Delivered</div>
+                    <div style={styles.detailValue}>
+                      {selectedOrder.deliveredAt
+                        ? new Date(selectedOrder.deliveredAt).toLocaleString()
+                        : "Delivered"}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={styles.detailLabel}>Proof Name</div>
+                    <div style={styles.detailValue}>
+                      {selectedOrder.proofName || selectedOrder.signatureName || "Not captured"}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={styles.detailLabel}>Inspection</div>
+                    <div style={styles.detailValue}>
+                      {selectedOrder.inspectionStatus || "Not completed"}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={styles.notesBlock}>
+                  <div style={styles.detailLabel}>Notes</div>
+                  <div style={{ color: "#e2e8f0", lineHeight: 1.55 }}>
+                    {selectedOrder.notes || "No dispatch notes."}
+                  </div>
+                </div>
+
+                {selectedOrder.proofNotes ? (
+                  <div style={styles.notesBlock}>
+                    <div style={styles.detailLabel}>Proof Notes</div>
+                    <div style={{ color: "#e2e8f0", lineHeight: 1.55 }}>
+                      {selectedOrder.proofNotes}
+                    </div>
+                  </div>
+                ) : null}
+
+                {selectedOrder.photoUrls ? (
+                  <div style={styles.notesBlock}>
+                    <div style={styles.detailLabel}>Photo Links</div>
+                    <div style={{ color: "#e2e8f0", lineHeight: 1.55, whiteSpace: "pre-wrap" }}>
+                      {selectedOrder.photoUrls}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
