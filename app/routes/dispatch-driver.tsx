@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Form, useActionData, useLoaderData, useLocation } from "react-router";
 import { data, redirect } from "react-router";
 import {
@@ -460,8 +460,19 @@ function StopDeliveryForm({
   detailHref: string;
 }) {
   const [photoProof, setPhotoProof] = useState(stop.photoUrls || "");
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState(
+    stop.photoUrls && /^https?:\/\//i.test(stop.photoUrls) ? stop.photoUrls : "",
+  );
   const [gpsProof, setGpsProof] = useState(stop.signatureData || "");
   const [gpsStatus, setGpsStatus] = useState("");
+
+  useEffect(() => {
+    return () => {
+      if (photoPreviewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(photoPreviewUrl);
+      }
+    };
+  }, [photoPreviewUrl]);
 
   function captureGps() {
     if (!navigator.geolocation) {
@@ -530,6 +541,13 @@ function StopDeliveryForm({
               onChange={(event) => {
                 const file = event.currentTarget.files?.[0];
                 if (file) {
+                  const nextPreviewUrl = URL.createObjectURL(file);
+                  setPhotoPreviewUrl((currentPreviewUrl) => {
+                    if (currentPreviewUrl.startsWith("blob:")) {
+                      URL.revokeObjectURL(currentPreviewUrl);
+                    }
+                    return nextPreviewUrl;
+                  });
                   setPhotoProof(
                     `Photo captured: ${file.name} (${Math.round(file.size / 1024)} KB)`,
                   );
@@ -546,7 +564,15 @@ function StopDeliveryForm({
         <div style={styles.proofStatusGrid}>
           <div style={styles.proofStatusBox}>
             <span>Photo</span>
-            <strong>{photoProof || "Not captured"}</strong>
+            {photoPreviewUrl ? (
+              <img
+                src={photoPreviewUrl}
+                alt="Delivery proof preview"
+                style={styles.photoPreview}
+              />
+            ) : (
+              <strong>Not captured</strong>
+            )}
           </div>
           <div style={styles.proofStatusBox}>
             <span>GPS</span>
@@ -950,6 +976,14 @@ const styles = {
     color: "#334155",
     fontSize: 12,
   } as const,
+  photoPreview: {
+    width: "100%",
+    maxHeight: 260,
+    borderRadius: 10,
+    objectFit: "cover" as const,
+    border: "1px solid #cbd5e1",
+    background: "#e2e8f0",
+  },
   utilityRow: {
     display: "flex",
     gap: 10,
