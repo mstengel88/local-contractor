@@ -5595,6 +5595,7 @@ async function action$e({
     });
   }
   try {
+    await resetDispatchRoutesForNewDay();
     if (intent === "create-order") {
       const customer = String(form.get("customer") || "").trim();
       const address = String(form.get("address") || "").trim();
