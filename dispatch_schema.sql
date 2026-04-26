@@ -196,6 +196,12 @@ alter table public.dispatch_routes
 create index if not exists dispatch_routes_active_idx
   on public.dispatch_routes (is_active, created_at asc);
 
+create table if not exists public.dispatch_settings (
+  key text primary key,
+  value text,
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
 create or replace function public.set_dispatch_routes_updated_at()
 returns trigger
 language plpgsql

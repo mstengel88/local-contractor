@@ -14,6 +14,7 @@ import {
   ensureSeedDispatchTrucks,
   getDispatchOrders,
   getDispatchRoutes,
+  resetDispatchRoutesForNewDay,
   seedDispatchOrders,
   seedDispatchRoutes,
   type DispatchDeliveryStatus,
@@ -64,6 +65,7 @@ async function loadDriverState() {
     await ensureSeedDispatchEmployees();
     await ensureSeedDispatchOrders();
     await ensureSeedDispatchRoutes();
+    await resetDispatchRoutesForNewDay();
 
     return {
       orders: await getDispatchOrders(),

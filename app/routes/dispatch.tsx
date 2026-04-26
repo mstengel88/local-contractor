@@ -31,6 +31,7 @@ import {
   type DispatchRoute,
   type DispatchTruck,
   parseDispatchEmail,
+  resetDispatchRoutesForNewDay,
   seedDispatchEmployees,
   seedDispatchOrders,
   seedDispatchRoutes,
@@ -142,6 +143,7 @@ async function loadDispatchState() {
     await ensureSeedDispatchEmployees();
     await ensureSeedDispatchOrders();
     await ensureSeedDispatchRoutes();
+    await resetDispatchRoutesForNewDay();
     return {
       orders: await getDispatchOrders(),
       routes: await getDispatchRoutes(),

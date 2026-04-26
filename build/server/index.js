@@ -4236,7 +4236,7 @@ function isProductHeader(value) {
   );
 }
 function isProductCandidate(value) {
-  const line = value.trim();
+  const line = cleanProductMaterial(value);
   return /[a-z]/i.test(line) && !isProductHeader(line) && !/@media|template_|max-width|font-|color:|background|border|padding|margin|display:|width:/i.test(line) && !/[{};]/.test(line) && !/^\(#?\d+\)$/i.test(line) && !/^#?\d+$/.test(line) && !/^order\s+#/i.test(line) && !/^(subtotal|shipping|tax|total|payment method):/i.test(line) && !/^\$/.test(line);
 }
 function cleanCityValue(value) {
@@ -4278,6 +4278,9 @@ function normalizeDispatchUnit(value, fallback = "Unit") {
   if (/bags?/i.test(unit)) return "Bags";
   if (/units?/i.test(unit)) return "Unit";
   return unit;
+}
+function cleanProductMaterial(value) {
+  return value.replace(/\b(?:united\s+states|states|ed\s+states)\s*\(us\)\s*/gi, "").replace(/^(?:product|material|item)\s*:?\s*/i, "").replace(/\s*(?:x|\u00d7)\s*\d+(?:\.\d+)?\s*$/i, "").replace(/\s+\$?\d+(?:\.\d{2})?\s*$/i, "").replace(/\s{2,}/g, " ").trim();
 }
 function normalizeProductLookupText(value) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
@@ -4357,7 +4360,7 @@ function parseShopifyProduct(raw) {
   if (!parsedQuantity) {
     parsedQuantity = parseQuantityFromEmail(raw);
   }
-  return { material, quantity: parsedQuantity };
+  return { material: cleanProductMaterial(material), quantity: parsedQuantity };
 }
 function parseShopifyShipping(raw) {
   const lines = textLines(raw);
@@ -4415,7 +4418,9 @@ function parseDispatchEmail(raw) {
   const rawCity = readEmailField(normalized, ["City", "City/State", "Location"]) || shipping.city;
   const labelledMaterial = readEmailField(normalized, ["Material", "Product", "Item"]);
   const labelledQuantity = readEmailField(normalized, ["Quantity", "Qty", "Amount"]);
-  const material = isBadParsedValue(labelledMaterial) ? shopifyProduct.material : labelledMaterial;
+  const material = cleanProductMaterial(
+    isBadParsedValue(labelledMaterial) ? shopifyProduct.material : labelledMaterial
+  );
   const quantity = cleanQuantityValue(
     isBadParsedValue(labelledQuantity) ? shopifyProduct.quantity : labelledQuantity
   );
@@ -4644,6 +4649,7 @@ const ORDERS_TABLE = "dispatch_orders";
 const ROUTES_TABLE = "dispatch_routes";
 const TRUCKS_TABLE = "dispatch_trucks";
 const EMPLOYEES_TABLE = "dispatch_employees";
+const SETTINGS_TABLE = "dispatch_settings";
 function normalizeOrder(row) {
   const deliveryStatus = row.delivery_status === "en_route" || row.delivery_status === "arrived" || row.delivery_status === "delivered" || row.delivery_status === "issue" ? row.delivery_status : "not_started";
   const requestedWindow = String(row.requested_window || "");
@@ -4897,6 +4903,51 @@ async function getDispatchRoutes() {
     throw new Error(formatSupabaseError(error));
   }
   return (data2 || []).map(normalizeRoute);
+}
+function getDispatchLocalDate() {
+  const timeZone = process.env.DISPATCH_RESET_TIMEZONE || "America/Chicago";
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(/* @__PURE__ */ new Date());
+}
+async function resetDispatchRoutesForNewDay() {
+  const today = getDispatchLocalDate();
+  const settingKey = "last_daily_route_reset";
+  const { data: setting, error: settingError } = await supabaseAdmin.from(SETTINGS_TABLE).select("value").eq("key", settingKey).maybeSingle();
+  if (settingError) {
+    throw new Error(formatSupabaseError(settingError));
+  }
+  if ((setting == null ? void 0 : setting.value) === today) {
+    return { reset: false, date: today };
+  }
+  const { error: ordersError } = await supabaseAdmin.from(ORDERS_TABLE).update({
+    status: "new",
+    assigned_route_id: null,
+    stop_sequence: null,
+    eta: null,
+    delivery_status: "not_started",
+    arrived_at: null,
+    departed_at: null
+  }).neq("status", "delivered");
+  if (ordersError) {
+    throw new Error(formatSupabaseError(ordersError));
+  }
+  const { error: routesError } = await supabaseAdmin.from(ROUTES_TABLE).update({ is_active: false }).eq("is_active", true);
+  if (routesError) {
+    throw new Error(formatSupabaseError(routesError));
+  }
+  const { error: upsertError } = await supabaseAdmin.from(SETTINGS_TABLE).upsert({
+    key: settingKey,
+    value: today,
+    updated_at: (/* @__PURE__ */ new Date()).toISOString()
+  });
+  if (upsertError) {
+    throw new Error(formatSupabaseError(upsertError));
+  }
+  return { reset: true, date: today };
 }
 async function getDispatchTrucks() {
   const { data: data2, error } = await supabaseAdmin.from(TRUCKS_TABLE).select("*").eq("is_active", true).order("label", { ascending: true });
@@ -5431,6 +5482,7 @@ async function loadDispatchState() {
     await ensureSeedDispatchEmployees();
     await ensureSeedDispatchOrders();
     await ensureSeedDispatchRoutes();
+    await resetDispatchRoutesForNewDay();
     return {
       orders: await getDispatchOrders(),
       routes: await getDispatchRoutes(),
@@ -9162,6 +9214,7 @@ async function loadDriverState() {
     await ensureSeedDispatchEmployees();
     await ensureSeedDispatchOrders();
     await ensureSeedDispatchRoutes();
+    await resetDispatchRoutesForNewDay();
     return {
       orders: await getDispatchOrders(),
       routes: await getDispatchRoutes(),

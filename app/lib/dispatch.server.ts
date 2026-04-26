@@ -129,7 +129,7 @@ function isProductHeader(value: string) {
 }
 
 function isProductCandidate(value: string) {
-  const line = value.trim();
+  const line = cleanProductMaterial(value);
   return (
     /[a-z]/i.test(line) &&
     !isProductHeader(line) &&
@@ -194,6 +194,16 @@ function normalizeDispatchUnit(value: string, fallback = "Unit") {
   if (/bags?/i.test(unit)) return "Bags";
   if (/units?/i.test(unit)) return "Unit";
   return unit;
+}
+
+function cleanProductMaterial(value: string) {
+  return value
+    .replace(/\b(?:united\s+states|states|ed\s+states)\s*\(us\)\s*/gi, "")
+    .replace(/^(?:product|material|item)\s*:?\s*/i, "")
+    .replace(/\s*(?:x|\u00d7)\s*\d+(?:\.\d+)?\s*$/i, "")
+    .replace(/\s+\$?\d+(?:\.\d{2})?\s*$/i, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 function normalizeProductLookupText(value: string) {
@@ -330,7 +340,7 @@ function parseShopifyProduct(raw: string) {
     parsedQuantity = parseQuantityFromEmail(raw);
   }
 
-  return { material, quantity: parsedQuantity };
+  return { material: cleanProductMaterial(material), quantity: parsedQuantity };
 }
 
 function parseShopifyShipping(raw: string) {
@@ -413,7 +423,9 @@ export function parseDispatchEmail(raw: string) {
   const rawCity = readEmailField(normalized, ["City", "City/State", "Location"]) || shipping.city;
   const labelledMaterial = readEmailField(normalized, ["Material", "Product", "Item"]);
   const labelledQuantity = readEmailField(normalized, ["Quantity", "Qty", "Amount"]);
-  const material = isBadParsedValue(labelledMaterial) ? shopifyProduct.material : labelledMaterial;
+  const material = cleanProductMaterial(
+    isBadParsedValue(labelledMaterial) ? shopifyProduct.material : labelledMaterial,
+  );
   const quantity = cleanQuantityValue(
     isBadParsedValue(labelledQuantity) ? shopifyProduct.quantity : labelledQuantity,
   );
@@ -692,6 +704,7 @@ const ORDERS_TABLE = "dispatch_orders";
 const ROUTES_TABLE = "dispatch_routes";
 const TRUCKS_TABLE = "dispatch_trucks";
 const EMPLOYEES_TABLE = "dispatch_employees";
+const SETTINGS_TABLE = "dispatch_settings";
 
 function normalizeOrder(row: any): DispatchOrder {
   const deliveryStatus =
@@ -1031,6 +1044,75 @@ export async function getDispatchRoutes() {
   }
 
   return (data || []).map(normalizeRoute);
+}
+
+function getDispatchLocalDate() {
+  const timeZone = process.env.DISPATCH_RESET_TIMEZONE || "America/Chicago";
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+export async function resetDispatchRoutesForNewDay() {
+  const today = getDispatchLocalDate();
+  const settingKey = "last_daily_route_reset";
+
+  const { data: setting, error: settingError } = await supabaseAdmin
+    .from(SETTINGS_TABLE)
+    .select("value")
+    .eq("key", settingKey)
+    .maybeSingle();
+
+  if (settingError) {
+    throw new Error(formatSupabaseError(settingError));
+  }
+
+  if (setting?.value === today) {
+    return { reset: false, date: today };
+  }
+
+  const { error: ordersError } = await supabaseAdmin
+    .from(ORDERS_TABLE)
+    .update({
+      status: "new",
+      assigned_route_id: null,
+      stop_sequence: null,
+      eta: null,
+      delivery_status: "not_started",
+      arrived_at: null,
+      departed_at: null,
+    })
+    .neq("status", "delivered");
+
+  if (ordersError) {
+    throw new Error(formatSupabaseError(ordersError));
+  }
+
+  const { error: routesError } = await supabaseAdmin
+    .from(ROUTES_TABLE)
+    .update({ is_active: false })
+    .eq("is_active", true);
+
+  if (routesError) {
+    throw new Error(formatSupabaseError(routesError));
+  }
+
+  const { error: upsertError } = await supabaseAdmin
+    .from(SETTINGS_TABLE)
+    .upsert({
+      key: settingKey,
+      value: today,
+      updated_at: new Date().toISOString(),
+    });
+
+  if (upsertError) {
+    throw new Error(formatSupabaseError(upsertError));
+  }
+
+  return { reset: true, date: today };
 }
 
 export async function getDispatchTrucks() {
