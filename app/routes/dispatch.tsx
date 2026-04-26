@@ -1564,7 +1564,13 @@ export default function DispatchPage() {
       <div style={styles.appFrame}>
         <aside style={styles.sidebar}>
           <div style={styles.brandBlock}>
-            <div style={styles.brandMark}>GH</div>
+            <div style={styles.brandMark}>
+              <img
+                src="/green-hills-logo.png"
+                alt="Green Hills Supply"
+                style={styles.brandLogo}
+              />
+            </div>
             <div>
               <div style={styles.brandTitle}>Contractor</div>
               <div style={styles.brandSub}>Dispatch v2.0</div>
@@ -2935,16 +2941,22 @@ const styles = {
     gap: 12,
   } as const,
   brandMark: {
-    width: 42,
-    height: 42,
+    width: 70,
+    height: 54,
     borderRadius: 16,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "linear-gradient(135deg, #0ea5e9, #14b8a6)",
-    color: "#ecfeff",
-    fontWeight: 900,
-    boxShadow: "0 12px 28px rgba(14, 165, 233, 0.28)",
+    background: "rgba(2, 6, 23, 0.64)",
+    border: "1px solid rgba(132, 204, 22, 0.32)",
+    overflow: "hidden",
+    boxShadow: "0 12px 28px rgba(22, 163, 74, 0.24)",
+  } as const,
+  brandLogo: {
+    width: "100%",
+    height: "100%",
+    objectFit: "contain" as const,
+    display: "block",
   } as const,
   brandTitle: {
     color: "#f8fafc",

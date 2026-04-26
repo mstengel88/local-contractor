@@ -128,11 +128,30 @@ function isProductHeader(value: string) {
   );
 }
 
+function isShopifyProductBoundary(value: string) {
+  return /^(billing address|shipping address|subtotal|shipping|tax|total|payment method|delivery or pickup preference date|please describe where|what happens next\??)$/i.test(
+    value.trim(),
+  );
+}
+
+function isCountryOrAddressFragment(value: string) {
+  const line = value.trim();
+  return (
+    /^(?:united\s+states|states|ed\s+states)\s*\(us\)$/i.test(line) ||
+    /\b(?:united\s+states|states|ed\s+states)\s*\(us\)\b/i.test(line) ||
+    /^[A-Z]{2}\s+\d{5}(?:-\d{4})?$/i.test(line) ||
+    /^\d{3,}/.test(line)
+  );
+}
+
 function isProductCandidate(value: string) {
   const line = cleanProductMaterial(value);
   return (
+    !isCountryOrAddressFragment(value) &&
+    !isCountryOrAddressFragment(line) &&
     /[a-z]/i.test(line) &&
     !isProductHeader(line) &&
+    !isShopifyProductBoundary(line) &&
     !/@media|template_|max-width|font-|color:|background|border|padding|margin|display:|width:/i.test(line) &&
     !/[{};]/.test(line) &&
     !/^\(#?\d+\)$/i.test(line) &&
@@ -199,6 +218,7 @@ function normalizeDispatchUnit(value: string, fallback = "Unit") {
 function cleanProductMaterial(value: string) {
   return value
     .replace(/\b(?:united\s+states|states|ed\s+states)\s*\(us\)\s*/gi, "")
+    .replace(/^\s*(?:ed\s+)?states\s*\(us\)\s*/i, "")
     .replace(/^(?:product|material|item)\s*:?\s*/i, "")
     .replace(/\s*(?:x|\u00d7)\s*\d+(?:\.\d+)?\s*$/i, "")
     .replace(/\s+\$?\d+(?:\.\d{2})?\s*$/i, "")
@@ -343,6 +363,7 @@ function parseShopifyProductAtLine(raw: string, quantityLineIndex: number) {
   for (let index = quantityLineIndex - 1; index >= 0; index -= 1) {
     if (material) break;
     const candidate = lines[index];
+    if (isShopifyProductBoundary(candidate)) break;
     if (isProductCandidate(candidate)) {
       material = candidate;
       break;
@@ -354,9 +375,22 @@ function parseShopifyProductAtLine(raw: string, quantityLineIndex: number) {
 
 function parseShopifyProducts(raw: string) {
   const lines = textLines(raw);
+  const productStart = lines.findIndex((line) => /^product$/i.test(line));
+  const productEndCandidates = [
+    lines.findIndex((line) => /^subtotal:?/i.test(line)),
+    lines.findIndex((line) => /^billing address\b/i.test(line)),
+    lines.findIndex((line) => /^shipping address\b/i.test(line)),
+  ].filter((index) => index > productStart);
+  const productEnd =
+    productStart >= 0 && productEndCandidates.length
+      ? Math.min(...productEndCandidates)
+      : lines.length;
   const quantityLineIndexes = lines
     .map((line, index) => ({ line, index }))
     .filter(({ line, index }) => {
+    if (productStart >= 0 && (index <= productStart || index >= productEnd)) {
+      return false;
+    }
     if (!/(?:x|\u00d7)\s*\d+/i.test(line)) return false;
     const window = lines
       .slice(Math.max(0, index - 4), Math.min(lines.length, index + 3))
