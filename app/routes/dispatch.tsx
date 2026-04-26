@@ -6,6 +6,7 @@ import {
   getAdminQuotePassword,
   hasAdminQuoteAccess,
 } from "../lib/admin-quote-auth.server";
+import { sendDeliveryConfirmationEmail } from "../lib/delivery-confirmation-email.server";
 import {
   createDispatchEmployee,
   createDispatchRoute,
@@ -929,14 +930,32 @@ export async function action({ request }: any) {
         patch.deliveredAt = now;
       }
 
-      await updateDispatchOrder(orderId, patch);
+      const updatedOrder = await updateDispatchOrder(orderId, patch);
+      const route = updatedOrder.assignedRouteId
+        ? (await getDispatchRoutes()).find((entry) => entry.id === updatedOrder.assignedRouteId) || null
+        : null;
+      let emailNote = "";
+      if (deliveryStatus === "delivered") {
+        try {
+          const emailResult = await sendDeliveryConfirmationEmail({
+            order: updatedOrder,
+            route,
+          });
+          emailNote = emailResult.sent
+            ? " Delivery confirmation email sent."
+            : ` Delivery confirmation email skipped: ${emailResult.reason}`;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Unknown email error.";
+          emailNote = ` Delivery confirmation email failed: ${message}`;
+        }
+      }
 
       const dispatchState = await loadDispatchState();
 
       return data({
         allowed: true,
         ok: true,
-        message: `Stop marked ${getDeliveryStatusLabel(deliveryStatus).toLowerCase()}.`,
+        message: `Stop marked ${getDeliveryStatusLabel(deliveryStatus).toLowerCase()}.${emailNote}`,
         selectedOrderId: orderId,
         ...dispatchState,
       });

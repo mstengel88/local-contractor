@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Form, useActionData, useLoaderData, useLocation } from "react-router";
 import { data, redirect } from "react-router";
 import {
@@ -6,6 +6,7 @@ import {
   getAdminQuotePassword,
   hasAdminQuoteAccess,
 } from "../lib/admin-quote-auth.server";
+import { sendDeliveryConfirmationEmail } from "../lib/delivery-confirmation-email.server";
 import {
   ensureSeedDispatchEmployees,
   ensureSeedDispatchOrders,
@@ -186,6 +187,12 @@ export async function action({ request }: any) {
   }
 
   const now = new Date().toISOString();
+  const currentState = await loadDriverState();
+  const currentOrder =
+    currentState.orders.find((order: DispatchOrder) => order.id === orderId) || null;
+  const currentRoute =
+    currentState.routes.find((route: DispatchRoute) => route.id === (routeId || currentOrder?.assignedRouteId)) ||
+    null;
   const patch: Parameters<typeof updateDispatchOrder>[1] = {
     deliveryStatus,
     proofName: String(form.get("proofName") || "").trim() || null,
@@ -204,12 +211,28 @@ export async function action({ request }: any) {
     patch.deliveredAt = now;
   }
 
-  await updateDispatchOrder(orderId, patch);
+  const updatedOrder = await updateDispatchOrder(orderId, patch);
+
+  let emailNote = "";
+  if (deliveryStatus === "delivered") {
+    try {
+      const emailResult = await sendDeliveryConfirmationEmail({
+        order: updatedOrder,
+        route: currentRoute,
+      });
+      emailNote = emailResult.sent
+        ? " Delivery confirmation email sent."
+        : ` Delivery confirmation email skipped: ${emailResult.reason}`;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown email error.";
+      emailNote = ` Delivery confirmation email failed: ${message}`;
+    }
+  }
 
   return data({
     allowed: true,
     ok: true,
-    message: `Stop marked ${getStatusLabel(deliveryStatus).toLowerCase()}.`,
+    message: `Stop marked ${getStatusLabel(deliveryStatus).toLowerCase()}.${emailNote}`,
     selectedRouteId: routeId || null,
     selectedOrderId: orderId,
     ...(await loadDriverState()),
@@ -397,83 +420,12 @@ export default function DispatchDriverPage() {
 
                 {stop.notes ? <p style={styles.notes}>{stop.notes}</p> : null}
 
-                <Form method="post" style={styles.stopForm}>
-                  <input type="hidden" name="intent" value="update-stop-status" />
-                  <input type="hidden" name="routeId" value={selectedRoute?.id || ""} />
-                  <input type="hidden" name="orderId" value={stop.id} />
-
-                  <div style={styles.statusButtons}>
-                    {[
-                      ["not_started", "Dispatched"],
-                      ["en_route", "Enroute"],
-                      ["delivered", "Delivered"],
-                    ].map(([value, label]) => (
-                      <button
-                        key={value}
-                        type="submit"
-                        name="deliveryStatus"
-                        value={value}
-                        style={styles.statusButton}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div style={styles.proofGrid}>
-                    <div>
-                      <label style={styles.label}>Driver Signature / Name</label>
-                      <input
-                        name="signatureName"
-                        defaultValue={stop.signatureName || selectedRoute?.driver || ""}
-                        placeholder="Driver name"
-                        style={styles.input}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label style={styles.label}>Driver Notes Upon Delivery</label>
-                    <textarea
-                      name="proofNotes"
-                      defaultValue={stop.proofNotes || ""}
-                      rows={3}
-                      placeholder="Gate code, placement note, blocked access, customer request..."
-                      style={styles.textarea}
-                    />
-                  </div>
-
-                  <input type="hidden" name="proofName" value={stop.proofName || ""} />
-                  <input type="hidden" name="signatureData" value={stop.signatureData || ""} />
-                  <input type="hidden" name="photoUrls" value={stop.photoUrls || ""} />
-                  <input type="hidden" name="inspectionStatus" value={stop.inspectionStatus || ""} />
-                  <input type="hidden" name="customChecklist" value={stop.checklistJson || ""} />
-
-                  <div style={styles.utilityRow}>
-                    <a
-                      href={`https://maps.google.com/?q=${encodeURIComponent(`${stop.address}, ${stop.city}`)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={styles.mapButton}
-                    >
-                      Open Map
-                    </a>
-                    <button
-                      type="button"
-                      style={styles.detailButton}
-                      onClick={() => {
-                        const url = `${detailHref}?order=${encodeURIComponent(stop.id)}`;
-                        window.open(
-                          url,
-                          `dispatch-stop-${stop.id}`,
-                          "width=720,height=860,menubar=no,toolbar=no,location=no,status=no",
-                        );
-                      }}
-                    >
-                      Full Detail
-                    </button>
-                  </div>
-                </Form>
+                <StopDeliveryForm
+                  stop={stop}
+                  routeId={selectedRoute?.id || ""}
+                  driverName={selectedRoute?.driver || ""}
+                  detailHref={detailHref}
+                />
               </article>
             ))
           )}
@@ -489,6 +441,179 @@ function SheetLine({ label, value }: { label: string; value: string }) {
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
+  );
+}
+
+function StopDeliveryForm({
+  stop,
+  routeId,
+  driverName,
+  detailHref,
+}: {
+  stop: DispatchOrder;
+  routeId: string;
+  driverName: string;
+  detailHref: string;
+}) {
+  const [photoProof, setPhotoProof] = useState(stop.photoUrls || "");
+  const [gpsProof, setGpsProof] = useState(stop.signatureData || "");
+  const [gpsStatus, setGpsStatus] = useState("");
+
+  function captureGps() {
+    if (!navigator.geolocation) {
+      setGpsStatus("GPS is not available on this device.");
+      return;
+    }
+
+    setGpsStatus("Getting GPS location...");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        const capturedAt = new Date().toLocaleString();
+        setGpsProof(
+          `GPS: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} accuracy ${Math.round(
+            accuracy,
+          )}m captured ${capturedAt}`,
+        );
+        setGpsStatus("GPS location captured.");
+      },
+      (error) => {
+        setGpsStatus(error.message || "Unable to capture GPS location.");
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
+    );
+  }
+
+  return (
+    <Form method="post" style={styles.stopForm}>
+      <input type="hidden" name="intent" value="update-stop-status" />
+      <input type="hidden" name="routeId" value={routeId} />
+      <input type="hidden" name="orderId" value={stop.id} />
+
+      <div style={styles.statusButtons}>
+        {[
+          ["not_started", "Dispatched"],
+          ["en_route", "Enroute"],
+        ].map(([value, label]) => (
+          <button
+            key={value}
+            type="submit"
+            name="deliveryStatus"
+            value={value}
+            style={styles.statusButton}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <section style={styles.capturePanel}>
+        <div>
+          <div style={styles.captureTitle}>Delivery Proof</div>
+          <p style={styles.captureHelp}>
+            Capture the delivery photo and GPS before submitting the stop as delivered.
+          </p>
+        </div>
+
+        <div style={styles.captureGrid}>
+          <label style={styles.cameraButton}>
+            Take Picture
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              style={{ display: "none" }}
+              onChange={(event) => {
+                const file = event.currentTarget.files?.[0];
+                if (file) {
+                  setPhotoProof(
+                    `Photo captured: ${file.name} (${Math.round(file.size / 1024)} KB)`,
+                  );
+                }
+              }}
+            />
+          </label>
+
+          <button type="button" style={styles.gpsButton} onClick={captureGps}>
+            Capture GPS
+          </button>
+        </div>
+
+        <div style={styles.proofStatusGrid}>
+          <div style={styles.proofStatusBox}>
+            <span>Photo</span>
+            <strong>{photoProof || "Not captured"}</strong>
+          </div>
+          <div style={styles.proofStatusBox}>
+            <span>GPS</span>
+            <strong>{gpsProof || gpsStatus || "Not captured"}</strong>
+          </div>
+        </div>
+      </section>
+
+      <div style={styles.proofGrid}>
+        <div>
+          <label style={styles.label}>Driver Signature / Name</label>
+          <input
+            name="signatureName"
+            defaultValue={stop.signatureName || driverName}
+            placeholder="Driver name"
+            style={styles.input}
+          />
+        </div>
+      </div>
+
+      <div>
+        <label style={styles.label}>Driver Notes Upon Delivery</label>
+        <textarea
+          name="proofNotes"
+          defaultValue={stop.proofNotes || ""}
+          rows={3}
+          placeholder="Gate code, placement note, blocked access, customer request..."
+          style={styles.textarea}
+        />
+      </div>
+
+      <input type="hidden" name="proofName" value={driverName || stop.proofName || ""} />
+      <input type="hidden" name="signatureData" value={gpsProof} />
+      <input type="hidden" name="photoUrls" value={photoProof} />
+      <input type="hidden" name="inspectionStatus" value={stop.inspectionStatus || ""} />
+      <input type="hidden" name="customChecklist" value={stop.checklistJson || ""} />
+
+      <div style={styles.utilityRow}>
+        <a
+          href={`https://maps.google.com/?q=${encodeURIComponent(`${stop.address}, ${stop.city}`)}`}
+          target="_blank"
+          rel="noreferrer"
+          style={styles.mapButton}
+        >
+          Open Map
+        </a>
+        <button
+          type="button"
+          style={styles.detailButton}
+          onClick={() => {
+            const url = `${detailHref}?order=${encodeURIComponent(stop.id)}`;
+            window.open(
+              url,
+              `dispatch-stop-${stop.id}`,
+              "width=720,height=860,menubar=no,toolbar=no,location=no,status=no",
+            );
+          }}
+        >
+          Full Detail
+        </button>
+      </div>
+
+      <button
+        type="submit"
+        name="deliveryStatus"
+        value="delivered"
+        style={styles.deliveredButton}
+      >
+        Submit Delivery
+      </button>
+    </Form>
   );
 }
 
@@ -731,7 +856,7 @@ const styles = {
   },
   stopForm: {
     display: "grid",
-    gap: 10,
+    gap: 12,
     marginTop: 12,
   } as const,
   statusButtons: {
@@ -757,6 +882,69 @@ const styles = {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
     gap: 10,
+  } as const,
+  capturePanel: {
+    display: "grid",
+    gap: 12,
+    padding: 14,
+    borderRadius: 12,
+    border: "1px solid #bae6fd",
+    background: "linear-gradient(145deg, #eff6ff, #f8fafc)",
+  } as const,
+  captureTitle: {
+    fontSize: 16,
+    fontWeight: 950,
+    color: "#0f172a",
+  },
+  captureHelp: {
+    margin: "4px 0 0",
+    color: "#64748b",
+    lineHeight: 1.4,
+    fontSize: 13,
+  },
+  captureGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+    gap: 10,
+  } as const,
+  cameraButton: {
+    minHeight: 52,
+    borderRadius: 10,
+    border: "1px solid #0284c7",
+    background: "#0ea5e9",
+    color: "#ffffff",
+    fontWeight: 950,
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    textAlign: "center" as const,
+  } as const,
+  gpsButton: {
+    minHeight: 52,
+    borderRadius: 10,
+    border: "1px solid #16a34a",
+    background: "#22c55e",
+    color: "#052e16",
+    fontWeight: 950,
+    cursor: "pointer",
+  } as const,
+  proofStatusGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: 10,
+  } as const,
+  proofStatusBox: {
+    minHeight: 58,
+    display: "grid",
+    gap: 4,
+    alignContent: "center",
+    padding: "10px 12px",
+    borderRadius: 10,
+    border: "1px solid #cbd5e1",
+    background: "#ffffff",
+    color: "#334155",
+    fontSize: 12,
   } as const,
   utilityRow: {
     display: "flex",
@@ -821,6 +1009,17 @@ const styles = {
     color: "#ffffff",
     fontWeight: 900,
     cursor: "pointer",
+  } as const,
+  deliveredButton: {
+    minHeight: 58,
+    borderRadius: 12,
+    border: "none",
+    background: "linear-gradient(135deg, #16a34a, #22c55e)",
+    color: "#052e16",
+    fontWeight: 950,
+    fontSize: 16,
+    cursor: "pointer",
+    boxShadow: "0 12px 24px rgba(22, 163, 74, 0.24)",
   } as const,
   success: {
     padding: 12,
