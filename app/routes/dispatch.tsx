@@ -70,6 +70,51 @@ function suffixOrderNumber(orderNumber: string, index: number, total: number) {
   return `${orderNumber}${String.fromCharCode(97 + index)}`;
 }
 
+function startOfLocalDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+function getRequestedDeliverySortValue(order: DispatchOrder) {
+  const value = String(order.requestedWindow || "").trim();
+  const lower = value.toLowerCase();
+  const today = new Date();
+
+  if (!value || /needs scheduling|unavailable|unknown/i.test(value)) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  if (/\btoday\b/.test(lower)) return startOfLocalDay(today);
+  if (/\btomorrow\b/.test(lower)) {
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    return startOfLocalDay(tomorrow);
+  }
+
+  const slashDate = value.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/);
+  if (slashDate) {
+    const year =
+      slashDate[3].length === 2
+        ? 2000 + Number(slashDate[3])
+        : Number(slashDate[3]);
+    return new Date(year, Number(slashDate[1]) - 1, Number(slashDate[2])).getTime();
+  }
+
+  const monthDate = value.match(
+    /\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+\d{1,2}(?:,\s*\d{4})?/i,
+  )?.[0];
+  if (monthDate) {
+    const parsed = new Date(
+      /\d{4}/.test(monthDate) ? monthDate : `${monthDate}, ${today.getFullYear()}`,
+    );
+    if (!Number.isNaN(parsed.getTime())) return startOfLocalDay(parsed);
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime())
+    ? Number.MAX_SAFE_INTEGER
+    : startOfLocalDay(parsed);
+}
+
 function getTruckCapacityForOrderUnit(truck: DispatchTruck, unit: string) {
   if (/tons?/i.test(unit)) return Number(truck.tons || 0);
   if (/yards?/i.test(unit)) return Number(truck.yards || 0);
@@ -1446,6 +1491,7 @@ export default function DispatchPage() {
   const rawView = searchParams.get("view") || "dashboard";
   const activeView =
     rawView === "orders" ||
+    rawView === "scheduled" ||
     rawView === "routes" ||
     rawView === "trucks" ||
     rawView === "employees" ||
@@ -1495,16 +1541,42 @@ export default function DispatchPage() {
     ? routes.find((route) => route.id === selectedOrder.assignedRouteId) || null
     : null;
 
-  const activeOrders = orders.filter(
-    (order) => order.status !== "delivered" && order.deliveryStatus !== "delivered",
+  const activeOrders = useMemo(
+    () =>
+      orders
+        .filter(
+          (order) =>
+            !order.assignedRouteId &&
+            order.status !== "scheduled" &&
+            order.status !== "delivered" &&
+            order.deliveryStatus !== "delivered",
+        )
+        .sort((a, b) => {
+          const dateDiff =
+            getRequestedDeliverySortValue(a) - getRequestedDeliverySortValue(b);
+          if (dateDiff !== 0) return dateDiff;
+          return String(a.created_at || "").localeCompare(String(b.created_at || ""));
+        }),
+    [orders],
   );
   const inboxOrders = orders.filter((order) => !order.assignedRouteId && order.status === "new");
   const holdOrders = orders.filter((order) => order.status === "hold");
-  const scheduledOrders = orders.filter(
-    (order) =>
-      order.assignedRouteId &&
-      order.status !== "delivered" &&
-      order.deliveryStatus !== "delivered",
+  const scheduledOrders = useMemo(
+    () =>
+      orders
+        .filter(
+          (order) =>
+            order.assignedRouteId &&
+            order.status !== "delivered" &&
+            order.deliveryStatus !== "delivered",
+        )
+        .sort((a, b) => {
+          const dateDiff =
+            getRequestedDeliverySortValue(a) - getRequestedDeliverySortValue(b);
+          if (dateDiff !== 0) return dateDiff;
+          return Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999);
+        }),
+    [orders],
   );
   const deliveredOrders = orders.filter((order) => order.status === "delivered" || order.deliveryStatus === "delivered");
   const drivers = employees.filter((employee) => employee.role === "driver");
@@ -1580,6 +1652,7 @@ export default function DispatchPage() {
           <nav style={styles.sideNav}>
             <a href={dispatchViewHref("dashboard")} style={styles.sideNavLink(activeView === "dashboard")}>Dashboard</a>
             <a href={dispatchViewHref("orders")} style={styles.sideNavLink(activeView === "orders")}>Orders</a>
+            <a href={dispatchViewHref("scheduled")} style={styles.sideNavLink(activeView === "scheduled")}>Scheduled</a>
             <a href={dispatchViewHref("routes")} style={styles.sideNavLink(activeView === "routes")}>Routes</a>
             <a href={dispatchViewHref("trucks")} style={styles.sideNavLink(activeView === "trucks")}>Trucks</a>
             <a href={dispatchViewHref("employees")} style={styles.sideNavLink(activeView === "employees")}>Employees</a>
@@ -1663,7 +1736,7 @@ export default function DispatchPage() {
               <div style={styles.panelHeader}>
                 <div>
                   <h2 style={styles.panelTitle}>Orders</h2>
-                  <p style={styles.panelSub}>View imported, manual, scheduled, and held dispatch orders.</p>
+                  <p style={styles.panelSub}>View imported, manual, and held dispatch orders that still need scheduling.</p>
                 </div>
                 <div style={styles.headerPill}>{activeOrders.length} orders</div>
               </div>
@@ -1968,6 +2041,69 @@ export default function DispatchPage() {
                     Delete Order
                   </button>
                 </Form>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {activeView === "scheduled" ? (
+          <div style={styles.focusGrid}>
+            <div id="scheduled" style={styles.panel}>
+              <div style={styles.panelHeader}>
+                <div>
+                  <h2 style={styles.panelTitle}>Scheduled</h2>
+                  <p style={styles.panelSub}>Orders assigned to a route and waiting for delivery.</p>
+                </div>
+                <div style={styles.headerPill}>{scheduledOrders.length} scheduled</div>
+              </div>
+
+              <div style={{ display: "grid", gap: 10 }}>
+                {scheduledOrders.length === 0 ? (
+                  <div style={{ color: "#94a3b8" }}>No scheduled orders yet.</div>
+                ) : (
+                  scheduledOrders.map((order) => {
+                    const route = routes.find((entry) => entry.id === order.assignedRouteId);
+                    return (
+                      <div key={order.id} style={styles.queueCard}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                          <div>
+                            <div style={styles.queueTitle}>{order.customer}</div>
+                            <div style={styles.queueMeta}>{order.address}, {order.city}</div>
+                          </div>
+                          <div style={styles.badge("scheduled")}>scheduled</div>
+                        </div>
+                        <div style={styles.queueDetails}>
+                          <span>{getOrderDisplayNumber(order)}</span>
+                          <span>{order.quantity} {order.unit}</span>
+                          <span>{order.material}</span>
+                          {order.travelMinutes ? <span>{order.travelMinutes} min RT</span> : null}
+                          {order.timePreference ? <span>{order.timePreference}</span> : null}
+                          {order.stopSequence ? <span>Stop {order.stopSequence}</span> : null}
+                          <span>{route ? `${route.truck || route.code} / ${route.driver || "No driver"}` : "No route"}</span>
+                        </div>
+                        {order.notes ? (
+                          <div style={styles.queueNotes}>
+                            <strong>Notes:</strong> {order.notes}
+                          </div>
+                        ) : null}
+                        <div style={styles.deliveredActions}>
+                          <a
+                            href={`${dispatchHref}?view=orders&order=${encodeURIComponent(order.id)}`}
+                            style={styles.detailButton}
+                          >
+                            Edit
+                          </a>
+                          <a
+                            href={`${driverHref}?route=${encodeURIComponent(order.assignedRouteId || "")}`}
+                            style={styles.assignButton}
+                          >
+                            Driver View
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>
