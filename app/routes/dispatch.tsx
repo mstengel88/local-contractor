@@ -2439,6 +2439,12 @@ export default function DispatchPage() {
                             {order.stopSequence ? <span>Stop {order.stopSequence}</span> : null}
                           </div>
 
+                          {order.notes ? (
+                            <div style={styles.queueNotes}>
+                              <strong>Notes:</strong> {order.notes}
+                            </div>
+                          ) : null}
+
                           <div style={styles.queueFooter}>
                             <span>{order.requestedWindow}</span>
                             <span>
@@ -3247,6 +3253,16 @@ const styles = {
     flexWrap: "wrap" as const,
     color: "#cbd5e1",
     fontSize: 13,
+  } as const,
+  queueNotes: {
+    marginTop: 10,
+    padding: "9px 10px",
+    borderRadius: 12,
+    background: "rgba(15, 23, 42, 0.7)",
+    border: "1px solid rgba(51, 65, 85, 0.62)",
+    color: "#cbd5e1",
+    fontSize: 12,
+    lineHeight: 1.45,
   } as const,
   queueFooter: {
     marginTop: 12,
