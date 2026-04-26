@@ -1363,7 +1363,12 @@ export default function DispatchPage() {
       ? rawView
       : "dashboard";
   const querySelectedOrderId = searchParams.get("order");
-  const selectedOrderId = actionData?.selectedOrderId || querySelectedOrderId || orders[0]?.id;
+  const queryDashboardSelectedOrderId = searchParams.get("selected");
+  const selectedOrderId =
+    actionData?.selectedOrderId ||
+    queryDashboardSelectedOrderId ||
+    querySelectedOrderId ||
+    orders[0]?.id;
 
   const selectedOrder = useMemo(
     () => orders.find((order) => order.id === selectedOrderId) || orders[0] || null,
@@ -1415,12 +1420,17 @@ export default function DispatchPage() {
   const drivers = employees.filter((employee) => employee.role === "driver");
   const helpers = employees.filter((employee) => employee.role === "helper");
   const dispatchViewHref = (view: string) => `${dispatchHref}?view=${view}`;
+  const dashboardSelectHref = (orderId: string) =>
+    `${dispatchHref}?selected=${encodeURIComponent(orderId)}`;
+  const dashboardDetailHref = (orderId: string) =>
+    `${dispatchHref}?order=${encodeURIComponent(orderId)}&detail=1`;
   const orderEditorOpen =
     activeView === "orders" &&
     Boolean(selectedOrder && (querySelectedOrderId || actionData?.selectedOrderId));
   const dispatchDetailOpen =
     activeView === "dashboard" &&
-    Boolean(selectedOrder && (querySelectedOrderId || actionData?.selectedOrderId));
+    searchParams.get("detail") === "1" &&
+    Boolean(selectedOrder && querySelectedOrderId);
 
   if (!allowed) {
     return (
@@ -2278,46 +2288,54 @@ export default function DispatchPage() {
                   const active = order.id === selectedOrder?.id;
                   const route = routes.find((entry) => entry.id === order.assignedRouteId);
                   return (
-                    <a
+                    <div
                       key={order.id}
-                      href={`${dispatchHref}?order=${encodeURIComponent(order.id)}`}
                       style={{
                         ...styles.queueCard,
                         borderColor: active ? "#38bdf8" : "rgba(51, 65, 85, 0.92)",
                         boxShadow: active
                           ? "0 0 0 1px rgba(56, 189, 248, 0.45)"
                           : "none",
-                        textDecoration: "none",
                       }}
                     >
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                        <div>
-                          <div style={styles.queueTitle}>{order.customer}</div>
-                          <div style={styles.queueMeta}>
-                            {order.address}, {order.city}
+                      <div style={styles.cardActionRow}>
+                        <a
+                          href={dashboardSelectHref(order.id)}
+                          style={styles.cardSelectArea}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                            <div>
+                              <div style={styles.queueTitle}>{order.customer}</div>
+                              <div style={styles.queueMeta}>
+                                {order.address}, {order.city}
+                              </div>
+                            </div>
+                            <div style={styles.badge(order.status)}>{order.status}</div>
                           </div>
-                        </div>
-                        <div style={styles.badge(order.status)}>{order.status}</div>
-                      </div>
 
-                      <div style={styles.queueDetails}>
-                        <span>{getOrderDisplayNumber(order)}</span>
-                        <span>{order.quantity} {order.unit}</span>
-                        <span>{order.material}</span>
-                        {order.travelMinutes ? <span>{order.travelMinutes} min RT</span> : null}
-                        {order.timePreference ? <span>{order.timePreference}</span> : null}
-                        {order.stopSequence ? <span>Stop {order.stopSequence}</span> : null}
-                      </div>
+                          <div style={styles.queueDetails}>
+                            <span>{getOrderDisplayNumber(order)}</span>
+                            <span>{order.quantity} {order.unit}</span>
+                            <span>{order.material}</span>
+                            {order.travelMinutes ? <span>{order.travelMinutes} min RT</span> : null}
+                            {order.timePreference ? <span>{order.timePreference}</span> : null}
+                            {order.stopSequence ? <span>Stop {order.stopSequence}</span> : null}
+                          </div>
 
-                      <div style={styles.queueFooter}>
-                        <span>{order.requestedWindow}</span>
-                        <span>
-                          {route
-                            ? `${route.truck} / ${getDeliveryStatusLabel(order.deliveryStatus)}`
-                            : "Unassigned"}
-                        </span>
+                          <div style={styles.queueFooter}>
+                            <span>{order.requestedWindow}</span>
+                            <span>
+                              {route
+                                ? `${route.truck} / ${getDeliveryStatusLabel(order.deliveryStatus)}`
+                                : "Unassigned"}
+                            </span>
+                          </div>
+                        </a>
+                        <a href={dashboardDetailHref(order.id)} style={styles.detailButton}>
+                          Open
+                        </a>
                       </div>
-                    </a>
+                    </div>
                   );
                 })}
               </div>
@@ -2407,26 +2425,33 @@ export default function DispatchPage() {
                     {route.orders.length ? (
                       <div style={styles.stopList}>
                         {route.orders.map((order) => (
-                          <a
+                          <div
                             key={order.id}
-                            href={`${dispatchHref}?order=${encodeURIComponent(order.id)}`}
                             style={styles.stopRow}
                           >
-                            <span style={styles.stopNumber}>
-                              {order.stopSequence || "-"}
-                            </span>
-                            <span style={styles.stopMain}>
-                              <strong>{order.customer}</strong>
-                              <small>{order.city} · {order.material}</small>
-                            </span>
-                            <span
-                              style={styles.stopStatus(
-                                getDeliveryStatusColor(order.deliveryStatus),
-                              )}
+                            <a
+                              href={dashboardSelectHref(order.id)}
+                              style={styles.stopSelectArea}
                             >
-                              {getDeliveryStatusLabel(order.deliveryStatus)}
-                            </span>
-                          </a>
+                              <span style={styles.stopNumber}>
+                                {order.stopSequence || "-"}
+                              </span>
+                              <span style={styles.stopMain}>
+                                <strong>{order.customer}</strong>
+                                <small>{order.city} · {order.material}</small>
+                              </span>
+                              <span
+                                style={styles.stopStatus(
+                                  getDeliveryStatusColor(order.deliveryStatus),
+                                )}
+                              >
+                                {getDeliveryStatusLabel(order.deliveryStatus)}
+                              </span>
+                            </a>
+                            <a href={dashboardDetailHref(order.id)} style={styles.stopDetailButton}>
+                              Open
+                            </a>
+                          </div>
                         ))}
                       </div>
                     ) : null}
@@ -2479,7 +2504,10 @@ export default function DispatchPage() {
                     Review the selected order, then assign it to a truck and crew or place it on hold.
                   </p>
                 </div>
-                <a href={dispatchViewHref("dashboard")} style={styles.modalCloseButton}>
+                <a
+                  href={selectedOrder ? dashboardSelectHref(selectedOrder.id) : dispatchViewHref("dashboard")}
+                  style={styles.modalCloseButton}
+                >
                   Close
                 </a>
               </div>
@@ -3054,6 +3082,32 @@ const styles = {
     color: "#f8fafc",
     cursor: "pointer",
   } as const,
+  cardActionRow: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    gap: 12,
+    alignItems: "center",
+  } as const,
+  cardSelectArea: {
+    minWidth: 0,
+    color: "inherit",
+    textDecoration: "none",
+  } as const,
+  detailButton: {
+    minHeight: 36,
+    padding: "0 12px",
+    borderRadius: 12,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "rgba(14, 165, 233, 0.14)",
+    border: "1px solid rgba(56, 189, 248, 0.42)",
+    color: "#bae6fd",
+    fontSize: 12,
+    fontWeight: 900,
+    textDecoration: "none",
+    whiteSpace: "nowrap" as const,
+  } as const,
   queueTitle: {
     fontSize: 16,
     fontWeight: 800,
@@ -3282,7 +3336,7 @@ const styles = {
   } as const,
   stopRow: {
     display: "grid",
-    gridTemplateColumns: "32px minmax(0, 1fr) auto",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
     gap: 10,
     alignItems: "center",
     padding: "10px 12px",
@@ -3291,6 +3345,30 @@ const styles = {
     border: "1px solid rgba(51, 65, 85, 0.78)",
     textDecoration: "none",
     color: "#f8fafc",
+  } as const,
+  stopSelectArea: {
+    display: "grid",
+    gridTemplateColumns: "32px minmax(0, 1fr) auto",
+    gap: 10,
+    alignItems: "center",
+    minWidth: 0,
+    color: "inherit",
+    textDecoration: "none",
+  } as const,
+  stopDetailButton: {
+    minHeight: 30,
+    padding: "0 9px",
+    borderRadius: 10,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "rgba(14, 165, 233, 0.12)",
+    border: "1px solid rgba(56, 189, 248, 0.36)",
+    color: "#bae6fd",
+    fontSize: 11,
+    fontWeight: 900,
+    textDecoration: "none",
+    whiteSpace: "nowrap" as const,
   } as const,
   stopNumber: {
     width: 28,
