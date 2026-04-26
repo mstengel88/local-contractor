@@ -1067,12 +1067,15 @@ export async function resetDispatchRoutesForNewDay() {
     .maybeSingle();
 
   if (settingError) {
-    throw new Error(formatSupabaseError(settingError));
+    console.error("[DISPATCH DAILY RESET SKIPPED]", formatSupabaseError(settingError));
+    return { reset: false, date: today };
   }
 
   if (setting?.value === today) {
     return { reset: false, date: today };
   }
+
+  const hasPreviousResetDate = Boolean(setting?.value);
 
   const { error: upsertError } = await supabaseAdmin
     .from(SETTINGS_TABLE)
@@ -1083,7 +1086,12 @@ export async function resetDispatchRoutesForNewDay() {
     });
 
   if (upsertError) {
-    throw new Error(formatSupabaseError(upsertError));
+    console.error("[DISPATCH DAILY RESET SKIPPED]", formatSupabaseError(upsertError));
+    return { reset: false, date: today };
+  }
+
+  if (!hasPreviousResetDate) {
+    return { reset: false, date: today };
   }
 
   const { error: ordersError } = await supabaseAdmin

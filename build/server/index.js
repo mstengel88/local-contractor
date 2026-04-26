@@ -4918,18 +4918,24 @@ async function resetDispatchRoutesForNewDay() {
   const settingKey = "last_daily_route_reset";
   const { data: setting, error: settingError } = await supabaseAdmin.from(SETTINGS_TABLE).select("value").eq("key", settingKey).maybeSingle();
   if (settingError) {
-    throw new Error(formatSupabaseError(settingError));
+    console.error("[DISPATCH DAILY RESET SKIPPED]", formatSupabaseError(settingError));
+    return { reset: false, date: today };
   }
   if ((setting == null ? void 0 : setting.value) === today) {
     return { reset: false, date: today };
   }
+  const hasPreviousResetDate = Boolean(setting == null ? void 0 : setting.value);
   const { error: upsertError } = await supabaseAdmin.from(SETTINGS_TABLE).upsert({
     key: settingKey,
     value: today,
     updated_at: (/* @__PURE__ */ new Date()).toISOString()
   });
   if (upsertError) {
-    throw new Error(formatSupabaseError(upsertError));
+    console.error("[DISPATCH DAILY RESET SKIPPED]", formatSupabaseError(upsertError));
+    return { reset: false, date: today };
+  }
+  if (!hasPreviousResetDate) {
+    return { reset: false, date: today };
   }
   const { error: ordersError } = await supabaseAdmin.from(ORDERS_TABLE).update({
     status: "new",
