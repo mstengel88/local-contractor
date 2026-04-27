@@ -1464,6 +1464,22 @@ export async function updateDispatchRoute(
   return normalizeRoute(data);
 }
 
+export async function deleteDispatchRoute(id: string) {
+  const { data, error } = await supabaseAdmin
+    .from(ROUTES_TABLE)
+    .update({ is_active: false })
+    .eq("id", id)
+    .select("id");
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+
+  if (!data?.length) {
+    throw new Error(`No dispatch route found for ${id}`);
+  }
+}
+
 export async function createDispatchTruck(input: {
   label: string;
   truckType?: string;

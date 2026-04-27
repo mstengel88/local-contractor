@@ -15,6 +15,7 @@ import {
   createDispatchOrder,
   deleteDispatchEmployee,
   deleteDispatchOrder,
+  deleteDispatchRoute,
   deleteDispatchTruck,
   detectTimePreference,
   ensureSeedDispatchEmployees,
@@ -1212,6 +1213,52 @@ export async function action({ request }: any) {
         allowed: true,
         ok: true,
         message: `Updated ${updated.code}.`,
+        ...dispatchState,
+      });
+    }
+
+    if (intent === "delete-route") {
+      const routeId = String(form.get("routeId") || "").trim();
+      if (!routeId) {
+        const dispatchState = await loadDispatchState();
+        return data(
+          {
+            allowed: true,
+            ok: false,
+            message: "Route is required.",
+            ...dispatchState,
+          },
+          { status: 400 },
+        );
+      }
+
+      const assignedOrders = (await getDispatchOrders()).filter(
+        (order) =>
+          order.assignedRouteId === routeId &&
+          order.status !== "delivered" &&
+          order.deliveryStatus !== "delivered",
+      );
+
+      if (assignedOrders.length) {
+        const dispatchState = await loadDispatchState();
+        return data(
+          {
+            allowed: true,
+            ok: false,
+            message: `Move or unassign ${assignedOrders.length} active order${assignedOrders.length === 1 ? "" : "s"} before deleting this route.`,
+            ...dispatchState,
+          },
+          { status: 400 },
+        );
+      }
+
+      await deleteDispatchRoute(routeId);
+      const dispatchState = await loadDispatchState();
+
+      return data({
+        allowed: true,
+        ok: true,
+        message: "Deleted route from the active route board.",
         ...dispatchState,
       });
     }
@@ -2888,8 +2935,20 @@ export default function DispatchPage() {
               </div>
               <div style={{ display: "grid", gap: 12 }}>
                 {routes.map((route) => (
-                  <Form key={route.id} method="post" style={styles.routeCard(route.color)}>
-                    <input type="hidden" name="intent" value="update-route" />
+                  <Form
+                    key={route.id}
+                    method="post"
+                    style={styles.routeCard(route.color)}
+                    onSubmit={(event) => {
+                      const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+                      if (
+                        submitter?.value === "delete-route" &&
+                        !window.confirm("Delete this route from the active board? Move or unassign active orders first. This cannot be undone.")
+                      ) {
+                        event.preventDefault();
+                      }
+                    }}
+                  >
                     <input type="hidden" name="routeId" value={route.id} />
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                       <div>
@@ -2946,9 +3005,12 @@ export default function DispatchPage() {
                         <label style={styles.label}>Region</label>
                         <input name="region" defaultValue={route.region} style={styles.input} />
                       </div>
-                      <div style={{ display: "flex", alignItems: "flex-end" }}>
-                        <button type="submit" style={{ ...styles.secondaryButton, width: "100%" }}>
+                      <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+                        <button type="submit" name="intent" value="update-route" style={{ ...styles.secondaryButton, width: "100%" }}>
                           Save Route Assignments
+                        </button>
+                        <button type="submit" name="intent" value="delete-route" style={{ ...styles.dangerButton, width: "100%" }}>
+                          Delete Route
                         </button>
                       </div>
                     </div>
