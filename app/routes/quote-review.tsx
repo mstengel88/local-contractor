@@ -174,8 +174,9 @@ export async function loader({ request }: any) {
   }
 
   const allowed = await hasAdminQuotePermissionAccess(request, "reviewQuotes");
-  const quotes = allowed ? await getRecentCustomQuotes(250) : [];
-  const currentUser = allowed ? await getCurrentUser(request) : null;
+  const [quotes, currentUser] = allowed
+    ? await Promise.all([getRecentCustomQuotes(250), getCurrentUser(request)])
+    : [[], null];
 
   return data({ allowed, currentUser, quotes });
 }

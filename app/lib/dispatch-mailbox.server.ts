@@ -294,6 +294,7 @@ export async function pollDispatchMailbox() {
 
 export async function maybeAutoPollDispatchMailbox() {
   if (process.env.DISPATCH_MAILBOX_AUTO_POLL !== "true") return null;
+  if (process.env.DISPATCH_MAILBOX_AUTO_POLL_ON_LOAD !== "true") return null;
 
   const intervalSeconds = Number(process.env.DISPATCH_MAILBOX_POLL_SECONDS || 300);
   const now = Date.now();

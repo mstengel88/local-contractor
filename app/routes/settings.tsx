@@ -16,10 +16,10 @@ import {
 
 export async function loader({ request }: any) {
   const currentUser = await requireUserPermission(request, "manageUsers");
-  const users = await listAppUsers();
-  const auditEvents = currentUser.permissions.includes("auditLog")
-    ? await listAuditEvents(150)
-    : [];
+  const [users, auditEvents] = await Promise.all([
+    listAppUsers(),
+    currentUser.permissions.includes("auditLog") ? listAuditEvents(150) : [],
+  ]);
   return data({ currentUser, users, auditEvents, allPermissions, permissionLabels });
 }
 
@@ -29,10 +29,15 @@ export async function action({ request }: any) {
   const intent = String(form.get("intent") || "");
   const permissions = form.getAll("permissions").map(String);
   const loadSettingsData = async () => ({
-    users: await listAppUsers(),
-    auditEvents: currentUser.permissions.includes("auditLog")
-      ? await listAuditEvents(150)
-      : [],
+    ...Object.fromEntries(
+      await Promise.all([
+        listAppUsers().then((users) => ["users", users] as const),
+        (currentUser.permissions.includes("auditLog")
+          ? listAuditEvents(150)
+          : Promise.resolve([])
+        ).then((auditEvents) => ["auditEvents", auditEvents] as const),
+      ]),
+    ),
   });
 
   try {

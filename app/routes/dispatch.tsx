@@ -542,20 +542,38 @@ function getBrowserGoogleMapsApiKey() {
 
 async function loadDispatchState() {
   try {
-    await ensureSeedDispatchTrucks();
-    await ensureSeedDispatchEmployees();
-    await ensureSeedDispatchOrders();
-    await ensureSeedDispatchRoutes();
+    await Promise.all([
+      ensureSeedDispatchTrucks(),
+      ensureSeedDispatchEmployees(),
+      ensureSeedDispatchOrders(),
+      ensureSeedDispatchRoutes(),
+    ]);
     if (process.env.DISPATCH_AUTO_DAILY_RESET === "true") {
       await resetDispatchRoutesForNewDay();
     }
+    const [
+      orders,
+      routes,
+      trucks,
+      employees,
+      materialOptions,
+      mapOriginAddress,
+    ] = await Promise.all([
+      getDispatchOrders(),
+      getDispatchRoutes(),
+      getDispatchTrucks(),
+      getDispatchEmployees(),
+      getDispatchMaterialOptions(),
+      getDispatchOriginAddress(),
+    ]);
+
     return {
-      orders: await getDispatchOrders(),
-      routes: await getDispatchRoutes(),
-      trucks: await getDispatchTrucks(),
-      employees: await getDispatchEmployees(),
-      materialOptions: await getDispatchMaterialOptions(),
-      mapOriginAddress: await getDispatchOriginAddress(),
+      orders,
+      routes,
+      trucks,
+      employees,
+      materialOptions,
+      mapOriginAddress,
       storageReady: true,
       storageError: null,
     };
@@ -615,20 +633,18 @@ export async function loader({ request }: any) {
     return redirect(dispatchPath);
   }
 
-  let mailboxStatus = null;
-  try {
-    mailboxStatus = await maybeAutoPollDispatchMailbox();
-  } catch (error) {
-    mailboxStatus = {
-      configured: true,
-      imported: 0,
-      skipped: 0,
-      message: error instanceof Error ? error.message : "Mailbox auto-poll failed.",
-    };
-    console.error("[DISPATCH MAILBOX AUTO POLL ERROR]", error);
-  }
-
-  const dispatchState = await loadDispatchState();
+  const [dispatchState, mailboxStatus] = await Promise.all([
+    loadDispatchState(),
+    maybeAutoPollDispatchMailbox().catch((error) => {
+      console.error("[DISPATCH MAILBOX AUTO POLL ERROR]", error);
+      return {
+        configured: true,
+        imported: 0,
+        skipped: 0,
+        message: error instanceof Error ? error.message : "Mailbox auto-poll failed.",
+      };
+    }),
+  ]);
 
   return data({
     allowed: true,
@@ -3076,9 +3092,12 @@ export default function DispatchPage() {
                         {route.orders.map((order) => (
                           <div
                             key={order.id}
+                            draggable={canManageDispatch}
+                            onDragStartCapture={(event) => startOrderDrag(order.id, event)}
                             onDragEnd={clearDragState}
                             style={{
                               ...styles.stopRow,
+                              cursor: canManageDispatch ? "grab" : "default",
                               opacity: draggedOrderId === order.id ? 0.58 : 1,
                             }}
                           >
@@ -4083,6 +4102,7 @@ const styles = {
     border: "1px solid rgba(51, 65, 85, 0.78)",
     textDecoration: "none",
     color: "#f8fafc",
+    userSelect: "none" as const,
   } as const,
   dragHandle: {
     width: 22,

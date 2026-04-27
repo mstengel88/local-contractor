@@ -140,9 +140,13 @@ export async function loader({ request }: any) {
   }
 
   const allowed = await hasAdminQuotePermissionAccess(request, "quoteTool");
-  const products = allowed ? await getProductOptionsFromSupabase() : [];
-  const recentQuotes = allowed ? await getRecentCustomQuotes(15) : [];
-  const currentUser = allowed ? await getCurrentUser(request) : null;
+  const [products, recentQuotes, currentUser] = allowed
+    ? await Promise.all([
+        getProductOptionsFromSupabase(),
+        getRecentCustomQuotes(15),
+        getCurrentUser(request),
+      ])
+    : [[], [], null];
 
   return data({
     allowed,
@@ -174,8 +178,10 @@ export async function action({ request }: any) {
       );
     }
 
-    const products = await getProductOptionsFromSupabase();
-    const recentQuotes = await getRecentCustomQuotes(15);
+    const [products, recentQuotes] = await Promise.all([
+      getProductOptionsFromSupabase(),
+      getRecentCustomQuotes(15),
+    ]);
 
     return data(
       {
@@ -206,8 +212,10 @@ export async function action({ request }: any) {
     );
   }
 
-  const products = await getProductOptionsFromSupabase();
-  const recentQuotes = await getRecentCustomQuotes(15);
+  const [products, recentQuotes] = await Promise.all([
+    getProductOptionsFromSupabase(),
+    getRecentCustomQuotes(15),
+  ]);
 
   const customerName = String(form.get("customerName") || "");
   const customerEmail = String(form.get("customerEmail") || "").trim();
