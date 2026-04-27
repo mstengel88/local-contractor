@@ -1,4 +1,6 @@
 import { createCookie } from "react-router";
+import { getCurrentUser } from "./user-auth.server";
+import { type UserPermission } from "./user-permissions";
 
 const cookieSecret =
   process.env.QUOTE_ACCESS_COOKIE_SECRET || "dev-secret-change-me";
@@ -13,6 +15,21 @@ export const adminQuoteCookie = createCookie("admin_quote_access", {
 });
 
 export async function hasAdminQuoteAccess(request: Request) {
+  const user = await getCurrentUser(request);
+  if (user) return true;
+
+  const cookieHeader = request.headers.get("Cookie");
+  const cookieValue = await adminQuoteCookie.parse(cookieHeader);
+  return cookieValue === "ok";
+}
+
+export async function hasAdminQuotePermissionAccess(
+  request: Request,
+  permission: UserPermission,
+) {
+  const user = await getCurrentUser(request);
+  if (user) return user.permissions.includes(permission);
+
   const cookieHeader = request.headers.get("Cookie");
   const cookieValue = await adminQuoteCookie.parse(cookieHeader);
   return cookieValue === "ok";

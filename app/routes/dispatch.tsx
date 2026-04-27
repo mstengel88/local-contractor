@@ -4,7 +4,7 @@ import { data, redirect } from "react-router";
 import {
   adminQuoteCookie,
   getAdminQuotePassword,
-  hasAdminQuoteAccess,
+  hasAdminQuotePermissionAccess,
 } from "../lib/admin-quote-auth.server";
 import { sendDeliveryConfirmationEmail } from "../lib/delivery-confirmation-email.server";
 import {
@@ -586,7 +586,7 @@ export async function loader({ request }: any) {
     });
   }
 
-  const allowed = await hasAdminQuoteAccess(request);
+  const allowed = await hasAdminQuotePermissionAccess(request, "dispatch");
   if (!allowed) {
     return data({
       allowed: false,
@@ -667,7 +667,7 @@ export async function action({ request }: any) {
     );
   }
 
-  const allowed = await hasAdminQuoteAccess(request);
+  const allowed = await hasAdminQuotePermissionAccess(request, "dispatch");
   if (!allowed) {
     return data(
       {
@@ -682,6 +682,22 @@ export async function action({ request }: any) {
         mapOriginAddress: "",
       },
       { status: 401 },
+    );
+  }
+
+  const canManageDispatch = await hasAdminQuotePermissionAccess(request, "manageDispatch");
+  const driverOnlyIntents = new Set(["update-stop-status"]);
+  if (!canManageDispatch && !driverOnlyIntents.has(intent)) {
+    const dispatchState = await loadDispatchState();
+    return data(
+      {
+        allowed: true,
+        ok: false,
+        message: "You do not have permission to manage dispatch.",
+        googleMapsApiKey: getBrowserGoogleMapsApiKey(),
+        ...dispatchState,
+      },
+      { status: 403 },
     );
   }
 
@@ -1714,6 +1730,7 @@ export default function DispatchPage() {
           <div style={styles.sidebarFooter}>
             <a href={driverHref} style={styles.sideUtility}>Driver Route</a>
             <a href={quoteHref} style={styles.sideUtility}>Quote Tool</a>
+            <a href="/settings" style={styles.sideUtility}>Settings</a>
             <a href={logoutHref} style={styles.sideUtility}>Log Out</a>
           </div>
         </aside>

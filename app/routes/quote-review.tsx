@@ -5,7 +5,7 @@ import { getRecentCustomQuotes, type SavedCustomQuote } from "../lib/custom-quot
 import {
   adminQuoteCookie,
   getAdminQuotePassword,
-  hasAdminQuoteAccess,
+  hasAdminQuotePermissionAccess,
 } from "../lib/admin-quote-auth.server";
 
 function formatMoney(cents: number | null | undefined) {
@@ -169,7 +169,7 @@ export async function loader({ request }: any) {
     });
   }
 
-  const allowed = await hasAdminQuoteAccess(request);
+  const allowed = await hasAdminQuotePermissionAccess(request, "reviewQuotes");
   const quotes = allowed ? await getRecentCustomQuotes(250) : [];
 
   return data({ allowed, quotes });

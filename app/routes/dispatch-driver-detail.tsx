@@ -2,7 +2,7 @@ import { useLoaderData } from "react-router";
 import { data, redirect } from "react-router";
 import {
   adminQuoteCookie,
-  hasAdminQuoteAccess,
+  hasAdminQuotePermissionAccess,
 } from "../lib/admin-quote-auth.server";
 import {
   ensureSeedDispatchEmployees,
@@ -65,7 +65,7 @@ export async function loader({ request }: any) {
     });
   }
 
-  const allowed = await hasAdminQuoteAccess(request);
+  const allowed = await hasAdminQuotePermissionAccess(request, "driver");
   if (!allowed) {
     return data({ allowed: false, order: null });
   }

@@ -4,7 +4,7 @@ import { data, redirect } from "react-router";
 import {
   adminQuoteCookie,
   getAdminQuotePassword,
-  hasAdminQuoteAccess,
+  hasAdminQuotePermissionAccess,
 } from "../lib/admin-quote-auth.server";
 import { sendDeliveryConfirmationEmail } from "../lib/delivery-confirmation-email.server";
 import {
@@ -101,7 +101,7 @@ export async function loader({ request }: any) {
     });
   }
 
-  const allowed = await hasAdminQuoteAccess(request);
+  const allowed = await hasAdminQuotePermissionAccess(request, "driver");
   if (!allowed) {
     return data({
       allowed: false,
@@ -147,7 +147,7 @@ export async function action({ request }: any) {
     );
   }
 
-  const allowed = await hasAdminQuoteAccess(request);
+  const allowed = await hasAdminQuotePermissionAccess(request, "driver");
   if (!allowed) {
     return data(
       { allowed: false, loginError: "Please log in", orders: [], routes: [] },

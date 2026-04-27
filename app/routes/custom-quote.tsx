@@ -8,7 +8,7 @@ import {
 import {
   adminQuoteCookie,
   getAdminQuotePassword,
-  hasAdminQuoteAccess,
+  hasAdminQuotePermissionAccess,
 } from "../lib/admin-quote-auth.server";
 import {
   getProductOptionsFromSupabase,
@@ -134,7 +134,7 @@ export async function loader({ request }: any) {
     });
   }
 
-  const allowed = await hasAdminQuoteAccess(request);
+  const allowed = await hasAdminQuotePermissionAccess(request, "quoteTool");
   const products = allowed ? await getProductOptionsFromSupabase() : [];
   const recentQuotes = allowed ? await getRecentCustomQuotes(15) : [];
 
@@ -185,7 +185,7 @@ export async function action({ request }: any) {
     );
   }
 
-  const allowed = await hasAdminQuoteAccess(request);
+  const allowed = await hasAdminQuotePermissionAccess(request, "quoteTool");
   if (!allowed) {
     return data(
       {
@@ -972,6 +972,9 @@ export default function PublicCustomQuotePage() {
               </a>
               <a href={quoteReviewHref} style={styles.logout}>
                 Review Quotes
+              </a>
+              <a href="/settings" style={styles.logout}>
+                Settings
               </a>
               <a href={logoutHref} style={styles.logout}>
                 Log out

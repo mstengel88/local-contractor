@@ -1,6 +1,7 @@
 import { data } from "react-router";
 import { getCustomQuoteById } from "../lib/custom-quotes.server";
 import { getProductOptionsFromSupabase } from "../lib/quote-products.server";
+import { hasUserPermission } from "../lib/user-auth.server";
 import shopify, { authenticate } from "../shopify.server";
 
 const SHOPIFY_TITLE_LIMIT = 40;
@@ -121,6 +122,13 @@ export async function action({ request }: { request: Request }) {
 
   const isEmbeddedRequest = new URL(request.url).pathname.startsWith("/app/");
   const shop = quote.shop || process.env.SHOPIFY_STORE_DOMAIN || "";
+
+  if (!isEmbeddedRequest && !(await hasUserPermission(request, "sendToShopify"))) {
+    return data(
+      { ok: false, message: "You do not have permission to send quotes to Shopify." },
+      { status: 403 },
+    );
+  }
 
   if (!shop) {
     return data(
