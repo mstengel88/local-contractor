@@ -1744,6 +1744,12 @@ export default function DispatchPage() {
     );
   }
 
+  useEffect(() => {
+    if (assignmentFetcher.state === "idle") {
+      clearDragState();
+    }
+  }, [assignmentFetcher.state]);
+
   if (!allowed) {
     return (
       <div style={styles.page}>
@@ -2840,7 +2846,25 @@ export default function DispatchPage() {
         {activeView === "dashboard" ? (
         <div style={styles.workspaceGrid}>
           <div style={styles.leftColumn}>
-            <div id="orders" style={styles.panel}>
+            <div
+              id="orders"
+              onDragEnter={(event) => {
+                if (!draggedOrderId || !canManageDispatch) return;
+                event.preventDefault();
+                setDragOverQueue(true);
+              }}
+              onDragOver={(event) => {
+                if (!draggedOrderId || !canManageDispatch) return;
+                event.preventDefault();
+                event.dataTransfer.dropEffect = "move";
+                setDragOverQueue(true);
+              }}
+              onDrop={unassignDraggedOrder}
+              style={{
+                ...styles.panel,
+                ...(dragOverQueue ? styles.queueDropActive : {}),
+              }}
+            >
               <div style={styles.panelHeader}>
                 <div>
                   <h2 style={styles.panelTitle}>Email Intake Queue</h2>
@@ -2877,6 +2901,7 @@ export default function DispatchPage() {
                       <div style={styles.cardActionRow}>
                         <a
                           href={dashboardSelectHref(order.id)}
+                          draggable={false}
                           style={styles.cardSelectArea}
                         >
                           <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
@@ -2913,7 +2938,11 @@ export default function DispatchPage() {
                             </span>
                           </div>
                         </a>
-                        <a href={dashboardDetailHref(order.id)} style={styles.detailButton}>
+                        <a
+                          href={dashboardDetailHref(order.id)}
+                          draggable={false}
+                          style={styles.detailButton}
+                        >
                           Open
                         </a>
                       </div>
@@ -2946,16 +2975,18 @@ export default function DispatchPage() {
                 {routes.map((route) => (
                   <div
                     key={route.id}
+                    onDragEnter={(event) => {
+                      if (!draggedOrderId || !canManageDispatch) return;
+                      event.preventDefault();
+                      setDragOverQueue(false);
+                      setDragOverRouteId(route.id);
+                    }}
                     onDragOver={(event) => {
                       if (!draggedOrderId || !canManageDispatch) return;
                       event.preventDefault();
                       event.dataTransfer.dropEffect = "move";
+                      setDragOverQueue(false);
                       setDragOverRouteId(route.id);
-                    }}
-                    onDragLeave={() => {
-                      setDragOverRouteId((current) =>
-                        current === route.id ? null : current,
-                      );
                     }}
                     onDrop={(event) => assignDraggedOrder(route.id, event)}
                     style={{
@@ -2989,6 +3020,7 @@ export default function DispatchPage() {
                       </div>
                       <a
                         href={`${driverHref}?route=${encodeURIComponent(route.id)}`}
+                        draggable={false}
                         style={styles.assignButton}
                       >
                         Driver View
@@ -3055,6 +3087,7 @@ export default function DispatchPage() {
                           >
                             <a
                               href={dashboardSelectHref(order.id)}
+                              draggable={false}
                               style={styles.stopSelectArea}
                             >
                               <span style={styles.stopNumber}>
@@ -3072,7 +3105,11 @@ export default function DispatchPage() {
                                 {getDeliveryStatusLabel(order.deliveryStatus)}
                               </span>
                             </a>
-                            <a href={dashboardDetailHref(order.id)} style={styles.stopDetailButton}>
+                            <a
+                              href={dashboardDetailHref(order.id)}
+                              draggable={false}
+                              style={styles.stopDetailButton}
+                            >
                               Open
                             </a>
                           </div>
