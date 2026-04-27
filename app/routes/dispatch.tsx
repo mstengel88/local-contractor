@@ -1,4 +1,4 @@
-import { type DragEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type DragEvent, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Form, useActionData, useFetcher, useLoaderData, useLocation } from "react-router";
 import { data, redirect } from "react-router";
 import {
@@ -147,6 +147,49 @@ function formatTravelMinutes(minutes: number) {
   const hours = Math.floor(rounded / 60);
   const remainder = rounded % 60;
   return remainder ? `${hours} hr ${remainder} min` : `${hours} hr`;
+}
+
+function buildDispatchOrderSearchText(
+  order: DispatchOrder,
+  routes: Array<DispatchRoute & { orders?: DispatchOrder[] }>,
+) {
+  const route = routes.find((entry) => entry.id === order.assignedRouteId);
+  return [
+    order.id,
+    order.orderNumber,
+    order.source,
+    order.customer,
+    order.contact,
+    order.address,
+    order.city,
+    order.material,
+    order.quantity,
+    order.unit,
+    order.requestedWindow,
+    order.timePreference,
+    order.truckPreference,
+    order.notes,
+    order.status,
+    order.deliveryStatus,
+    order.eta,
+    order.travelMinutes,
+    order.travelMiles,
+    order.travelSummary,
+    order.emailSubject,
+    order.rawEmail,
+    order.proofName,
+    order.proofNotes,
+    order.signatureName,
+    order.inspectionStatus,
+    route?.code,
+    route?.truck,
+    route?.driver,
+    route?.helper,
+    route?.region,
+  ]
+    .filter((value) => value !== null && value !== undefined && value !== "")
+    .join(" ")
+    .toLowerCase();
 }
 
 function getTruckCapacityForOrderUnit(truck: DispatchTruck, unit: string) {
@@ -1759,7 +1802,22 @@ export default function DispatchPage() {
   const [draggedOrderId, setDraggedOrderId] = useState<string | null>(null);
   const [dragOverRouteId, setDragOverRouteId] = useState<string | null>(null);
   const [dragOverQueue, setDragOverQueue] = useState(false);
+  const [orderSearch, setOrderSearch] = useState("");
+  const deferredOrderSearch = useDeferredValue(orderSearch);
+  const normalizedOrderSearch = deferredOrderSearch.trim().toLowerCase();
   const isAssigningByDrag = assignmentFetcher.state === "submitting";
+
+  const searchOrders = (items: DispatchOrder[]) => {
+    if (!normalizedOrderSearch) return items;
+    return items.filter((order) =>
+      buildDispatchOrderSearchText(order, routes).includes(normalizedOrderSearch),
+    );
+  };
+
+  const searchedActiveOrders = useMemo(
+    () => searchOrders(activeOrders),
+    [activeOrders, normalizedOrderSearch, routes],
+  );
 
   function getDraggedOrderId(event: DragEvent<HTMLElement>) {
     return (
@@ -2021,11 +2079,26 @@ export default function DispatchPage() {
                   <h2 style={styles.panelTitle}>Orders</h2>
                   <p style={styles.panelSub}>View imported, manual, and held dispatch orders that still need scheduling.</p>
                 </div>
-                <div style={styles.headerPill}>{activeOrders.length} orders</div>
+                <div style={styles.headerPill}>{searchedActiveOrders.length} orders</div>
+              </div>
+
+              <div style={styles.searchBar}>
+                <input
+                  type="search"
+                  value={orderSearch}
+                  onChange={(event) => setOrderSearch(event.currentTarget.value)}
+                  placeholder="Search orders by customer, address, material, notes, route, status..."
+                  style={styles.searchInput}
+                />
+                {orderSearch ? (
+                  <button type="button" onClick={() => setOrderSearch("")} style={styles.clearSearchButton}>
+                    Clear
+                  </button>
+                ) : null}
               </div>
 
               <div style={{ display: "grid", gap: 10 }}>
-                {activeOrders.map((order) => {
+                {searchedActiveOrders.map((order) => {
                   const route = routes.find((entry) => entry.id === order.assignedRouteId);
                   return (
                     <a
@@ -2050,6 +2123,9 @@ export default function DispatchPage() {
                     </a>
                   );
                 })}
+                {searchedActiveOrders.length === 0 ? (
+                  <div style={styles.emptySearch}>No orders matched that search.</div>
+                ) : null}
               </div>
             </div>
 
@@ -2970,11 +3046,26 @@ export default function DispatchPage() {
                       : ""}
                   </p>
                 </div>
-                <div style={styles.headerPill}>Today</div>
+                <div style={styles.headerPill}>{searchedActiveOrders.length} in queue</div>
+              </div>
+
+              <div style={styles.searchBar}>
+                <input
+                  type="search"
+                  value={orderSearch}
+                  onChange={(event) => setOrderSearch(event.currentTarget.value)}
+                  placeholder="Search queue by customer, address, material, notes, date, route..."
+                  style={styles.searchInput}
+                />
+                {orderSearch ? (
+                  <button type="button" onClick={() => setOrderSearch("")} style={styles.clearSearchButton}>
+                    Clear
+                  </button>
+                ) : null}
               </div>
 
               <div style={{ display: "grid", gap: 10 }}>
-                {activeOrders.map((order) => {
+                {searchedActiveOrders.map((order) => {
                   const active = order.id === selectedOrder?.id;
                   const route = routes.find((entry) => entry.id === order.assignedRouteId);
                   return (
@@ -3044,6 +3135,9 @@ export default function DispatchPage() {
                     </div>
                   );
                 })}
+                {searchedActiveOrders.length === 0 ? (
+                  <div style={styles.emptySearch}>No queue orders matched that search.</div>
+                ) : null}
               </div>
               {draggedOrderId && canManageDispatch ? (
                 <div style={dragOverQueue ? styles.dropHintActive : styles.dropHint}>
@@ -3850,6 +3944,42 @@ const styles = {
     color: "#94a3b8",
     lineHeight: 1.55,
     fontSize: 14,
+  },
+  searchBar: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    gap: 10,
+    margin: "0 0 16px",
+  } as const,
+  searchInput: {
+    width: "100%",
+    minHeight: 44,
+    boxSizing: "border-box" as const,
+    borderRadius: 14,
+    border: "1px solid rgba(51, 65, 85, 0.95)",
+    background: "rgba(2, 6, 23, 0.82)",
+    color: "#f8fafc",
+    padding: "0 14px",
+    fontSize: 14,
+    outline: "none",
+  },
+  clearSearchButton: {
+    minHeight: 44,
+    padding: "0 14px",
+    borderRadius: 14,
+    border: "1px solid rgba(56, 189, 248, 0.35)",
+    background: "rgba(14, 165, 233, 0.12)",
+    color: "#bae6fd",
+    fontWeight: 900,
+    cursor: "pointer",
+  } as const,
+  emptySearch: {
+    padding: 16,
+    borderRadius: 16,
+    border: "1px dashed rgba(51, 65, 85, 0.95)",
+    background: "rgba(2, 6, 23, 0.42)",
+    color: "#94a3b8",
+    fontWeight: 800,
   },
   headerPill: {
     minHeight: 36,
