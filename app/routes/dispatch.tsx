@@ -1682,17 +1682,37 @@ export default function DispatchPage() {
     Boolean(selectedOrder && querySelectedOrderId);
   const [draggedOrderId, setDraggedOrderId] = useState<string | null>(null);
   const [dragOverRouteId, setDragOverRouteId] = useState<string | null>(null);
+  const [dragOverQueue, setDragOverQueue] = useState(false);
   const isAssigningByDrag = assignmentFetcher.state === "submitting";
+
+  function getDraggedOrderId(event: DragEvent<HTMLElement>) {
+    return (
+      event.dataTransfer.getData("application/x-dispatch-order-id") ||
+      event.dataTransfer.getData("text/plain") ||
+      draggedOrderId ||
+      ""
+    );
+  }
+
+  function startOrderDrag(orderId: string, event: DragEvent<HTMLElement>) {
+    if (!canManageDispatch) return;
+    setDraggedOrderId(orderId);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("application/x-dispatch-order-id", orderId);
+    event.dataTransfer.setData("text/plain", orderId);
+  }
+
+  function clearDragState() {
+    setDraggedOrderId(null);
+    setDragOverRouteId(null);
+    setDragOverQueue(false);
+  }
 
   function assignDraggedOrder(routeId: string, event: DragEvent<HTMLElement>) {
     event.preventDefault();
-    const orderId =
-      event.dataTransfer.getData("application/x-dispatch-order-id") ||
-      event.dataTransfer.getData("text/plain") ||
-      draggedOrderId;
+    const orderId = getDraggedOrderId(event);
 
-    setDragOverRouteId(null);
-    setDraggedOrderId(null);
+    clearDragState();
 
     if (!orderId || !routeId || !canManageDispatch) return;
 
@@ -1702,6 +1722,23 @@ export default function DispatchPage() {
         orderId,
         routeId,
         eta: "",
+      },
+      { method: "post", action: `${dispatchHref}${location.search || ""}` },
+    );
+  }
+
+  function unassignDraggedOrder(event: DragEvent<HTMLElement>) {
+    event.preventDefault();
+    const orderId = getDraggedOrderId(event);
+
+    clearDragState();
+
+    if (!orderId || !canManageDispatch) return;
+
+    assignmentFetcher.submit(
+      {
+        intent: "unassign-order",
+        orderId,
       },
       { method: "post", action: `${dispatchHref}${location.search || ""}` },
     );
@@ -1863,7 +1900,21 @@ export default function DispatchPage() {
 
         {activeView === "orders" ? (
           <div style={styles.focusGrid}>
-            <div id="orders" style={styles.panel}>
+            <div
+              id="orders"
+              onDragOver={(event) => {
+                if (!draggedOrderId || !canManageDispatch) return;
+                event.preventDefault();
+                event.dataTransfer.dropEffect = "move";
+                setDragOverQueue(true);
+              }}
+              onDragLeave={() => setDragOverQueue(false)}
+              onDrop={unassignDraggedOrder}
+              style={{
+                ...styles.panel,
+                ...(dragOverQueue ? styles.queueDropActive : {}),
+              }}
+            >
               <div style={styles.panelHeader}>
                 <div>
                   <h2 style={styles.panelTitle}>Orders</h2>
@@ -2795,7 +2846,9 @@ export default function DispatchPage() {
                   <h2 style={styles.panelTitle}>Email Intake Queue</h2>
                   <p style={styles.panelSub}>
                     Orders that came in by email or were typed in manually can be reviewed and routed here.
-                    {canManageDispatch ? " Drag a card onto a route to assign it." : ""}
+                    {canManageDispatch
+                      ? " Drag cards between the queue and routes to assign or unassign."
+                      : ""}
                   </p>
                 </div>
                 <div style={styles.headerPill}>Today</div>
@@ -2809,17 +2862,8 @@ export default function DispatchPage() {
                     <div
                       key={order.id}
                       draggable={canManageDispatch}
-                      onDragStart={(event) => {
-                        if (!canManageDispatch) return;
-                        setDraggedOrderId(order.id);
-                        event.dataTransfer.effectAllowed = "move";
-                        event.dataTransfer.setData("application/x-dispatch-order-id", order.id);
-                        event.dataTransfer.setData("text/plain", order.id);
-                      }}
-                      onDragEnd={() => {
-                        setDraggedOrderId(null);
-                        setDragOverRouteId(null);
-                      }}
+                      onDragStart={(event) => startOrderDrag(order.id, event)}
+                      onDragEnd={clearDragState}
                       style={{
                         ...styles.queueCard,
                         borderColor: active ? "#38bdf8" : "rgba(51, 65, 85, 0.92)",
@@ -2877,6 +2921,11 @@ export default function DispatchPage() {
                   );
                 })}
               </div>
+              {draggedOrderId && canManageDispatch ? (
+                <div style={dragOverQueue ? styles.dropHintActive : styles.dropHint}>
+                  Drop here to move back to queue
+                </div>
+              ) : null}
             </div>
 
           </div>
@@ -2995,7 +3044,14 @@ export default function DispatchPage() {
                         {route.orders.map((order) => (
                           <div
                             key={order.id}
-                            style={styles.stopRow}
+                            draggable={canManageDispatch}
+                            onDragStart={(event) => startOrderDrag(order.id, event)}
+                            onDragEnd={clearDragState}
+                            style={{
+                              ...styles.stopRow,
+                              cursor: canManageDispatch ? "grab" : "default",
+                              opacity: draggedOrderId === order.id ? 0.58 : 1,
+                            }}
                           >
                             <a
                               href={dashboardSelectHref(order.id)}
@@ -3655,6 +3711,13 @@ const styles = {
     padding: 16,
     color: "#f8fafc",
     cursor: "pointer",
+  } as const,
+  queueDropActive: {
+    borderColor: "rgba(34, 197, 94, 0.68)",
+    background:
+      "linear-gradient(145deg, rgba(34, 197, 94, 0.1), rgba(15, 23, 42, 0.92))",
+    boxShadow:
+      "inset 0 0 0 1px rgba(34, 197, 94, 0.28), 0 22px 42px rgba(34, 197, 94, 0.12)",
   } as const,
   cardActionRow: {
     display: "grid",
