@@ -48,6 +48,16 @@ function getCreatorPayload(input: {
   };
 }
 
+function isMissingCreatorColumnError(error: any) {
+  const message = `${error?.message || ""} ${error?.details || ""} ${error?.hint || ""}`;
+  return (
+    error?.code === "42703" ||
+    error?.code === "PGRST204" ||
+    /created_by_(user_id|name|email)/i.test(message) ||
+    /schema cache/i.test(message)
+  );
+}
+
 export async function saveCustomQuote(input: {
   shop: string;
   customerName?: string;
@@ -100,7 +110,7 @@ export async function saveCustomQuote(input: {
     .single();
 
   if (error) {
-    if (error.code === "42703") {
+    if (isMissingCreatorColumnError(error)) {
       const { created_by_user_id, created_by_name, created_by_email, ...fallbackPayload } =
         quotePayload;
       const fallback = await supabaseAdmin
@@ -115,6 +125,8 @@ export async function saveCustomQuote(input: {
         );
         return fallback.data;
       }
+
+      console.error("[SAVE CUSTOM QUOTE FALLBACK ERROR]", fallback.error);
     }
 
     console.error("[SAVE CUSTOM QUOTE ERROR]", error);

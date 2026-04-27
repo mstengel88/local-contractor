@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Form, useActionData, useLoaderData, useLocation } from "react-router";
+import { type DragEvent, useEffect, useMemo, useRef, useState } from "react";
+import { Form, useActionData, useFetcher, useLoaderData, useLocation } from "react-router";
 import { data, redirect } from "react-router";
 import {
   adminQuoteCookie,
@@ -1521,6 +1521,7 @@ export async function action({ request }: any) {
 export default function DispatchPage() {
   const loaderData = useLoaderData<typeof loader>() as any;
   const actionData = useActionData<typeof action>() as any;
+  const assignmentFetcher = useFetcher<typeof action>();
   const location = useLocation();
   const allowed = actionData?.allowed ?? loaderData.allowed;
   const currentUser = actionData?.currentUser ?? loaderData.currentUser ?? null;
@@ -1533,6 +1534,7 @@ export default function DispatchPage() {
   const logoutHref = `${dispatchHref}?logout=1`;
   const canAccess = (permission: string) =>
     !currentUser || currentUser.permissions?.includes(permission);
+  const canManageDispatch = canAccess("manageDispatch");
   const orders = (actionData?.orders ?? loaderData.orders ?? []) as DispatchOrder[];
   const dispatchRoutes = (actionData?.routes ?? loaderData.routes ?? []) as DispatchRoute[];
   const trucks = (actionData?.trucks ?? loaderData.trucks ?? []) as DispatchTruck[];
@@ -1678,6 +1680,32 @@ export default function DispatchPage() {
     activeView === "delivered" &&
     searchParams.get("detail") === "1" &&
     Boolean(selectedOrder && querySelectedOrderId);
+  const [draggedOrderId, setDraggedOrderId] = useState<string | null>(null);
+  const [dragOverRouteId, setDragOverRouteId] = useState<string | null>(null);
+  const isAssigningByDrag = assignmentFetcher.state === "submitting";
+
+  function assignDraggedOrder(routeId: string, event: DragEvent<HTMLElement>) {
+    event.preventDefault();
+    const orderId =
+      event.dataTransfer.getData("application/x-dispatch-order-id") ||
+      event.dataTransfer.getData("text/plain") ||
+      draggedOrderId;
+
+    setDragOverRouteId(null);
+    setDraggedOrderId(null);
+
+    if (!orderId || !routeId || !canManageDispatch) return;
+
+    assignmentFetcher.submit(
+      {
+        intent: "assign-order",
+        orderId,
+        routeId,
+        eta: "",
+      },
+      { method: "post", action: `${dispatchHref}${location.search || ""}` },
+    );
+  }
 
   if (!allowed) {
     return (
@@ -2767,6 +2795,7 @@ export default function DispatchPage() {
                   <h2 style={styles.panelTitle}>Email Intake Queue</h2>
                   <p style={styles.panelSub}>
                     Orders that came in by email or were typed in manually can be reviewed and routed here.
+                    {canManageDispatch ? " Drag a card onto a route to assign it." : ""}
                   </p>
                 </div>
                 <div style={styles.headerPill}>Today</div>
@@ -2779,12 +2808,26 @@ export default function DispatchPage() {
                   return (
                     <div
                       key={order.id}
+                      draggable={canManageDispatch}
+                      onDragStart={(event) => {
+                        if (!canManageDispatch) return;
+                        setDraggedOrderId(order.id);
+                        event.dataTransfer.effectAllowed = "move";
+                        event.dataTransfer.setData("application/x-dispatch-order-id", order.id);
+                        event.dataTransfer.setData("text/plain", order.id);
+                      }}
+                      onDragEnd={() => {
+                        setDraggedOrderId(null);
+                        setDragOverRouteId(null);
+                      }}
                       style={{
                         ...styles.queueCard,
                         borderColor: active ? "#38bdf8" : "rgba(51, 65, 85, 0.92)",
                         boxShadow: active
                           ? "0 0 0 1px rgba(56, 189, 248, 0.45)"
                           : "none",
+                        cursor: canManageDispatch ? "grab" : "pointer",
+                        opacity: draggedOrderId === order.id ? 0.58 : 1,
                       }}
                     >
                       <div style={styles.cardActionRow}>
@@ -2852,7 +2895,25 @@ export default function DispatchPage() {
 
               <div style={{ display: "grid", gap: 12 }}>
                 {routes.map((route) => (
-                  <div key={route.id} style={styles.routeCard(route.color)}>
+                  <div
+                    key={route.id}
+                    onDragOver={(event) => {
+                      if (!draggedOrderId || !canManageDispatch) return;
+                      event.preventDefault();
+                      event.dataTransfer.dropEffect = "move";
+                      setDragOverRouteId(route.id);
+                    }}
+                    onDragLeave={() => {
+                      setDragOverRouteId((current) =>
+                        current === route.id ? null : current,
+                      );
+                    }}
+                    onDrop={(event) => assignDraggedOrder(route.id, event)}
+                    style={{
+                      ...styles.routeCard(route.color),
+                      ...(dragOverRouteId === route.id ? styles.routeDropActive : {}),
+                    }}
+                  >
                     <div
                       style={{
                         display: "flex",
@@ -2910,6 +2971,18 @@ export default function DispatchPage() {
                         )
                       ) : null}
                     </div>
+
+                    {draggedOrderId && canManageDispatch ? (
+                      <div
+                        style={
+                          dragOverRouteId === route.id
+                            ? styles.dropHintActive
+                            : styles.dropHint
+                        }
+                      >
+                        Drop here to assign to {route.code}
+                      </div>
+                    ) : null}
 
                     <div style={styles.routeStats}>
                       <span>{route.shift}</span>
@@ -3765,6 +3838,37 @@ const styles = {
         "linear-gradient(145deg, rgba(2, 6, 23, 0.86), rgba(15, 23, 42, 0.98))",
       boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03), 0 18px 28px ${color}12`,
     }) as const,
+  routeDropActive: {
+    borderColor: "#38bdf8",
+    background:
+      "linear-gradient(145deg, rgba(14, 165, 233, 0.22), rgba(15, 23, 42, 0.98))",
+    boxShadow:
+      "inset 0 0 0 1px rgba(56, 189, 248, 0.45), 0 22px 42px rgba(14, 165, 233, 0.18)",
+  } as const,
+  dropHint: {
+    marginTop: 12,
+    padding: "10px 12px",
+    borderRadius: 14,
+    border: "1px dashed rgba(56, 189, 248, 0.28)",
+    background: "rgba(14, 165, 233, 0.08)",
+    color: "#7dd3fc",
+    fontSize: 12,
+    fontWeight: 900,
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.08em",
+  },
+  dropHintActive: {
+    marginTop: 12,
+    padding: "10px 12px",
+    borderRadius: 14,
+    border: "1px solid rgba(56, 189, 248, 0.65)",
+    background: "rgba(14, 165, 233, 0.18)",
+    color: "#e0f2fe",
+    fontSize: 12,
+    fontWeight: 950,
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.08em",
+  },
   routeColor: (color: string) =>
     ({
       width: 12,
