@@ -3093,7 +3093,7 @@ export default function DispatchPage() {
                           <div
                             key={order.id}
                             draggable={canManageDispatch}
-                            onDragStartCapture={(event) => startOrderDrag(order.id, event)}
+                            onDragStart={(event) => startOrderDrag(order.id, event)}
                             onDragEnd={clearDragState}
                             style={{
                               ...styles.stopRow,
@@ -3101,19 +3101,10 @@ export default function DispatchPage() {
                               opacity: draggedOrderId === order.id ? 0.58 : 1,
                             }}
                           >
-                            <span
-                              draggable={canManageDispatch}
-                              onDragStart={(event) => startOrderDrag(order.id, event)}
-                              title="Drag to another route or back to queue"
-                              style={styles.dragHandle}
-                            >
+                            <span title="Drag to another route or back to queue" style={styles.dragHandle}>
                               ::
                             </span>
-                            <a
-                              href={dashboardSelectHref(order.id)}
-                              draggable={false}
-                              style={styles.stopSelectArea}
-                            >
+                            <div style={styles.stopSelectArea}>
                               <span style={styles.stopNumber}>
                                 {order.stopSequence || "-"}
                               </span>
@@ -3128,14 +3119,23 @@ export default function DispatchPage() {
                               >
                                 {getDeliveryStatusLabel(order.deliveryStatus)}
                               </span>
-                            </a>
-                            <a
-                              href={dashboardDetailHref(order.id)}
-                              draggable={false}
-                              style={styles.stopDetailButton}
-                            >
-                              Open
-                            </a>
+                            </div>
+                            <div style={styles.stopActions}>
+                              <a
+                                href={dashboardSelectHref(order.id)}
+                                draggable={false}
+                                style={styles.stopDetailButton}
+                              >
+                                Select
+                              </a>
+                              <a
+                                href={dashboardDetailHref(order.id)}
+                                draggable={false}
+                                style={styles.stopDetailButton}
+                              >
+                                Open
+                              </a>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -4093,7 +4093,7 @@ const styles = {
   } as const,
   stopRow: {
     display: "grid",
-    gridTemplateColumns: "22px minmax(0, 1fr) auto",
+    gridTemplateColumns: "26px minmax(0, 1fr) auto",
     gap: 10,
     alignItems: "center",
     padding: "10px 12px",
@@ -4105,8 +4105,8 @@ const styles = {
     userSelect: "none" as const,
   } as const,
   dragHandle: {
-    width: 22,
-    minHeight: 34,
+    width: 26,
+    minHeight: 42,
     borderRadius: 10,
     display: "inline-flex",
     alignItems: "center",
@@ -4127,6 +4127,13 @@ const styles = {
     minWidth: 0,
     color: "inherit",
     textDecoration: "none",
+  } as const,
+  stopActions: {
+    display: "flex",
+    gap: 6,
+    alignItems: "center",
+    flexWrap: "wrap" as const,
+    justifyContent: "flex-end",
   } as const,
   stopDetailButton: {
     minHeight: 30,
