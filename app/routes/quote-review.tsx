@@ -7,6 +7,7 @@ import {
   getAdminQuotePassword,
   hasAdminQuotePermissionAccess,
 } from "../lib/admin-quote-auth.server";
+import { getCurrentUser, userAuthCookie } from "../lib/user-auth.server";
 
 function formatMoney(cents: number | null | undefined) {
   return `$${(Number(cents || 0) / 100).toFixed(2)}`;
@@ -54,6 +55,8 @@ function buildQuoteSearchText(quote: SavedCustomQuote) {
     quote.description,
     quote.summary,
     quote.eta,
+    quote.created_by_name,
+    quote.created_by_email,
     lineText,
     sourceText,
   ]
@@ -163,16 +166,18 @@ export async function loader({ request }: any) {
 
   if (url.searchParams.get("logout") === "1") {
     return redirect(reviewPath, {
-      headers: {
-        "Set-Cookie": await adminQuoteCookie.serialize("", { maxAge: 0 }),
-      },
+      headers: [
+        ["Set-Cookie", await userAuthCookie.serialize("", { maxAge: 0 })],
+        ["Set-Cookie", await adminQuoteCookie.serialize("", { maxAge: 0 })],
+      ],
     });
   }
 
   const allowed = await hasAdminQuotePermissionAccess(request, "reviewQuotes");
   const quotes = allowed ? await getRecentCustomQuotes(250) : [];
+  const currentUser = allowed ? await getCurrentUser(request) : null;
 
-  return data({ allowed, quotes });
+  return data({ allowed, currentUser, quotes });
 }
 
 export async function action({ request }: any) {
@@ -219,6 +224,7 @@ export default function QuoteReviewPage() {
   const requestedQuoteId = urlParams.get("quote");
 
   const allowed = actionData?.allowed ?? loaderData.allowed;
+  const currentUser = actionData?.currentUser ?? loaderData.currentUser ?? null;
   const rawQuotes = ((actionData?.quotes || loaderData.quotes) || []) as SavedCustomQuote[];
   const [editedQuotesById, setEditedQuotesById] = useState<Record<string, SavedCustomQuote>>({});
   const quotes = rawQuotes.map((quote) => editedQuotesById[quote.id] || quote);
@@ -245,6 +251,9 @@ export default function QuoteReviewPage() {
   const quoteToolHref = isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote";
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
   const mobileDashboardHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
+  const logoutHref = currentUser ? "/login?logout=1" : "?logout=1";
+  const canAccess = (permission: string) =>
+    !currentUser || currentUser.permissions?.includes(permission);
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
 
   const indexedQuotes = useMemo(
@@ -417,10 +426,22 @@ export default function QuoteReviewPage() {
                 </p>
               </div>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                <a href={mobileDashboardHref} style={styles.buttonGhost}>Dashboard</a>
-                <a href={quoteToolHref} style={styles.buttonGhost}>Open Quote Tool</a>
-                <a href={dispatchHref} style={styles.buttonGhost}>Dispatch</a>
-                <a href="?logout=1" style={styles.buttonGhost}>Log Out</a>
+                {canAccess("quoteTool") ? (
+                  <a href={mobileDashboardHref} style={styles.buttonGhost}>Dashboard</a>
+                ) : null}
+                {canAccess("quoteTool") ? (
+                  <a href={quoteToolHref} style={styles.buttonGhost}>Open Quote Tool</a>
+                ) : null}
+                {canAccess("dispatch") ? (
+                  <a href={dispatchHref} style={styles.buttonGhost}>Dispatch</a>
+                ) : null}
+                {canAccess("manageUsers") ? (
+                  <a href="/settings" style={styles.buttonGhost}>Settings</a>
+                ) : null}
+                {currentUser ? (
+                  <a href="/change-password" style={styles.buttonGhost}>Change Password</a>
+                ) : null}
+                <a href={logoutHref} style={styles.buttonGhost}>Log Out</a>
               </div>
             </div>
           </div>
@@ -530,9 +551,16 @@ export default function QuoteReviewPage() {
                     <div style={{ color: "#94a3b8", marginTop: 4, fontSize: 14 }}>
                       {new Date(selectedQuote.created_at).toLocaleString()}
                     </div>
+                    <div style={{ color: "#93c5fd", marginTop: 4, fontSize: 14 }}>
+                      Created by{" "}
+                      {selectedQuote.created_by_name ||
+                        selectedQuote.created_by_email ||
+                        "Unknown user"}
+                    </div>
                   </div>
 
                     <div style={{ display: "flex", gap: 12, flexWrap: "wrap", width: isMobile ? "100%" : undefined }}>
+                      {canAccess("sendToShopify") ? (
                       <draftOrderFetcher.Form
                         method="post"
                         action={createDraftOrderAction}
@@ -565,6 +593,7 @@ export default function QuoteReviewPage() {
                         </a>
                       ) : null}
                     </draftOrderFetcher.Form>
+                      ) : null}
 
                     <button
                       type="button"
@@ -793,6 +822,13 @@ export default function QuoteReviewPage() {
                           {selectedQuote.province} {selectedQuote.postal_code}
                         </div>
                         <div><strong>Country:</strong> {selectedQuote.country || "US"}</div>
+                        <div>
+                          <strong>Created By:</strong>{" "}
+                          {selectedQuote.created_by_name ||
+                            selectedQuote.created_by_email ||
+                            "Unknown user"}{" "}
+                          on {new Date(selectedQuote.created_at).toLocaleString()}
+                        </div>
                         <div style={{ fontSize: isMobile ? 22 : undefined, fontWeight: isMobile ? 800 : undefined }}>
                           <strong>Total:</strong> {formatMoney(selectedQuote.quote_total_cents)}
                         </div>
@@ -855,22 +891,28 @@ export default function QuoteReviewPage() {
       </div>
       {isMobile ? (
         <div style={mobileBottomNavStyle}>
-          <a href={mobileDashboardHref} style={mobileTabLinkStyle(false)}>
+          {canAccess("quoteTool") ? (
+            <a href={mobileDashboardHref} style={mobileTabLinkStyle(false)}>
             <span style={mobileTabIconStyle(false)}>D</span>
             <span>Dashboard</span>
           </a>
-          <a href={quoteToolHref} style={mobileTabLinkStyle(false)}>
+          ) : null}
+          {canAccess("quoteTool") ? (
+            <a href={quoteToolHref} style={mobileTabLinkStyle(false)}>
             <span style={mobileTabIconStyle(false)}>Q</span>
             <span>Quote Tool</span>
           </a>
+          ) : null}
           <a href={isEmbeddedRoute ? "/app/quote-review" : "/quote-review"} style={mobileTabLinkStyle(true)}>
             <span style={mobileTabIconStyle(true)}>R</span>
             <span>Review</span>
           </a>
-          <a href={dispatchHref} style={mobileTabLinkStyle(false)}>
+          {canAccess("dispatch") ? (
+            <a href={dispatchHref} style={mobileTabLinkStyle(false)}>
             <span style={mobileTabIconStyle(false)}>X</span>
             <span>Dispatch</span>
           </a>
+          ) : null}
         </div>
       ) : null}
     </div>

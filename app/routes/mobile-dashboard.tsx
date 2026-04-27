@@ -6,6 +6,7 @@ import {
   getAdminQuotePassword,
   hasAdminQuotePermissionAccess,
 } from "../lib/admin-quote-auth.server";
+import { userAuthCookie } from "../lib/user-auth.server";
 
 function formatMoney(cents: number | null | undefined) {
   return `$${(Number(cents || 0) / 100).toFixed(2)}`;
@@ -182,9 +183,10 @@ export async function loader({ request }: any) {
 
   if (url.searchParams.get("logout") === "1") {
     return redirect(dashboardPath, {
-      headers: {
-        "Set-Cookie": await adminQuoteCookie.serialize("", { maxAge: 0 }),
-      },
+      headers: [
+        ["Set-Cookie", await userAuthCookie.serialize("", { maxAge: 0 })],
+        ["Set-Cookie", await adminQuoteCookie.serialize("", { maxAge: 0 })],
+      ],
     });
   }
 

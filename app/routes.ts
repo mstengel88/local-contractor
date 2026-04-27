@@ -10,6 +10,7 @@ export default [
   route("dispatch/driver/detail", "routes/dispatch-driver-detail.tsx"),
   route("mobile", "routes/mobile-dashboard.tsx"),
   route("login", "routes/login.tsx"),
+  route("change-password", "routes/change-password.tsx"),
   route("settings", "routes/settings.tsx"),
 
   route("auth/login", "routes/auth.login/route.tsx"),

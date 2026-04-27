@@ -6,6 +6,7 @@ import {
   getAdminQuotePassword,
   hasAdminQuotePermissionAccess,
 } from "../lib/admin-quote-auth.server";
+import { userAuthCookie } from "../lib/user-auth.server";
 import { sendDeliveryConfirmationEmail } from "../lib/delivery-confirmation-email.server";
 import {
   createDispatchEmployee,
@@ -50,6 +51,7 @@ import {
   pollDispatchMailbox,
 } from "../lib/dispatch-mailbox.server";
 import { attachAddressAutocomplete, loadGooglePlaces } from "../lib/google-places";
+import { getCurrentUser } from "../lib/user-auth.server";
 
 function getDeliveryStatusLabel(status?: DispatchOrder["deliveryStatus"]) {
   if (status === "en_route") return "Enroute";
@@ -580,9 +582,10 @@ export async function loader({ request }: any) {
 
   if (url.searchParams.get("logout") === "1") {
     return redirect(dispatchPath, {
-      headers: {
-        "Set-Cookie": await adminQuoteCookie.serialize("", { maxAge: 0 }),
-      },
+      headers: [
+        ["Set-Cookie", await userAuthCookie.serialize("", { maxAge: 0 })],
+        ["Set-Cookie", await adminQuoteCookie.serialize("", { maxAge: 0 })],
+      ],
     });
   }
 
@@ -600,6 +603,16 @@ export async function loader({ request }: any) {
       storageReady: false,
       storageError: null,
     });
+  }
+  const currentUser = await getCurrentUser(request);
+  const requestedView = url.searchParams.get("view") || "dashboard";
+  const manageOnlyViews = new Set(["orders", "routes", "trucks", "employees"]);
+  if (
+    currentUser &&
+    manageOnlyViews.has(requestedView) &&
+    !currentUser.permissions.includes("manageDispatch")
+  ) {
+    return redirect(dispatchPath);
   }
 
   let mailboxStatus = null;
@@ -619,6 +632,7 @@ export async function loader({ request }: any) {
 
   return data({
     allowed: true,
+    currentUser,
     mailboxStatus,
     googleMapsApiKey: getBrowserGoogleMapsApiKey(),
     ...dispatchState,
@@ -1509,6 +1523,7 @@ export default function DispatchPage() {
   const actionData = useActionData<typeof action>() as any;
   const location = useLocation();
   const allowed = actionData?.allowed ?? loaderData.allowed;
+  const currentUser = actionData?.currentUser ?? loaderData.currentUser ?? null;
   const isEmbeddedRoute = location.pathname.startsWith("/app/");
   const quoteHref = isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote";
   const reviewHref = isEmbeddedRoute ? "/app/quote-review" : "/quote-review";
@@ -1516,6 +1531,8 @@ export default function DispatchPage() {
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
   const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
   const logoutHref = `${dispatchHref}?logout=1`;
+  const canAccess = (permission: string) =>
+    !currentUser || currentUser.permissions?.includes(permission);
   const orders = (actionData?.orders ?? loaderData.orders ?? []) as DispatchOrder[];
   const dispatchRoutes = (actionData?.routes ?? loaderData.routes ?? []) as DispatchRoute[];
   const trucks = (actionData?.trucks ?? loaderData.trucks ?? []) as DispatchTruck[];
@@ -1719,19 +1736,36 @@ export default function DispatchPage() {
 
           <nav style={styles.sideNav}>
             <a href={dispatchViewHref("dashboard")} style={styles.sideNavLink(activeView === "dashboard")}>Dashboard</a>
-            <a href={dispatchViewHref("orders")} style={styles.sideNavLink(activeView === "orders")}>Orders</a>
+            {canAccess("manageDispatch") ? (
+              <a href={dispatchViewHref("orders")} style={styles.sideNavLink(activeView === "orders")}>Orders</a>
+            ) : null}
             <a href={dispatchViewHref("scheduled")} style={styles.sideNavLink(activeView === "scheduled")}>Scheduled</a>
-            <a href={dispatchViewHref("routes")} style={styles.sideNavLink(activeView === "routes")}>Routes</a>
-            <a href={dispatchViewHref("trucks")} style={styles.sideNavLink(activeView === "trucks")}>Trucks</a>
-            <a href={dispatchViewHref("employees")} style={styles.sideNavLink(activeView === "employees")}>Employees</a>
+            {canAccess("manageDispatch") ? (
+              <a href={dispatchViewHref("routes")} style={styles.sideNavLink(activeView === "routes")}>Routes</a>
+            ) : null}
+            {canAccess("manageDispatch") ? (
+              <a href={dispatchViewHref("trucks")} style={styles.sideNavLink(activeView === "trucks")}>Trucks</a>
+            ) : null}
+            {canAccess("manageDispatch") ? (
+              <a href={dispatchViewHref("employees")} style={styles.sideNavLink(activeView === "employees")}>Employees</a>
+            ) : null}
             <a href={dispatchViewHref("delivered")} style={styles.sideNavLink(activeView === "delivered")}>Delivered</a>
           </nav>
 
           <div style={styles.sidebarFooter}>
-            <a href={driverHref} style={styles.sideUtility}>Driver Route</a>
-            <a href={quoteHref} style={styles.sideUtility}>Quote Tool</a>
-            <a href="/settings" style={styles.sideUtility}>Settings</a>
-            <a href={logoutHref} style={styles.sideUtility}>Log Out</a>
+            {canAccess("driver") ? (
+              <a href={driverHref} style={styles.sideUtility}>Driver Route</a>
+            ) : null}
+            {canAccess("quoteTool") ? (
+              <a href={quoteHref} style={styles.sideUtility}>Quote Tool</a>
+            ) : null}
+            {canAccess("manageUsers") ? (
+              <a href="/settings" style={styles.sideUtility}>Settings</a>
+            ) : null}
+            {currentUser ? (
+              <a href="/change-password" style={styles.sideUtility}>Change Password</a>
+            ) : null}
+            <a href={currentUser ? "/login?logout=1" : logoutHref} style={styles.sideUtility}>Log Out</a>
           </div>
         </aside>
 

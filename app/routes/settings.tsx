@@ -2,7 +2,9 @@ import { Form, Link, useActionData, useLoaderData, useNavigation } from "react-r
 import { data } from "react-router";
 import {
   createAppUser,
+  listAuditEvents,
   listAppUsers,
+  logAuditEvent,
   requireUserPermission,
   updateAppUserProfile,
 } from "../lib/user-auth.server";
@@ -15,43 +17,79 @@ import {
 export async function loader({ request }: any) {
   const currentUser = await requireUserPermission(request, "manageUsers");
   const users = await listAppUsers();
-  return data({ currentUser, users, allPermissions, permissionLabels });
+  const auditEvents = currentUser.permissions.includes("auditLog")
+    ? await listAuditEvents(150)
+    : [];
+  return data({ currentUser, users, auditEvents, allPermissions, permissionLabels });
 }
 
 export async function action({ request }: any) {
-  await requireUserPermission(request, "manageUsers");
+  const currentUser = await requireUserPermission(request, "manageUsers");
   const form = await request.formData();
   const intent = String(form.get("intent") || "");
   const permissions = form.getAll("permissions").map(String);
+  const loadSettingsData = async () => ({
+    users: await listAppUsers(),
+    auditEvents: currentUser.permissions.includes("auditLog")
+      ? await listAuditEvents(150)
+      : [],
+  });
 
   try {
     if (intent === "create-user") {
-      await createAppUser({
+      const createdUser = await createAppUser({
         email: String(form.get("email") || "").trim(),
         password: String(form.get("password") || ""),
         name: String(form.get("name") || "").trim(),
         role: String(form.get("role") || "user").trim(),
         permissions,
       });
+      await logAuditEvent({
+        actor: currentUser,
+        action: "create_user",
+        targetType: "user",
+        targetId: createdUser.id,
+        targetLabel: createdUser.email,
+        details: {
+          name: createdUser.name,
+          role: createdUser.role,
+          permissions: createdUser.permissions,
+          isActive: createdUser.isActive,
+          temporaryPasswordRequired: true,
+        },
+      });
       return data({
         ok: true,
         message: "User created.",
-        users: await listAppUsers(),
+        ...(await loadSettingsData()),
       });
     }
 
     if (intent === "update-user") {
-      await updateAppUserProfile({
+      const updatedUser = await updateAppUserProfile({
         id: String(form.get("userId") || ""),
         name: String(form.get("name") || "").trim(),
         role: String(form.get("role") || "user").trim(),
         permissions,
         isActive: form.get("isActive") === "on",
       });
+      await logAuditEvent({
+        actor: currentUser,
+        action: "update_user",
+        targetType: "user",
+        targetId: updatedUser.id,
+        targetLabel: updatedUser.email,
+        details: {
+          name: updatedUser.name,
+          role: updatedUser.role,
+          permissions: updatedUser.permissions,
+          isActive: updatedUser.isActive,
+        },
+      });
       return data({
         ok: true,
         message: "User updated.",
-        users: await listAppUsers(),
+        ...(await loadSettingsData()),
       });
     }
 
@@ -61,7 +99,7 @@ export async function action({ request }: any) {
       {
         ok: false,
         message: error instanceof Error ? error.message : "Unable to save user settings.",
-        users: await listAppUsers(),
+        ...(await loadSettingsData()),
       },
       { status: 400 },
     );
@@ -73,7 +111,10 @@ export default function SettingsPage() {
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const users = actionData?.users || loaderData.users;
+  const auditEvents = actionData?.auditEvents || loaderData.auditEvents;
   const isSubmitting = navigation.state === "submitting";
+  const canAccess = (permission: string) =>
+    loaderData.currentUser.permissions?.includes(permission);
 
   return (
     <main style={styles.page}>
@@ -87,8 +128,13 @@ export default function SettingsPage() {
             </p>
           </div>
           <nav style={styles.nav}>
-            <Link to="/custom-quote" style={styles.navButton}>Quote Tool</Link>
-            <Link to="/dispatch" style={styles.navButton}>Dispatch</Link>
+            {canAccess("quoteTool") ? (
+              <Link to="/custom-quote" style={styles.navButton}>Quote Tool</Link>
+            ) : null}
+            {canAccess("dispatch") ? (
+              <Link to="/dispatch" style={styles.navButton}>Dispatch</Link>
+            ) : null}
+            <Link to="/change-password" style={styles.navButton}>Change Password</Link>
             <Link to="/login?logout=1" style={styles.navButton}>Log Out</Link>
           </nav>
         </header>
@@ -146,9 +192,68 @@ export default function SettingsPage() {
             </article>
           ))}
         </section>
+
+        {canAccess("auditLog") ? (
+          <section style={styles.panel}>
+            <div style={styles.userHeader}>
+              <div>
+                <h2 style={styles.panelTitle}>Audit Log</h2>
+                <p style={styles.subtitle}>
+                  Recent user and settings activity, including who performed each action.
+                </p>
+              </div>
+              <span style={styles.auditCountBadge}>{auditEvents.length} Events</span>
+            </div>
+
+            <div style={styles.auditList}>
+              {auditEvents.length ? (
+                auditEvents.map((event) => (
+                  <article key={event.id} style={styles.auditItem}>
+                    <div style={styles.auditHeader}>
+                      <div>
+                        <strong style={styles.auditAction}>{formatAuditAction(event.action)}</strong>
+                        <p style={styles.auditMeta}>
+                          {event.actorName}
+                          {event.actorEmail ? ` (${event.actorEmail})` : ""} on{" "}
+                          {formatAuditDate(event.createdAt)}
+                        </p>
+                      </div>
+                      <span style={styles.auditTarget}>
+                        {event.targetType}
+                        {event.targetLabel ? `: ${event.targetLabel}` : ""}
+                      </span>
+                    </div>
+                    {Object.keys(event.details || {}).length ? (
+                      <pre style={styles.auditDetails}>
+                        {JSON.stringify(event.details, null, 2)}
+                      </pre>
+                    ) : null}
+                  </article>
+                ))
+              ) : (
+                <p style={styles.subtitle}>No audit events have been recorded yet.</p>
+              )}
+            </div>
+          </section>
+        ) : null}
       </div>
     </main>
   );
+}
+
+function formatAuditAction(action: string) {
+  return action
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function formatAuditDate(value: string) {
+  if (!value) return "Unknown time";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
 }
 
 function Field({
@@ -391,5 +496,62 @@ const styles = {
     fontSize: 12,
     fontWeight: 950,
     textTransform: "uppercase" as const,
+  },
+  auditCountBadge: {
+    padding: "8px 12px",
+    borderRadius: 999,
+    border: "1px solid rgba(56, 189, 248, 0.42)",
+    background: "rgba(14, 165, 233, 0.14)",
+    color: "#7dd3fc",
+    fontSize: 12,
+    fontWeight: 950,
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.08em",
+  },
+  auditList: {
+    display: "grid",
+    gap: 12,
+    marginTop: 16,
+  } as const,
+  auditItem: {
+    padding: 14,
+    borderRadius: 16,
+    border: "1px solid rgba(51, 65, 85, 0.95)",
+    background: "rgba(2, 6, 23, 0.62)",
+  } as const,
+  auditHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 12,
+    alignItems: "flex-start",
+  } as const,
+  auditAction: {
+    color: "#f8fafc",
+    fontSize: 15,
+  },
+  auditMeta: {
+    margin: "5px 0 0",
+    color: "#94a3b8",
+    fontSize: 13,
+  },
+  auditTarget: {
+    color: "#bae6fd",
+    fontSize: 12,
+    fontWeight: 900,
+    textAlign: "right" as const,
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.06em",
+  },
+  auditDetails: {
+    margin: "12px 0 0",
+    padding: 12,
+    maxHeight: 180,
+    overflow: "auto",
+    borderRadius: 12,
+    border: "1px solid rgba(51, 65, 85, 0.95)",
+    background: "#020617",
+    color: "#cbd5e1",
+    fontSize: 12,
+    whiteSpace: "pre-wrap" as const,
   },
 };

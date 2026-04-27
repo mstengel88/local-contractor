@@ -1,61 +1,55 @@
 import { Form, Link, useActionData, useLoaderData, useNavigation } from "react-router";
 import { data, redirect } from "react-router";
 import {
+  changeCurrentUserPassword,
   getCurrentUser,
-  signInContractorUser,
-  userAuthCookie,
 } from "../lib/user-auth.server";
-import { adminQuoteCookie } from "../lib/admin-quote-auth.server";
 
 export async function loader({ request }: any) {
   const url = new URL(request.url);
-
-  if (url.searchParams.get("logout") === "1") {
-    return redirect("/login", {
-      headers: [
-        ["Set-Cookie", await userAuthCookie.serialize("", { maxAge: 0 })],
-        ["Set-Cookie", await adminQuoteCookie.serialize("", { maxAge: 0 })],
-      ],
-    });
-  }
-
   const user = await getCurrentUser(request);
-  const next = url.searchParams.get("next") || "/custom-quote";
-  if (user) return redirect(next);
-
-  return data({ next });
+  if (!user) {
+    return redirect(`/login?next=${encodeURIComponent(url.pathname + url.search)}`);
+  }
+  return data({
+    user,
+    next: url.searchParams.get("next") || "/custom-quote",
+  });
 }
 
 export async function action({ request }: any) {
   const form = await request.formData();
-  const email = String(form.get("email") || "").trim();
   const password = String(form.get("password") || "");
+  const confirmPassword = String(form.get("confirmPassword") || "");
   const next = String(form.get("next") || "/custom-quote");
 
+  if (password.length < 8) {
+    return data({ next, error: "Password must be at least 8 characters." }, { status: 400 });
+  }
+
+  if (password !== confirmPassword) {
+    return data({ next, error: "Passwords do not match." }, { status: 400 });
+  }
+
   try {
-    const session = await signInContractorUser(email, password);
-    return redirect(
-      session.profile.mustChangePassword
-        ? `/change-password?next=${encodeURIComponent(next)}`
-        : next,
-      {
+    const cookie = await changeCurrentUserPassword(request, password);
+    return redirect(next, {
       headers: {
-        "Set-Cookie": session.cookie,
+        "Set-Cookie": cookie,
       },
-      },
-    );
+    });
   } catch (error) {
     return data(
       {
         next,
-        error: error instanceof Error ? error.message : "Unable to sign in.",
+        error: error instanceof Error ? error.message : "Unable to change password.",
       },
       { status: 400 },
     );
   }
 }
 
-export default function LoginPage() {
+export default function ChangePasswordPage() {
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
@@ -65,24 +59,26 @@ export default function LoginPage() {
     <main style={styles.page}>
       <section style={styles.card}>
         <img src="/green-hills-logo.png" alt="Green Hills Supply" style={styles.logo} />
-        <p style={styles.kicker}>Contractor Workspace</p>
-        <h1 style={styles.title}>Sign in</h1>
+        <p style={styles.kicker}>Account Security</p>
+        <h1 style={styles.title}>Change Password</h1>
         <p style={styles.subtitle}>
-          Use your Supabase user account to open the quote, dispatch, and driver tools.
+          {loaderData.user.mustChangePassword
+            ? "This is your first login with a temporary password, so choose a new password to continue."
+            : "Update your password whenever you need to."}
         </p>
 
         <Form method="post" style={styles.form}>
           <input type="hidden" name="next" value={actionData?.next || loaderData.next} />
           <div>
-            <label style={styles.label}>Email</label>
-            <input name="email" type="email" autoComplete="email" required style={styles.input} />
+            <label style={styles.label}>New Password</label>
+            <input name="password" type="password" autoComplete="new-password" required style={styles.input} />
           </div>
           <div>
-            <label style={styles.label}>Password</label>
+            <label style={styles.label}>Confirm Password</label>
             <input
-              name="password"
+              name="confirmPassword"
               type="password"
-              autoComplete="current-password"
+              autoComplete="new-password"
               required
               style={styles.input}
             />
@@ -91,14 +87,13 @@ export default function LoginPage() {
           {actionData?.error ? <div style={styles.error}>{actionData.error}</div> : null}
 
           <button type="submit" style={styles.button} disabled={isSubmitting}>
-            {isSubmitting ? "Signing in..." : "Sign In"}
+            {isSubmitting ? "Saving..." : "Save Password"}
           </button>
         </Form>
 
-        <div style={styles.links}>
-          <Link to="/custom-quote" style={styles.link}>Quote Tool</Link>
-          <Link to="/dispatch" style={styles.link}>Dispatch</Link>
-        </div>
+        {!loaderData.user.mustChangePassword ? (
+          <Link to={loaderData.next} style={styles.link}>Back to app</Link>
+        ) : null}
       </section>
     </main>
   );
@@ -190,15 +185,11 @@ const styles = {
     fontWeight: 950,
     cursor: "pointer",
   },
-  links: {
-    display: "flex",
-    gap: 10,
-    marginTop: 18,
-    flexWrap: "wrap" as const,
-  },
   link: {
+    display: "inline-flex",
+    marginTop: 16,
     color: "#93c5fd",
-    fontWeight: 800,
+    fontWeight: 850,
     textDecoration: "none",
   },
 };

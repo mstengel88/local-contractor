@@ -1,4 +1,4 @@
-import { createCookie } from "react-router";
+import { createCookie, redirect } from "react-router";
 import { getCurrentUser } from "./user-auth.server";
 import { type UserPermission } from "./user-permissions";
 
@@ -16,6 +16,10 @@ export const adminQuoteCookie = createCookie("admin_quote_access", {
 
 export async function hasAdminQuoteAccess(request: Request) {
   const user = await getCurrentUser(request);
+  if (user?.mustChangePassword) {
+    const url = new URL(request.url);
+    throw redirect(`/change-password?next=${encodeURIComponent(url.pathname + url.search)}`);
+  }
   if (user) return true;
 
   const cookieHeader = request.headers.get("Cookie");
@@ -28,6 +32,10 @@ export async function hasAdminQuotePermissionAccess(
   permission: UserPermission,
 ) {
   const user = await getCurrentUser(request);
+  if (user?.mustChangePassword) {
+    const url = new URL(request.url);
+    throw redirect(`/change-password?next=${encodeURIComponent(url.pathname + url.search)}`);
+  }
   if (user) return user.permissions.includes(permission);
 
   const cookieHeader = request.headers.get("Cookie");

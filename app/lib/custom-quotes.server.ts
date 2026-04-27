@@ -18,6 +18,9 @@ export type SavedCustomQuote = {
   description?: string | null;
   eta?: string | null;
   summary?: string | null;
+  created_by_user_id?: string | null;
+  created_by_name?: string | null;
+  created_by_email?: string | null;
   source_breakdown?: unknown[] | null;
   line_items?: Array<{
     title: string;
@@ -32,6 +35,18 @@ export type SavedCustomQuote = {
   }> | null;
   created_at: string;
 };
+
+function getCreatorPayload(input: {
+  createdByUserId?: string | null;
+  createdByName?: string | null;
+  createdByEmail?: string | null;
+}) {
+  return {
+    created_by_user_id: input.createdByUserId || null,
+    created_by_name: input.createdByName || null,
+    created_by_email: input.createdByEmail || null,
+  };
+}
 
 export async function saveCustomQuote(input: {
   shop: string;
@@ -50,35 +65,58 @@ export async function saveCustomQuote(input: {
   description?: string;
   eta?: string;
   summary?: string;
+  createdByUserId?: string | null;
+  createdByName?: string | null;
+  createdByEmail?: string | null;
   sourceBreakdown: any[];
   lineItems: any[];
 }) {
+  const quotePayload = {
+    shop: input.shop,
+    customer_name: input.customerName || null,
+    customer_email: input.customerEmail || null,
+    customer_phone: input.customerPhone || null,
+    address1: input.address1,
+    address2: input.address2 || null,
+    city: input.city,
+    province: input.province,
+    postal_code: input.postalCode,
+    country: input.country,
+    quote_total_cents: input.quoteTotalCents,
+    service_name: input.serviceName || null,
+    shipping_details: input.shippingDetails || null,
+    description: input.description || null,
+    eta: input.eta || null,
+    summary: input.summary || null,
+    ...getCreatorPayload(input),
+    source_breakdown: input.sourceBreakdown,
+    line_items: input.lineItems,
+  };
+
   const { data, error } = await supabaseAdmin
     .from("custom_delivery_quotes")
-    .insert({
-      shop: input.shop,
-      customer_name: input.customerName || null,
-      customer_email: input.customerEmail || null,
-      customer_phone: input.customerPhone || null,
-      address1: input.address1,
-      address2: input.address2 || null,
-      city: input.city,
-      province: input.province,
-      postal_code: input.postalCode,
-      country: input.country,
-      quote_total_cents: input.quoteTotalCents,
-      service_name: input.serviceName || null,
-      shipping_details: input.shippingDetails || null,
-      description: input.description || null,
-      eta: input.eta || null,
-      summary: input.summary || null,
-      source_breakdown: input.sourceBreakdown,
-      line_items: input.lineItems,
-    })
+    .insert(quotePayload)
     .select("id")
     .single();
 
   if (error) {
+    if (error.code === "42703") {
+      const { created_by_user_id, created_by_name, created_by_email, ...fallbackPayload } =
+        quotePayload;
+      const fallback = await supabaseAdmin
+        .from("custom_delivery_quotes")
+        .insert(fallbackPayload)
+        .select("id")
+        .single();
+
+      if (!fallback.error) {
+        console.warn(
+          "[SAVE CUSTOM QUOTE WARNING] Creator columns missing. Run supabase_quote_creator_schema.sql.",
+        );
+        return fallback.data;
+      }
+    }
+
     console.error("[SAVE CUSTOM QUOTE ERROR]", error);
     throw error;
   }

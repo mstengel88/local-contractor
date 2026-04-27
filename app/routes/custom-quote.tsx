@@ -10,6 +10,7 @@ import {
   getAdminQuotePassword,
   hasAdminQuotePermissionAccess,
 } from "../lib/admin-quote-auth.server";
+import { getCurrentUser, logAuditEvent, userAuthCookie } from "../lib/user-auth.server";
 import {
   getProductOptionsFromSupabase,
   type QuoteProductOption,
@@ -50,6 +51,9 @@ type SavedQuoteRecord = {
   description?: string | null;
   eta?: string | null;
   summary?: string | null;
+  created_by_user_id?: string | null;
+  created_by_name?: string | null;
+  created_by_email?: string | null;
   source_breakdown?: Array<{
     vendor: string;
     quantity: number;
@@ -128,18 +132,21 @@ export async function loader({ request }: any) {
 
   if (url.searchParams.get("logout") === "1") {
     return redirect("/custom-quote", {
-      headers: {
-        "Set-Cookie": await adminQuoteCookie.serialize("", { maxAge: 0 }),
-      },
+      headers: [
+        ["Set-Cookie", await userAuthCookie.serialize("", { maxAge: 0 })],
+        ["Set-Cookie", await adminQuoteCookie.serialize("", { maxAge: 0 })],
+      ],
     });
   }
 
   const allowed = await hasAdminQuotePermissionAccess(request, "quoteTool");
   const products = allowed ? await getProductOptionsFromSupabase() : [];
   const recentQuotes = allowed ? await getRecentCustomQuotes(15) : [];
+  const currentUser = allowed ? await getCurrentUser(request) : null;
 
   return data({
     allowed,
+    currentUser,
     products,
     recentQuotes,
     googleMapsApiKey: getBrowserGoogleMapsApiKey(),
@@ -397,6 +404,7 @@ export async function action({ request }: any) {
   let savedQuoteId: string | null = null;
 
   if (intent === "save") {
+    const currentUser = await getCurrentUser(request);
     const saved = await saveCustomQuote({
       shop,
       customerName,
@@ -414,6 +422,9 @@ export async function action({ request }: any) {
       description: `${effectiveDescription} Pricing: ${pricingLabel}.`,
       eta: effectiveEta,
       summary: undefined,
+      createdByUserId: currentUser?.id || null,
+      createdByName: currentUser?.name || currentUser?.email || "Legacy admin",
+      createdByEmail: currentUser?.email || null,
       sourceBreakdown,
       lineItems: selectedProducts.map((product) => ({
         ...product,
@@ -426,6 +437,21 @@ export async function action({ request }: any) {
     });
 
     savedQuoteId = saved.id;
+
+    await logAuditEvent({
+      actor: currentUser,
+      action: "create_quote",
+      targetType: "quote",
+      targetId: saved.id,
+      targetLabel: customerName || customerEmail || saved.id,
+      details: {
+        customerName,
+        customerEmail,
+        totalCents: Math.round(totalAmount * 100),
+        audience: quoteAudience,
+        contractorTier: quoteAudience === "contractor" ? contractorTier : null,
+      },
+    });
   }
 
   return data({
@@ -627,6 +653,7 @@ export default function PublicCustomQuotePage() {
 
   const allowed = actionData?.allowed ?? loaderData.allowed;
   const products = actionData?.products ?? loaderData.products ?? [];
+  const currentUser = actionData?.currentUser ?? loaderData.currentUser ?? null;
   const recentQuotes = (actionData?.recentQuotes ??
     loaderData.recentQuotes ??
     []) as SavedQuoteRecord[];
@@ -647,6 +674,8 @@ export default function PublicCustomQuotePage() {
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
   const logoutHref = isEmbeddedRoute ? "/app/custom-quote?logout=1" : "/custom-quote?logout=1";
   const mobileDashboardHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
+  const canAccess = (permission: string) =>
+    !currentUser || currentUser.permissions?.includes(permission);
 
   const [googleStatus, setGoogleStatus] = useState("Not loaded");
   const [quoteAudience, setQuoteAudience] = useState<QuoteAudience>(
@@ -964,19 +993,32 @@ export default function PublicCustomQuotePage() {
             </div>
 
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <a href={mobileDashboardHref} style={styles.logout}>
-                Dashboard
-              </a>
-              <a href={dispatchHref} style={styles.logout}>
-                Dispatch
-              </a>
-              <a href={quoteReviewHref} style={styles.logout}>
-                Review Quotes
-              </a>
-              <a href="/settings" style={styles.logout}>
-                Settings
-              </a>
-              <a href={logoutHref} style={styles.logout}>
+              {canAccess("quoteTool") ? (
+                <a href={mobileDashboardHref} style={styles.logout}>
+                  Dashboard
+                </a>
+              ) : null}
+              {canAccess("dispatch") ? (
+                <a href={dispatchHref} style={styles.logout}>
+                  Dispatch
+                </a>
+              ) : null}
+              {canAccess("reviewQuotes") ? (
+                <a href={quoteReviewHref} style={styles.logout}>
+                  Review Quotes
+                </a>
+              ) : null}
+              {canAccess("manageUsers") ? (
+                <a href="/settings" style={styles.logout}>
+                  Settings
+                </a>
+              ) : null}
+              {currentUser ? (
+                <a href="/change-password" style={styles.logout}>
+                  Change Password
+                </a>
+              ) : null}
+              <a href={currentUser ? "/login?logout=1" : logoutHref} style={styles.logout}>
                 Log out
               </a>
             </div>
@@ -1890,6 +1932,12 @@ export default function PublicCustomQuotePage() {
                 <div style={{ color: "#64748b", fontSize: 13, marginTop: 6 }}>
                   {new Date(selectedHistoryQuote.created_at).toLocaleString()}
                 </div>
+                <div style={{ color: "#93c5fd", fontSize: 13, marginTop: 6 }}>
+                  Created by{" "}
+                  {selectedHistoryQuote.created_by_name ||
+                    selectedHistoryQuote.created_by_email ||
+                    "Unknown user"}
+                </div>
               </div>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <button
@@ -1918,38 +1966,40 @@ export default function PublicCustomQuotePage() {
               </div>
             </div>
 
-            <draftOrderFetcher.Form
-              method="post"
-              action={createDraftOrderAction}
-              style={{ marginBottom: 16, display: "flex", gap: 12, flexWrap: "wrap" }}
-            >
-              <input type="hidden" name="quoteId" value={selectedHistoryQuote.id} />
-              <button type="submit" style={styles.buttonPrimary}>
-                {draftOrderFetcher.state === "submitting"
-                  ? "Creating Draft Order..."
-                  : "Send To Shopify"}
-              </button>
-              {draftOrderFetcher.data?.draftOrderAdminUrl ? (
-                <a
-                  href={draftOrderFetcher.data.draftOrderAdminUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={mobileActionButtonStyle}
-                >
-                  Open Draft Order
-                </a>
-              ) : null}
-              {draftOrderFetcher.data?.draftOrderInvoiceUrl ? (
-                <a
-                  href={draftOrderFetcher.data.draftOrderInvoiceUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={mobileActionButtonStyle}
-                >
-                  Open Invoice
-                </a>
-              ) : null}
-            </draftOrderFetcher.Form>
+            {canAccess("sendToShopify") ? (
+              <draftOrderFetcher.Form
+                method="post"
+                action={createDraftOrderAction}
+                style={{ marginBottom: 16, display: "flex", gap: 12, flexWrap: "wrap" }}
+              >
+                <input type="hidden" name="quoteId" value={selectedHistoryQuote.id} />
+                <button type="submit" style={styles.buttonPrimary}>
+                  {draftOrderFetcher.state === "submitting"
+                    ? "Creating Draft Order..."
+                    : "Send To Shopify"}
+                </button>
+                {draftOrderFetcher.data?.draftOrderAdminUrl ? (
+                  <a
+                    href={draftOrderFetcher.data.draftOrderAdminUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={mobileActionButtonStyle}
+                  >
+                    Open Draft Order
+                  </a>
+                ) : null}
+                {draftOrderFetcher.data?.draftOrderInvoiceUrl ? (
+                  <a
+                    href={draftOrderFetcher.data.draftOrderInvoiceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={mobileActionButtonStyle}
+                  >
+                    Open Invoice
+                  </a>
+                ) : null}
+              </draftOrderFetcher.Form>
+            ) : null}
 
                 {draftOrderFetcher.data?.message ? (
                   <div
@@ -2123,22 +2173,28 @@ export default function PublicCustomQuotePage() {
       </div>
       {isMobile ? (
         <div style={mobileBottomNavStyle}>
-          <a href={mobileDashboardHref} style={mobileTabLinkStyle(false)}>
+          {canAccess("quoteTool") ? (
+            <a href={mobileDashboardHref} style={mobileTabLinkStyle(false)}>
             <span style={mobileTabIconStyle(false)}>D</span>
             <span>Dashboard</span>
           </a>
+          ) : null}
           <a href={isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote"} style={mobileTabLinkStyle(true)}>
             <span style={mobileTabIconStyle(true)}>Q</span>
             <span>Quote Tool</span>
           </a>
-          <a href={quoteReviewHref} style={mobileTabLinkStyle(false)}>
+          {canAccess("reviewQuotes") ? (
+            <a href={quoteReviewHref} style={mobileTabLinkStyle(false)}>
             <span style={mobileTabIconStyle(false)}>R</span>
             <span>Review</span>
           </a>
-          <a href={dispatchHref} style={mobileTabLinkStyle(false)}>
+          ) : null}
+          {canAccess("dispatch") ? (
+            <a href={dispatchHref} style={mobileTabLinkStyle(false)}>
             <span style={mobileTabIconStyle(false)}>X</span>
             <span>Dispatch</span>
           </a>
+          ) : null}
         </div>
       ) : null}
     </div>

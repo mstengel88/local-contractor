@@ -6,6 +6,7 @@ import {
   getAdminQuotePassword,
   hasAdminQuotePermissionAccess,
 } from "../lib/admin-quote-auth.server";
+import { userAuthCookie } from "../lib/user-auth.server";
 import { sendDeliveryConfirmationEmail } from "../lib/delivery-confirmation-email.server";
 import {
   ensureSeedDispatchEmployees,
@@ -95,9 +96,10 @@ export async function loader({ request }: any) {
 
   if (url.searchParams.get("logout") === "1") {
     return redirect(driverPath, {
-      headers: {
-        "Set-Cookie": await adminQuoteCookie.serialize("", { maxAge: 0 }),
-      },
+      headers: [
+        ["Set-Cookie", await userAuthCookie.serialize("", { maxAge: 0 })],
+        ["Set-Cookie", await adminQuoteCookie.serialize("", { maxAge: 0 })],
+      ],
     });
   }
 

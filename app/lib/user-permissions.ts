@@ -7,6 +7,7 @@ export const permissionLabels = {
   sendToShopify: "Send To Shopify",
   manageDispatch: "Manage Dispatch",
   manageUsers: "Manage Users",
+  auditLog: "Audit Log",
 } as const;
 
 export type UserPermission = keyof typeof permissionLabels;

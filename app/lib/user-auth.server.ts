@@ -3,7 +3,6 @@ import { createCookie, redirect } from "react-router";
 import { supabaseAdmin } from "./supabase.server";
 import {
   allPermissions,
-  permissionLabels,
   type UserPermission,
 } from "./user-permissions";
 
@@ -32,6 +31,20 @@ export type AppUserProfile = {
   role: string;
   permissions: UserPermission[];
   isActive: boolean;
+  mustChangePassword: boolean;
+};
+
+export type AuditEvent = {
+  id: string;
+  actorUserId: string | null;
+  actorName: string;
+  actorEmail: string;
+  action: string;
+  targetType: string;
+  targetId: string | null;
+  targetLabel: string;
+  details: Record<string, unknown>;
+  createdAt: string;
 };
 
 type StoredSession = {
@@ -56,7 +69,7 @@ function normalizePermissions(value: unknown, role: string): UserPermission[] {
   );
 }
 
-function normalizeProfile(row: any): AppUserProfile {
+function normalizeProfile(row: any, mustChangePassword = false): AppUserProfile {
   const role = String(row?.role || "user");
   return {
     id: String(row?.id || ""),
@@ -65,6 +78,22 @@ function normalizeProfile(row: any): AppUserProfile {
     role,
     permissions: normalizePermissions(row?.permissions, role),
     isActive: row?.is_active !== false,
+    mustChangePassword,
+  };
+}
+
+function normalizeAuditEvent(row: any): AuditEvent {
+  return {
+    id: String(row?.id || ""),
+    actorUserId: row?.actor_user_id || null,
+    actorName: String(row?.actor_name || "Unknown user"),
+    actorEmail: String(row?.actor_email || ""),
+    action: String(row?.action || ""),
+    targetType: String(row?.target_type || ""),
+    targetId: row?.target_id || null,
+    targetLabel: String(row?.target_label || ""),
+    details: row?.details && typeof row.details === "object" ? row.details : {},
+    createdAt: String(row?.created_at || ""),
   };
 }
 
@@ -96,10 +125,20 @@ export async function signInContractorUser(email: string, password: string) {
       String(data.user.user_metadata?.name || data.user.user_metadata?.full_name || "") ||
       data.user.email,
   });
+  profile.mustChangePassword = data.user.user_metadata?.must_change_password === true;
 
   if (!profile.isActive) {
     throw new Error("This user is disabled.");
   }
+
+  await logAuditEvent({
+    actor: profile,
+    action: "login",
+    targetType: "user",
+    targetId: profile.id,
+    targetLabel: profile.email,
+    details: { method: "password" },
+  });
 
   return {
     cookie: await userAuthCookie.serialize({
@@ -127,6 +166,7 @@ export async function getCurrentUser(request: Request) {
       data.user.email ||
       "",
   });
+  profile.mustChangePassword = data.user.user_metadata?.must_change_password === true;
 
   if (!profile.isActive) return null;
   return profile;
@@ -146,6 +186,10 @@ export async function requireUserPermission(
   if (!user) {
     const url = new URL(request.url);
     throw redirect(`${redirectTo}?next=${encodeURIComponent(url.pathname + url.search)}`);
+  }
+  if (user.mustChangePassword) {
+    const url = new URL(request.url);
+    throw redirect(`/change-password?next=${encodeURIComponent(url.pathname + url.search)}`);
   }
   if (!user.permissions.includes(permission)) {
     throw new Response("Forbidden", { status: 403 });
@@ -234,6 +278,46 @@ export async function updateAppUserProfile(input: {
   return normalizeProfile(data);
 }
 
+export async function logAuditEvent(input: {
+  actor?: AppUserProfile | null;
+  action: string;
+  targetType?: string;
+  targetId?: string | null;
+  targetLabel?: string;
+  details?: Record<string, unknown>;
+}) {
+  const { error } = await supabaseAdmin.from("app_audit_log").insert({
+    actor_user_id: input.actor?.id || null,
+    actor_name: input.actor?.name || input.actor?.email || "System",
+    actor_email: input.actor?.email || "",
+    action: input.action,
+    target_type: input.targetType || "app",
+    target_id: input.targetId || null,
+    target_label: input.targetLabel || "",
+    details: input.details || {},
+  });
+
+  if (error?.code === "42P01") {
+    console.warn("[AUDIT LOG] app_audit_log table missing. Run supabase_auth_schema.sql.");
+    return;
+  }
+  if (error) {
+    console.error("[AUDIT LOG ERROR]", error);
+  }
+}
+
+export async function listAuditEvents(limit = 100) {
+  const { data, error } = await supabaseAdmin
+    .from("app_audit_log")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error?.code === "42P01") return [];
+  if (error) throw new Error(error.message);
+  return (data || []).map(normalizeAuditEvent);
+}
+
 export async function createAppUser(input: {
   email: string;
   password: string;
@@ -245,7 +329,7 @@ export async function createAppUser(input: {
     email: input.email,
     password: input.password,
     email_confirm: true,
-    user_metadata: { name: input.name },
+    user_metadata: { name: input.name, must_change_password: true },
   });
 
   if (error || !created.user) {
@@ -269,4 +353,57 @@ export async function createAppUser(input: {
 
   if (profileError) throw new Error(profileError.message);
   return normalizeProfile(data);
+}
+
+export async function changeCurrentUserPassword(request: Request, password: string) {
+  const cookieHeader = request.headers.get("Cookie");
+  const session = (await userAuthCookie.parse(cookieHeader)) as StoredSession | null;
+  if (!session?.access_token || !session?.refresh_token) {
+    throw new Error("Please sign in again before changing your password.");
+  }
+
+  const client = getAuthClient();
+  const { data: sessionData, error: sessionError } = await client.auth.setSession(session);
+  if (sessionError || !sessionData.user?.id) {
+    throw new Error(sessionError?.message || "Unable to verify your current session.");
+  }
+
+  const { data, error } = await client.auth.updateUser({ password });
+  if (error || !data.user) {
+    throw new Error(error?.message || "Unable to update password.");
+  }
+
+  await supabaseAdmin.auth.admin.updateUserById(data.user.id, {
+    user_metadata: {
+      ...(data.user.user_metadata || {}),
+      must_change_password: false,
+    },
+  });
+
+  const profile = await ensureUserProfile({
+    id: data.user.id,
+    email: data.user.email || "",
+    name:
+      String(data.user.user_metadata?.name || data.user.user_metadata?.full_name || "") ||
+      data.user.email ||
+      "",
+  });
+  await logAuditEvent({
+    actor: profile,
+    action: "change_password",
+    targetType: "user",
+    targetId: profile.id,
+    targetLabel: profile.email,
+    details: { selfService: true },
+  });
+
+  const { data: refreshed, error: refreshError } = await client.auth.refreshSession();
+  if (refreshError || !refreshed.session) {
+    return userAuthCookie.serialize("", { maxAge: 0 });
+  }
+
+  return userAuthCookie.serialize({
+    access_token: refreshed.session.access_token,
+    refresh_token: refreshed.session.refresh_token,
+  } satisfies StoredSession);
 }
