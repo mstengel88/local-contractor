@@ -3076,15 +3076,20 @@ export default function DispatchPage() {
                         {route.orders.map((order) => (
                           <div
                             key={order.id}
-                            draggable={canManageDispatch}
-                            onDragStart={(event) => startOrderDrag(order.id, event)}
                             onDragEnd={clearDragState}
                             style={{
                               ...styles.stopRow,
-                              cursor: canManageDispatch ? "grab" : "default",
                               opacity: draggedOrderId === order.id ? 0.58 : 1,
                             }}
                           >
+                            <span
+                              draggable={canManageDispatch}
+                              onDragStart={(event) => startOrderDrag(order.id, event)}
+                              title="Drag to another route or back to queue"
+                              style={styles.dragHandle}
+                            >
+                              ::
+                            </span>
                             <a
                               href={dashboardSelectHref(order.id)}
                               draggable={false}
@@ -4069,7 +4074,7 @@ const styles = {
   } as const,
   stopRow: {
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) auto",
+    gridTemplateColumns: "22px minmax(0, 1fr) auto",
     gap: 10,
     alignItems: "center",
     padding: "10px 12px",
@@ -4078,6 +4083,21 @@ const styles = {
     border: "1px solid rgba(51, 65, 85, 0.78)",
     textDecoration: "none",
     color: "#f8fafc",
+  } as const,
+  dragHandle: {
+    width: 22,
+    minHeight: 34,
+    borderRadius: 10,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border: "1px solid rgba(56, 189, 248, 0.28)",
+    background: "rgba(14, 165, 233, 0.1)",
+    color: "#7dd3fc",
+    fontWeight: 950,
+    cursor: "grab",
+    userSelect: "none" as const,
+    touchAction: "none" as const,
   } as const,
   stopSelectArea: {
     display: "grid",
