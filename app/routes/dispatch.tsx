@@ -135,6 +135,20 @@ function formatRequestedWindow(value: string) {
   return `${dateInput[2]}/${dateInput[3]}/${dateInput[1]}`;
 }
 
+function getOrderTravelMinutes(order: DispatchOrder) {
+  const minutes = Number(order.travelMinutes || 0);
+  return Number.isFinite(minutes) && minutes > 0 ? minutes : 0;
+}
+
+function formatTravelMinutes(minutes: number) {
+  if (!Number.isFinite(minutes) || minutes <= 0) return "Not calculated";
+  const rounded = Math.round(minutes);
+  if (rounded < 60) return `${rounded} min`;
+  const hours = Math.floor(rounded / 60);
+  const remainder = rounded % 60;
+  return remainder ? `${hours} hr ${remainder} min` : `${hours} hr`;
+}
+
 function getTruckCapacityForOrderUnit(truck: DispatchTruck, unit: string) {
   if (/tons?/i.test(unit)) return Number(truck.tons || 0);
   if (/yards?/i.test(unit)) return Number(truck.yards || 0);
@@ -594,6 +608,38 @@ async function loadDispatchState() {
   }
 }
 
+async function resequenceRouteStops(routeId?: string | null) {
+  if (!routeId) return;
+
+  const routeOrders = (await getDispatchOrders())
+    .filter(
+      (order) =>
+        order.assignedRouteId === routeId &&
+        order.status !== "delivered" &&
+        order.deliveryStatus !== "delivered",
+    )
+    .sort(
+      (a, b) =>
+        Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999) ||
+        String(a.created_at || "").localeCompare(String(b.created_at || "")),
+    );
+
+  await Promise.all(
+    routeOrders.map((order, index) =>
+      Number(order.stopSequence || 0) === index + 1
+        ? Promise.resolve(order)
+        : updateDispatchOrder(order.id, { stopSequence: index + 1 }),
+    ),
+  );
+}
+
+async function resequenceChangedRoutes(routeIds: Array<string | null | undefined>) {
+  const uniqueRouteIds = Array.from(
+    new Set(routeIds.filter((routeId): routeId is string => Boolean(routeId))),
+  );
+  await Promise.all(uniqueRouteIds.map((routeId) => resequenceRouteStops(routeId)));
+}
+
 export async function loader({ request }: any) {
   const url = new URL(request.url);
   const dispatchPath = getDispatchPath(url);
@@ -916,6 +962,7 @@ export async function action({ request }: any) {
 
       let finalOrder = updated;
       if (form.has("routeId")) {
+        const previousRouteId = updated.assignedRouteId || null;
         if (routeId) {
           const [allRoutes, allTrucks] = await Promise.all([
             getDispatchRoutes(),
@@ -956,6 +1003,7 @@ export async function action({ request }: any) {
               status === "delivered" ? "delivered" : updated.deliveryStatus || "not_started",
             eta,
           });
+          await resequenceChangedRoutes([previousRouteId, routeId]);
         } else {
           finalOrder = await updateDispatchOrder(orderId, {
             status: status === "delivered" || status === "hold" ? status : "new",
@@ -964,6 +1012,7 @@ export async function action({ request }: any) {
             deliveryStatus: status === "delivered" ? "delivered" : "not_started",
             eta: null,
           });
+          await resequenceChangedRoutes([previousRouteId]);
         }
       }
 
@@ -1350,7 +1399,11 @@ export async function action({ request }: any) {
         );
       }
 
-      const stopSequence = await getNextRouteStopSequence(routeId);
+      const previousRouteId = selectedOrder?.assignedRouteId || null;
+      const stopSequence =
+        previousRouteId === routeId && selectedOrder?.stopSequence
+          ? selectedOrder.stopSequence
+          : await getNextRouteStopSequence(routeId);
 
       await updateDispatchOrder(orderId, {
         status: "scheduled",
@@ -1359,6 +1412,7 @@ export async function action({ request }: any) {
         deliveryStatus: "not_started",
         eta: String(form.get("eta") || "").trim() || null,
       });
+      await resequenceChangedRoutes([previousRouteId, routeId]);
 
       const dispatchState = await loadDispatchState();
 
@@ -1431,6 +1485,7 @@ export async function action({ request }: any) {
     if (intent === "unassign-order") {
       const orderId = String(form.get("orderId") || "").trim();
       if (!orderId) throw new Error("Missing order selection");
+      const existingOrder = (await getDispatchOrders()).find((order) => order.id === orderId);
 
       await updateDispatchOrder(orderId, {
         status: "new",
@@ -1439,6 +1494,7 @@ export async function action({ request }: any) {
         deliveryStatus: "not_started",
         eta: null,
       });
+      await resequenceChangedRoutes([existingOrder?.assignedRouteId]);
 
       const dispatchState = await loadDispatchState();
 
@@ -1627,6 +1683,10 @@ export default function DispatchPage() {
         return {
           ...route,
           stops: routeOrders.length,
+          totalTravelMinutes: routeOrders.reduce(
+            (sum, order) => sum + getOrderTravelMinutes(order),
+            0,
+          ),
           loadSummary: routeOrders
             .map((order) => `${order.quantity} ${order.unit} ${order.material}`)
             .slice(0, 2)
@@ -3060,6 +3120,9 @@ export default function DispatchPage() {
                       >
                         Driver View
                       </a>
+                      <div style={styles.routeTimePill}>
+                        Total Time: {formatTravelMinutes(route.totalTravelMinutes)}
+                      </div>
                       {selectedOrder ? (
                         selectedOrder.assignedRouteId === route.id ? (
                           <Form method="post" style={styles.assignForm}>
@@ -3103,6 +3166,7 @@ export default function DispatchPage() {
                     <div style={styles.routeStats}>
                       <span>{route.shift}</span>
                       <span>{route.stops} stops</span>
+                      <span>Total route: {formatTravelMinutes(route.totalTravelMinutes)}</span>
                       <span>{route.loadSummary || "No assigned loads yet"}</span>
                     </div>
 
@@ -3129,7 +3193,11 @@ export default function DispatchPage() {
                               </span>
                               <span style={styles.stopMain}>
                                 <strong>{order.customer}</strong>
-                                <small>{order.city} · {order.material}</small>
+                                <small>
+                                  {order.city} · {order.material} ·{" "}
+                                  {order.travelSummary ||
+                                    `${formatTravelMinutes(getOrderTravelMinutes(order))} RT`}
+                                </small>
                               </span>
                               <span
                                 style={styles.stopStatus(
@@ -4052,6 +4120,20 @@ const styles = {
     flexWrap: "wrap" as const,
     color: "#cbd5e1",
     fontSize: 13,
+  } as const,
+  routeTimePill: {
+    minHeight: 42,
+    padding: "0 14px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    border: "1px solid rgba(56, 189, 248, 0.4)",
+    background: "rgba(14, 165, 233, 0.12)",
+    color: "#bae6fd",
+    fontSize: 12,
+    fontWeight: 900,
+    whiteSpace: "nowrap" as const,
   } as const,
   sequenceForm: {
     marginTop: 12,
