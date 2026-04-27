@@ -1760,6 +1760,25 @@ export default function DispatchPage() {
     );
   }
 
+  function moveOrderWithSelect(orderId: string, routeId: string) {
+    if (!orderId || !canManageDispatch) return;
+
+    assignmentFetcher.submit(
+      routeId
+        ? {
+            intent: "assign-order",
+            orderId,
+            routeId,
+            eta: "",
+          }
+        : {
+            intent: "unassign-order",
+            orderId,
+          },
+      { method: "post", action: `${dispatchHref}${location.search || ""}` },
+    );
+  }
+
   useEffect(() => {
     if (assignmentFetcher.state === "idle") {
       clearDragState();
@@ -3121,6 +3140,22 @@ export default function DispatchPage() {
                               </span>
                             </div>
                             <div style={styles.stopActions}>
+                              <select
+                                defaultValue={order.assignedRouteId || ""}
+                                onChange={(event) => {
+                                  moveOrderWithSelect(order.id, event.currentTarget.value);
+                                }}
+                                onClick={(event) => event.stopPropagation()}
+                                style={styles.stopMoveSelect}
+                                title="Move order"
+                              >
+                                <option value="">Queue</option>
+                                {routes.map((moveRoute) => (
+                                  <option key={moveRoute.id} value={moveRoute.id}>
+                                    {moveRoute.code}
+                                  </option>
+                                ))}
+                              </select>
                               <a
                                 href={dashboardSelectHref(order.id)}
                                 draggable={false}
@@ -4134,6 +4169,18 @@ const styles = {
     alignItems: "center",
     flexWrap: "wrap" as const,
     justifyContent: "flex-end",
+  } as const,
+  stopMoveSelect: {
+    minHeight: 30,
+    maxWidth: 96,
+    borderRadius: 10,
+    border: "1px solid rgba(34, 197, 94, 0.38)",
+    background: "rgba(34, 197, 94, 0.1)",
+    color: "#bbf7d0",
+    fontSize: 11,
+    fontWeight: 900,
+    padding: "0 8px",
+    cursor: "pointer",
   } as const,
   stopDetailButton: {
     minHeight: 30,
