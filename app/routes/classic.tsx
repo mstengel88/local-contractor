@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { type DragEvent, useMemo, useState } from "react";
 import { Form, Link, useActionData, useLoaderData } from "react-router";
 import {
   action as dispatchAction,
@@ -128,6 +128,10 @@ export default function ClassicDispatchPage() {
   const loaderData = useLoaderData<typeof loader>() as any;
   const actionData = useActionData<typeof action>() as any;
   const [query, setQuery] = useState("");
+  const [selectedRouteId, setSelectedRouteId] = useState("");
+  const [draggedOrderId, setDraggedOrderId] = useState("");
+  const [pendingOrderId, setPendingOrderId] = useState("");
+  const [routeDrawerOpen, setRouteDrawerOpen] = useState(false);
 
   const allowed = actionData?.allowed ?? loaderData.allowed;
   const orders = (actionData?.orders ?? loaderData.orders ?? []) as DispatchOrder[];
@@ -159,6 +163,9 @@ export default function ClassicDispatchPage() {
       }),
     [baseRoutes, orders],
   );
+  const selectedRoute =
+    routes.find((route) => route.id === selectedRouteId) || routes[0] || null;
+  const pendingOrder = orders.find((order) => order.id === pendingOrderId) || null;
 
   const search = query.trim().toLowerCase();
   const visibleOrders = useMemo(
@@ -184,6 +191,22 @@ export default function ClassicDispatchPage() {
   const deliveredCount = orders.filter(
     (order) => order.status === "delivered" || order.deliveryStatus === "delivered",
   ).length;
+
+  function beginOrderDrag(orderId: string) {
+    setDraggedOrderId(orderId);
+  }
+
+  function allowRouteDrop(event: DragEvent<HTMLElement>) {
+    if (!selectedRoute) return;
+    event.preventDefault();
+  }
+
+  function dropOrderOnCurrentRoute(event: DragEvent<HTMLElement>) {
+    event.preventDefault();
+    if (!selectedRoute || !draggedOrderId) return;
+    setPendingOrderId(draggedOrderId);
+    setDraggedOrderId("");
+  }
 
   if (!allowed) {
     return (
@@ -286,7 +309,18 @@ export default function ClassicDispatchPage() {
                   {routes.map((route, index) => (
                     <tr key={route.id}>
                       <td><span style={{ ...styles.colorBar, background: route.color || "#f97316" }} /></td>
-                      <td>{route.code}</td>
+                      <td>
+                        <button
+                          type="button"
+                          style={styles.rowRouteButton(selectedRoute?.id === route.id)}
+                          onClick={() => {
+                            setSelectedRouteId(route.id);
+                            setRouteDrawerOpen(true);
+                          }}
+                        >
+                          {route.code}
+                        </button>
+                      </td>
                       <td>{route.truck || "No truck"} ({route.driver || "No driver"})</td>
                       <td>{route.orders.length ? "Active" : "Open"}</td>
                       <td>{route.weight || "-"}</td>
@@ -325,8 +359,15 @@ export default function ClassicDispatchPage() {
 
             <div style={styles.panel}>
               <div style={styles.panelHeader}>
-                <strong>Sites {scheduledOrders.length}</strong>
-                <span>Optimize · Preview</span>
+                <strong>Sites {selectedRoute?.orders.length || 0}</strong>
+                <span>{selectedRoute ? `${selectedRoute.code} · ${selectedRoute.truck || "No truck"}` : "Select a route"}</span>
+              </div>
+              <div
+                style={draggedOrderId ? styles.dropZoneActive : styles.dropZone}
+                onDragOver={allowRouteDrop}
+                onDrop={dropOrderOnCurrentRoute}
+              >
+                Drag and Drop to the Current Route
               </div>
               <table className="classic-table" style={styles.table}>
                 <thead>
@@ -341,7 +382,7 @@ export default function ClassicDispatchPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {scheduledOrders.slice(0, 9).map((order, index) => (
+                  {(selectedRoute?.orders || []).slice(0, 9).map((order, index) => (
                     <tr key={order.id}>
                       <td>{order.stopSequence || index + 1}</td>
                       <td>{getOrderAddress(order)}</td>
@@ -358,8 +399,8 @@ export default function ClassicDispatchPage() {
                       </td>
                     </tr>
                   ))}
-                  {!scheduledOrders.length ? (
-                    <tr><td colSpan={7} style={styles.emptyCell}>No scheduled stops match this search.</td></tr>
+                  {!selectedRoute?.orders.length ? (
+                    <tr><td colSpan={7} style={styles.emptyCell}>Pick a route, then drag unscheduled orders here.</td></tr>
                   ) : null}
                 </tbody>
               </table>
@@ -423,7 +464,13 @@ export default function ClassicDispatchPage() {
                 </thead>
                 <tbody>
                   {unscheduledOrders.slice(0, 12).map((order) => (
-                    <tr key={order.id}>
+                    <tr
+                      key={order.id}
+                      draggable
+                      onDragStart={() => beginOrderDrag(order.id)}
+                      onDragEnd={() => setDraggedOrderId("")}
+                      style={styles.draggableRow}
+                    >
                       <td>{getOrderNumber(order)}</td>
                       <td>{order.requestedWindow || "-"}</td>
                       <td>{order.customer}</td>
@@ -496,6 +543,59 @@ export default function ClassicDispatchPage() {
             </div>
           </section>
         </div>
+        {pendingOrder && selectedRoute ? (
+          <div style={styles.confirmPopover}>
+            <div style={styles.confirmCard}>
+              <strong>{getOrderNumber(pendingOrder)}</strong>
+              <span>{getOrderAddress(pendingOrder)}</span>
+              <Form method="post" style={styles.confirmActions} onSubmit={() => setPendingOrderId("")}>
+                <input type="hidden" name="intent" value="assign-order" />
+                <input type="hidden" name="orderId" value={pendingOrder.id} />
+                <input type="hidden" name="routeId" value={selectedRoute.id} />
+                <button type="submit" style={styles.confirmLink}>
+                  Add order(s) to current route
+                </button>
+              </Form>
+              <button type="button" style={styles.cancelLink} onClick={() => setPendingOrderId("")}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : null}
+        {routeDrawerOpen && selectedRoute ? (
+          <aside style={styles.routeDrawer}>
+            <button type="button" style={styles.drawerClose} onClick={() => setRouteDrawerOpen(false)}>
+              ×
+            </button>
+            <h2 style={styles.drawerTitle}>Route Attributes</h2>
+            <div style={styles.drawerTabs}>
+              <span style={styles.drawerTabActive}>Info</span>
+              <span style={styles.drawerTab}>History</span>
+            </div>
+            <dl style={styles.drawerDetails}>
+              <dt>Code</dt>
+              <dd>{selectedRoute.code}</dd>
+              <dt>Truck</dt>
+              <dd>{selectedRoute.truck || "Unassigned"}</dd>
+              <dt>Driver</dt>
+              <dd>{selectedRoute.driver || "Unassigned"}</dd>
+              <dt>Helper</dt>
+              <dd>{selectedRoute.helper || "None"}</dd>
+              <dt>Region</dt>
+              <dd>{selectedRoute.region || "No region"}</dd>
+              <dt>Stops</dt>
+              <dd>{selectedRoute.orders.length}</dd>
+              <dt>Total route time</dt>
+              <dd>{formatTime(selectedRoute.totalMinutes)}</dd>
+            </dl>
+            <Form method="post" style={styles.drawerForm}>
+              <input type="hidden" name="routeId" value={selectedRoute.id} />
+              <button name="intent" value="sequence-route" style={styles.drawerButton}>
+                Optimize / resequence route
+              </button>
+            </Form>
+          </aside>
+        ) : null}
       </section>
     </main>
   );
@@ -684,6 +784,36 @@ const styles: Record<string, any> = {
     fontSize: 11,
     fontWeight: 800,
   },
+  rowRouteButton: (active: boolean) => ({
+    border: "none",
+    background: "transparent",
+    color: active ? "#f97316" : "#0ea5c6",
+    fontWeight: 900,
+    cursor: "pointer",
+    textDecoration: active ? "underline" : "none",
+  }),
+  dropZone: {
+    height: 24,
+    display: "grid",
+    placeItems: "center",
+    borderBottom: "1px dashed #aaa",
+    background: "#fafafa",
+    color: "#777",
+    fontSize: 11,
+  },
+  dropZoneActive: {
+    height: 24,
+    display: "grid",
+    placeItems: "center",
+    borderBottom: "1px dashed #f97316",
+    background: "#fff7ed",
+    color: "#c2410c",
+    fontSize: 11,
+    fontWeight: 900,
+  },
+  draggableRow: {
+    cursor: "grab",
+  },
   inlineActions: { display: "flex", gap: 4 },
   iconButton: {
     width: 25,
@@ -814,6 +944,106 @@ const styles: Record<string, any> = {
     border: "1px solid #cfcfcf",
     borderRadius: 4,
     background: "#fff",
+  },
+  confirmPopover: {
+    position: "absolute",
+    left: "17%",
+    top: "48%",
+    zIndex: 10,
+    width: 320,
+    borderRadius: 4,
+    border: "1px solid #cfd8e3",
+    background: "#fff",
+    boxShadow: "0 12px 35px rgba(0,0,0,0.2)",
+  },
+  confirmCard: {
+    display: "grid",
+    gap: 8,
+    padding: 12,
+    color: "#333",
+  },
+  confirmActions: {
+    display: "grid",
+  },
+  confirmLink: {
+    border: "none",
+    background: "transparent",
+    color: "#0ea5c6",
+    fontWeight: 900,
+    cursor: "pointer",
+    padding: 4,
+  },
+  cancelLink: {
+    justifySelf: "center",
+    border: "none",
+    background: "transparent",
+    color: "#777",
+    cursor: "pointer",
+    padding: 4,
+  },
+  routeDrawer: {
+    position: "absolute",
+    top: 58,
+    right: 0,
+    bottom: 0,
+    zIndex: 9,
+    width: 300,
+    background: "#fff",
+    borderLeft: "1px solid #d7d7d7",
+    boxShadow: "-16px 0 35px rgba(0,0,0,0.18)",
+    padding: 18,
+    color: "#333",
+  },
+  drawerClose: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 28,
+    height: 28,
+    border: "1px solid #ddd",
+    borderRadius: "50%",
+    background: "#fff",
+    cursor: "pointer",
+    fontSize: 18,
+  },
+  drawerTitle: {
+    margin: "0 0 14px",
+    fontSize: 18,
+  },
+  drawerTabs: {
+    display: "flex",
+    gap: 14,
+    borderBottom: "1px solid #e5e7eb",
+    marginBottom: 12,
+  },
+  drawerTabActive: {
+    padding: "0 0 8px",
+    color: "#f97316",
+    borderBottom: "2px solid #f97316",
+    fontWeight: 900,
+  },
+  drawerTab: {
+    padding: "0 0 8px",
+    color: "#777",
+  },
+  drawerDetails: {
+    display: "grid",
+    gridTemplateColumns: "100px 1fr",
+    gap: "8px 10px",
+    margin: 0,
+  },
+  drawerForm: {
+    marginTop: 18,
+  },
+  drawerButton: {
+    width: "100%",
+    minHeight: 36,
+    border: "none",
+    borderRadius: 6,
+    background: "#22c55e",
+    color: "#fff",
+    fontWeight: 900,
+    cursor: "pointer",
   },
   loginPage: {
     minHeight: "100vh",

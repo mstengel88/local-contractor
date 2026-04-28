@@ -1692,6 +1692,7 @@ export default function DispatchPage() {
   const reviewHref = isEmbeddedRoute ? "/app/quote-review" : "/quote-review";
   const mobileHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
+  const classicHref = isEmbeddedRoute ? "/app/classic" : "/classic";
   const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
   const logoutHref = `${dispatchHref}?logout=1`;
   const canAccess = (permission: string) =>
@@ -2011,6 +2012,7 @@ export default function DispatchPage() {
               <a href={dispatchViewHref("orders")} style={styles.sideNavLink(activeView === "orders")}>Orders</a>
             ) : null}
             <a href={dispatchViewHref("scheduled")} style={styles.sideNavLink(activeView === "scheduled")}>Scheduled</a>
+            <a href={classicHref} style={styles.sideNavLink(false)}>Classic</a>
             {canAccess("manageDispatch") ? (
               <a href={dispatchViewHref("routes")} style={styles.sideNavLink(activeView === "routes")}>Routes</a>
             ) : null}
