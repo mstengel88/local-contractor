@@ -171,10 +171,14 @@ function ClassicMap({
   const mapObjectsRef = useRef<any[]>([]);
   const [status, setStatus] = useState("");
   const [useFallback, setUseFallback] = useState(false);
-  const activeRoutes = routes.filter((route) => route.orders.length);
+  const activeRoutes = useMemo(
+    () => routes.filter((route) => route.orders.length),
+    [routes],
+  );
   const routePlan = useMemo(
     () =>
-      activeRoutes
+      routes
+        .filter((route) => route.orders.length)
         .map((route) => ({
           id: route.id,
           code: route.code,
@@ -189,7 +193,18 @@ function ClassicMap({
             .filter((stop) => stop.address),
         }))
         .filter((route) => route.stops.length),
-    [activeRoutes],
+    [routes],
+  );
+  const routePlanKey = useMemo(
+    () =>
+      JSON.stringify(
+        routePlan.map((route) => ({
+          id: route.id,
+          color: route.color,
+          stops: route.stops.map((stop) => stop.address),
+        })),
+      ),
+    [routePlan],
   );
 
   useEffect(() => {
@@ -224,13 +239,9 @@ function ClassicMap({
         const directionsService = new google.maps.DirectionsService();
         let yardMarkerAdded = false;
 
-        await Promise.all(
-          routePlan.slice(0, 6).map(
-            (route) =>
-              Promise.all(
-                route.stops.map(
-                  (stop, stopIndex) =>
-                    new Promise<void>((resolve) => {
+        for (const route of routePlan.slice(0, 6)) {
+          for (const [stopIndex, stop] of route.stops.entries()) {
+            await new Promise<void>((resolve) => {
                       const renderer = new google.maps.DirectionsRenderer({
                         map,
                         preserveViewport: true,
@@ -297,11 +308,9 @@ function ClassicMap({
                           resolve();
                         },
                       );
-                    }),
-                ),
-              ).then(() => undefined),
-          ),
-        );
+            });
+          }
+        }
 
         if (!bounds.isEmpty()) map.fitBounds(bounds);
         setStatus("");
@@ -319,7 +328,7 @@ function ClassicMap({
       mapObjectsRef.current.forEach((object) => object.setMap?.(null));
       mapObjectsRef.current = [];
     };
-  }, [googleMapsApiKey, originAddress, routePlan]);
+  }, [googleMapsApiKey, originAddress, routePlanKey]);
 
   if (useFallback) {
     return (
