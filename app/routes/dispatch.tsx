@@ -1625,6 +1625,36 @@ export async function action({ request }: any) {
       });
     }
 
+    if (intent === "undo-delivered") {
+      const orderId = String(form.get("orderId") || "").trim();
+      if (!orderId) throw new Error("Missing order selection");
+
+      const existingOrder = (await getDispatchOrders()).find((order) => order.id === orderId);
+      const nextStatus = existingOrder?.assignedRouteId ? "scheduled" : "new";
+
+      await updateDispatchOrder(orderId, {
+        status: nextStatus,
+        deliveryStatus: "not_started",
+        arrivedAt: null,
+        departedAt: null,
+        deliveredAt: null,
+      });
+      await resequenceChangedRoutes([existingOrder?.assignedRouteId]);
+
+      const dispatchState = await loadDispatchState();
+
+      return data({
+        allowed: true,
+        ok: true,
+        message:
+          nextStatus === "scheduled"
+            ? "Load marked undelivered and returned to its route."
+            : "Load marked undelivered and returned to the intake queue.",
+        selectedOrderId: orderId,
+        ...dispatchState,
+      });
+    }
+
     if (intent === "update-stop-status") {
       const orderId = String(form.get("orderId") || "").trim();
       const rawDeliveryStatus = String(form.get("deliveryStatus") || "").trim();
@@ -2618,6 +2648,20 @@ export default function DispatchPage() {
                           <Form
                             method="post"
                             onSubmit={(event) => {
+                              if (!window.confirm("Mark this delivered load as undelivered? It will move back to its route or the queue.")) {
+                                event.preventDefault();
+                              }
+                            }}
+                          >
+                            <input type="hidden" name="intent" value="undo-delivered" />
+                            <input type="hidden" name="orderId" value={order.id} />
+                            <button type="submit" style={styles.smallWarningButton}>
+                              Mark Undelivered
+                            </button>
+                          </Form>
+                          <Form
+                            method="post"
+                            onSubmit={(event) => {
                               if (!window.confirm("Delete this delivered order? This cannot be undone.")) {
                                 event.preventDefault();
                               }
@@ -2660,6 +2704,21 @@ export default function DispatchPage() {
                   <div style={styles.detailTitle}>{selectedOrder.customer}</div>
                   <div style={styles.detailMeta}>{selectedOrder.contact}</div>
                 </div>
+
+                <Form
+                  method="post"
+                  onSubmit={(event) => {
+                    if (!window.confirm("Mark this delivered load as undelivered? It will move back to its route or the queue.")) {
+                      event.preventDefault();
+                    }
+                  }}
+                >
+                  <input type="hidden" name="intent" value="undo-delivered" />
+                  <input type="hidden" name="orderId" value={selectedOrder.id} />
+                  <button type="submit" style={styles.warningButton}>
+                    Mark Load Undelivered
+                  </button>
+                </Form>
 
                 <div style={styles.detailGrid}>
                   <div>
@@ -4272,6 +4331,27 @@ const styles = {
     background: "rgba(127, 29, 29, 0.42)",
     color: "#fecaca",
     fontSize: 12,
+    fontWeight: 900,
+    cursor: "pointer",
+  } as const,
+  smallWarningButton: {
+    minHeight: 36,
+    padding: "0 12px",
+    borderRadius: 12,
+    border: "1px solid rgba(251, 191, 36, 0.55)",
+    background: "rgba(120, 53, 15, 0.42)",
+    color: "#fde68a",
+    fontSize: 12,
+    fontWeight: 900,
+    cursor: "pointer",
+  } as const,
+  warningButton: {
+    width: "100%",
+    minHeight: 46,
+    borderRadius: 14,
+    border: "1px solid rgba(251, 191, 36, 0.55)",
+    background: "rgba(120, 53, 15, 0.42)",
+    color: "#fde68a",
     fontWeight: 900,
     cursor: "pointer",
   } as const,
