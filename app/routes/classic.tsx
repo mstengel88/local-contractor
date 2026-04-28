@@ -1,5 +1,5 @@
 import { type DragEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Form, Link, useActionData, useLoaderData } from "react-router";
+import { Form, Link, useActionData, useLoaderData, useLocation } from "react-router";
 import {
   action as dispatchAction,
   loader as dispatchLoader,
@@ -358,6 +358,7 @@ function ClassicMap({
 export default function ClassicDispatchPage() {
   const loaderData = useLoaderData<typeof loader>() as any;
   const actionData = useActionData<typeof action>() as any;
+  const location = useLocation();
   const [query, setQuery] = useState("");
   const [selectedRouteId, setSelectedRouteId] = useState("");
   const [draggedOrderId, setDraggedOrderId] = useState("");
@@ -375,6 +376,19 @@ export default function ClassicDispatchPage() {
   const message = actionData?.message || loaderData?.mailboxStatus?.message || "";
   const googleMapsApiKey = actionData?.googleMapsApiKey ?? loaderData.googleMapsApiKey ?? "";
   const mapOriginAddress = actionData?.mapOriginAddress ?? loaderData.mapOriginAddress ?? "";
+  const currentUser = actionData?.currentUser ?? loaderData.currentUser ?? null;
+  const isEmbeddedRoute = location.pathname.startsWith("/app/");
+  const classicHref = isEmbeddedRoute ? "/app/classic" : "/classic";
+  const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
+  const quoteHref = isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote";
+  const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
+  const mobileHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
+  const editorHref = (orderId: string) =>
+    `${dispatchHref}?view=orders&order=${encodeURIComponent(orderId)}&returnTo=${encodeURIComponent(classicHref)}`;
+  const dispatchViewHref = (view: string) => `${dispatchHref}?view=${view}`;
+  const canAccess = (permission: string) =>
+    !currentUser || currentUser.permissions?.includes(permission);
+  const logoutHref = currentUser ? "/login?logout=1" : `${dispatchHref}?logout=1`;
   const drivers = employees.filter((employee) => employee.role === "driver");
   const helpers = employees.filter((employee) => employee.role === "helper");
 
@@ -459,14 +473,56 @@ export default function ClassicDispatchPage() {
   }
 
   return (
-    <main style={styles.page}>
+    <main className="classic-shell" style={styles.page}>
       <style>
         {`
+          .classic-shell {
+            --classic-bg: #e8e8e8;
+            --classic-text: #232323;
+            --classic-rail-bg: #4a4a4a;
+            --classic-rail-border: #343434;
+            --classic-rail-link: #ffffff;
+            --classic-rail-active-bg: #f7f7f7;
+            --classic-panel-bg: #ffffff;
+            --classic-panel-header-bg: #fbfbfb;
+            --classic-border: #d7d7d7;
+            --classic-soft-border: #e2e2e2;
+            --classic-input-bg: #ffffff;
+            --classic-muted: #777777;
+            --classic-table-head-bg: #f6f6f6;
+            --classic-table-head-text: #555555;
+            --classic-table-hover: #f7fbff;
+            --classic-drawer-bg: #ffffff;
+            --classic-map-bg: #dceecf;
+          }
+
+          @media (prefers-color-scheme: dark) {
+            .classic-shell {
+              --classic-bg: #0f172a;
+              --classic-text: #e5e7eb;
+              --classic-rail-bg: #020617;
+              --classic-rail-border: #1e293b;
+              --classic-rail-link: #cbd5e1;
+              --classic-rail-active-bg: #1e293b;
+              --classic-panel-bg: #111827;
+              --classic-panel-header-bg: #0b1220;
+              --classic-border: #334155;
+              --classic-soft-border: #263449;
+              --classic-input-bg: #020617;
+              --classic-muted: #94a3b8;
+              --classic-table-head-bg: #0b1220;
+              --classic-table-head-text: #cbd5e1;
+              --classic-table-hover: #172033;
+              --classic-drawer-bg: #0f172a;
+              --classic-map-bg: #101827;
+            }
+          }
+
           .classic-table th,
           .classic-table td {
             height: 28px;
             padding: 3px 8px;
-            border-bottom: 1px solid #e2e2e2;
+            border-bottom: 1px solid var(--classic-soft-border);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -474,25 +530,44 @@ export default function ClassicDispatchPage() {
           }
 
           .classic-table th {
-            background: #f6f6f6;
-            color: #555;
+            background: var(--classic-table-head-bg);
+            color: var(--classic-table-head-text);
             font-size: 12px;
             font-weight: 700;
           }
 
           .classic-table tr:hover td {
-            background: #f7fbff;
+            background: var(--classic-table-hover);
           }
         `}
       </style>
       <aside style={styles.sideRail}>
-        <div style={styles.railLogo}>≡</div>
-        <Link to="/dispatch" style={styles.railIcon}>◇</Link>
-        <Link to="/classic" style={styles.railIconActive}>▣</Link>
-        <Link to="/dispatch?view=routes" style={styles.railIcon}>▥</Link>
-        <Link to="/dispatch/driver" style={styles.railIcon}>▤</Link>
+        <div style={styles.classicBrand}>
+          <div style={styles.railLogo}>GH</div>
+          <div>
+            <div style={styles.classicBrandTitle}>Contractor</div>
+            <div style={styles.classicBrandSub}>Classic</div>
+          </div>
+        </div>
+        <nav style={styles.classicNav}>
+          <Link to={dispatchViewHref("dashboard")} style={styles.classicNavLink}>Dashboard</Link>
+          {canAccess("manageDispatch") ? <Link to={dispatchViewHref("orders")} style={styles.classicNavLink}>Orders</Link> : null}
+          <Link to={dispatchViewHref("scheduled")} style={styles.classicNavLink}>Scheduled</Link>
+          <Link to={classicHref} style={styles.classicNavLinkActive}>Classic</Link>
+          {canAccess("manageDispatch") ? <Link to={dispatchViewHref("routes")} style={styles.classicNavLink}>Routes</Link> : null}
+          {canAccess("manageDispatch") ? <Link to={dispatchViewHref("trucks")} style={styles.classicNavLink}>Trucks</Link> : null}
+          {canAccess("manageDispatch") ? <Link to={dispatchViewHref("employees")} style={styles.classicNavLink}>Employees</Link> : null}
+          <Link to={dispatchViewHref("delivered")} style={styles.classicNavLink}>Delivered</Link>
+        </nav>
         <div style={{ flex: 1 }} />
-        <Link to="/settings" style={styles.railIcon}>⚙</Link>
+        <div style={styles.classicFooterNav}>
+          {canAccess("driver") ? <Link to={driverHref} style={styles.classicUtility}>Driver Route</Link> : null}
+          {canAccess("quoteTool") ? <Link to={quoteHref} style={styles.classicUtility}>Quote Tool</Link> : null}
+          <Link to={mobileHref} style={styles.classicUtility}>Mobile</Link>
+          {canAccess("manageUsers") ? <Link to="/settings" style={styles.classicUtility}>Settings</Link> : null}
+          {currentUser ? <Link to="/change-password" style={styles.classicUtility}>Change Password</Link> : null}
+          <Link to={logoutHref} style={styles.classicUtility}>Log Out</Link>
+        </div>
       </aside>
 
       <section style={styles.workspace}>
@@ -885,7 +960,7 @@ export default function ClassicDispatchPage() {
               </div>
             ) : null}
             <div style={styles.drawerButtonGrid}>
-              <a href={`/dispatch?view=orders&order=${encodeURIComponent(selectedOrder.id)}`} style={styles.drawerLinkButton}>
+              <a href={editorHref(selectedOrder.id)} style={styles.drawerLinkButton}>
                 Open in editor
               </a>
               {selectedOrder.assignedRouteId ? (
@@ -907,9 +982,9 @@ const styles: Record<string, any> = {
   page: {
     minHeight: "100vh",
     display: "grid",
-    gridTemplateColumns: "48px 1fr",
-    background: "#e8e8e8",
-    color: "#232323",
+    gridTemplateColumns: "230px 1fr",
+    background: "var(--classic-bg)",
+    color: "var(--classic-text)",
     fontFamily: "Verdana, Geneva, Tahoma, sans-serif",
     fontSize: 12,
   },
@@ -917,40 +992,78 @@ const styles: Record<string, any> = {
     minHeight: "100vh",
     display: "flex",
     flexDirection: "column",
+    gap: 12,
+    background: "var(--classic-rail-bg)",
+    borderRight: "1px solid var(--classic-rail-border)",
+    padding: "16px 14px",
+  },
+  classicBrand: {
+    display: "flex",
     alignItems: "center",
-    gap: 8,
-    background: "#4a4a4a",
-    borderRight: "1px solid #343434",
-    padding: "10px 0",
+    gap: 10,
+    color: "var(--classic-rail-link)",
+    paddingBottom: 10,
+    borderBottom: "1px solid var(--classic-rail-border)",
+  },
+  classicBrandTitle: {
+    fontWeight: 900,
+    fontSize: 15,
+  },
+  classicBrandSub: {
+    color: "var(--classic-muted)",
+    fontSize: 11,
+    fontWeight: 800,
   },
   railLogo: {
-    width: 26,
-    height: 26,
+    width: 36,
+    height: 36,
     display: "grid",
     placeItems: "center",
-    borderRadius: 3,
+    borderRadius: 8,
     background: "#ff7a1a",
     color: "#fff",
     fontWeight: 900,
   },
-  railIcon: {
-    width: 46,
-    height: 38,
+  classicNav: {
     display: "grid",
-    placeItems: "center",
-    color: "#fff",
-    textDecoration: "none",
-    borderLeft: "3px solid transparent",
+    gap: 6,
   },
-  railIconActive: {
-    width: 46,
-    height: 38,
-    display: "grid",
-    placeItems: "center",
-    color: "#ff7a1a",
+  classicNavLink: {
+    minHeight: 38,
+    display: "flex",
+    alignItems: "center",
+    padding: "0 12px",
+    borderRadius: 8,
+    color: "var(--classic-rail-link)",
     textDecoration: "none",
-    borderLeft: "3px solid #ff7a1a",
-    background: "#f7f7f7",
+    fontWeight: 900,
+  },
+  classicNavLinkActive: {
+    minHeight: 38,
+    display: "flex",
+    alignItems: "center",
+    padding: "0 12px",
+    borderRadius: 8,
+    color: "#ff7a1a",
+    background: "var(--classic-rail-active-bg)",
+    textDecoration: "none",
+    fontWeight: 900,
+  },
+  classicFooterNav: {
+    display: "grid",
+    gap: 8,
+  },
+  classicUtility: {
+    minHeight: 34,
+    display: "flex",
+    alignItems: "center",
+    padding: "0 10px",
+    borderRadius: 8,
+    border: "1px solid var(--classic-rail-border)",
+    color: "var(--classic-rail-link)",
+    textDecoration: "none",
+    fontWeight: 800,
+    fontSize: 12,
   },
   workspace: {
     minWidth: 0,
@@ -962,8 +1075,8 @@ const styles: Record<string, any> = {
     alignItems: "center",
     gap: 10,
     padding: "0 14px",
-    background: "#fff",
-    borderBottom: "1px solid #d6d6d6",
+    background: "var(--classic-panel-bg)",
+    borderBottom: "1px solid var(--classic-border)",
     boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
   },
   brandMark: {
@@ -982,7 +1095,9 @@ const styles: Record<string, any> = {
     maxWidth: "34vw",
     height: 34,
     borderRadius: 999,
-    border: "1px solid #d8d8d8",
+    border: "1px solid var(--classic-border)",
+    background: "var(--classic-input-bg)",
+    color: "var(--classic-text)",
     padding: "0 16px",
     outline: "none",
   },
@@ -996,7 +1111,7 @@ const styles: Record<string, any> = {
     padding: "0 16px",
     borderRadius: 999,
     border: "1px solid #f97316",
-    background: "#fff",
+    background: "var(--classic-panel-bg)",
     color: "#e85d04",
     textDecoration: "none",
     fontWeight: 800,
@@ -1041,7 +1156,7 @@ const styles: Record<string, any> = {
     minWidth: 0,
     display: "grid",
     gridTemplateRows: "25% 31% 44%",
-    borderRight: "1px solid #cfcfcf",
+    borderRight: "1px solid var(--classic-border)",
     overflow: "hidden",
   },
   rightStack: {
@@ -1053,8 +1168,8 @@ const styles: Record<string, any> = {
   panel: {
     minHeight: 0,
     overflow: "auto",
-    background: "#fff",
-    borderBottom: "1px solid #cfcfcf",
+    background: "var(--classic-panel-bg)",
+    borderBottom: "1px solid var(--classic-border)",
   },
   panelHeader: {
     height: 34,
@@ -1062,9 +1177,9 @@ const styles: Record<string, any> = {
     alignItems: "center",
     gap: 12,
     padding: "0 10px",
-    borderBottom: "1px solid #d7d7d7",
-    background: "#fbfbfb",
-    color: "#333",
+    borderBottom: "1px solid var(--classic-border)",
+    background: "var(--classic-panel-header-bg)",
+    color: "var(--classic-text)",
   },
   table: {
     width: "100%",
@@ -1106,9 +1221,9 @@ const styles: Record<string, any> = {
     height: 24,
     display: "grid",
     placeItems: "center",
-    borderBottom: "1px dashed #aaa",
-    background: "#fafafa",
-    color: "#777",
+    borderBottom: "1px dashed var(--classic-border)",
+    background: "var(--classic-panel-header-bg)",
+    color: "var(--classic-muted)",
     fontSize: 11,
   },
   dropZoneActive: {
@@ -1128,9 +1243,10 @@ const styles: Record<string, any> = {
   iconButton: {
     width: 25,
     height: 25,
-    border: "1px solid #ccc",
+    border: "1px solid var(--classic-border)",
     borderRadius: 4,
-    background: "#fff",
+    background: "var(--classic-input-bg)",
+    color: "var(--classic-text)",
     cursor: "pointer",
   },
   linkButton: {
@@ -1142,15 +1258,15 @@ const styles: Record<string, any> = {
   },
   emptyCell: {
     padding: 18,
-    color: "#777",
+    color: "var(--classic-muted)",
     textAlign: "center",
   },
   mapCanvas: {
     position: "relative",
     minHeight: 0,
     overflow: "hidden",
-    background: "#dceecf",
-    borderBottom: "1px solid #cfcfcf",
+    background: "var(--classic-map-bg)",
+    borderBottom: "1px solid var(--classic-border)",
   },
   routeSvg: {
     position: "absolute",
@@ -1183,7 +1299,7 @@ const styles: Record<string, any> = {
     zIndex: 2,
     display: "flex",
     border: "1px solid #aaa",
-    background: "#fff",
+    background: "var(--classic-panel-bg)",
     boxShadow: "0 1px 4px rgba(0,0,0,0.18)",
   },
   mapToggle: {
@@ -1194,7 +1310,7 @@ const styles: Record<string, any> = {
   },
   mapToggleMuted: {
     border: "none",
-    background: "#fff",
+    background: "var(--classic-panel-bg)",
     padding: "8px 14px",
   },
   mapLegend: {
@@ -1213,7 +1329,8 @@ const styles: Record<string, any> = {
     gap: 6,
     padding: "5px 8px",
     borderRadius: 4,
-    background: "rgba(255,255,255,0.9)",
+    background: "var(--classic-panel-bg)",
+    color: "var(--classic-text)",
     boxShadow: "0 1px 3px rgba(0,0,0,0.16)",
     fontWeight: 700,
   },
@@ -1226,7 +1343,9 @@ const styles: Record<string, any> = {
   smallSelect: {
     width: 78,
     height: 26,
-    border: "1px solid #ccc",
+    border: "1px solid var(--classic-border)",
+    background: "var(--classic-input-bg)",
+    color: "var(--classic-text)",
     borderRadius: 4,
   },
   assignMini: {
@@ -1244,7 +1363,7 @@ const styles: Record<string, any> = {
     gap: 8,
     padding: 8,
     overflow: "auto",
-    background: "#f8f8f8",
+    background: "var(--classic-panel-header-bg)",
   },
   compactForm: {
     display: "grid",
@@ -1252,26 +1371,26 @@ const styles: Record<string, any> = {
     gap: 6,
     alignItems: "center",
     padding: 8,
-    border: "1px solid #d7d7d7",
+    border: "1px solid var(--classic-border)",
     borderRadius: 6,
-    background: "#fff",
+    background: "var(--classic-panel-bg)",
   },
   input: {
     width: "100%",
     minHeight: 32,
     boxSizing: "border-box",
-    border: "1px solid #cfcfcf",
+    border: "1px solid var(--classic-border)",
     borderRadius: 4,
     padding: "0 8px",
-    background: "#fff",
-    color: "#222",
+    background: "var(--classic-input-bg)",
+    color: "var(--classic-text)",
   },
   colorInput: {
     width: "100%",
     height: 32,
-    border: "1px solid #cfcfcf",
+    border: "1px solid var(--classic-border)",
     borderRadius: 4,
-    background: "#fff",
+    background: "var(--classic-input-bg)",
   },
   confirmPopover: {
     position: "absolute",
@@ -1280,15 +1399,15 @@ const styles: Record<string, any> = {
     zIndex: 10,
     width: 320,
     borderRadius: 4,
-    border: "1px solid #cfd8e3",
-    background: "#fff",
+    border: "1px solid var(--classic-border)",
+    background: "var(--classic-panel-bg)",
     boxShadow: "0 12px 35px rgba(0,0,0,0.2)",
   },
   confirmCard: {
     display: "grid",
     gap: 8,
     padding: 12,
-    color: "#333",
+    color: "var(--classic-text)",
   },
   confirmActions: {
     display: "grid",
@@ -1316,11 +1435,11 @@ const styles: Record<string, any> = {
     bottom: 0,
     zIndex: 9,
     width: 300,
-    background: "#fff",
-    borderLeft: "1px solid #d7d7d7",
+    background: "var(--classic-drawer-bg)",
+    borderLeft: "1px solid var(--classic-border)",
     boxShadow: "-16px 0 35px rgba(0,0,0,0.18)",
     padding: 18,
-    color: "#333",
+    color: "var(--classic-text)",
   },
   drawerClose: {
     position: "absolute",
@@ -1328,9 +1447,10 @@ const styles: Record<string, any> = {
     right: 10,
     width: 28,
     height: 28,
-    border: "1px solid #ddd",
+    border: "1px solid var(--classic-border)",
     borderRadius: "50%",
-    background: "#fff",
+    background: "var(--classic-panel-bg)",
+    color: "var(--classic-text)",
     cursor: "pointer",
     fontSize: 18,
   },
@@ -1341,7 +1461,7 @@ const styles: Record<string, any> = {
   drawerTabs: {
     display: "flex",
     gap: 14,
-    borderBottom: "1px solid #e5e7eb",
+    borderBottom: "1px solid var(--classic-border)",
     marginBottom: 12,
   },
   drawerTabActive: {
@@ -1352,7 +1472,7 @@ const styles: Record<string, any> = {
   },
   drawerTab: {
     padding: "0 0 8px",
-    color: "#777",
+    color: "var(--classic-muted)",
   },
   drawerDetails: {
     display: "grid",
@@ -1366,9 +1486,9 @@ const styles: Record<string, any> = {
   drawerNotes: {
     marginTop: 18,
     padding: 10,
-    border: "1px solid #e5e7eb",
+    border: "1px solid var(--classic-border)",
     borderRadius: 6,
-    background: "#f9fafb",
+    background: "var(--classic-panel-header-bg)",
   },
   drawerButtonGrid: {
     display: "grid",

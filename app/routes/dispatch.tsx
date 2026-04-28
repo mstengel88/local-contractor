@@ -1724,6 +1724,8 @@ export default function DispatchPage() {
     rawView === "delivered"
       ? rawView
       : "dashboard";
+  const rawReturnTo = searchParams.get("returnTo") || "";
+  const modalReturnHref = rawReturnTo.startsWith("/") ? rawReturnTo : dispatchViewHref("orders");
 
   useEffect(() => {
     if (!allowed || !googleMapsApiKey || activeView !== "orders") return;
@@ -2309,7 +2311,7 @@ export default function DispatchPage() {
                     Update order details or delete the selected dispatch card.
                   </p>
                 </div>
-                <a href={dispatchViewHref("orders")} style={styles.modalCloseButton}>
+                <a href={modalReturnHref} style={styles.modalCloseButton}>
                   Close
                 </a>
               </div>
