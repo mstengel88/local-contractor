@@ -144,6 +144,7 @@ export default function DispatchCalendarPage() {
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
   const [query, setQuery] = useState("");
   const [cursorMonth, setCursorMonth] = useState(() => new Date());
+  const [expandedDayKeys, setExpandedDayKeys] = useState<string[]>([]);
 
   const isEmbeddedRoute = location.pathname.startsWith("/app/");
   const classicHref = isEmbeddedRoute ? "/app/classic" : "/classic";
@@ -201,6 +202,14 @@ export default function DispatchCalendarPage() {
   function shiftMonth(amount: number) {
     setCursorMonth(
       (current) => new Date(current.getFullYear(), current.getMonth() + amount, 1),
+    );
+  }
+
+  function toggleDayExpanded(key: string) {
+    setExpandedDayKeys((current) =>
+      current.includes(key)
+        ? current.filter((entry) => entry !== key)
+        : [...current, key],
     );
   }
 
@@ -307,6 +316,8 @@ export default function DispatchCalendarPage() {
               {calendarDays.map((day) => {
                 const key = dateKey(day);
                 const dayOrders = ordersByDay.get(key) || [];
+                const expanded = expandedDayKeys.includes(key);
+                const visibleOrders = expanded ? dayOrders : dayOrders.slice(0, 5);
                 const muted = day.getMonth() !== cursorMonth.getMonth();
                 const today = dateKey(day) === dateKey(new Date());
                 return (
@@ -316,7 +327,7 @@ export default function DispatchCalendarPage() {
                       {dayOrders.length ? <span style={styles.dayCount}>{dayOrders.length}</span> : null}
                     </div>
                     <div style={styles.dayOrders}>
-                      {dayOrders.slice(0, 5).map(({ order }) => (
+                      {visibleOrders.map(({ order }) => (
                         <Link key={order.id} to={editorHref(order.id)} style={styles.orderChip}>
                           <strong>{getOrderNumber(order)}</strong>
                           <span>{order.customer}</span>
@@ -324,7 +335,13 @@ export default function DispatchCalendarPage() {
                         </Link>
                       ))}
                       {dayOrders.length > 5 ? (
-                        <div style={styles.moreChip}>+{dayOrders.length - 5} more</div>
+                        <button
+                          type="button"
+                          onClick={() => toggleDayExpanded(key)}
+                          style={styles.moreChip}
+                        >
+                          {expanded ? "Show less" : `+${dayOrders.length - 5} more`}
+                        </button>
                       ) : null}
                     </div>
                   </div>
@@ -579,10 +596,15 @@ const styles: Record<string, CSSProperties> = {
     textDecoration: "none",
   },
   moreChip: {
+    background: "transparent",
+    border: "1px dashed var(--calendar-border)",
+    borderRadius: 10,
     color: "var(--calendar-muted)",
+    cursor: "pointer",
     fontSize: 12,
     fontWeight: 900,
-    padding: "2px 4px",
+    padding: "7px 8px",
+    textAlign: "left",
   },
   listPanel: {
     background: "var(--calendar-panel)",
