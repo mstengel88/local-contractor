@@ -1,4 +1,4 @@
-import { type DragEvent, useMemo, useState } from "react";
+import { type DragEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Form, Link, useActionData, useLoaderData } from "react-router";
 import {
   action as dispatchAction,
@@ -63,13 +63,47 @@ function buildSearchText(order: DispatchOrder) {
     .toLowerCase();
 }
 
-function ClassicMap({
+let classicGoogleMapsLoader: Promise<void> | null = null;
+
+function loadClassicGoogleMaps(apiKey: string) {
+  if (typeof window === "undefined") return Promise.resolve();
+  if ((window as any).google?.maps) return Promise.resolve();
+  if (classicGoogleMapsLoader) return classicGoogleMapsLoader;
+
+  classicGoogleMapsLoader = new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(
+      'script[data-classic-google-maps="true"]',
+    );
+
+    if (existing) {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error("Failed to load Google Maps")), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.dataset.classicGoogleMaps = "true";
+    script.async = true;
+    script.defer = true;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}`;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load Google Maps"));
+    document.head.appendChild(script);
+  });
+
+  return classicGoogleMapsLoader;
+}
+
+function ClassicMapFallback({
   routes,
 }: {
   routes: Array<DispatchRoute & { orders: DispatchOrder[] }>;
 }) {
   const colors = ["#d93025", "#f97316", "#2563eb", "#0f9f9a", "#9333ea"];
-  const activeRoutes = routes.filter((route) => route.orders.length);
+  const activeRoutes = useMemo(
+    () => routes.filter((route) => route.orders.length),
+    [routes],
+  );
 
   return (
     <div style={styles.mapCanvas}>
@@ -124,6 +158,194 @@ function ClassicMap({
   );
 }
 
+function ClassicMap({
+  googleMapsApiKey,
+  originAddress,
+  routes,
+}: {
+  googleMapsApiKey: string;
+  originAddress: string;
+  routes: Array<DispatchRoute & { orders: DispatchOrder[] }>;
+}) {
+  const mapRef = useRef<HTMLDivElement | null>(null);
+  const mapObjectsRef = useRef<any[]>([]);
+  const [status, setStatus] = useState("");
+  const [useFallback, setUseFallback] = useState(false);
+  const activeRoutes = routes.filter((route) => route.orders.length);
+  const routePlan = useMemo(
+    () =>
+      activeRoutes
+        .map((route) => ({
+          id: route.id,
+          code: route.code,
+          truck: route.truck,
+          color: route.color || "#f97316",
+          stops: route.orders
+            .map((order) => ({
+              address: getOrderAddress(order),
+              customer: order.customer,
+              label: getOrderNumber(order),
+            }))
+            .filter((stop) => stop.address),
+        }))
+        .filter((route) => route.stops.length),
+    [activeRoutes],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function drawMap() {
+      if (!mapRef.current) return;
+      if (!googleMapsApiKey || !originAddress || !routePlan.length) {
+        setUseFallback(true);
+        return;
+      }
+
+      setStatus("Loading map...");
+      setUseFallback(false);
+
+      try {
+        await loadClassicGoogleMaps(googleMapsApiKey);
+        if (cancelled || !mapRef.current) return;
+
+        const google = (window as any).google;
+        mapObjectsRef.current.forEach((object) => object.setMap?.(null));
+        mapObjectsRef.current = [];
+
+        const map = new google.maps.Map(mapRef.current, {
+          center: { lat: 43.1789, lng: -88.1173 },
+          zoom: 9,
+          mapTypeControl: true,
+          streetViewControl: false,
+          fullscreenControl: true,
+        });
+        const bounds = new google.maps.LatLngBounds();
+        const directionsService = new google.maps.DirectionsService();
+        let yardMarkerAdded = false;
+
+        await Promise.all(
+          routePlan.slice(0, 6).map(
+            (route) =>
+              Promise.all(
+                route.stops.map(
+                  (stop, stopIndex) =>
+                    new Promise<void>((resolve) => {
+                      const renderer = new google.maps.DirectionsRenderer({
+                        map,
+                        preserveViewport: true,
+                        suppressMarkers: true,
+                        polylineOptions: {
+                          strokeColor: route.color,
+                          strokeOpacity: 0.78,
+                          strokeWeight: 5,
+                        },
+                      });
+                      mapObjectsRef.current.push(renderer);
+
+                      directionsService.route(
+                        {
+                          origin: originAddress,
+                          destination: originAddress,
+                          waypoints: [
+                            {
+                              location: stop.address,
+                              stopover: true,
+                            },
+                          ],
+                          optimizeWaypoints: false,
+                          travelMode: google.maps.TravelMode.DRIVING,
+                        },
+                        (result: any, routeStatus: string) => {
+                          if (cancelled) {
+                            resolve();
+                            return;
+                          }
+
+                          if (result && routeStatus === "OK") {
+                            renderer.setDirections(result);
+                            const legs = result.routes?.[0]?.legs || [];
+                            const outboundLeg = legs[0];
+                            const returnLeg = legs[1];
+                            if (outboundLeg?.start_location) {
+                              bounds.extend(outboundLeg.start_location);
+                              if (!yardMarkerAdded) {
+                                const yardMarker = new google.maps.Marker({
+                                  map,
+                                  position: outboundLeg.start_location,
+                                  label: "Y",
+                                  title: "Green Hills Supply",
+                                });
+                                mapObjectsRef.current.push(yardMarker);
+                                yardMarkerAdded = true;
+                              }
+                            }
+                            if (outboundLeg?.end_location) {
+                              bounds.extend(outboundLeg.end_location);
+                              const marker = new google.maps.Marker({
+                                map,
+                                position: outboundLeg.end_location,
+                                label: String(stopIndex + 1),
+                                title: `${stop.label} · ${stop.customer}`,
+                              });
+                              mapObjectsRef.current.push(marker);
+                            }
+                            if (returnLeg?.end_location) bounds.extend(returnLeg.end_location);
+                          } else {
+                            console.warn("[CLASSIC MAP ROUND TRIP ERROR]", route.code, stop.address, routeStatus);
+                          }
+                          resolve();
+                        },
+                      );
+                    }),
+                ),
+              ).then(() => undefined),
+          ),
+        );
+
+        if (!bounds.isEmpty()) map.fitBounds(bounds);
+        setStatus("");
+      } catch (error) {
+        console.warn("[CLASSIC MAP ERROR]", error);
+        setStatus("Google map unavailable. Showing route preview.");
+        setUseFallback(true);
+      }
+    }
+
+    drawMap();
+
+    return () => {
+      cancelled = true;
+      mapObjectsRef.current.forEach((object) => object.setMap?.(null));
+      mapObjectsRef.current = [];
+    };
+  }, [googleMapsApiKey, originAddress, routePlan]);
+
+  if (useFallback) {
+    return (
+      <div style={styles.mapCanvas}>
+        <ClassicMapFallback routes={routes} />
+        {status ? <div style={styles.classicMapStatus}>{status}</div> : null}
+      </div>
+    );
+  }
+
+  return (
+    <div style={styles.mapCanvas}>
+      <div ref={mapRef} style={styles.realMapCanvas} />
+      {status ? <div style={styles.classicMapStatus}>{status}</div> : null}
+      <div style={styles.mapLegend}>
+        {activeRoutes.slice(0, 6).map((route) => (
+          <span key={route.id} style={styles.legendItem}>
+            <span style={{ ...styles.legendDot, background: route.color }} />
+            {route.code} {route.truck || "Unassigned"}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function ClassicDispatchPage() {
   const loaderData = useLoaderData<typeof loader>() as any;
   const actionData = useActionData<typeof action>() as any;
@@ -132,6 +354,8 @@ export default function ClassicDispatchPage() {
   const [draggedOrderId, setDraggedOrderId] = useState("");
   const [pendingOrderId, setPendingOrderId] = useState("");
   const [routeDrawerOpen, setRouteDrawerOpen] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState("");
+  const [orderDrawerOpen, setOrderDrawerOpen] = useState(false);
 
   const allowed = actionData?.allowed ?? loaderData.allowed;
   const orders = (actionData?.orders ?? loaderData.orders ?? []) as DispatchOrder[];
@@ -140,6 +364,8 @@ export default function ClassicDispatchPage() {
   const employees = (actionData?.employees ?? loaderData.employees ?? []) as DispatchEmployee[];
   const materialOptions = (actionData?.materialOptions ?? loaderData.materialOptions ?? []) as string[];
   const message = actionData?.message || loaderData?.mailboxStatus?.message || "";
+  const googleMapsApiKey = actionData?.googleMapsApiKey ?? loaderData.googleMapsApiKey ?? "";
+  const mapOriginAddress = actionData?.mapOriginAddress ?? loaderData.mapOriginAddress ?? "";
   const drivers = employees.filter((employee) => employee.role === "driver");
   const helpers = employees.filter((employee) => employee.role === "helper");
 
@@ -166,6 +392,7 @@ export default function ClassicDispatchPage() {
   const selectedRoute =
     routes.find((route) => route.id === selectedRouteId) || routes[0] || null;
   const pendingOrder = orders.find((order) => order.id === pendingOrderId) || null;
+  const selectedOrder = orders.find((order) => order.id === selectedOrderId) || null;
 
   const search = query.trim().toLowerCase();
   const visibleOrders = useMemo(
@@ -428,7 +655,19 @@ export default function ClassicDispatchPage() {
                   {visibleOrders.slice(0, 12).map((order) => (
                     <tr key={order.id}>
                       <td>D</td>
-                      <td>{getOrderNumber(order)}</td>
+                      <td>
+                        <button
+                          type="button"
+                          style={styles.rowOrderButton}
+                          onClick={() => {
+                            setSelectedOrderId(order.id);
+                            setOrderDrawerOpen(true);
+                            setRouteDrawerOpen(false);
+                          }}
+                        >
+                          {getOrderNumber(order)}
+                        </button>
+                      </td>
                       <td>{order.requestedWindow || "-"}</td>
                       <td>{order.customer}</td>
                       <td>{order.quantity || "-"}</td>
@@ -443,7 +682,11 @@ export default function ClassicDispatchPage() {
           </section>
 
           <section style={styles.rightStack}>
-            <ClassicMap routes={routes} />
+            <ClassicMap
+              googleMapsApiKey={googleMapsApiKey}
+              originAddress={mapOriginAddress}
+              routes={routes}
+            />
 
             <div style={styles.panel}>
               <div style={styles.panelHeader}>
@@ -594,6 +837,56 @@ export default function ClassicDispatchPage() {
                 Optimize / resequence route
               </button>
             </Form>
+          </aside>
+        ) : null}
+        {orderDrawerOpen && selectedOrder ? (
+          <aside style={styles.routeDrawer}>
+            <button type="button" style={styles.drawerClose} onClick={() => setOrderDrawerOpen(false)}>
+              ×
+            </button>
+            <h2 style={styles.drawerTitle}>Order Attributes</h2>
+            <div style={styles.drawerTabs}>
+              <span style={styles.drawerTabActive}>Info</span>
+              <span style={styles.drawerTab}>History</span>
+            </div>
+            <dl style={styles.drawerDetails}>
+              <dt>Order</dt>
+              <dd>{getOrderNumber(selectedOrder)}</dd>
+              <dt>Customer</dt>
+              <dd>{selectedOrder.customer || "No customer"}</dd>
+              <dt>Contact</dt>
+              <dd>{selectedOrder.contact || "No contact"}</dd>
+              <dt>Address</dt>
+              <dd>{getOrderAddress(selectedOrder) || "No address"}</dd>
+              <dt>Load</dt>
+              <dd>{selectedOrder.quantity || "-"} {selectedOrder.unit} {selectedOrder.material}</dd>
+              <dt>Requested</dt>
+              <dd>{selectedOrder.requestedWindow || "Needs scheduling"}</dd>
+              <dt>Status</dt>
+              <dd>{statusLabel(selectedOrder)}</dd>
+              <dt>Route</dt>
+              <dd>{routes.find((route) => route.id === selectedOrder.assignedRouteId)?.code || "Unassigned"}</dd>
+              <dt>Travel</dt>
+              <dd>{selectedOrder.travelSummary || formatTime(getTravelMinutes(selectedOrder))}</dd>
+            </dl>
+            {selectedOrder.notes ? (
+              <div style={styles.drawerNotes}>
+                <strong>Notes</strong>
+                <p>{selectedOrder.notes}</p>
+              </div>
+            ) : null}
+            <div style={styles.drawerButtonGrid}>
+              <a href={`/dispatch?view=orders&order=${encodeURIComponent(selectedOrder.id)}`} style={styles.drawerLinkButton}>
+                Open in editor
+              </a>
+              {selectedOrder.assignedRouteId ? (
+                <Form method="post">
+                  <input type="hidden" name="intent" value="unassign-order" />
+                  <input type="hidden" name="orderId" value={selectedOrder.id} />
+                  <button style={styles.drawerButton}>Unassign</button>
+                </Form>
+              ) : null}
+            </div>
           </aside>
         ) : null}
       </section>
@@ -792,6 +1085,14 @@ const styles: Record<string, any> = {
     cursor: "pointer",
     textDecoration: active ? "underline" : "none",
   }),
+  rowOrderButton: {
+    border: "none",
+    background: "transparent",
+    color: "#0ea5c6",
+    fontWeight: 900,
+    cursor: "pointer",
+    textDecoration: "underline",
+  },
   dropZone: {
     height: 24,
     display: "grid",
@@ -847,6 +1148,24 @@ const styles: Record<string, any> = {
     inset: 0,
     width: "100%",
     height: "100%",
+  },
+  realMapCanvas: {
+    position: "absolute",
+    inset: 0,
+    width: "100%",
+    height: "100%",
+  },
+  classicMapStatus: {
+    position: "absolute",
+    left: 12,
+    top: 12,
+    zIndex: 3,
+    padding: "7px 10px",
+    borderRadius: 4,
+    background: "rgba(255, 255, 255, 0.94)",
+    boxShadow: "0 1px 4px rgba(0,0,0,0.18)",
+    color: "#444",
+    fontWeight: 800,
   },
   mapToolbar: {
     position: "absolute",
@@ -1034,6 +1353,28 @@ const styles: Record<string, any> = {
   },
   drawerForm: {
     marginTop: 18,
+  },
+  drawerNotes: {
+    marginTop: 18,
+    padding: 10,
+    border: "1px solid #e5e7eb",
+    borderRadius: 6,
+    background: "#f9fafb",
+  },
+  drawerButtonGrid: {
+    display: "grid",
+    gap: 8,
+    marginTop: 18,
+  },
+  drawerLinkButton: {
+    minHeight: 36,
+    display: "grid",
+    placeItems: "center",
+    borderRadius: 6,
+    background: "#0ea5c6",
+    color: "#fff",
+    textDecoration: "none",
+    fontWeight: 900,
   },
   drawerButton: {
     width: "100%",
