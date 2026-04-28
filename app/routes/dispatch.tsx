@@ -220,6 +220,92 @@ function buildDispatchOrderSearchText(
     .toLowerCase();
 }
 
+function buildRouteSearchText(
+  route: DispatchRoute & { orders?: DispatchOrder[]; stops?: number; totalTravelMinutes?: number; loadSummary?: string },
+  orders: DispatchOrder[],
+) {
+  const routeOrders = route.orders?.length
+    ? route.orders
+    : orders.filter((order) => order.assignedRouteId === route.id);
+
+  return [
+    route.id,
+    route.code,
+    route.truckId,
+    route.truck,
+    route.driverId,
+    route.driver,
+    route.helperId,
+    route.helper,
+    route.color,
+    route.shift,
+    route.region,
+    route.stops,
+    route.totalTravelMinutes,
+    route.loadSummary,
+    route.created_at,
+    route.updated_at,
+    ...routeOrders.map((order) => buildDispatchOrderSearchText(order, [route])),
+  ]
+    .filter((value) => value !== null && value !== undefined && value !== "")
+    .join(" ")
+    .toLowerCase();
+}
+
+function buildTruckSearchText(
+  truck: DispatchTruck,
+  routes: Array<DispatchRoute & { orders?: DispatchOrder[] }>,
+  orders: DispatchOrder[],
+) {
+  const truckRoutes = routes.filter(
+    (route) => route.truckId === truck.id || route.truck === truck.label,
+  );
+
+  return [
+    truck.id,
+    truck.label,
+    truck.truckType,
+    truck.tons,
+    truck.yards,
+    truck.capacity,
+    truck.licensePlate,
+    truck.created_at,
+    truck.updated_at,
+    ...truckRoutes.map((route) => buildRouteSearchText(route, orders)),
+  ]
+    .filter((value) => value !== null && value !== undefined && value !== "")
+    .join(" ")
+    .toLowerCase();
+}
+
+function buildEmployeeSearchText(
+  employee: DispatchEmployee,
+  routes: Array<DispatchRoute & { orders?: DispatchOrder[] }>,
+  orders: DispatchOrder[],
+) {
+  const employeeRoutes = routes.filter(
+    (route) =>
+      route.driverId === employee.id ||
+      route.helperId === employee.id ||
+      route.driver === employee.name ||
+      route.helper === employee.name,
+  );
+
+  return [
+    employee.id,
+    employee.name,
+    employee.role,
+    employee.phone,
+    employee.email,
+    employee.created_at,
+    employee.updated_at,
+    ...employeeRoutes.map((route) => buildRouteSearchText(route, orders)),
+  ]
+    .filter((value) => value !== null && value !== undefined && value !== "")
+    .join(" ")
+    .toLowerCase();
+}
+
 function getTruckCapacityForOrderUnit(truck: DispatchTruck, unit: string) {
   if (/tons?/i.test(unit)) return Number(truck.tons || 0);
   if (/yards?/i.test(unit)) return Number(truck.yards || 0);
@@ -1927,6 +2013,49 @@ export default function DispatchPage() {
     () => searchOrders(activeOrders),
     [activeOrders, normalizedOrderSearch, routes],
   );
+  const searchedScheduledOrders = useMemo(
+    () => searchOrders(scheduledOrders),
+    [scheduledOrders, normalizedOrderSearch, routes],
+  );
+  const searchedDeliveredOrders = useMemo(
+    () => searchOrders(deliveredOrders),
+    [deliveredOrders, normalizedOrderSearch, routes],
+  );
+  const searchedRoutes = useMemo(() => {
+    if (!normalizedOrderSearch) return routes;
+    return routes.filter((route) =>
+      buildRouteSearchText(route, orders).includes(normalizedOrderSearch),
+    );
+  }, [normalizedOrderSearch, orders, routes]);
+  const searchedTrucks = useMemo(() => {
+    if (!normalizedOrderSearch) return trucks;
+    return trucks.filter((truck) =>
+      buildTruckSearchText(truck, routes, orders).includes(normalizedOrderSearch),
+    );
+  }, [normalizedOrderSearch, orders, routes, trucks]);
+  const searchedEmployees = useMemo(() => {
+    if (!normalizedOrderSearch) return employees;
+    return employees.filter((employee) =>
+      buildEmployeeSearchText(employee, routes, orders).includes(normalizedOrderSearch),
+    );
+  }, [employees, normalizedOrderSearch, orders, routes]);
+
+  const renderSearchBar = (placeholder: string) => (
+    <div style={styles.searchBar}>
+      <input
+        type="search"
+        value={orderSearch}
+        onChange={(event) => setOrderSearch(event.currentTarget.value)}
+        placeholder={placeholder}
+        style={styles.searchInput}
+      />
+      {orderSearch ? (
+        <button type="button" onClick={() => setOrderSearch("")} style={styles.clearSearchButton}>
+          Clear
+        </button>
+      ) : null}
+    </div>
+  );
 
   function getDraggedOrderId(event: DragEvent<HTMLElement>) {
     return (
@@ -2192,20 +2321,7 @@ export default function DispatchPage() {
                 <div style={styles.headerPill}>{searchedActiveOrders.length} orders</div>
               </div>
 
-              <div style={styles.searchBar}>
-                <input
-                  type="search"
-                  value={orderSearch}
-                  onChange={(event) => setOrderSearch(event.currentTarget.value)}
-                  placeholder="Search orders by customer, address, material, notes, route, status..."
-                  style={styles.searchInput}
-                />
-                {orderSearch ? (
-                  <button type="button" onClick={() => setOrderSearch("")} style={styles.clearSearchButton}>
-                    Clear
-                  </button>
-                ) : null}
-              </div>
+              {renderSearchBar("Search orders by any field: customer, address, material, notes, date, route, status...")}
 
               <div style={{ display: "grid", gap: 10 }}>
                 {searchedActiveOrders.map((order) => {
@@ -2547,14 +2663,20 @@ export default function DispatchPage() {
                   <h2 style={styles.panelTitle}>Scheduled</h2>
                   <p style={styles.panelSub}>Orders assigned to a route and waiting for delivery.</p>
                 </div>
-                <div style={styles.headerPill}>{scheduledOrders.length} scheduled</div>
+                <div style={styles.headerPill}>
+                  {searchedScheduledOrders.length} of {scheduledOrders.length} scheduled
+                </div>
               </div>
 
+              {renderSearchBar("Search scheduled loads by any field: customer, route, driver, address, material, notes...")}
+
               <div style={{ display: "grid", gap: 10 }}>
-                {scheduledOrders.length === 0 ? (
-                  <div style={{ color: "#94a3b8" }}>No scheduled orders yet.</div>
+                {searchedScheduledOrders.length === 0 ? (
+                  <div style={{ color: "#94a3b8" }}>
+                    {scheduledOrders.length ? "No scheduled orders matched that search." : "No scheduled orders yet."}
+                  </div>
                 ) : (
-                  scheduledOrders.map((order) => {
+                  searchedScheduledOrders.map((order) => {
                     const route = routes.find((entry) => entry.id === order.assignedRouteId);
                     return (
                       <div key={order.id} style={styles.queueCard}>
@@ -2610,14 +2732,20 @@ export default function DispatchPage() {
                   <h2 style={styles.panelTitle}>Delivered</h2>
                   <p style={styles.panelSub}>Completed orders that drivers marked delivered.</p>
                 </div>
-                <div style={styles.headerPill}>{deliveredOrders.length} delivered</div>
+                <div style={styles.headerPill}>
+                  {searchedDeliveredOrders.length} of {deliveredOrders.length} delivered
+                </div>
               </div>
 
+              {renderSearchBar("Search delivered loads by any field: customer, address, material, proof, notes, route...")}
+
               <div style={{ display: "grid", gap: 10 }}>
-                {deliveredOrders.length === 0 ? (
-                  <div style={{ color: "#94a3b8" }}>No delivered orders yet.</div>
+                {searchedDeliveredOrders.length === 0 ? (
+                  <div style={{ color: "#94a3b8" }}>
+                    {deliveredOrders.length ? "No delivered orders matched that search." : "No delivered orders yet."}
+                  </div>
                 ) : (
-                  deliveredOrders.map((order) => {
+                  searchedDeliveredOrders.map((order) => {
                     const route = routes.find((entry) => entry.id === order.assignedRouteId);
                     return (
                       <div
@@ -2816,10 +2944,13 @@ export default function DispatchPage() {
                   <h2 style={styles.panelTitle}>Fleet</h2>
                   <p style={styles.panelSub}>View and edit active trucks, ton limits, and yard limits.</p>
                 </div>
-                <div style={styles.headerPill}>{trucks.length} trucks</div>
+                <div style={styles.headerPill}>
+                  {searchedTrucks.length} of {trucks.length} trucks
+                </div>
               </div>
+              {renderSearchBar("Search fleet by any field: truck, type, plate, tons, yards, route, assigned loads...")}
               <div style={styles.resourceList}>
-                {trucks.map((truck) => (
+                {searchedTrucks.map((truck) => (
                   <Form
                     key={truck.id}
                     method="post"
@@ -2869,6 +3000,9 @@ export default function DispatchPage() {
                     </div>
                   </Form>
                 ))}
+                {searchedTrucks.length === 0 ? (
+                  <div style={styles.emptySearch}>No trucks matched that search.</div>
+                ) : null}
               </div>
             </div>
 
@@ -2919,10 +3053,13 @@ export default function DispatchPage() {
                   <h2 style={styles.panelTitle}>Employees</h2>
                   <p style={styles.panelSub}>View drivers, helpers, and dispatchers.</p>
                 </div>
-                <div style={styles.headerPill}>{employees.length} people</div>
+                <div style={styles.headerPill}>
+                  {searchedEmployees.length} of {employees.length} people
+                </div>
               </div>
+              {renderSearchBar("Search employees by any field: name, role, phone, email, route, truck, assigned loads...")}
               <div style={styles.resourceList}>
-                {employees.map((employee) => (
+                {searchedEmployees.map((employee) => (
                   <Form
                     key={employee.id}
                     method="post"
@@ -2972,6 +3109,9 @@ export default function DispatchPage() {
                     </div>
                   </Form>
                 ))}
+                {searchedEmployees.length === 0 ? (
+                  <div style={styles.emptySearch}>No employees matched that search.</div>
+                ) : null}
               </div>
             </div>
 
@@ -3024,10 +3164,13 @@ export default function DispatchPage() {
                   <h2 style={styles.panelTitle}>Routes</h2>
                   <p style={styles.panelSub}>View route assignments, open driver view, and sequence stops.</p>
                 </div>
-                <div style={styles.headerPill}>{routes.length} routes</div>
+                <div style={styles.headerPill}>
+                  {searchedRoutes.length} of {routes.length} routes
+                </div>
               </div>
+              {renderSearchBar("Search routes by any field: route, truck, driver, helper, region, shift, assigned loads...")}
               <div style={{ display: "grid", gap: 12 }}>
-                {routes.map((route) => (
+                {searchedRoutes.map((route) => (
                   <Form
                     key={route.id}
                     method="post"
@@ -3114,6 +3257,9 @@ export default function DispatchPage() {
                     </div>
                   </Form>
                 ))}
+                {searchedRoutes.length === 0 ? (
+                  <div style={styles.emptySearch}>No routes matched that search.</div>
+                ) : null}
               </div>
             </div>
 
@@ -3204,20 +3350,7 @@ export default function DispatchPage() {
                 <div style={styles.headerPill}>{searchedActiveOrders.length} in queue</div>
               </div>
 
-              <div style={styles.searchBar}>
-                <input
-                  type="search"
-                  value={orderSearch}
-                  onChange={(event) => setOrderSearch(event.currentTarget.value)}
-                  placeholder="Search queue by customer, address, material, notes, date, route..."
-                  style={styles.searchInput}
-                />
-                {orderSearch ? (
-                  <button type="button" onClick={() => setOrderSearch("")} style={styles.clearSearchButton}>
-                    Clear
-                  </button>
-                ) : null}
-              </div>
+              {renderSearchBar("Search dispatch by any field: order, customer, route, truck, driver, address, material, notes...")}
 
               <div style={{ display: "grid", gap: 10 }}>
                 {searchedActiveOrders.map((order) => {
@@ -3312,11 +3445,13 @@ export default function DispatchPage() {
                     Active trucks, crew assignments, and current stop counts.
                   </p>
                 </div>
-                <div style={styles.headerPill}>Live Board</div>
+                <div style={styles.headerPill}>
+                  {searchedRoutes.length} of {routes.length} routes
+                </div>
               </div>
 
               <div style={{ display: "grid", gap: 12 }}>
-                {routes.map((route) => (
+                {searchedRoutes.map((route) => (
                   <div
                     key={route.id}
                     onDragEnter={(event) => {
@@ -3509,6 +3644,9 @@ export default function DispatchPage() {
                     ) : null}
                   </div>
                 ))}
+                {searchedRoutes.length === 0 ? (
+                  <div style={styles.emptySearch}>No routes matched that search.</div>
+                ) : null}
               </div>
 
             </div>
@@ -3526,7 +3664,7 @@ export default function DispatchPage() {
               <RouteMapPreview
                 googleMapsApiKey={googleMapsApiKey}
                 originAddress={mapOriginAddress}
-                routes={routes}
+                routes={searchedRoutes}
               />
             </div>
           </div>
