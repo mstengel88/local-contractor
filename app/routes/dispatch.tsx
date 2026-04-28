@@ -136,6 +136,33 @@ function formatRequestedWindow(value: string) {
   return `${dateInput[2]}/${dateInput[3]}/${dateInput[1]}`;
 }
 
+function getRequestedWindowDateInputValue(value?: string | null) {
+  const trimmed = String(value || "").trim();
+  const isoDate = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoDate) return trimmed;
+
+  const slashDate = trimmed.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/);
+  if (slashDate) {
+    const year =
+      slashDate[3].length === 2
+        ? 2000 + Number(slashDate[3])
+        : Number(slashDate[3]);
+    return `${year}-${slashDate[1].padStart(2, "0")}-${slashDate[2].padStart(2, "0")}`;
+  }
+
+  const today = new Date();
+  if (/\btoday\b/i.test(trimmed)) {
+    return today.toISOString().slice(0, 10);
+  }
+  if (/\btomorrow\b/i.test(trimmed)) {
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    return tomorrow.toISOString().slice(0, 10);
+  }
+
+  return "";
+}
+
 function getOrderTravelMinutes(order: DispatchOrder) {
   const minutes = Number(order.travelMinutes || 0);
   return Number.isFinite(minutes) && minutes > 0 ? minutes : 0;
@@ -995,7 +1022,8 @@ export async function action({ request }: any) {
         quantity: String(form.get("quantity") || "").trim(),
         unit,
         requestedWindow:
-          String(form.get("requestedWindow") || "").trim() || "Needs scheduling",
+          formatRequestedWindow(String(form.get("requestedWindow") || "")) ||
+          "Needs scheduling",
         timePreference:
           String(form.get("timePreference") || "").trim() ||
           detectTimePreference(String(form.get("notes") || "")),
@@ -1693,6 +1721,7 @@ export default function DispatchPage() {
   const mobileHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
   const classicHref = isEmbeddedRoute ? "/app/classic" : "/classic";
+  const calendarHref = isEmbeddedRoute ? "/app/calendar" : "/calendar";
   const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
   const logoutHref = `${dispatchHref}?logout=1`;
   const canAccess = (permission: string) =>
@@ -2010,6 +2039,7 @@ export default function DispatchPage() {
 
           <nav style={styles.sideNav}>
             <a href={classicHref} style={styles.sideNavLink(false)}>Classic</a>
+            <a href={calendarHref} style={styles.sideNavLink(false)}>Calendar</a>
             {canAccess("manageDispatch") ? (
               <a href={dispatchViewHref("orders")} style={styles.sideNavLink(activeView === "orders")}>Orders</a>
             ) : null}
@@ -2378,7 +2408,8 @@ export default function DispatchPage() {
                       <label style={styles.label}>Requested Window</label>
                       <input
                         name="requestedWindow"
-                        defaultValue={selectedOrder.requestedWindow}
+                        type="date"
+                        defaultValue={getRequestedWindowDateInputValue(selectedOrder.requestedWindow)}
                         style={styles.input}
                       />
                     </div>

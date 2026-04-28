@@ -137,6 +137,20 @@ export default function AppLayout() {
         </Link>
 
         <Link
+          to={`/app/calendar${qs}`}
+          style={{
+            color: "#e5e7eb",
+            textDecoration: "none",
+            padding: "10px 14px",
+            borderRadius: "10px",
+            border: "1px solid #334155",
+            background: "#0f172a",
+          }}
+        >
+          Calendar
+        </Link>
+
+        <Link
           to={`/app/dispatch/driver${qs}`}
           style={{
             color: "#e5e7eb",

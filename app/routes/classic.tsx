@@ -399,6 +399,7 @@ export default function ClassicDispatchPage() {
   const currentUser = actionData?.currentUser ?? loaderData.currentUser ?? null;
   const isEmbeddedRoute = location.pathname.startsWith("/app/");
   const classicHref = isEmbeddedRoute ? "/app/classic" : "/classic";
+  const calendarHref = isEmbeddedRoute ? "/app/calendar" : "/calendar";
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
   const quoteHref = isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote";
   const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
@@ -571,6 +572,7 @@ export default function ClassicDispatchPage() {
         </div>
         <nav style={styles.classicNav}>
           <Link to={classicHref} style={styles.classicNavLinkActive}>Classic</Link>
+          <Link to={calendarHref} style={styles.classicNavLink}>Calendar</Link>
           {canAccess("manageDispatch") ? <Link to={dispatchViewHref("orders")} style={styles.classicNavLink}>Orders</Link> : null}
           <Link to={dispatchViewHref("scheduled")} style={styles.classicNavLink}>Scheduled</Link>
           {canAccess("manageDispatch") ? <Link to={dispatchViewHref("routes")} style={styles.classicNavLink}>Routes</Link> : null}
