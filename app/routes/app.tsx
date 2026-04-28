@@ -38,9 +38,14 @@ export default function AppLayout() {
   const loaderData = useLoaderData<typeof loader>();
   const location = useLocation();
   const qs = location.search || "";
+  const isClassicRoute = location.pathname.startsWith("/app/classic");
   const lastSyncLabel = loaderData?.lastProductSyncAt
     ? new Date(loaderData.lastProductSyncAt).toLocaleString()
     : "Never";
+
+  if (isClassicRoute) {
+    return <Outlet />;
+  }
 
   return (
     <div
@@ -115,6 +120,20 @@ export default function AppLayout() {
           }}
         >
           Dispatch
+        </Link>
+
+        <Link
+          to={`/app/classic${qs}`}
+          style={{
+            color: "#e5e7eb",
+            textDecoration: "none",
+            padding: "10px 14px",
+            borderRadius: "10px",
+            border: "1px solid #334155",
+            background: "#0f172a",
+          }}
+        >
+          Classic
         </Link>
 
         <Link
