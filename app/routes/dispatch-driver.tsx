@@ -31,7 +31,7 @@ function getDriverPath(url: URL) {
 }
 
 function getDispatchPath(pathname: string) {
-  return pathname.startsWith("/app/") ? "/app/dispatch" : "/dispatch";
+  return pathname.startsWith("/app/") ? "/app/classic" : "/classic";
 }
 
 function getStatusLabel(status?: DispatchDeliveryStatus) {

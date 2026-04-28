@@ -238,7 +238,7 @@ export default function MobileDashboardPage() {
   const quoteToolBase = isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote";
   const reviewHref = isEmbeddedRoute ? "/app/quote-review" : "/quote-review";
   const dashboardHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
-  const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
+  const dispatchHref = isEmbeddedRoute ? "/app/classic" : "/classic";
   const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
 
   if (!allowed) {

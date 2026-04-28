@@ -137,7 +137,7 @@ export default function SettingsPage() {
               <Link to="/custom-quote" style={styles.navButton}>Quote Tool</Link>
             ) : null}
             {canAccess("dispatch") ? (
-              <Link to="/dispatch" style={styles.navButton}>Dispatch</Link>
+              <Link to="/classic" style={styles.navButton}>Dispatch</Link>
             ) : null}
             <Link to="/change-password" style={styles.navButton}>Change Password</Link>
             <Link to="/login?logout=1" style={styles.navButton}>Log Out</Link>

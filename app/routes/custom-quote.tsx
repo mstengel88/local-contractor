@@ -679,7 +679,7 @@ export default function PublicCustomQuotePage() {
     ? `/app/api/delete-quote${embeddedQs}`
     : `/api/delete-quote${embeddedQs}`;
   const quoteReviewHref = isEmbeddedRoute ? "/app/quote-review" : "/quote-review";
-  const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
+  const dispatchHref = isEmbeddedRoute ? "/app/classic" : "/classic";
   const logoutHref = isEmbeddedRoute ? "/app/custom-quote?logout=1" : "/custom-quote?logout=1";
   const mobileDashboardHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
   const canAccess = (permission: string) =>

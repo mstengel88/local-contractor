@@ -97,7 +97,7 @@ export default function LoginPage() {
 
         <div style={styles.links}>
           <Link to="/custom-quote" style={styles.link}>Quote Tool</Link>
-          <Link to="/dispatch" style={styles.link}>Dispatch</Link>
+          <Link to="/classic" style={styles.link}>Dispatch</Link>
         </div>
       </section>
     </main>

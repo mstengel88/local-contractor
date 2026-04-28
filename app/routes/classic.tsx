@@ -171,14 +171,19 @@ function ClassicMap({
   const mapObjectsRef = useRef<any[]>([]);
   const [status, setStatus] = useState("");
   const [useFallback, setUseFallback] = useState(false);
+  const [hiddenRouteIds, setHiddenRouteIds] = useState<string[]>([]);
   const activeRoutes = useMemo(
     () => routes.filter((route) => route.orders.length),
     [routes],
   );
+  const visibleRouteIds = useMemo(
+    () => new Set(activeRoutes.map((route) => route.id).filter((id) => !hiddenRouteIds.includes(id))),
+    [activeRoutes, hiddenRouteIds],
+  );
   const routePlan = useMemo(
     () =>
       routes
-        .filter((route) => route.orders.length)
+        .filter((route) => route.orders.length && visibleRouteIds.has(route.id))
         .map((route) => ({
           id: route.id,
           code: route.code,
@@ -193,7 +198,7 @@ function ClassicMap({
             .filter((stop) => stop.address),
         }))
         .filter((route) => route.stops.length),
-    [routes],
+    [routes, visibleRouteIds],
   );
   const routePlanKey = useMemo(
     () =>
@@ -202,10 +207,19 @@ function ClassicMap({
           id: route.id,
           color: route.color,
           stops: route.stops.map((stop) => stop.address),
+          hidden: hiddenRouteIds.includes(route.id),
         })),
       ),
-    [routePlan],
+    [routePlan, hiddenRouteIds],
   );
+
+  function toggleRoute(routeId: string) {
+    setHiddenRouteIds((current) =>
+      current.includes(routeId)
+        ? current.filter((id) => id !== routeId)
+        : [...current, routeId],
+    );
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -333,7 +347,7 @@ function ClassicMap({
   if (useFallback) {
     return (
       <div style={styles.mapCanvas}>
-        <ClassicMapFallback routes={routes} />
+        <ClassicMapFallback routes={routes.filter((route) => !hiddenRouteIds.includes(route.id))} />
         {status ? <div style={styles.classicMapStatus}>{status}</div> : null}
       </div>
     );
@@ -345,10 +359,16 @@ function ClassicMap({
       {status ? <div style={styles.classicMapStatus}>{status}</div> : null}
       <div style={styles.mapLegend}>
         {activeRoutes.slice(0, 6).map((route) => (
-          <span key={route.id} style={styles.legendItem}>
+          <button
+            key={route.id}
+            type="button"
+            style={hiddenRouteIds.includes(route.id) ? styles.legendItemOff : styles.legendItem}
+            onClick={() => toggleRoute(route.id)}
+            title={`${hiddenRouteIds.includes(route.id) ? "Show" : "Hide"} ${route.code}`}
+          >
             <span style={{ ...styles.legendDot, background: route.color }} />
             {route.code} {route.truck || "Unassigned"}
-          </span>
+          </button>
         ))}
       </div>
     </div>
@@ -550,10 +570,9 @@ export default function ClassicDispatchPage() {
           </div>
         </div>
         <nav style={styles.classicNav}>
-          <Link to={dispatchViewHref("dashboard")} style={styles.classicNavLink}>Dashboard</Link>
+          <Link to={classicHref} style={styles.classicNavLinkActive}>Classic</Link>
           {canAccess("manageDispatch") ? <Link to={dispatchViewHref("orders")} style={styles.classicNavLink}>Orders</Link> : null}
           <Link to={dispatchViewHref("scheduled")} style={styles.classicNavLink}>Scheduled</Link>
-          <Link to={classicHref} style={styles.classicNavLinkActive}>Classic</Link>
           {canAccess("manageDispatch") ? <Link to={dispatchViewHref("routes")} style={styles.classicNavLink}>Routes</Link> : null}
           {canAccess("manageDispatch") ? <Link to={dispatchViewHref("trucks")} style={styles.classicNavLink}>Trucks</Link> : null}
           {canAccess("manageDispatch") ? <Link to={dispatchViewHref("employees")} style={styles.classicNavLink}>Employees</Link> : null}
@@ -684,6 +703,7 @@ export default function ClassicDispatchPage() {
                 <thead>
                   <tr>
                     <th>#</th>
+                    <th>Order No</th>
                     <th>Address</th>
                     <th>Arrived</th>
                     <th>Departed</th>
@@ -696,6 +716,19 @@ export default function ClassicDispatchPage() {
                   {(selectedRoute?.orders || []).slice(0, 9).map((order, index) => (
                     <tr key={order.id}>
                       <td>{order.stopSequence || index + 1}</td>
+                      <td>
+                        <button
+                          type="button"
+                          style={styles.rowOrderButton}
+                          onClick={() => {
+                            setSelectedOrderId(order.id);
+                            setOrderDrawerOpen(true);
+                            setRouteDrawerOpen(false);
+                          }}
+                        >
+                          {getOrderNumber(order)}
+                        </button>
+                      </td>
                       <td>{getOrderAddress(order)}</td>
                       <td>{order.arrivedAt ? new Date(order.arrivedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "-"}</td>
                       <td>{order.departedAt ? new Date(order.departedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "-"}</td>
@@ -711,7 +744,7 @@ export default function ClassicDispatchPage() {
                     </tr>
                   ))}
                   {!selectedRoute?.orders.length ? (
-                    <tr><td colSpan={7} style={styles.emptyCell}>Pick a route, then drag unscheduled orders here.</td></tr>
+                    <tr><td colSpan={8} style={styles.emptyCell}>Pick a route, then drag unscheduled orders here.</td></tr>
                   ) : null}
                 </tbody>
               </table>
@@ -1329,10 +1362,27 @@ const styles: Record<string, any> = {
     gap: 6,
     padding: "5px 8px",
     borderRadius: 4,
+    border: "1px solid var(--classic-border)",
     background: "var(--classic-panel-bg)",
     color: "var(--classic-text)",
     boxShadow: "0 1px 3px rgba(0,0,0,0.16)",
     fontWeight: 700,
+    cursor: "pointer",
+  },
+  legendItemOff: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    padding: "5px 8px",
+    borderRadius: 4,
+    border: "1px solid var(--classic-border)",
+    background: "var(--classic-panel-bg)",
+    color: "var(--classic-muted)",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
+    fontWeight: 700,
+    opacity: 0.48,
+    cursor: "pointer",
+    textDecoration: "line-through",
   },
   legendDot: {
     width: 10,

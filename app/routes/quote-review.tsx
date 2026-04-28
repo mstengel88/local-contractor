@@ -250,7 +250,7 @@ export default function QuoteReviewPage() {
     ? `/app/api/update-quote${location.search || ""}`
     : `/api/update-quote${location.search || ""}`;
   const quoteToolHref = isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote";
-  const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
+  const dispatchHref = isEmbeddedRoute ? "/app/classic" : "/classic";
   const mobileDashboardHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
   const logoutHref = currentUser ? "/login?logout=1" : "?logout=1";
   const canAccess = (permission: string) =>

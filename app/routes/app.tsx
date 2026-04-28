@@ -109,7 +109,7 @@ export default function AppLayout() {
         </Link>
 
         <Link
-          to={`/app/dispatch${qs}`}
+          to={`/app/classic${qs}`}
           style={{
             color: "#e5e7eb",
             textDecoration: "none",

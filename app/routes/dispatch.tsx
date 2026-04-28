@@ -1724,8 +1724,6 @@ export default function DispatchPage() {
     rawView === "delivered"
       ? rawView
       : "dashboard";
-  const rawReturnTo = searchParams.get("returnTo") || "";
-  const modalReturnHref = rawReturnTo.startsWith("/") ? rawReturnTo : dispatchViewHref("orders");
 
   useEffect(() => {
     if (!allowed || !googleMapsApiKey || activeView !== "orders") return;
@@ -1834,6 +1832,8 @@ export default function DispatchPage() {
   const drivers = employees.filter((employee) => employee.role === "driver");
   const helpers = employees.filter((employee) => employee.role === "helper");
   const dispatchViewHref = (view: string) => `${dispatchHref}?view=${view}`;
+  const rawReturnTo = searchParams.get("returnTo") || "";
+  const modalReturnHref = rawReturnTo.startsWith("/") ? rawReturnTo : dispatchViewHref("orders");
   const dashboardSelectHref = (orderId: string) =>
     `${dispatchHref}?selected=${encodeURIComponent(orderId)}`;
   const dashboardDetailHref = (orderId: string) =>
@@ -2009,12 +2009,11 @@ export default function DispatchPage() {
           </div>
 
           <nav style={styles.sideNav}>
-            <a href={dispatchViewHref("dashboard")} style={styles.sideNavLink(activeView === "dashboard")}>Dashboard</a>
+            <a href={classicHref} style={styles.sideNavLink(false)}>Classic</a>
             {canAccess("manageDispatch") ? (
               <a href={dispatchViewHref("orders")} style={styles.sideNavLink(activeView === "orders")}>Orders</a>
             ) : null}
             <a href={dispatchViewHref("scheduled")} style={styles.sideNavLink(activeView === "scheduled")}>Scheduled</a>
-            <a href={classicHref} style={styles.sideNavLink(false)}>Classic</a>
             {canAccess("manageDispatch") ? (
               <a href={dispatchViewHref("routes")} style={styles.sideNavLink(activeView === "routes")}>Routes</a>
             ) : null}
