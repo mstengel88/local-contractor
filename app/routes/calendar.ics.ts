@@ -1,6 +1,6 @@
 import { getDispatchOrders, type DispatchOrder } from "../lib/dispatch.server";
 
-function isAuthorized(request: Request) {
+function isAuthorized(request: Request, params?: { secret?: string }) {
   const expected =
     process.env.DISPATCH_CALENDAR_FEED_SECRET ||
     process.env.DISPATCH_POLL_SECRET ||
@@ -10,6 +10,7 @@ function isAuthorized(request: Request) {
   const url = new URL(request.url);
   const provided =
     request.headers.get("x-dispatch-calendar-secret") ||
+    params?.secret ||
     url.searchParams.get("secret") ||
     "";
 
@@ -121,8 +122,14 @@ function getOrderStatus(order: DispatchOrder) {
   return "New";
 }
 
-export async function loader({ request }: { request: Request }) {
-  if (!isAuthorized(request)) {
+export async function loader({
+  request,
+  params,
+}: {
+  request: Request;
+  params?: { secret?: string };
+}) {
+  if (!isAuthorized(request, params)) {
     return new Response("Unauthorized", { status: 401 });
   }
 
