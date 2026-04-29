@@ -387,16 +387,16 @@ export default function AllotmentPage() {
 
 const navBase: CSSProperties = {
   borderRadius: 8,
-  color: "#0f172a",
+  color: "#e5e7eb",
   fontWeight: 800,
   padding: "14px 16px",
   textDecoration: "none",
 };
 
 const utilityBase: CSSProperties = {
-  border: "1px solid #343434",
+  border: "1px solid #334155",
   borderRadius: 8,
-  color: "#0f172a",
+  color: "#e5e7eb",
   fontWeight: 800,
   padding: "11px 14px",
   textDecoration: "none",
@@ -450,7 +450,7 @@ const styles: Record<string, CSSProperties> = {
   },
   brand: { alignItems: "center", display: "flex", gap: 12 },
   logo: { height: 52, objectFit: "contain", width: 52 },
-  brandTitle: { color: "#0f172a", fontSize: 18, fontWeight: 900 },
+  brandTitle: { color: "#f8fafc", fontSize: 18, fontWeight: 900 },
   brandSub: { color: "#cbd5e1", fontSize: 12, fontWeight: 800 },
   nav: { display: "grid", gap: 8 },
   navLink: navBase,
@@ -630,7 +630,7 @@ const styles: Record<string, CSSProperties> = {
     background: "linear-gradient(180deg, #ff9b25, #ff6b00)",
     border: "1px solid #ff7a1a",
     borderRadius: 16,
-    color: "#0f172a",
+    color: "#fff7ed",
     cursor: "pointer",
     fontWeight: 900,
     padding: "14px 16px",
