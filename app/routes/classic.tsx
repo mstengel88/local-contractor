@@ -1,5 +1,5 @@
 import { type DragEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Form, Link, useActionData, useLoaderData, useLocation } from "react-router";
+import { Form, Link, useActionData, useLoaderData, useLocation, useSubmit } from "react-router";
 import {
   action as dispatchAction,
   loader as dispatchLoader,
@@ -428,10 +428,10 @@ export default function ClassicDispatchPage() {
   const loaderData = useLoaderData<typeof loader>() as any;
   const actionData = useActionData<typeof action>() as any;
   const location = useLocation();
+  const submit = useSubmit();
   const [query, setQuery] = useState("");
   const [selectedRouteId, setSelectedRouteId] = useState("");
   const [draggedOrderId, setDraggedOrderId] = useState("");
-  const [pendingOrderId, setPendingOrderId] = useState("");
   const [routeDrawerOpen, setRouteDrawerOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState("");
   const [orderDrawerOpen, setOrderDrawerOpen] = useState(false);
@@ -513,7 +513,6 @@ export default function ClassicDispatchPage() {
   );
   const selectedRoute =
     sortedRoutes.find((route) => route.id === selectedRouteId) || sortedRoutes[0] || null;
-  const pendingOrder = orders.find((order) => order.id === pendingOrderId) || null;
   const selectedOrder = orders.find((order) => order.id === selectedOrderId) || null;
   const sortedSiteOrders = useMemo(
     () =>
@@ -708,7 +707,14 @@ export default function ClassicDispatchPage() {
   function dropOrderOnCurrentRoute(event: DragEvent<HTMLElement>) {
     event.preventDefault();
     if (!selectedRoute || !draggedOrderId) return;
-    setPendingOrderId(draggedOrderId);
+    submit(
+      {
+        intent: "assign-order",
+        orderId: draggedOrderId,
+        routeId: selectedRoute.id,
+      },
+      { method: "post" },
+    );
     setDraggedOrderId("");
   }
 
@@ -1072,25 +1078,6 @@ export default function ClassicDispatchPage() {
             </div>
           </section>
         </div>
-        {pendingOrder && selectedRoute ? (
-          <div style={styles.confirmPopover}>
-            <div style={styles.confirmCard}>
-              <strong>{getOrderNumber(pendingOrder)}</strong>
-              <span>{getOrderAddress(pendingOrder)}</span>
-              <Form method="post" style={styles.confirmActions} onSubmit={() => setPendingOrderId("")}>
-                <input type="hidden" name="intent" value="assign-order" />
-                <input type="hidden" name="orderId" value={pendingOrder.id} />
-                <input type="hidden" name="routeId" value={selectedRoute.id} />
-                <button type="submit" style={styles.confirmLink}>
-                  Add order(s) to current route
-                </button>
-              </Form>
-              <button type="button" style={styles.cancelLink} onClick={() => setPendingOrderId("")}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : null}
         {routeDrawerOpen && selectedRoute ? (
           <aside style={styles.routeDrawer}>
             <button type="button" style={styles.drawerClose} onClick={() => setRouteDrawerOpen(false)}>
@@ -1335,16 +1322,16 @@ const styles: Record<string, any> = {
   },
   messageBanner: {
     padding: "8px 14px",
-    background: "#e8f7ff",
-    borderBottom: "1px solid #b6e4f8",
-    color: "#0f6384",
+    background: "rgba(56, 189, 248, 0.16)",
+    borderBottom: "1px solid rgba(56, 189, 248, 0.38)",
+    color: "#e0f2fe",
     fontWeight: 700,
   },
   errorBanner: {
     padding: "8px 14px",
-    background: "#fff0f0",
-    borderBottom: "1px solid #f3b0b0",
-    color: "#a42525",
+    background: "rgba(127, 29, 29, 0.35)",
+    borderBottom: "1px solid rgba(248, 113, 113, 0.4)",
+    color: "#fecaca",
     fontWeight: 700,
   },
   mainGrid: {
@@ -1634,42 +1621,6 @@ const styles: Record<string, any> = {
     border: "1px solid var(--classic-border)",
     borderRadius: 4,
     background: "var(--classic-input-bg)",
-  },
-  confirmPopover: {
-    position: "absolute",
-    left: "17%",
-    top: "48%",
-    zIndex: 10,
-    width: 320,
-    borderRadius: 4,
-    border: "1px solid var(--classic-border)",
-    background: "var(--classic-panel-bg)",
-    boxShadow: "0 12px 35px rgba(0,0,0,0.2)",
-  },
-  confirmCard: {
-    display: "grid",
-    gap: 8,
-    padding: 12,
-    color: "var(--classic-text)",
-  },
-  confirmActions: {
-    display: "grid",
-  },
-  confirmLink: {
-    border: "none",
-    background: "transparent",
-    color: "#0ea5c6",
-    fontWeight: 900,
-    cursor: "pointer",
-    padding: 4,
-  },
-  cancelLink: {
-    justifySelf: "center",
-    border: "none",
-    background: "transparent",
-    color: "#777",
-    cursor: "pointer",
-    padding: 4,
   },
   routeDrawer: {
     position: "absolute",
