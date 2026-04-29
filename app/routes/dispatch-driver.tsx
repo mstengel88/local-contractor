@@ -57,6 +57,15 @@ function extractPhone(value?: string | null) {
   return "";
 }
 
+function formatPhone(value?: string | null) {
+  const phone = extractPhone(value);
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+  }
+  return phone || "Not captured";
+}
+
 function getOneWayTravelMinutes(order: DispatchOrder) {
   const roundTripMinutes = Number(order.travelMinutes || 0);
   if (!Number.isFinite(roundTripMinutes) || roundTripMinutes <= 0) return 0;
@@ -532,6 +541,7 @@ export default function DispatchDriverPage() {
                   <section style={styles.sheetSection}>
                     <h3 style={styles.sheetTitle}>Customer Information</h3>
                     <SheetLine label="Customer Name" value={stop.customer || "Not set"} />
+                    <SheetLine label="Phone" value={formatPhone(stop.contact)} />
                     <SheetLine label="Contact" value={stop.contact || "Not captured"} />
                     <SheetLine label="Address" value={`${stop.address}, ${stop.city}`} />
                     <SheetLine label="ETA" value={stop.eta || "Not set"} />
