@@ -101,6 +101,20 @@ function getLoadLabel(order: DispatchOrder) {
   return [order.quantity, order.unit, order.material].filter(Boolean).join(" ");
 }
 
+function getTravelMinutes(order: DispatchOrder) {
+  const minutes = Number(order.travelMinutes || 0);
+  return Number.isFinite(minutes) && minutes > 0 ? minutes : 0;
+}
+
+function formatTravelMinutes(minutes: number) {
+  const rounded = Math.round(minutes);
+  if (!rounded) return "0 min";
+  if (rounded < 60) return `${rounded} min`;
+  const hours = Math.floor(rounded / 60);
+  const remainder = rounded % 60;
+  return remainder ? `${hours} hr ${remainder} min` : `${hours} hr`;
+}
+
 function getOrderAddress(order: DispatchOrder) {
   return [order.address, order.city].filter(Boolean).join(", ");
 }
@@ -184,6 +198,18 @@ export default function DispatchCalendarPage() {
     for (const item of calendarOrders) {
       if (!item.date) continue;
       grouped.set(item.dateKey, [...(grouped.get(item.dateKey) || []), item]);
+    }
+    return grouped;
+  }, [calendarOrders]);
+
+  const travelMinutesByDay = useMemo(() => {
+    const grouped = new Map<string, number>();
+    for (const item of calendarOrders) {
+      if (!item.date) continue;
+      grouped.set(
+        item.dateKey,
+        (grouped.get(item.dateKey) || 0) + getTravelMinutes(item.order),
+      );
     }
     return grouped;
   }, [calendarOrders]);
@@ -286,6 +312,9 @@ export default function DispatchCalendarPage() {
             >
               List
             </button>
+            <a href="/calendar.rss" target="_blank" rel="noreferrer" style={styles.rssButton}>
+              RSS Feed
+            </a>
           </div>
         </header>
 
@@ -316,6 +345,7 @@ export default function DispatchCalendarPage() {
               {calendarDays.map((day) => {
                 const key = dateKey(day);
                 const dayOrders = ordersByDay.get(key) || [];
+                const dayTravelMinutes = travelMinutesByDay.get(key) || 0;
                 const expanded = expandedDayKeys.includes(key);
                 const visibleOrders = expanded ? dayOrders : dayOrders.slice(0, 5);
                 const muted = day.getMonth() !== cursorMonth.getMonth();
@@ -326,6 +356,11 @@ export default function DispatchCalendarPage() {
                       <span style={today ? styles.todayBadge : undefined}>{day.getDate()}</span>
                       {dayOrders.length ? <span style={styles.dayCount}>{dayOrders.length}</span> : null}
                     </div>
+                    {dayOrders.length ? (
+                      <div style={styles.dayTotal}>
+                        Total delivery time: {formatTravelMinutes(dayTravelMinutes)}
+                      </div>
+                    ) : null}
                     <div style={styles.dayOrders}>
                       {visibleOrders.map(({ order }) => (
                         <Link key={order.id} to={editorHref(order.id)} style={styles.orderChip}>
@@ -504,6 +539,17 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 900,
     padding: "12px 18px",
   },
+  rssButton: {
+    alignItems: "center",
+    background: "#ffffff",
+    border: "1px solid #f97316",
+    borderRadius: 999,
+    color: "#e85d04",
+    display: "inline-flex",
+    fontWeight: 900,
+    padding: "12px 18px",
+    textDecoration: "none",
+  },
   toolbar: {
     alignItems: "center",
     display: "flex",
@@ -565,6 +611,12 @@ const styles: Record<string, CSSProperties> = {
     padding: 12,
   },
   dayHeader: { alignItems: "center", display: "flex", justifyContent: "space-between" },
+  dayTotal: {
+    color: "var(--calendar-blue)",
+    fontSize: 12,
+    fontWeight: 900,
+    marginTop: 8,
+  },
   todayBadge: {
     alignItems: "center",
     background: "var(--calendar-blue)",
