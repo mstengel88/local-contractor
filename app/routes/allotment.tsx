@@ -9,10 +9,18 @@ import type { DispatchOrder } from "../lib/dispatch.server";
 export const loader = dispatchLoader;
 export const action = dispatchAction;
 
-type CalendarOrder = {
+type AllotmentOrder = {
   order: DispatchOrder;
   date: Date | null;
   dateKey: string;
+};
+
+type MaterialTotal = {
+  key: string;
+  material: string;
+  unit: string;
+  quantity: number;
+  orders: DispatchOrder[];
 };
 
 const monthNames = [
@@ -86,8 +94,8 @@ function dateKey(date: Date | null) {
 function formatDateLabel(date: Date | null) {
   if (!date) return "Needs scheduling";
   return date.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
+    weekday: "long",
+    month: "long",
     day: "numeric",
     year: "numeric",
   });
@@ -95,24 +103,6 @@ function formatDateLabel(date: Date | null) {
 
 function getOrderNumber(order: DispatchOrder) {
   return order.orderNumber ? `#${order.orderNumber}` : order.id;
-}
-
-function getLoadLabel(order: DispatchOrder) {
-  return [order.quantity, order.unit, order.material].filter(Boolean).join(" ");
-}
-
-function getTravelMinutes(order: DispatchOrder) {
-  const minutes = Number(order.travelMinutes || 0);
-  return Number.isFinite(minutes) && minutes > 0 ? minutes : 0;
-}
-
-function formatTravelMinutes(minutes: number) {
-  const rounded = Math.round(minutes);
-  if (!rounded) return "0 min";
-  if (rounded < 60) return `${rounded} min`;
-  const hours = Math.floor(rounded / 60);
-  const remainder = rounded % 60;
-  return remainder ? `${hours} hr ${remainder} min` : `${hours} hr`;
 }
 
 function getOrderAddress(order: DispatchOrder) {
@@ -124,6 +114,16 @@ function getOrderStatus(order: DispatchOrder) {
   if (order.assignedRouteId || order.status === "scheduled") return "Scheduled";
   if (order.status === "hold") return "On hold";
   return "New";
+}
+
+function normalizeQuantity(value?: string | null) {
+  const match = String(value || "").match(/-?\d+(?:\.\d+)?/);
+  return match ? Number(match[0]) : 0;
+}
+
+function formatQuantity(value: number) {
+  if (!Number.isFinite(value)) return "0";
+  return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, "");
 }
 
 function buildSearchText(order: DispatchOrder) {
@@ -147,7 +147,7 @@ function buildSearchText(order: DispatchOrder) {
     .toLowerCase();
 }
 
-export default function DispatchCalendarPage() {
+export default function AllotmentPage() {
   const loaderData = useLoaderData() as any;
   const actionData = useActionData() as any;
   const location = useLocation();
@@ -155,10 +155,9 @@ export default function DispatchCalendarPage() {
   const loginError = actionData?.loginError;
   const orders = (actionData?.orders ?? loaderData.orders ?? []) as DispatchOrder[];
   const currentUser = actionData?.currentUser ?? loaderData.currentUser ?? null;
-  const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
   const [query, setQuery] = useState("");
   const [cursorMonth, setCursorMonth] = useState(() => new Date());
-  const [expandedDayKeys, setExpandedDayKeys] = useState<string[]>([]);
+  const [selectedDayKey, setSelectedDayKey] = useState(() => dateKey(new Date()));
 
   const isEmbeddedRoute = location.pathname.startsWith("/app/");
   const classicHref = isEmbeddedRoute ? "/app/classic" : "/classic";
@@ -171,13 +170,13 @@ export default function DispatchCalendarPage() {
   const dispatchViewHref = (view: string) => `${dispatchHref}?view=${view}`;
   const editorHref = (orderId: string) =>
     `${dispatchHref}?view=orders&order=${encodeURIComponent(orderId)}&returnTo=${encodeURIComponent(
-      calendarHref,
+      allotmentHref,
     )}`;
   const canAccess = (permission: string) =>
     !currentUser || currentUser.permissions?.includes(permission);
   const logoutHref = currentUser ? "/login?logout=1" : `${dispatchHref}?logout=1`;
 
-  const calendarOrders = useMemo<CalendarOrder[]>(() => {
+  const allotmentOrders = useMemo<AllotmentOrder[]>(() => {
     const search = query.trim().toLowerCase();
     return orders
       .filter((order) => getOrderStatus(order) !== "Delivered")
@@ -195,27 +194,37 @@ export default function DispatchCalendarPage() {
   }, [orders, query]);
 
   const ordersByDay = useMemo(() => {
-    const grouped = new Map<string, CalendarOrder[]>();
-    for (const item of calendarOrders) {
+    const grouped = new Map<string, AllotmentOrder[]>();
+    for (const item of allotmentOrders) {
       if (!item.date) continue;
       grouped.set(item.dateKey, [...(grouped.get(item.dateKey) || []), item]);
     }
     return grouped;
-  }, [calendarOrders]);
+  }, [allotmentOrders]);
 
-  const travelMinutesByDay = useMemo(() => {
-    const grouped = new Map<string, number>();
-    for (const item of calendarOrders) {
-      if (!item.date) continue;
-      grouped.set(
-        item.dateKey,
-        (grouped.get(item.dateKey) || 0) + getTravelMinutes(item.order),
-      );
+  const selectedItems = ordersByDay.get(selectedDayKey) || [];
+  const selectedDate = selectedItems[0]?.date || parseRequestedDate(selectedDayKey);
+  const materialTotals = useMemo<MaterialTotal[]>(() => {
+    const totals = new Map<string, MaterialTotal>();
+    for (const { order } of selectedItems) {
+      const material = String(order.material || "Unknown Material").trim();
+      const unit = String(order.unit || "Unit").trim();
+      const key = `${material.toLowerCase()}::${unit.toLowerCase()}`;
+      const current =
+        totals.get(key) || {
+          key,
+          material,
+          unit,
+          quantity: 0,
+          orders: [],
+        };
+      current.quantity += normalizeQuantity(order.quantity);
+      current.orders.push(order);
+      totals.set(key, current);
     }
-    return grouped;
-  }, [calendarOrders]);
+    return [...totals.values()].sort((a, b) => a.material.localeCompare(b.material));
+  }, [selectedItems]);
 
-  const unscheduledOrders = calendarOrders.filter((item) => !item.date);
   const monthStart = new Date(cursorMonth.getFullYear(), cursorMonth.getMonth(), 1);
   const gridStart = new Date(monthStart);
   gridStart.setDate(monthStart.getDate() - monthStart.getDay());
@@ -232,26 +241,18 @@ export default function DispatchCalendarPage() {
     );
   }
 
-  function toggleDayExpanded(key: string) {
-    setExpandedDayKeys((current) =>
-      current.includes(key)
-        ? current.filter((entry) => entry !== key)
-        : [...current, key],
-    );
-  }
-
   if (!allowed) {
     return (
       <main style={styles.loginPage}>
         <section style={styles.loginCard}>
-          <h1 style={styles.loginTitle}>Dispatch Calendar</h1>
-          <p style={styles.subtle}>Enter the admin password to open the contractor calendar.</p>
+          <h1 style={styles.loginTitle}>Material Allotment</h1>
+          <p style={styles.subtle}>Enter the admin password to open the daily material totals.</p>
           <Form method="post" style={styles.loginForm}>
             <input type="hidden" name="intent" value="login" />
             <label style={styles.label}>Admin Password</label>
             <input name="password" type="password" autoComplete="current-password" style={styles.input} />
             {loginError ? <div style={styles.error}>{loginError}</div> : null}
-            <button type="submit" style={styles.primaryButton}>Open Calendar</button>
+            <button type="submit" style={styles.primaryButton}>Open Allotment</button>
           </Form>
         </section>
       </main>
@@ -265,13 +266,13 @@ export default function DispatchCalendarPage() {
           <img src="/green-hills-logo.png" alt="Green Hills Supply" style={styles.logo} />
           <div>
             <div style={styles.brandTitle}>Contractor</div>
-            <div style={styles.brandSub}>Calendar</div>
+            <div style={styles.brandSub}>Allotment</div>
           </div>
         </div>
         <nav style={styles.nav}>
           <Link to={classicHref} style={styles.navLink}>Classic</Link>
-          <Link to={calendarHref} style={styles.navLinkActive}>Calendar</Link>
-          <Link to={allotmentHref} style={styles.navLink}>Allotment</Link>
+          <Link to={calendarHref} style={styles.navLink}>Calendar</Link>
+          <Link to={allotmentHref} style={styles.navLinkActive}>Allotment</Link>
           {canAccess("manageDispatch") ? <Link to={dispatchViewHref("orders")} style={styles.navLink}>Orders</Link> : null}
           <Link to={dispatchViewHref("scheduled")} style={styles.navLink}>Scheduled</Link>
           {canAccess("manageDispatch") ? <Link to={dispatchViewHref("routes")} style={styles.navLink}>Routes</Link> : null}
@@ -293,30 +294,16 @@ export default function DispatchCalendarPage() {
       <section style={styles.workspace}>
         <header style={styles.header}>
           <div>
-            <p style={styles.kicker}>Dispatch Calendar</p>
-            <h1 style={styles.title}>Requested Delivery Dates</h1>
+            <p style={styles.kicker}>Material Allotment</p>
+            <h1 style={styles.title}>Daily Material Going Out</h1>
             <p style={styles.subtle}>
-              Orders are placed by requested date. Switch to List when you want a compact schedule.
+              Select a requested delivery date to see total material quantities for that day.
             </p>
           </div>
-          <div style={styles.headerActions}>
-            <button
-              type="button"
-              onClick={() => setViewMode("calendar")}
-              style={viewMode === "calendar" ? styles.toggleActive : styles.toggle}
-            >
-              Calendar
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("list")}
-              style={viewMode === "list" ? styles.toggleActive : styles.toggle}
-            >
-              List
-            </button>
-            <a href="/calendar.rss" target="_blank" rel="noreferrer" style={styles.rssButton}>
-              RSS Feed
-            </a>
+          <div style={styles.monthControls}>
+            <button type="button" onClick={() => shiftMonth(-1)} style={styles.smallButton}>Previous</button>
+            <strong style={styles.monthLabel}>{monthLabel}</strong>
+            <button type="button" onClick={() => shiftMonth(1)} style={styles.smallButton}>Next</button>
           </div>
         </header>
 
@@ -327,17 +314,10 @@ export default function DispatchCalendarPage() {
             placeholder="Search orders, customers, material, address, notes..."
             style={styles.search}
           />
-          {viewMode === "calendar" ? (
-            <div style={styles.monthControls}>
-              <button type="button" onClick={() => shiftMonth(-1)} style={styles.smallButton}>Previous</button>
-              <strong style={styles.monthLabel}>{monthLabel}</strong>
-              <button type="button" onClick={() => shiftMonth(1)} style={styles.smallButton}>Next</button>
-            </div>
-          ) : null}
         </div>
 
-        {viewMode === "calendar" ? (
-          <section style={styles.calendarPanel}>
+        <section style={styles.layoutGrid}>
+          <div style={styles.calendarPanel}>
             <div style={styles.weekHeader}>
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
                 <div key={day} style={styles.weekDay}>{day}</div>
@@ -347,78 +327,66 @@ export default function DispatchCalendarPage() {
               {calendarDays.map((day) => {
                 const key = dateKey(day);
                 const dayOrders = ordersByDay.get(key) || [];
-                const dayTravelMinutes = travelMinutesByDay.get(key) || 0;
-                const expanded = expandedDayKeys.includes(key);
-                const visibleOrders = expanded ? dayOrders : dayOrders.slice(0, 5);
                 const muted = day.getMonth() !== cursorMonth.getMonth();
-                const today = dateKey(day) === dateKey(new Date());
+                const selected = selectedDayKey === key;
+                const dayQuantity = dayOrders.reduce(
+                  (sum, item) => sum + normalizeQuantity(item.order.quantity),
+                  0,
+                );
                 return (
-                  <div key={key} style={muted ? styles.dayMuted : styles.day}>
-                    <div style={styles.dayHeader}>
-                      <span style={today ? styles.todayBadge : undefined}>{day.getDate()}</span>
-                      {dayOrders.length ? <span style={styles.dayCount}>{dayOrders.length}</span> : null}
-                    </div>
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setSelectedDayKey(key)}
+                    style={{
+                      ...(muted ? styles.dayMuted : styles.day),
+                      ...(selected ? styles.daySelected : {}),
+                    }}
+                  >
+                    <span style={styles.dayNumber}>{day.getDate()}</span>
                     {dayOrders.length ? (
-                      <div style={styles.dayTotal}>
-                        Total delivery time: {formatTravelMinutes(dayTravelMinutes)}
-                      </div>
+                      <>
+                        <span style={styles.dayCount}>{dayOrders.length} loads</span>
+                        <span style={styles.dayTotal}>{formatQuantity(dayQuantity)} total units</span>
+                      </>
                     ) : null}
-                    <div style={styles.dayOrders}>
-                      {visibleOrders.map(({ order }) => (
-                        <Link key={order.id} to={editorHref(order.id)} style={styles.orderChip}>
-                          <strong>{getOrderNumber(order)}</strong>
-                          <span>{order.customer}</span>
-                          <small>{getLoadLabel(order)}</small>
-                        </Link>
-                      ))}
-                      {dayOrders.length > 5 ? (
-                        <button
-                          type="button"
-                          onClick={() => toggleDayExpanded(key)}
-                          style={styles.moreChip}
-                        >
-                          {expanded ? "Show less" : `+${dayOrders.length - 5} more`}
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
-          </section>
-        ) : (
-          <section style={styles.listPanel}>
-            {calendarOrders.map(({ order, date }) => (
-              <Link key={order.id} to={editorHref(order.id)} style={styles.listRow}>
-                <div>
-                  <strong style={styles.listDate}>{formatDateLabel(date)}</strong>
-                  <div style={styles.subtle}>{order.requestedWindow || "Needs scheduling"}</div>
-                </div>
-                <div>
-                  <strong>{getOrderNumber(order)} {order.customer}</strong>
-                  <div style={styles.subtle}>{getOrderAddress(order)}</div>
-                </div>
-                <div>{getLoadLabel(order) || "No material"}</div>
-                <span style={styles.statusPill}>{getOrderStatus(order)}</span>
-              </Link>
-            ))}
-          </section>
-        )}
+          </div>
 
-        {unscheduledOrders.length ? (
-          <section style={styles.unscheduledPanel}>
-            <h2 style={styles.panelTitle}>Needs Scheduling</h2>
-            <div style={styles.unscheduledGrid}>
-              {unscheduledOrders.map(({ order }) => (
-                <Link key={order.id} to={editorHref(order.id)} style={styles.unscheduledCard}>
-                  <strong>{getOrderNumber(order)} {order.customer}</strong>
-                  <span>{getOrderAddress(order)}</span>
-                  <small>{getLoadLabel(order) || "No material"}</small>
-                </Link>
+          <aside style={styles.summaryPanel}>
+            <p style={styles.kicker}>Selected Day</p>
+            <h2 style={styles.panelTitle}>{formatDateLabel(selectedDate)}</h2>
+            <p style={styles.subtle}>{selectedItems.length} active loads requested for this date.</p>
+
+            <div style={styles.totalsGrid}>
+              {materialTotals.map((total) => (
+                <article key={total.key} style={styles.totalCard}>
+                  <div>
+                    <strong style={styles.materialName}>{total.material}</strong>
+                    <p style={styles.subtle}>{total.orders.length} load{total.orders.length === 1 ? "" : "s"}</p>
+                  </div>
+                  <div style={styles.totalQuantity}>
+                    {formatQuantity(total.quantity)} <span>{total.unit}</span>
+                  </div>
+                  <div style={styles.orderList}>
+                    {total.orders.map((order) => (
+                      <Link key={order.id} to={editorHref(order.id)} style={styles.orderLink}>
+                        <strong>{getOrderNumber(order)} {order.customer}</strong>
+                        <span>{formatQuantity(normalizeQuantity(order.quantity))} {order.unit} · {getOrderAddress(order)}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </article>
               ))}
+              {!materialTotals.length ? (
+                <div style={styles.emptyState}>No active material loads on this date.</div>
+              ) : null}
             </div>
-          </section>
-        ) : null}
+          </aside>
+        </section>
       </section>
     </main>
   );
@@ -443,24 +411,19 @@ const utilityBase: CSSProperties = {
 
 const styles: Record<string, CSSProperties> = {
   page: {
-    ["--calendar-bg" as any]: "#e8e8e8",
-    ["--calendar-panel" as any]: "#ffffff",
-    ["--calendar-soft" as any]: "#f6f6f6",
-    ["--calendar-text" as any]: "#232323",
-    ["--calendar-muted" as any]: "#777777",
-    ["--calendar-border" as any]: "#d7d7d7",
-    ["--calendar-blue" as any]: "#0ea5c6",
-    ["--calendar-green" as any]: "#22c55e",
+    ["--allotment-bg" as any]: "#e8e8e8",
+    ["--allotment-panel" as any]: "#ffffff",
+    ["--allotment-soft" as any]: "#f6f6f6",
+    ["--allotment-text" as any]: "#232323",
+    ["--allotment-muted" as any]: "#777777",
+    ["--allotment-border" as any]: "#d7d7d7",
+    ["--allotment-blue" as any]: "#0ea5c6",
     background: "#e8e8e8",
-    color: "var(--calendar-text)",
+    color: "var(--allotment-text)",
     display: "flex",
     minHeight: "100vh",
   },
   loginPage: {
-    ["--calendar-panel" as any]: "#ffffff",
-    ["--calendar-text" as any]: "#232323",
-    ["--calendar-muted" as any]: "#777777",
-    ["--calendar-border" as any]: "#d7d7d7",
     alignItems: "center",
     background: "#e8e8e8",
     color: "#232323",
@@ -483,7 +446,6 @@ const styles: Record<string, CSSProperties> = {
   sideRail: {
     background: "#4a4a4a",
     borderRight: "1px solid #343434",
-    boxShadow: "none",
     display: "flex",
     flexDirection: "column",
     gap: 12,
@@ -510,10 +472,8 @@ const styles: Record<string, CSSProperties> = {
   workspace: { display: "grid", flex: 1, gap: 14, padding: 14 },
   header: {
     alignItems: "flex-start",
-    background: "var(--calendar-panel)",
-    border: "1px solid var(--calendar-border)",
-    borderRadius: 0,
-    boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+    background: "var(--allotment-panel)",
+    border: "1px solid var(--allotment-border)",
     display: "flex",
     justifyContent: "space-between",
     gap: 18,
@@ -521,48 +481,13 @@ const styles: Record<string, CSSProperties> = {
   },
   kicker: { color: "#e85d04", fontSize: 12, fontWeight: 900, letterSpacing: 1.6, margin: 0, textTransform: "uppercase" },
   title: { fontSize: 28, lineHeight: 1, margin: "8px 0 10px" },
-  subtle: { color: "var(--calendar-muted)", fontSize: 14, lineHeight: 1.45, margin: 0 },
-  headerActions: { display: "flex", gap: 10 },
-  toggle: {
-    background: "#ffffff",
-    border: "1px solid var(--calendar-border)",
-    borderRadius: 999,
-    color: "var(--calendar-text)",
-    cursor: "pointer",
-    fontWeight: 900,
-    padding: "12px 18px",
-  },
-  toggleActive: {
-    background: "linear-gradient(180deg, #ff9b25, #ff6b00)",
-    border: "1px solid #ff7a1a",
-    borderRadius: 999,
-    color: "#ffffff",
-    cursor: "pointer",
-    fontWeight: 900,
-    padding: "12px 18px",
-  },
-  rssButton: {
-    alignItems: "center",
-    background: "#ffffff",
-    border: "1px solid #f97316",
-    borderRadius: 999,
-    color: "#e85d04",
-    display: "inline-flex",
-    fontWeight: 900,
-    padding: "12px 18px",
-    textDecoration: "none",
-  },
-  toolbar: {
-    alignItems: "center",
-    display: "flex",
-    gap: 16,
-    justifyContent: "space-between",
-  },
+  subtle: { color: "var(--allotment-muted)", fontSize: 14, lineHeight: 1.45, margin: 0 },
+  toolbar: { display: "flex", gap: 16 },
   search: {
-    background: "var(--calendar-panel)",
-    border: "1px solid var(--calendar-border)",
+    background: "var(--allotment-panel)",
+    border: "1px solid var(--allotment-border)",
     borderRadius: 999,
-    color: "var(--calendar-text)",
+    color: "var(--allotment-text)",
     flex: 1,
     fontSize: 15,
     minWidth: 240,
@@ -571,25 +496,30 @@ const styles: Record<string, CSSProperties> = {
   monthControls: { alignItems: "center", display: "flex", gap: 10 },
   monthLabel: { minWidth: 160, textAlign: "center" },
   smallButton: {
-    background: "var(--calendar-panel)",
-    border: "1px solid var(--calendar-border)",
+    background: "var(--allotment-panel)",
+    border: "1px solid var(--allotment-border)",
     borderRadius: 999,
+    color: "var(--allotment-text)",
     cursor: "pointer",
-    color: "var(--calendar-text)",
     fontWeight: 900,
     padding: "12px 14px",
   },
+  layoutGrid: {
+    alignItems: "start",
+    display: "grid",
+    gap: 14,
+    gridTemplateColumns: "minmax(520px, 1fr) minmax(360px, 0.62fr)",
+  },
   calendarPanel: {
-    background: "var(--calendar-panel)",
-    border: "1px solid var(--calendar-border)",
-    borderRadius: 0,
+    background: "var(--allotment-panel)",
+    border: "1px solid var(--allotment-border)",
     overflow: "hidden",
   },
   weekHeader: { display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))" },
   weekDay: {
-    background: "var(--calendar-soft)",
-    borderBottom: "1px solid var(--calendar-border)",
-    color: "var(--calendar-muted)",
+    background: "var(--allotment-soft)",
+    borderBottom: "1px solid var(--allotment-border)",
+    color: "var(--allotment-muted)",
     fontSize: 12,
     fontWeight: 900,
     letterSpacing: 1,
@@ -599,114 +529,90 @@ const styles: Record<string, CSSProperties> = {
   calendarGrid: { display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))" },
   day: {
     background: "#ffffff",
-    borderBottom: "1px solid var(--calendar-border)",
-    borderRight: "1px solid var(--calendar-border)",
-    minHeight: 150,
+    border: 0,
+    borderBottom: "1px solid var(--allotment-border)",
+    borderRight: "1px solid var(--allotment-border)",
+    color: "var(--allotment-text)",
+    cursor: "pointer",
+    display: "grid",
+    gap: 8,
+    minHeight: 116,
     padding: 12,
+    textAlign: "left",
   },
   dayMuted: {
     background: "#f6f6f6",
-    borderBottom: "1px solid var(--calendar-border)",
-    borderRight: "1px solid var(--calendar-border)",
-    minHeight: 150,
+    border: 0,
+    borderBottom: "1px solid var(--allotment-border)",
+    borderRight: "1px solid var(--allotment-border)",
+    color: "var(--allotment-muted)",
+    cursor: "pointer",
+    display: "grid",
+    gap: 8,
+    minHeight: 116,
     opacity: 0.48,
     padding: 12,
+    textAlign: "left",
   },
-  dayHeader: { alignItems: "center", display: "flex", justifyContent: "space-between" },
-  dayTotal: {
-    color: "var(--calendar-blue)",
-    fontSize: 12,
-    fontWeight: 900,
-    marginTop: 8,
+  daySelected: {
+    boxShadow: "inset 0 0 0 3px #f97316",
   },
-  todayBadge: {
-    alignItems: "center",
-    background: "var(--calendar-blue)",
-    borderRadius: 999,
-    color: "#fff",
-    display: "inline-flex",
-    height: 28,
-    justifyContent: "center",
-    width: 28,
-  },
+  dayNumber: { fontSize: 16, fontWeight: 900 },
   dayCount: {
     background: "#dcfce7",
     borderRadius: 999,
     color: "#166534",
     fontSize: 12,
     fontWeight: 900,
+    justifySelf: "start",
     padding: "4px 8px",
   },
-  dayOrders: { display: "grid", gap: 7, marginTop: 10 },
-  orderChip: {
+  dayTotal: { color: "var(--allotment-blue)", fontSize: 12, fontWeight: 900 },
+  summaryPanel: {
+    background: "var(--allotment-panel)",
+    border: "1px solid var(--allotment-border)",
+    display: "grid",
+    gap: 14,
+    padding: 18,
+    position: "sticky",
+    top: 14,
+  },
+  panelTitle: { fontSize: 24, lineHeight: 1.1, margin: "6px 0 0" },
+  totalsGrid: { display: "grid", gap: 12 },
+  totalCard: {
     background: "#fbfbfb",
-    border: "1px solid var(--calendar-border)",
-    borderLeft: "5px solid var(--calendar-blue)",
-    borderRadius: 12,
-    color: "var(--calendar-text)",
+    border: "1px solid var(--allotment-border)",
+    borderLeft: "5px solid #f97316",
     display: "grid",
-    gap: 2,
-    padding: 9,
+    gap: 12,
+    padding: 14,
+  },
+  materialName: { display: "block", fontSize: 18 },
+  totalQuantity: {
+    color: "#0ea5c6",
+    fontSize: 30,
+    fontWeight: 950,
+    lineHeight: 1,
+  },
+  orderList: { display: "grid", gap: 8 },
+  orderLink: {
+    background: "#ffffff",
+    border: "1px solid var(--allotment-border)",
+    color: "var(--allotment-text)",
+    display: "grid",
+    gap: 3,
+    padding: 10,
     textDecoration: "none",
   },
-  moreChip: {
-    background: "transparent",
-    border: "1px dashed var(--calendar-border)",
-    borderRadius: 10,
-    color: "var(--calendar-muted)",
-    cursor: "pointer",
-    fontSize: 12,
-    fontWeight: 900,
-    padding: "7px 8px",
-    textAlign: "left",
-  },
-  listPanel: {
-    background: "var(--calendar-panel)",
-    border: "1px solid var(--calendar-border)",
-    borderRadius: 0,
-    display: "grid",
-    overflow: "hidden",
-  },
-  listRow: {
-    alignItems: "center",
-    borderBottom: "1px solid var(--calendar-border)",
-    color: "var(--calendar-text)",
-    display: "grid",
-    gap: 16,
-    gridTemplateColumns: "220px 1.5fr 1fr auto",
-    padding: "16px 18px",
-    textDecoration: "none",
-  },
-  listDate: { display: "block", marginBottom: 2 },
-  statusPill: {
-    background: "#e0f2fe",
-    borderRadius: 999,
-    color: "#075985",
-    fontSize: 12,
-    fontWeight: 900,
-    padding: "7px 10px",
-    textAlign: "center",
-  },
-  unscheduledPanel: {
-    background: "var(--calendar-panel)",
-    border: "1px solid var(--calendar-border)",
-    borderRadius: 0,
-    padding: 22,
-  },
-  panelTitle: { fontSize: 22, margin: "0 0 14px" },
-  unscheduledGrid: { display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" },
-  unscheduledCard: {
+  emptyState: {
     background: "#fff7ed",
     border: "1px solid #fed7aa",
-    borderRadius: 16,
-    color: "var(--calendar-text)",
-    display: "grid",
-    gap: 4,
-    padding: 14,
-    textDecoration: "none",
+    color: "#9a3412",
+    fontWeight: 900,
+    padding: 16,
   },
   label: {
-    color: "var(--calendar-muted)",
+    color: "var(--allotment-muted)",
     display: "block",
     fontSize: 12,
     fontWeight: 900,
@@ -716,9 +622,9 @@ const styles: Record<string, CSSProperties> = {
   },
   input: {
     background: "#ffffff",
-    border: "1px solid var(--calendar-border)",
+    border: "1px solid var(--allotment-border)",
     borderRadius: 14,
-    color: "var(--calendar-text)",
+    color: "var(--allotment-text)",
     fontSize: 16,
     padding: "13px 14px",
     width: "100%",

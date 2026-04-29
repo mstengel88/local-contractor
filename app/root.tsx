@@ -114,8 +114,28 @@ export default function App() {
             html[data-ghs-theme="dark"] main,
             html[data-ghs-theme="dark"] section,
             html[data-ghs-theme="dark"] article {
+              background: var(--ghs-panel-bg) !important;
               background-color: var(--ghs-panel-bg) !important;
               color: var(--ghs-text) !important;
+              --calendar-bg: var(--ghs-page-bg) !important;
+              --calendar-panel: var(--ghs-panel-bg) !important;
+              --calendar-soft: var(--ghs-panel-soft) !important;
+              --calendar-text: var(--ghs-text) !important;
+              --calendar-muted: var(--ghs-muted) !important;
+              --calendar-border: var(--ghs-border) !important;
+              --calendar-blue: var(--ghs-accent) !important;
+              --allotment-bg: var(--ghs-page-bg) !important;
+              --allotment-panel: var(--ghs-panel-bg) !important;
+              --allotment-soft: var(--ghs-panel-soft) !important;
+              --allotment-text: var(--ghs-text) !important;
+              --allotment-muted: var(--ghs-muted) !important;
+              --allotment-border: var(--ghs-border) !important;
+              --allotment-blue: var(--ghs-accent) !important;
+            }
+
+            html[data-ghs-theme="dark"] main {
+              background: var(--ghs-page-bg) !important;
+              background-color: var(--ghs-page-bg) !important;
             }
 
             html[data-ghs-theme="dark"] main[style*="background: #e8e8e8"],
@@ -174,6 +194,7 @@ export default function App() {
 
             html[data-ghs-theme="dark"] aside,
             html[data-ghs-theme="dark"] nav {
+              background: var(--ghs-nav-bg) !important;
               background-color: var(--ghs-nav-bg) !important;
               border-color: #1e293b !important;
               color: #e5e7eb !important;
@@ -208,14 +229,59 @@ export default function App() {
             html[data-ghs-theme="dark"] table,
             html[data-ghs-theme="dark"] th,
             html[data-ghs-theme="dark"] td {
+              background: var(--ghs-panel-soft) !important;
               background-color: var(--ghs-panel-soft) !important;
               border-color: var(--ghs-border) !important;
               color: #e5e7eb !important;
             }
 
             html[data-ghs-theme="dark"] th {
+              background: #020617 !important;
               background-color: #020617 !important;
               color: #cbd5e1 !important;
+            }
+
+            html[data-ghs-theme="dark"] [style*="background: #fff"],
+            html[data-ghs-theme="dark"] [style*="background:#fff"],
+            html[data-ghs-theme="dark"] [style*="background: white"],
+            html[data-ghs-theme="dark"] [style*="background:white"],
+            html[data-ghs-theme="dark"] [style*="background-color: #fff"],
+            html[data-ghs-theme="dark"] [style*="background-color:#fff"],
+            html[data-ghs-theme="dark"] [style*="backgroundColor:#fff"] {
+              background: var(--ghs-panel-bg) !important;
+              background-color: var(--ghs-panel-bg) !important;
+              color: var(--ghs-text) !important;
+              border-color: var(--ghs-border) !important;
+            }
+
+            html[data-ghs-theme="dark"] [style*="background: #f6"],
+            html[data-ghs-theme="dark"] [style*="background:#f6"],
+            html[data-ghs-theme="dark"] [style*="background: #f7"],
+            html[data-ghs-theme="dark"] [style*="background:#f7"],
+            html[data-ghs-theme="dark"] [style*="background: #f8"],
+            html[data-ghs-theme="dark"] [style*="background:#f8"],
+            html[data-ghs-theme="dark"] [style*="background: #f9"],
+            html[data-ghs-theme="dark"] [style*="background:#f9"],
+            html[data-ghs-theme="dark"] [style*="background: #fb"],
+            html[data-ghs-theme="dark"] [style*="background:#fb"],
+            html[data-ghs-theme="dark"] [style*="background: #fe"],
+            html[data-ghs-theme="dark"] [style*="background:#fe"],
+            html[data-ghs-theme="dark"] [style*="background-color: #f6"],
+            html[data-ghs-theme="dark"] [style*="background-color:#f6"],
+            html[data-ghs-theme="dark"] [style*="background-color: #f7"],
+            html[data-ghs-theme="dark"] [style*="background-color:#f7"],
+            html[data-ghs-theme="dark"] [style*="background-color: #f8"],
+            html[data-ghs-theme="dark"] [style*="background-color:#f8"],
+            html[data-ghs-theme="dark"] [style*="background-color: #f9"],
+            html[data-ghs-theme="dark"] [style*="background-color:#f9"],
+            html[data-ghs-theme="dark"] [style*="background-color: #fb"],
+            html[data-ghs-theme="dark"] [style*="background-color:#fb"],
+            html[data-ghs-theme="dark"] [style*="background-color: #fe"],
+            html[data-ghs-theme="dark"] [style*="background-color:#fe"] {
+              background: var(--ghs-panel-muted) !important;
+              background-color: var(--ghs-panel-muted) !important;
+              color: var(--ghs-text) !important;
+              border-color: var(--ghs-border) !important;
             }
 
             html[data-ghs-theme="dark"] [style*="color: #232323"],

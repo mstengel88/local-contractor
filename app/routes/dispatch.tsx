@@ -22,6 +22,7 @@ import {
   ensureSeedDispatchOrders,
   ensureSeedDispatchRoutes,
   ensureSeedDispatchTrucks,
+  getClassicColumnSettings,
   getDispatchEmployees,
   getDispatchMaterialOptions,
   getDispatchOriginAddress,
@@ -729,6 +730,7 @@ async function loadDispatchState() {
       employees,
       materialOptions,
       mapOriginAddress,
+      classicColumnSettings,
     ] = await Promise.all([
       getDispatchOrders(),
       getDispatchRoutes(),
@@ -736,6 +738,7 @@ async function loadDispatchState() {
       getDispatchEmployees(),
       getDispatchMaterialOptions(),
       getDispatchOriginAddress(),
+      getClassicColumnSettings(),
     ]);
 
     return {
@@ -745,6 +748,7 @@ async function loadDispatchState() {
       employees,
       materialOptions,
       mapOriginAddress,
+      classicColumnSettings,
       storageReady: true,
       storageError: null,
     };
@@ -759,6 +763,7 @@ async function loadDispatchState() {
       employees: seedDispatchEmployees,
       materialOptions: [],
       mapOriginAddress: "W185 N7487 Narrow Ln, Menomonee Falls, WI 53051",
+      classicColumnSettings: undefined,
       storageReady: false,
       storageError: message,
     };
@@ -821,6 +826,7 @@ export async function loader({ request }: any) {
       materialOptions: [],
       googleMapsApiKey: getBrowserGoogleMapsApiKey(),
       mapOriginAddress: "",
+      classicColumnSettings: undefined,
       storageReady: false,
       storageError: null,
     });
@@ -1838,6 +1844,7 @@ export default function DispatchPage() {
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
   const classicHref = isEmbeddedRoute ? "/app/classic" : "/classic";
   const calendarHref = isEmbeddedRoute ? "/app/calendar" : "/calendar";
+  const allotmentHref = isEmbeddedRoute ? "/app/allotment" : "/allotment";
   const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
   const logoutHref = `${dispatchHref}?logout=1`;
   const canAccess = (permission: string) =>
@@ -2199,6 +2206,7 @@ export default function DispatchPage() {
           <nav style={styles.sideNav}>
             <a href={classicHref} style={styles.sideNavLink(false)}>Classic</a>
             <a href={calendarHref} style={styles.sideNavLink(false)}>Calendar</a>
+            <a href={allotmentHref} style={styles.sideNavLink(false)}>Allotment</a>
             {canAccess("manageDispatch") ? (
               <a href={dispatchViewHref("orders")} style={styles.sideNavLink(activeView === "orders")}>Orders</a>
             ) : null}

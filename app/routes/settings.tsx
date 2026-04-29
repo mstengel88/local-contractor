@@ -1,6 +1,15 @@
 import { Form, Link, useActionData, useLoaderData, useNavigation } from "react-router";
 import { data } from "react-router";
 import {
+  classicColumnOptions,
+  defaultClassicColumnSettings,
+  type ClassicColumnTable,
+} from "../lib/classic-columns";
+import {
+  getClassicColumnSettings,
+  saveClassicColumnSettings,
+} from "../lib/dispatch.server";
+import {
   createAppUser,
   listAuditEvents,
   listAppUsers,
@@ -16,11 +25,20 @@ import {
 
 export async function loader({ request }: any) {
   const currentUser = await requireUserPermission(request, "manageUsers");
-  const [users, auditEvents] = await Promise.all([
+  const [users, auditEvents, classicColumnSettings] = await Promise.all([
     listAppUsers(),
     currentUser.permissions.includes("auditLog") ? listAuditEvents(150) : [],
+    getClassicColumnSettings(),
   ]);
-  return data({ currentUser, users, auditEvents, allPermissions, permissionLabels });
+  return data({
+    currentUser,
+    users,
+    auditEvents,
+    allPermissions,
+    permissionLabels,
+    classicColumnSettings,
+    classicColumnOptions,
+  });
 }
 
 export async function action({ request }: any) {
@@ -36,6 +54,10 @@ export async function action({ request }: any) {
           ? listAuditEvents(150)
           : Promise.resolve([])
         ).then((auditEvents) => ["auditEvents", auditEvents] as const),
+        getClassicColumnSettings().then((classicColumnSettings) => [
+          "classicColumnSettings",
+          classicColumnSettings,
+        ] as const),
       ]),
     ),
   });
@@ -98,6 +120,38 @@ export async function action({ request }: any) {
       });
     }
 
+    if (intent === "save-classic-columns") {
+      const nextSettings = (Object.keys(classicColumnOptions) as ClassicColumnTable[]).reduce(
+        (settings, table) => {
+          settings[table] = form
+            .getAll(`classicColumns.${table}`)
+            .map(String)
+            .filter((key) =>
+              classicColumnOptions[table].some((option) => option.key === key),
+            );
+          if (!settings[table].length) {
+            settings[table] = defaultClassicColumnSettings[table];
+          }
+          return settings;
+        },
+        {} as Record<ClassicColumnTable, string[]>,
+      );
+      const savedSettings = await saveClassicColumnSettings(nextSettings);
+      await logAuditEvent({
+        actor: currentUser,
+        action: "update_classic_columns",
+        targetType: "settings",
+        targetId: "classic_columns",
+        targetLabel: "Classic Columns",
+        details: savedSettings,
+      });
+      return data({
+        ok: true,
+        message: "Classic page columns updated.",
+        ...(await loadSettingsData()),
+      });
+    }
+
     return data({ ok: false, message: "Unknown settings action." }, { status: 400 });
   } catch (error) {
     return data(
@@ -117,6 +171,10 @@ export default function SettingsPage() {
   const navigation = useNavigation();
   const users = actionData?.users || loaderData.users;
   const auditEvents = actionData?.auditEvents || loaderData.auditEvents;
+  const classicColumns =
+    actionData?.classicColumnSettings ||
+    loaderData.classicColumnSettings ||
+    defaultClassicColumnSettings;
   const isSubmitting = navigation.state === "submitting";
   const canAccess = (permission: string) =>
     loaderData.currentUser.permissions?.includes(permission);
@@ -198,6 +256,44 @@ export default function SettingsPage() {
           ))}
         </section>
 
+        <section style={styles.panel}>
+          <div style={styles.userHeader}>
+            <div>
+              <h2 style={styles.panelTitle}>Classic Page Columns</h2>
+              <p style={styles.subtitle}>
+                Choose which fields show on each Classic tab/table. Route controls and assign buttons stay visible so dispatch remains usable.
+              </p>
+            </div>
+          </div>
+
+          <Form method="post" style={styles.form}>
+            <input type="hidden" name="intent" value="save-classic-columns" />
+            <div style={styles.columnSettingsGrid}>
+              {(Object.keys(classicColumnOptions) as ClassicColumnTable[]).map((table) => (
+                <section key={table} style={styles.columnSettingsCard}>
+                  <h3 style={styles.columnSettingsTitle}>{formatClassicTableName(table)}</h3>
+                  <div style={styles.permissionGrid}>
+                    {classicColumnOptions[table].map((option) => (
+                      <label key={option.key} style={styles.permissionItem}>
+                        <input
+                          type="checkbox"
+                          name={`classicColumns.${table}`}
+                          value={option.key}
+                          defaultChecked={(classicColumns[table] || []).includes(option.key)}
+                        />
+                        <span>{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+            <button type="submit" style={styles.primaryButton} disabled={isSubmitting}>
+              Save Classic Columns
+            </button>
+          </Form>
+        </section>
+
         {canAccess("auditLog") ? (
           <section style={styles.panel}>
             <div style={styles.userHeader}>
@@ -259,6 +355,11 @@ function formatAuditDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString();
+}
+
+function formatClassicTableName(table: ClassicColumnTable) {
+  if (table === "sites") return "Route Sites";
+  return table.charAt(0).toUpperCase() + table.slice(1);
 }
 
 function Field({
@@ -431,6 +532,23 @@ const styles = {
     gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
     gap: 10,
   } as const,
+  columnSettingsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    gap: 14,
+  } as const,
+  columnSettingsCard: {
+    display: "grid",
+    gap: 12,
+    padding: 14,
+    borderRadius: 18,
+    border: "1px solid rgba(51, 65, 85, 0.95)",
+    background: "rgba(2, 6, 23, 0.42)",
+  } as const,
+  columnSettingsTitle: {
+    margin: 0,
+    fontSize: 16,
+  },
   permissionItem: {
     minHeight: 42,
     display: "flex",

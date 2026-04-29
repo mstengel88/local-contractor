@@ -1,4 +1,10 @@
 import { getDispatchTravelEstimate } from "./quote-engine.server";
+import {
+  classicColumnOptions,
+  defaultClassicColumnSettings,
+  type ClassicColumnSettings,
+  type ClassicColumnTable,
+} from "./classic-columns";
 import { supabaseAdmin } from "./supabase.server";
 
 export type DispatchSource = "email" | "manual";
@@ -844,6 +850,7 @@ const ROUTES_TABLE = "dispatch_routes";
 const TRUCKS_TABLE = "dispatch_trucks";
 const EMPLOYEES_TABLE = "dispatch_employees";
 const SETTINGS_TABLE = "dispatch_settings";
+const CLASSIC_COLUMNS_SETTING_KEY = "classic_columns";
 
 function normalizeOrder(row: any): DispatchOrder {
   const deliveryStatus =
@@ -972,6 +979,62 @@ function normalizeEmployee(row: any): DispatchEmployee {
 function formatSupabaseError(error: any) {
   if (!error) return "Unknown storage error";
   return error.message || error.details || error.hint || "Unknown storage error";
+}
+
+function normalizeClassicColumnSettings(value: unknown): ClassicColumnSettings {
+  const parsed = typeof value === "string" ? JSON.parse(value || "{}") : value;
+  const settings = parsed && typeof parsed === "object" ? parsed as Partial<ClassicColumnSettings> : {};
+
+  return (Object.keys(defaultClassicColumnSettings) as ClassicColumnTable[]).reduce(
+    (next, table) => {
+      const allowed = new Set(classicColumnOptions[table].map((option) => option.key));
+      const selected = Array.isArray(settings[table])
+        ? settings[table]!.filter((key) => allowed.has(key))
+        : [];
+      next[table] = selected.length ? selected : defaultClassicColumnSettings[table];
+      return next;
+    },
+    {} as ClassicColumnSettings,
+  );
+}
+
+export async function getClassicColumnSettings(): Promise<ClassicColumnSettings> {
+  const { data, error } = await supabaseAdmin
+    .from(SETTINGS_TABLE)
+    .select("value")
+    .eq("key", CLASSIC_COLUMNS_SETTING_KEY)
+    .maybeSingle();
+
+  if (error) {
+    console.warn("[CLASSIC COLUMN SETTINGS ERROR]", formatSupabaseError(error));
+    return defaultClassicColumnSettings;
+  }
+
+  try {
+    return normalizeClassicColumnSettings(data?.value || "{}");
+  } catch (error) {
+    console.warn("[CLASSIC COLUMN SETTINGS PARSE ERROR]", error);
+    return defaultClassicColumnSettings;
+  }
+}
+
+export async function saveClassicColumnSettings(
+  settings: ClassicColumnSettings,
+): Promise<ClassicColumnSettings> {
+  const normalized = normalizeClassicColumnSettings(settings);
+  const { error } = await supabaseAdmin
+    .from(SETTINGS_TABLE)
+    .upsert({
+      key: CLASSIC_COLUMNS_SETTING_KEY,
+      value: JSON.stringify(normalized),
+      updated_at: new Date().toISOString(),
+    });
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+
+  return normalized;
 }
 
 function buildDispatchDestinationAddress(address?: string | null, city?: string | null) {

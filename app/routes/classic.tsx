@@ -10,6 +10,11 @@ import type {
   DispatchRoute,
   DispatchTruck,
 } from "../lib/dispatch.server";
+import {
+  classicColumnOptions,
+  defaultClassicColumnSettings,
+  type ClassicColumnSettings,
+} from "../lib/classic-columns";
 
 export const loader = dispatchLoader;
 export const action = dispatchAction;
@@ -443,6 +448,9 @@ export default function ClassicDispatchPage() {
   const trucks = (actionData?.trucks ?? loaderData.trucks ?? []) as DispatchTruck[];
   const employees = (actionData?.employees ?? loaderData.employees ?? []) as DispatchEmployee[];
   const materialOptions = (actionData?.materialOptions ?? loaderData.materialOptions ?? []) as string[];
+  const classicColumnSettings = (actionData?.classicColumnSettings ??
+    loaderData.classicColumnSettings ??
+    defaultClassicColumnSettings) as ClassicColumnSettings;
   const message = actionData?.message || loaderData?.mailboxStatus?.message || "";
   const googleMapsApiKey = actionData?.googleMapsApiKey ?? loaderData.googleMapsApiKey ?? "";
   const mapOriginAddress = actionData?.mapOriginAddress ?? loaderData.mapOriginAddress ?? "";
@@ -450,6 +458,7 @@ export default function ClassicDispatchPage() {
   const isEmbeddedRoute = location.pathname.startsWith("/app/");
   const classicHref = isEmbeddedRoute ? "/app/classic" : "/classic";
   const calendarHref = isEmbeddedRoute ? "/app/calendar" : "/calendar";
+  const allotmentHref = isEmbeddedRoute ? "/app/allotment" : "/allotment";
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
   const quoteHref = isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote";
   const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
@@ -462,6 +471,11 @@ export default function ClassicDispatchPage() {
   const logoutHref = currentUser ? "/login?logout=1" : `${dispatchHref}?logout=1`;
   const drivers = employees.filter((employee) => employee.role === "driver");
   const helpers = employees.filter((employee) => employee.role === "helper");
+  const routeColumnKeys = classicColumnSettings.routes || defaultClassicColumnSettings.routes;
+  const siteColumnKeys = classicColumnSettings.sites || defaultClassicColumnSettings.sites;
+  const orderColumnKeys = classicColumnSettings.orders || defaultClassicColumnSettings.orders;
+  const unscheduledColumnKeys =
+    classicColumnSettings.unscheduled || defaultClassicColumnSettings.unscheduled;
 
   const routes = useMemo(
     () =>
@@ -507,6 +521,12 @@ export default function ClassicDispatchPage() {
         if (key === "stop") return order.stopSequence || 9999;
         if (key === "orderNo") return getOrderNumber(order);
         if (key === "address") return getOrderAddress(order);
+        if (key === "customer") return order.customer;
+        if (key === "product") return order.material;
+        if (key === "quantity") return order.quantity || "";
+        if (key === "unit") return order.unit || "";
+        if (key === "requested") return order.requestedWindow || "";
+        if (key === "timePreference") return order.timePreference || "";
         if (key === "arrived") return order.arrivedAt || "";
         if (key === "departed") return order.departedAt || "";
         if (key === "eta") return order.eta || order.requestedWindow || "";
@@ -544,12 +564,16 @@ export default function ClassicDispatchPage() {
     () =>
       sortItems(visibleOrders, tableSorts.orders, (order, key) => {
         if (key === "orderNo") return getOrderNumber(order);
+        if (key === "type") return order.source === "email" ? "D" : "M";
         if (key === "date") return order.requestedWindow || "";
         if (key === "client") return order.customer;
+        if (key === "address") return getOrderAddress(order);
         if (key === "weight") return order.quantity || "";
         if (key === "volume") return order.unit;
         if (key === "status") return statusLabel(order);
         if (key === "material") return order.material;
+        if (key === "timePreference") return order.timePreference || "";
+        if (key === "route") return order.assignedRouteId || "";
         return "";
       }),
     [visibleOrders, tableSorts.orders],
@@ -561,8 +585,11 @@ export default function ClassicDispatchPage() {
         if (key === "date") return order.requestedWindow || "";
         if (key === "client") return order.customer;
         if (key === "address") return getOrderAddress(order);
+        if (key === "product") return order.material;
         if (key === "weight") return order.quantity || "";
         if (key === "volume") return order.unit;
+        if (key === "timePreference") return order.timePreference || "";
+        if (key === "notes") return order.notes || "";
         if (key === "route") return order.assignedRouteId || "";
         return "";
       }),
@@ -596,6 +623,77 @@ export default function ClassicDispatchPage() {
         {label} {active ? direction : ""}
       </button>
     );
+  }
+
+  function columnLabel(table: ClassicSortTable, key: string) {
+    return classicColumnOptions[table].find((option) => option.key === key)?.label || key;
+  }
+
+  function routeColumnValue(route: DispatchRoute & { orders: DispatchOrder[]; weight: number; totalMinutes: number }, key: string) {
+    if (key === "code") {
+      return (
+        <button
+          type="button"
+          style={styles.rowRouteButton(selectedRoute?.id === route.id)}
+          onClick={() => {
+            setSelectedRouteId(route.id);
+            setRouteDrawerOpen(true);
+          }}
+        >
+          {route.code}
+        </button>
+      );
+    }
+    if (key === "driver") return `${route.truck || "No truck"} (${route.driver || "No driver"})`;
+    if (key === "status") return route.orders.length ? "Active" : "Open";
+    if (key === "weight") return route.weight || "-";
+    if (key === "start") return route.shift?.split("-")[0]?.trim() || "6:00 am";
+    if (key === "finish") return route.shift?.split("-")[1]?.trim() || formatTime(route.totalMinutes);
+    if (key === "distance") return formatTime(route.totalMinutes);
+    return "-";
+  }
+
+  function orderColumnValue(order: DispatchOrder, key: string, index = 0) {
+    if (key === "type") return order.source === "email" ? "D" : "M";
+    if (key === "stop") return order.stopSequence || index + 1;
+    if (key === "orderNo") {
+      return (
+        <button
+          type="button"
+          style={styles.rowOrderButton}
+          onClick={() => {
+            setSelectedOrderId(order.id);
+            setOrderDrawerOpen(true);
+            setRouteDrawerOpen(false);
+          }}
+        >
+          {getOrderNumber(order)}
+        </button>
+      );
+    }
+    if (key === "date" || key === "requested") return order.requestedWindow || "-";
+    if (key === "client" || key === "customer") return order.customer || "-";
+    if (key === "address") return getOrderAddress(order) || "-";
+    if (key === "product" || key === "material") return order.material || "-";
+    if (key === "quantity" || key === "weight") return order.quantity || "-";
+    if (key === "unit" || key === "volume") return order.unit || "-";
+    if (key === "timePreference") return order.timePreference || "-";
+    if (key === "arrived") {
+      return order.arrivedAt
+        ? new Date(order.arrivedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+        : "-";
+    }
+    if (key === "departed") {
+      return order.departedAt
+        ? new Date(order.departedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+        : "-";
+    }
+    if (key === "eta") return order.eta || order.requestedWindow || "-";
+    if (key === "miles") return order.travelMiles || "-";
+    if (key === "status") return <span style={styles.statusPill}>{statusLabel(order)}</span>;
+    if (key === "notes") return order.notes || "-";
+    if (key === "route") return order.assignedRouteId || "Unassigned";
+    return "-";
   }
 
   function beginOrderDrag(orderId: string) {
@@ -708,6 +806,7 @@ export default function ClassicDispatchPage() {
         <nav style={styles.classicNav}>
           <Link to={classicHref} style={styles.classicNavLinkActive}>Classic</Link>
           <Link to={calendarHref} style={styles.classicNavLink}>Calendar</Link>
+          <Link to={allotmentHref} style={styles.classicNavLink}>Allotment</Link>
           {canAccess("manageDispatch") ? <Link to={dispatchViewHref("orders")} style={styles.classicNavLink}>Orders</Link> : null}
           <Link to={dispatchViewHref("scheduled")} style={styles.classicNavLink}>Scheduled</Link>
           {canAccess("manageDispatch") ? <Link to={dispatchViewHref("routes")} style={styles.classicNavLink}>Routes</Link> : null}
@@ -762,13 +861,9 @@ export default function ClassicDispatchPage() {
                 <thead>
                   <tr>
                     <th />
-                    <th>{sortHeader("routes", "code", "Code")}</th>
-                    <th>{sortHeader("routes", "driver", "Driver")}</th>
-                    <th>{sortHeader("routes", "status", "Status")}</th>
-                    <th>{sortHeader("routes", "weight", "Weight")}</th>
-                    <th>{sortHeader("routes", "start", "Start")}</th>
-                    <th>{sortHeader("routes", "finish", "Finish")}</th>
-                    <th>{sortHeader("routes", "distance", "Distance")}</th>
+                    {routeColumnKeys.map((key) => (
+                      <th key={key}>{sortHeader("routes", key, columnLabel("routes", key))}</th>
+                    ))}
                     <th />
                   </tr>
                 </thead>
@@ -776,24 +871,9 @@ export default function ClassicDispatchPage() {
                   {sortedRoutes.map((route) => (
                     <tr key={route.id}>
                       <td><span style={{ ...styles.colorBar, background: route.color || "#f97316" }} /></td>
-                      <td>
-                        <button
-                          type="button"
-                          style={styles.rowRouteButton(selectedRoute?.id === route.id)}
-                          onClick={() => {
-                            setSelectedRouteId(route.id);
-                            setRouteDrawerOpen(true);
-                          }}
-                        >
-                          {route.code}
-                        </button>
-                      </td>
-                      <td>{route.truck || "No truck"} ({route.driver || "No driver"})</td>
-                      <td>{route.orders.length ? "Active" : "Open"}</td>
-                      <td>{route.weight || "-"}</td>
-                      <td>{route.shift?.split("-")[0]?.trim() || "6:00 am"}</td>
-                      <td>{route.shift?.split("-")[1]?.trim() || formatTime(route.totalMinutes)}</td>
-                      <td>{formatTime(route.totalMinutes)}</td>
+                      {routeColumnKeys.map((key) => (
+                        <td key={key}>{routeColumnValue(route, key)}</td>
+                      ))}
                       <td>
                         <Form method="post" style={styles.inlineActions}>
                           <input type="hidden" name="routeId" value={route.id} />
@@ -818,7 +898,7 @@ export default function ClassicDispatchPage() {
                     </tr>
                   ))}
                   {!routes.length ? (
-                    <tr><td colSpan={9} style={styles.emptyCell}>No routes have been set up yet.</td></tr>
+                    <tr><td colSpan={routeColumnKeys.length + 2} style={styles.emptyCell}>No routes have been set up yet.</td></tr>
                   ) : null}
                 </tbody>
               </table>
@@ -839,38 +919,18 @@ export default function ClassicDispatchPage() {
               <table className="classic-table" style={styles.table}>
                 <thead>
                   <tr>
-                    <th>{sortHeader("sites", "stop", "#")}</th>
-                    <th>{sortHeader("sites", "orderNo", "Order No")}</th>
-                    <th>{sortHeader("sites", "address", "Address")}</th>
-                    <th>{sortHeader("sites", "arrived", "Arrived")}</th>
-                    <th>{sortHeader("sites", "departed", "Departed")}</th>
-                    <th>{sortHeader("sites", "eta", "ETA")}</th>
-                    <th>{sortHeader("sites", "miles", "mi")}</th>
+                    {siteColumnKeys.map((key) => (
+                      <th key={key}>{sortHeader("sites", key, columnLabel("sites", key))}</th>
+                    ))}
                     <th />
                   </tr>
                 </thead>
                 <tbody>
                   {sortedSiteOrders.slice(0, 9).map((order, index) => (
                     <tr key={order.id}>
-                      <td>{order.stopSequence || index + 1}</td>
-                      <td>
-                        <button
-                          type="button"
-                          style={styles.rowOrderButton}
-                          onClick={() => {
-                            setSelectedOrderId(order.id);
-                            setOrderDrawerOpen(true);
-                            setRouteDrawerOpen(false);
-                          }}
-                        >
-                          {getOrderNumber(order)}
-                        </button>
-                      </td>
-                      <td>{getOrderAddress(order)}</td>
-                      <td>{order.arrivedAt ? new Date(order.arrivedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "-"}</td>
-                      <td>{order.departedAt ? new Date(order.departedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "-"}</td>
-                      <td>{order.eta || order.requestedWindow || "-"}</td>
-                      <td>{order.travelMiles || "-"}</td>
+                      {siteColumnKeys.map((key) => (
+                        <td key={key}>{orderColumnValue(order, key, index)}</td>
+                      ))}
                       <td>
                         <Form method="post">
                           <input type="hidden" name="intent" value="unassign-order" />
@@ -881,7 +941,7 @@ export default function ClassicDispatchPage() {
                     </tr>
                   ))}
                   {!selectedRoute?.orders.length ? (
-                    <tr><td colSpan={8} style={styles.emptyCell}>Pick a route, then drag unscheduled orders here.</td></tr>
+                    <tr><td colSpan={siteColumnKeys.length + 1} style={styles.emptyCell}>Pick a route, then drag unscheduled orders here.</td></tr>
                   ) : null}
                 </tbody>
               </table>
@@ -895,39 +955,17 @@ export default function ClassicDispatchPage() {
               <table className="classic-table" style={styles.table}>
                 <thead>
                   <tr>
-                    <th />
-                    <th>{sortHeader("orders", "orderNo", "Order No")}</th>
-                    <th>{sortHeader("orders", "date", "Date")}</th>
-                    <th>{sortHeader("orders", "client", "Client")}</th>
-                    <th>{sortHeader("orders", "weight", "Weight")}</th>
-                    <th>{sortHeader("orders", "volume", "Volume")}</th>
-                    <th>{sortHeader("orders", "status", "Status")}</th>
-                    <th>{sortHeader("orders", "material", "Material")}</th>
+                    {orderColumnKeys.map((key) => (
+                      <th key={key}>{sortHeader("orders", key, columnLabel("orders", key))}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
                   {sortedVisibleOrders.slice(0, 12).map((order) => (
                     <tr key={order.id}>
-                      <td>D</td>
-                      <td>
-                        <button
-                          type="button"
-                          style={styles.rowOrderButton}
-                          onClick={() => {
-                            setSelectedOrderId(order.id);
-                            setOrderDrawerOpen(true);
-                            setRouteDrawerOpen(false);
-                          }}
-                        >
-                          {getOrderNumber(order)}
-                        </button>
-                      </td>
-                      <td>{order.requestedWindow || "-"}</td>
-                      <td>{order.customer}</td>
-                      <td>{order.quantity || "-"}</td>
-                      <td>{order.unit}</td>
-                      <td><span style={styles.statusPill}>{statusLabel(order)}</span></td>
-                      <td>{order.material}</td>
+                      {orderColumnKeys.map((key) => (
+                        <td key={key}>{orderColumnValue(order, key)}</td>
+                      ))}
                     </tr>
                   ))}
                 </tbody>
@@ -950,13 +988,10 @@ export default function ClassicDispatchPage() {
               <table className="classic-table" style={styles.table}>
                 <thead>
                   <tr>
-                    <th>{sortHeader("unscheduled", "orderNo", "Order No")}</th>
-                    <th>{sortHeader("unscheduled", "date", "Date")}</th>
-                    <th>{sortHeader("unscheduled", "client", "Client")}</th>
-                    <th>{sortHeader("unscheduled", "address", "Address")}</th>
-                    <th>{sortHeader("unscheduled", "weight", "Weight")}</th>
-                    <th>{sortHeader("unscheduled", "volume", "Volume")}</th>
-                    <th>{sortHeader("unscheduled", "route", "Route")}</th>
+                    {unscheduledColumnKeys.map((key) => (
+                      <th key={key}>{sortHeader("unscheduled", key, columnLabel("unscheduled", key))}</th>
+                    ))}
+                    <th />
                   </tr>
                 </thead>
                 <tbody>
@@ -968,12 +1003,9 @@ export default function ClassicDispatchPage() {
                       onDragEnd={() => setDraggedOrderId("")}
                       style={styles.draggableRow}
                     >
-                      <td>{getOrderNumber(order)}</td>
-                      <td>{order.requestedWindow || "-"}</td>
-                      <td>{order.customer}</td>
-                      <td>{getOrderAddress(order)}</td>
-                      <td>{order.quantity || "-"}</td>
-                      <td>{order.unit}</td>
+                      {unscheduledColumnKeys.map((key) => (
+                        <td key={key}>{orderColumnValue(order, key)}</td>
+                      ))}
                       <td>
                         <Form method="post" style={styles.assignForm}>
                           <input type="hidden" name="intent" value="assign-order" />
@@ -992,7 +1024,7 @@ export default function ClassicDispatchPage() {
                     </tr>
                   ))}
                   {!unscheduledOrders.length ? (
-                    <tr><td colSpan={7} style={styles.emptyCell}>No unscheduled orders match this search.</td></tr>
+                    <tr><td colSpan={unscheduledColumnKeys.length + 1} style={styles.emptyCell}>No unscheduled orders match this search.</td></tr>
                   ) : null}
                 </tbody>
               </table>
