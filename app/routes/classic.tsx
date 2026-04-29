@@ -63,6 +63,50 @@ function buildSearchText(order: DispatchOrder) {
     .toLowerCase();
 }
 
+type ClassicSortDirection = "asc" | "desc";
+type ClassicSortTable = "routes" | "sites" | "orders" | "unscheduled";
+type ClassicSortConfig = {
+  key: string;
+  direction: ClassicSortDirection;
+};
+
+function normalizeSortValue(value: unknown) {
+  if (value === null || value === undefined || value === "") return "";
+  if (typeof value === "number") return value;
+
+  const text = String(value).trim();
+  const numeric = Number(text.replace(/[^0-9.-]/g, ""));
+  if (text && !Number.isNaN(numeric) && /[0-9]/.test(text)) return numeric;
+
+  const parsedDate = new Date(text);
+  if (!Number.isNaN(parsedDate.getTime()) && /[0-9]/.test(text)) {
+    return parsedDate.getTime();
+  }
+
+  return text.toLowerCase();
+}
+
+function compareSortValues(left: unknown, right: unknown, direction: ClassicSortDirection) {
+  const leftValue = normalizeSortValue(left);
+  const rightValue = normalizeSortValue(right);
+  const modifier = direction === "asc" ? 1 : -1;
+
+  if (leftValue === rightValue) return 0;
+  if (leftValue === "") return 1;
+  if (rightValue === "") return -1;
+  return leftValue > rightValue ? modifier : -modifier;
+}
+
+function sortItems<T>(
+  items: T[],
+  sort: ClassicSortConfig,
+  getValue: (item: T, key: string) => unknown,
+) {
+  return [...items].sort((left, right) =>
+    compareSortValues(getValue(left, sort.key), getValue(right, sort.key), sort.direction),
+  );
+}
+
 let classicGoogleMapsLoader: Promise<void> | null = null;
 
 function loadClassicGoogleMaps(apiKey: string) {
@@ -386,6 +430,12 @@ export default function ClassicDispatchPage() {
   const [routeDrawerOpen, setRouteDrawerOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState("");
   const [orderDrawerOpen, setOrderDrawerOpen] = useState(false);
+  const [tableSorts, setTableSorts] = useState<Record<ClassicSortTable, ClassicSortConfig>>({
+    routes: { key: "code", direction: "asc" },
+    sites: { key: "stop", direction: "asc" },
+    orders: { key: "date", direction: "asc" },
+    unscheduled: { key: "date", direction: "asc" },
+  });
 
   const allowed = actionData?.allowed ?? loaderData.allowed;
   const orders = (actionData?.orders ?? loaderData.orders ?? []) as DispatchOrder[];
@@ -433,10 +483,38 @@ export default function ClassicDispatchPage() {
       }),
     [baseRoutes, orders],
   );
+  const sortedRoutes = useMemo(
+    () =>
+      sortItems(routes, tableSorts.routes, (route, key) => {
+        if (key === "code") return route.code;
+        if (key === "driver") return `${route.truck || ""} ${route.driver || ""}`;
+        if (key === "status") return route.orders.length ? "Active" : "Open";
+        if (key === "weight") return route.weight;
+        if (key === "start") return route.shift?.split("-")[0]?.trim() || "6:00 am";
+        if (key === "finish") return route.shift?.split("-")[1]?.trim() || formatTime(route.totalMinutes);
+        if (key === "distance") return route.totalMinutes;
+        return "";
+      }),
+    [routes, tableSorts.routes],
+  );
   const selectedRoute =
-    routes.find((route) => route.id === selectedRouteId) || routes[0] || null;
+    sortedRoutes.find((route) => route.id === selectedRouteId) || sortedRoutes[0] || null;
   const pendingOrder = orders.find((order) => order.id === pendingOrderId) || null;
   const selectedOrder = orders.find((order) => order.id === selectedOrderId) || null;
+  const sortedSiteOrders = useMemo(
+    () =>
+      sortItems(selectedRoute?.orders || [], tableSorts.sites, (order, key) => {
+        if (key === "stop") return order.stopSequence || 9999;
+        if (key === "orderNo") return getOrderNumber(order);
+        if (key === "address") return getOrderAddress(order);
+        if (key === "arrived") return order.arrivedAt || "";
+        if (key === "departed") return order.departedAt || "";
+        if (key === "eta") return order.eta || order.requestedWindow || "";
+        if (key === "miles") return order.travelMiles || "";
+        return "";
+      }),
+    [selectedRoute, tableSorts.sites],
+  );
 
   const search = query.trim().toLowerCase();
   const visibleOrders = useMemo(
@@ -462,6 +540,63 @@ export default function ClassicDispatchPage() {
   const deliveredCount = orders.filter(
     (order) => order.status === "delivered" || order.deliveryStatus === "delivered",
   ).length;
+  const sortedVisibleOrders = useMemo(
+    () =>
+      sortItems(visibleOrders, tableSorts.orders, (order, key) => {
+        if (key === "orderNo") return getOrderNumber(order);
+        if (key === "date") return order.requestedWindow || "";
+        if (key === "client") return order.customer;
+        if (key === "weight") return order.quantity || "";
+        if (key === "volume") return order.unit;
+        if (key === "status") return statusLabel(order);
+        if (key === "material") return order.material;
+        return "";
+      }),
+    [visibleOrders, tableSorts.orders],
+  );
+  const sortedUnscheduledOrders = useMemo(
+    () =>
+      sortItems(unscheduledOrders, tableSorts.unscheduled, (order, key) => {
+        if (key === "orderNo") return getOrderNumber(order);
+        if (key === "date") return order.requestedWindow || "";
+        if (key === "client") return order.customer;
+        if (key === "address") return getOrderAddress(order);
+        if (key === "weight") return order.quantity || "";
+        if (key === "volume") return order.unit;
+        if (key === "route") return order.assignedRouteId || "";
+        return "";
+      }),
+    [unscheduledOrders, tableSorts.unscheduled],
+  );
+
+  function updateTableSort(table: ClassicSortTable, key: string) {
+    setTableSorts((current) => {
+      const currentSort = current[table];
+      return {
+        ...current,
+        [table]: {
+          key,
+          direction:
+            currentSort.key === key && currentSort.direction === "asc" ? "desc" : "asc",
+        },
+      };
+    });
+  }
+
+  function sortHeader(table: ClassicSortTable, key: string, label: string) {
+    const active = tableSorts[table].key === key;
+    const direction = tableSorts[table].direction === "asc" ? "↑" : "↓";
+    return (
+      <button
+        type="button"
+        onClick={() => updateTableSort(table, key)}
+        style={active ? styles.sortHeaderActive : styles.sortHeader}
+        title={`Sort ${label}`}
+      >
+        {label} {active ? direction : ""}
+      </button>
+    );
+  }
 
   function beginOrderDrag(orderId: string) {
     setDraggedOrderId(orderId);
@@ -627,18 +762,18 @@ export default function ClassicDispatchPage() {
                 <thead>
                   <tr>
                     <th />
-                    <th>Code</th>
-                    <th>Driver</th>
-                    <th>Status</th>
-                    <th>Weight</th>
-                    <th>Start</th>
-                    <th>Finish</th>
-                    <th>Distance</th>
+                    <th>{sortHeader("routes", "code", "Code")}</th>
+                    <th>{sortHeader("routes", "driver", "Driver")}</th>
+                    <th>{sortHeader("routes", "status", "Status")}</th>
+                    <th>{sortHeader("routes", "weight", "Weight")}</th>
+                    <th>{sortHeader("routes", "start", "Start")}</th>
+                    <th>{sortHeader("routes", "finish", "Finish")}</th>
+                    <th>{sortHeader("routes", "distance", "Distance")}</th>
                     <th />
                   </tr>
                 </thead>
                 <tbody>
-                  {routes.map((route, index) => (
+                  {sortedRoutes.map((route) => (
                     <tr key={route.id}>
                       <td><span style={{ ...styles.colorBar, background: route.color || "#f97316" }} /></td>
                       <td>
@@ -704,18 +839,18 @@ export default function ClassicDispatchPage() {
               <table className="classic-table" style={styles.table}>
                 <thead>
                   <tr>
-                    <th>#</th>
-                    <th>Order No</th>
-                    <th>Address</th>
-                    <th>Arrived</th>
-                    <th>Departed</th>
-                    <th>ETA</th>
-                    <th>mi</th>
+                    <th>{sortHeader("sites", "stop", "#")}</th>
+                    <th>{sortHeader("sites", "orderNo", "Order No")}</th>
+                    <th>{sortHeader("sites", "address", "Address")}</th>
+                    <th>{sortHeader("sites", "arrived", "Arrived")}</th>
+                    <th>{sortHeader("sites", "departed", "Departed")}</th>
+                    <th>{sortHeader("sites", "eta", "ETA")}</th>
+                    <th>{sortHeader("sites", "miles", "mi")}</th>
                     <th />
                   </tr>
                 </thead>
                 <tbody>
-                  {(selectedRoute?.orders || []).slice(0, 9).map((order, index) => (
+                  {sortedSiteOrders.slice(0, 9).map((order, index) => (
                     <tr key={order.id}>
                       <td>{order.stopSequence || index + 1}</td>
                       <td>
@@ -761,17 +896,17 @@ export default function ClassicDispatchPage() {
                 <thead>
                   <tr>
                     <th />
-                    <th>Order No</th>
-                    <th>Date</th>
-                    <th>Client</th>
-                    <th>Weight</th>
-                    <th>Volume</th>
-                    <th>Status</th>
-                    <th>Material</th>
+                    <th>{sortHeader("orders", "orderNo", "Order No")}</th>
+                    <th>{sortHeader("orders", "date", "Date")}</th>
+                    <th>{sortHeader("orders", "client", "Client")}</th>
+                    <th>{sortHeader("orders", "weight", "Weight")}</th>
+                    <th>{sortHeader("orders", "volume", "Volume")}</th>
+                    <th>{sortHeader("orders", "status", "Status")}</th>
+                    <th>{sortHeader("orders", "material", "Material")}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {visibleOrders.slice(0, 12).map((order) => (
+                  {sortedVisibleOrders.slice(0, 12).map((order) => (
                     <tr key={order.id}>
                       <td>D</td>
                       <td>
@@ -815,17 +950,17 @@ export default function ClassicDispatchPage() {
               <table className="classic-table" style={styles.table}>
                 <thead>
                   <tr>
-                    <th>Order No</th>
-                    <th>Date</th>
-                    <th>Client</th>
-                    <th>Address</th>
-                    <th>Weight</th>
-                    <th>Volume</th>
-                    <th>Route</th>
+                    <th>{sortHeader("unscheduled", "orderNo", "Order No")}</th>
+                    <th>{sortHeader("unscheduled", "date", "Date")}</th>
+                    <th>{sortHeader("unscheduled", "client", "Client")}</th>
+                    <th>{sortHeader("unscheduled", "address", "Address")}</th>
+                    <th>{sortHeader("unscheduled", "weight", "Weight")}</th>
+                    <th>{sortHeader("unscheduled", "volume", "Volume")}</th>
+                    <th>{sortHeader("unscheduled", "route", "Route")}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {unscheduledOrders.slice(0, 12).map((order) => (
+                  {sortedUnscheduledOrders.slice(0, 12).map((order) => (
                     <tr
                       key={order.id}
                       draggable
@@ -1290,6 +1425,30 @@ const styles: Record<string, any> = {
     color: "#0ea5c6",
     fontWeight: 800,
     cursor: "pointer",
+  },
+  sortHeader: {
+    width: "100%",
+    border: "none",
+    background: "transparent",
+    color: "inherit",
+    cursor: "pointer",
+    font: "inherit",
+    fontWeight: 800,
+    padding: 0,
+    textAlign: "left",
+    whiteSpace: "nowrap",
+  },
+  sortHeaderActive: {
+    width: "100%",
+    border: "none",
+    background: "transparent",
+    color: "#f97316",
+    cursor: "pointer",
+    font: "inherit",
+    fontWeight: 900,
+    padding: 0,
+    textAlign: "left",
+    whiteSpace: "nowrap",
   },
   emptyCell: {
     padding: 18,

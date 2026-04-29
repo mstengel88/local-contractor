@@ -8,6 +8,7 @@ export default [
   route("dispatch", "routes/dispatch.tsx"),
   route("classic", "routes/classic.tsx"),
   route("calendar", "routes/calendar.tsx"),
+  route("calendar.ics", "routes/calendar.ics.ts"),
   route("calendar.rss", "routes/calendar.rss.ts"),
   route("dispatch/driver", "routes/dispatch-driver.tsx"),
   route("dispatch/driver/detail", "routes/dispatch-driver-detail.tsx"),
