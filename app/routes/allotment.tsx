@@ -105,10 +105,6 @@ function getOrderNumber(order: DispatchOrder) {
   return order.orderNumber ? `#${order.orderNumber}` : order.id;
 }
 
-function getOrderAddress(order: DispatchOrder) {
-  return [order.address, order.city].filter(Boolean).join(", ");
-}
-
 function getOrderStatus(order: DispatchOrder) {
   if (order.status === "delivered" || order.deliveryStatus === "delivered") return "Delivered";
   if (order.assignedRouteId || order.status === "scheduled") return "Scheduled";
@@ -168,10 +164,6 @@ export default function AllotmentPage() {
   const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
   const mobileHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
   const dispatchViewHref = (view: string) => `${dispatchHref}?view=${view}`;
-  const editorHref = (orderId: string) =>
-    `${dispatchHref}?view=orders&order=${encodeURIComponent(orderId)}&returnTo=${encodeURIComponent(
-      allotmentHref,
-    )}`;
   const canAccess = (permission: string) =>
     !currentUser || currentUser.permissions?.includes(permission);
   const logoutHref = currentUser ? "/login?logout=1" : `${dispatchHref}?logout=1`;
@@ -359,7 +351,9 @@ export default function AllotmentPage() {
           <aside style={styles.summaryPanel}>
             <p style={styles.kicker}>Selected Day</p>
             <h2 style={styles.panelTitle}>{formatDateLabel(selectedDate)}</h2>
-            <p style={styles.subtle}>{selectedItems.length} active loads requested for this date.</p>
+            <p style={styles.subtle}>
+              {selectedItems.length} active load{selectedItems.length === 1 ? "" : "s"} included in these material totals.
+            </p>
 
             <div style={styles.totalsGrid}>
               {materialTotals.map((total) => (
@@ -371,12 +365,11 @@ export default function AllotmentPage() {
                   <div style={styles.totalQuantity}>
                     {formatQuantity(total.quantity)} <span>{total.unit}</span>
                   </div>
-                  <div style={styles.orderList}>
+                  <div style={styles.materialBreakdown}>
                     {total.orders.map((order) => (
-                      <Link key={order.id} to={editorHref(order.id)} style={styles.orderLink}>
-                        <strong>{getOrderNumber(order)} {order.customer}</strong>
-                        <span>{formatQuantity(normalizeQuantity(order.quantity))} {order.unit} · {getOrderAddress(order)}</span>
-                      </Link>
+                      <span key={order.id} style={styles.materialBreakdownItem}>
+                        {formatQuantity(normalizeQuantity(order.quantity))} {order.unit}
+                      </span>
                     ))}
                   </div>
                 </article>
@@ -594,15 +587,19 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 950,
     lineHeight: 1,
   },
-  orderList: { display: "grid", gap: 8 },
-  orderLink: {
+  materialBreakdown: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  materialBreakdownItem: {
     background: "#ffffff",
     border: "1px solid var(--allotment-border)",
+    borderRadius: 999,
     color: "var(--allotment-text)",
-    display: "grid",
-    gap: 3,
-    padding: 10,
-    textDecoration: "none",
+    fontSize: 12,
+    fontWeight: 900,
+    padding: "7px 10px",
   },
   emptyState: {
     background: "#fff7ed",

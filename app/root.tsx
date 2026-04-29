@@ -1,5 +1,4 @@
 import type { LinksFunction } from "react-router";
-import { useEffect, useState } from "react";
 import {
   Links,
   Meta,
@@ -12,50 +11,6 @@ export const links: LinksFunction = () => {
   return [];
 };
 
-function ThemeToggle() {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-
-  useEffect(() => {
-    const savedTheme = window.localStorage.getItem("ghs-theme");
-    const initialTheme = savedTheme === "dark" ? "dark" : "light";
-    setTheme(initialTheme);
-    document.documentElement.dataset.ghsTheme = initialTheme;
-  }, []);
-
-  function toggleTheme() {
-    const nextTheme = theme === "dark" ? "light" : "dark";
-    setTheme(nextTheme);
-    document.documentElement.dataset.ghsTheme = nextTheme;
-    window.localStorage.setItem("ghs-theme", nextTheme);
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={toggleTheme}
-      aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-      style={{
-        position: "fixed",
-        right: 18,
-        bottom: "calc(env(safe-area-inset-bottom, 0px) + 18px)",
-        zIndex: 9999,
-        minHeight: 42,
-        padding: "0 14px",
-        borderRadius: 999,
-        border: "1px solid var(--ghs-theme-toggle-border)",
-        background: "var(--ghs-theme-toggle-bg)",
-        color: "var(--ghs-theme-toggle-text)",
-        boxShadow: "0 12px 30px rgba(0,0,0,0.22)",
-        cursor: "pointer",
-        fontWeight: 900,
-        fontSize: 13,
-      }}
-    >
-      {theme === "dark" ? "Light Mode" : "Dark Mode"}
-    </button>
-  );
-}
-
 export default function App() {
   return (
     <html lang="en">
@@ -65,27 +20,27 @@ export default function App() {
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "try{var t=localStorage.getItem('ghs-theme')||'light';document.documentElement.dataset.ghsTheme=t;}catch(e){document.documentElement.dataset.ghsTheme='light';}",
+              "try{localStorage.setItem('ghs-theme','dark');document.documentElement.dataset.ghsTheme='dark';}catch(e){document.documentElement.dataset.ghsTheme='dark';}",
           }}
         />
         <style>
           {`
             :root {
-              color-scheme: light;
-              --ghs-theme-toggle-bg: #ffffff;
-              --ghs-theme-toggle-border: #d7d7d7;
-              --ghs-theme-toggle-text: #232323;
-              --ghs-page-bg: #e8e8e8;
-              --ghs-panel-bg: #ffffff;
-              --ghs-panel-soft: #f6f6f6;
-              --ghs-panel-muted: #fbfbfb;
-              --ghs-nav-bg: #4a4a4a;
-              --ghs-border: #d7d7d7;
-              --ghs-text: #232323;
-              --ghs-muted: #777777;
-              --ghs-subtle: #555555;
-              --ghs-accent: #0ea5c6;
-              --ghs-orange: #f97316;
+              color-scheme: dark;
+              --ghs-theme-toggle-bg: #020617;
+              --ghs-theme-toggle-border: #334155;
+              --ghs-theme-toggle-text: #f8fafc;
+              --ghs-page-bg: #020617;
+              --ghs-panel-bg: #0f172a;
+              --ghs-panel-soft: #111827;
+              --ghs-panel-muted: #0b1220;
+              --ghs-nav-bg: #020617;
+              --ghs-border: #334155;
+              --ghs-text: #f8fafc;
+              --ghs-muted: #94a3b8;
+              --ghs-subtle: #cbd5e1;
+              --ghs-accent: #38bdf8;
+              --ghs-orange: #fb923c;
             }
 
             html[data-ghs-theme="dark"] {
@@ -436,7 +391,6 @@ export default function App() {
       </head>
       <body>
         <Outlet />
-        <ThemeToggle />
         <ScrollRestoration />
         <Scripts />
       </body>
