@@ -348,14 +348,14 @@ function metricCard(label: string, value: string, accent: string) {
       style={{
         borderRadius: 6,
         padding: "14px 16px",
-        background: "#ffffff",
+        background: "#0f172a",
         border: `1px solid ${accent}33`,
         boxShadow: `inset 4px 0 0 ${accent}, 0 1px 2px rgba(0,0,0,0.08)`,
       }}
     >
       <div
         style={{
-          color: "#777777",
+          color: "#94a3b8",
           fontSize: 12,
           textTransform: "uppercase",
           letterSpacing: "0.08em",
@@ -368,7 +368,7 @@ function metricCard(label: string, value: string, accent: string) {
           marginTop: 8,
           fontSize: 28,
           fontWeight: 800,
-          color: "#232323",
+          color: "#f8fafc",
         }}
       >
         {value}
@@ -712,16 +712,18 @@ function getBrowserGoogleMapsApiKey() {
   return process.env.GOOGLE_MAPS_BROWSER_API_KEY || "";
 }
 
-async function loadDispatchState() {
+async function loadDispatchState(options: { skipSetup?: boolean } = {}) {
   try {
-    await Promise.all([
-      ensureSeedDispatchTrucks(),
-      ensureSeedDispatchEmployees(),
-      ensureSeedDispatchOrders(),
-      ensureSeedDispatchRoutes(),
-    ]);
-    if (process.env.DISPATCH_AUTO_DAILY_RESET === "true") {
-      await resetDispatchRoutesForNewDay();
+    if (!options.skipSetup) {
+      await Promise.all([
+        ensureSeedDispatchTrucks(),
+        ensureSeedDispatchEmployees(),
+        ensureSeedDispatchOrders(),
+        ensureSeedDispatchRoutes(),
+      ]);
+      if (process.env.DISPATCH_AUTO_DAILY_RESET === "true") {
+        await resetDispatchRoutesForNewDay();
+      }
     }
     const [
       orders,
@@ -842,17 +844,23 @@ export async function loader({ request }: any) {
     return redirect(dispatchPath);
   }
 
+  const shouldPollMailbox =
+    url.searchParams.get("pollMailbox") === "1" ||
+    process.env.DISPATCH_AUTO_POLL_ON_PAGE_LOAD === "true";
+
   const [dispatchState, mailboxStatus] = await Promise.all([
     loadDispatchState(),
-    maybeAutoPollDispatchMailbox().catch((error) => {
-      console.error("[DISPATCH MAILBOX AUTO POLL ERROR]", error);
-      return {
-        configured: true,
-        imported: 0,
-        skipped: 0,
-        message: error instanceof Error ? error.message : "Mailbox auto-poll failed.",
-      };
-    }),
+    shouldPollMailbox
+      ? maybeAutoPollDispatchMailbox().catch((error) => {
+          console.error("[DISPATCH MAILBOX AUTO POLL ERROR]", error);
+          return {
+            configured: true,
+            imported: 0,
+            skipped: 0,
+            message: error instanceof Error ? error.message : "Mailbox auto-poll failed.",
+          };
+        })
+      : Promise.resolve(null),
   ]);
 
   return data({
@@ -954,7 +962,7 @@ export async function action({ request }: any) {
       const material = String(form.get("material") || "").trim();
 
       if (!customer || !address || !material) {
-        const dispatchState = await loadDispatchState();
+        const dispatchState = await loadDispatchState({ skipSetup: true });
         return data(
           {
             allowed: true,
@@ -989,7 +997,7 @@ export async function action({ request }: any) {
         notes: String(form.get("notes") || "").trim(),
       });
 
-      const dispatchState = await loadDispatchState();
+      const dispatchState = await loadDispatchState({ skipSetup: true });
 
       return data({
         allowed: true,
@@ -1056,7 +1064,7 @@ export async function action({ request }: any) {
         createdOrders.push(created);
       }
 
-      const dispatchState = await loadDispatchState();
+      const dispatchState = await loadDispatchState({ skipSetup: true });
 
       return data({
         allowed: true,
@@ -1180,7 +1188,7 @@ export async function action({ request }: any) {
         }
       }
 
-      const dispatchState = await loadDispatchState();
+      const dispatchState = await loadDispatchState({ skipSetup: true });
 
       return data({
         allowed: true,
@@ -1596,7 +1604,7 @@ export async function action({ request }: any) {
         : "Order was not found.";
 
       if (capacityError) {
-        const dispatchState = await loadDispatchState();
+        const dispatchState = await loadDispatchState({ skipSetup: true });
         return data(
           {
             allowed: true,
@@ -1624,7 +1632,7 @@ export async function action({ request }: any) {
       });
       await resequenceChangedRoutes([previousRouteId, routeId]);
 
-      const dispatchState = await loadDispatchState();
+      const dispatchState = await loadDispatchState({ skipSetup: true });
 
       return data({
         allowed: true,
@@ -1658,7 +1666,7 @@ export async function action({ request }: any) {
         ),
       );
 
-      const dispatchState = await loadDispatchState();
+      const dispatchState = await loadDispatchState({ skipSetup: true });
 
       return data({
         allowed: true,
@@ -1681,7 +1689,7 @@ export async function action({ request }: any) {
         eta: null,
       });
 
-      const dispatchState = await loadDispatchState();
+      const dispatchState = await loadDispatchState({ skipSetup: true });
 
       return data({
         allowed: true,
@@ -1706,7 +1714,7 @@ export async function action({ request }: any) {
       });
       await resequenceChangedRoutes([existingOrder?.assignedRouteId]);
 
-      const dispatchState = await loadDispatchState();
+      const dispatchState = await loadDispatchState({ skipSetup: true });
 
       return data({
         allowed: true,
@@ -3973,8 +3981,8 @@ export default function DispatchPage() {
 const styles = {
   page: {
     minHeight: "100vh",
-    background: "#e8e8e8",
-    color: "#232323",
+    background: "#020617",
+    color: "#f8fafc",
     padding: 0,
     fontFamily: "Verdana, Geneva, Tahoma, sans-serif",
     fontSize: 12,
@@ -3995,8 +4003,8 @@ const styles = {
     gap: 12,
     padding: "16px 14px",
     borderRadius: 0,
-    borderRight: "1px solid #343434",
-    background: "#4a4a4a",
+    borderRight: "1px solid #1e293b",
+    background: "#020617",
     boxShadow: "none",
   } as const,
   brandBlock: {
@@ -4011,8 +4019,8 @@ const styles = {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "#ffffff",
-    border: "1px solid #343434",
+    background: "#0f172a",
+    border: "1px solid #334155",
     overflow: "hidden",
     boxShadow: "none",
   } as const,
@@ -4023,7 +4031,7 @@ const styles = {
     display: "block",
   } as const,
   brandTitle: {
-    color: "#ffffff",
+    color: "#0f172a",
     fontSize: 15,
     fontWeight: 900,
     lineHeight: 1.1,
@@ -4046,11 +4054,11 @@ const styles = {
       alignItems: "center",
       padding: "0 13px",
       borderRadius: 8,
-      color: active ? "#ff7a1a" : "#ffffff",
+      color: active ? "#ff7a1a" : "#0f172a",
       textDecoration: "none",
       fontWeight: 800,
       border: "1px solid transparent",
-      background: active ? "#f7f7f7" : "transparent",
+      background: active ? "#1e293b" : "transparent",
     }) as const,
   sidebarFooter: {
     display: "grid",
@@ -4062,9 +4070,9 @@ const styles = {
     alignItems: "center",
     padding: "0 12px",
     borderRadius: 14,
-    border: "1px solid #343434",
+    border: "1px solid #334155",
     background: "transparent",
-    color: "#ffffff",
+    color: "#0f172a",
     textDecoration: "none",
     fontSize: 13,
     fontWeight: 800,
@@ -4075,8 +4083,8 @@ const styles = {
     padding: 14,
   } as const,
   loginCard: {
-    background: "#ffffff",
-    border: "1px solid #d7d7d7",
+    background: "#0f172a",
+    border: "1px solid #334155",
     borderRadius: 10,
     padding: 28,
     boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
@@ -4087,9 +4095,9 @@ const styles = {
     gap: 12,
     padding: "14px 16px",
     borderRadius: 0,
-    border: "1px solid #d7d7d7",
-    background: "#ffffff",
-    boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+    border: "1px solid #334155",
+    background: "#0f172a",
+    boxShadow: "0 1px 2px rgba(0,0,0,0.28)",
   } as const,
   kicker: {
     color: "#e85d04",
@@ -4107,7 +4115,7 @@ const styles = {
   },
   subtitle: {
     margin: "12px 0 0",
-    color: "#777777",
+    color: "#94a3b8",
     fontSize: 13,
     lineHeight: 1.65,
     maxWidth: 780,
@@ -4126,9 +4134,9 @@ const styles = {
     minHeight: 48,
     padding: "0 16px",
     borderRadius: 999,
-    border: "1px solid #d7d7d7",
-    background: "#ffffff",
-    color: "#0ea5c6",
+    border: "1px solid #334155",
+    background: "#0f172a",
+    color: "#38bdf8",
     textDecoration: "none",
     fontWeight: 700,
   } as const,
@@ -4163,8 +4171,8 @@ const styles = {
   } as const,
   panel: {
     borderRadius: 0,
-    border: "1px solid #d7d7d7",
-    background: "#ffffff",
+    border: "1px solid #334155",
+    background: "#0f172a",
     padding: 14,
     boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
   } as const,
@@ -4183,8 +4191,8 @@ const styles = {
     maxHeight: "calc(100vh - 44px)",
     overflowY: "auto" as const,
     borderRadius: 30,
-    border: "1px solid #d7d7d7",
-    background: "#ffffff",
+    border: "1px solid #334155",
+    background: "#0f172a",
     padding: 24,
     boxShadow: "0 18px 60px rgba(0,0,0,0.22)",
   } as const,
@@ -4193,8 +4201,8 @@ const styles = {
     maxHeight: "calc(100vh - 44px)",
     overflowY: "auto" as const,
     borderRadius: 30,
-    border: "1px solid #d7d7d7",
-    background: "#ffffff",
+    border: "1px solid #334155",
+    background: "#0f172a",
     padding: 24,
     boxShadow: "0 18px 60px rgba(0,0,0,0.22)",
   } as const,
@@ -4209,9 +4217,9 @@ const styles = {
     minHeight: 40,
     padding: "0 14px",
     borderRadius: 999,
-    border: "1px solid #d7d7d7",
-    background: "#ffffff",
-    color: "#232323",
+    border: "1px solid #334155",
+    background: "#020617",
+    color: "#f8fafc",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -4234,7 +4242,7 @@ const styles = {
   },
   panelSub: {
     margin: "6px 0 0",
-    color: "#777777",
+    color: "#94a3b8",
     lineHeight: 1.55,
     fontSize: 14,
   },
@@ -4249,9 +4257,9 @@ const styles = {
     minHeight: 44,
     boxSizing: "border-box" as const,
     borderRadius: 14,
-    border: "1px solid #d7d7d7",
-    background: "#ffffff",
-    color: "#232323",
+    border: "1px solid #334155",
+    background: "#020617",
+    color: "#f8fafc",
     padding: "0 14px",
     fontSize: 14,
     outline: "none",
@@ -4261,7 +4269,7 @@ const styles = {
     padding: "0 14px",
     borderRadius: 14,
     border: "1px solid #f97316",
-    background: "#ffffff",
+    background: "#0f172a",
     color: "#e85d04",
     fontWeight: 900,
     cursor: "pointer",
@@ -4269,9 +4277,9 @@ const styles = {
   emptySearch: {
     padding: 16,
     borderRadius: 16,
-    border: "1px dashed #d7d7d7",
-    background: "#fbfbfb",
-    color: "#777777",
+    border: "1px dashed #334155",
+    background: "#0b1220",
+    color: "#94a3b8",
     fontWeight: 800,
   },
   headerPill: {
@@ -4281,9 +4289,9 @@ const styles = {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    border: "1px solid #d7d7d7",
-    color: "#0ea5c6",
-    background: "#f6f6f6",
+    border: "1px solid #334155",
+    color: "#38bdf8",
+    background: "#0b1220",
     fontSize: 12,
     fontWeight: 800,
     textTransform: "uppercase" as const,
@@ -4293,16 +4301,16 @@ const styles = {
     width: "100%",
     textAlign: "left" as const,
     borderRadius: 6,
-    border: "1px solid #d7d7d7",
-    background: "#ffffff",
+    border: "1px solid #334155",
+    background: "#0b1220",
     padding: 16,
-    color: "#232323",
+    color: "#f8fafc",
     cursor: "pointer",
   } as const,
   queueDropActive: {
     borderColor: "rgba(34, 197, 94, 0.68)",
     background:
-      "#f0fdf4",
+      "rgba(34, 197, 94, 0.14)",
     boxShadow:
       "inset 0 0 0 1px rgba(34, 197, 94, 0.28)",
   } as const,
@@ -4324,9 +4332,9 @@ const styles = {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "#ffffff",
-    border: "1px solid #0ea5c6",
-    color: "#0ea5c6",
+    background: "#0f172a",
+    border: "1px solid #38bdf8",
+    color: "#38bdf8",
     fontSize: 12,
     fontWeight: 900,
     textDecoration: "none",
@@ -4338,7 +4346,7 @@ const styles = {
   },
   queueMeta: {
     marginTop: 6,
-    color: "#777777",
+    color: "#94a3b8",
     fontSize: 13,
   },
   queueDetails: {
@@ -4346,16 +4354,16 @@ const styles = {
     display: "flex",
     gap: 10,
     flexWrap: "wrap" as const,
-    color: "#555555",
+    color: "#cbd5e1",
     fontSize: 13,
   } as const,
   queueNotes: {
     marginTop: 10,
     padding: "9px 10px",
     borderRadius: 12,
-    background: "#fbfbfb",
-    border: "1px solid #e2e2e2",
-    color: "#555555",
+    background: "#0b1220",
+    border: "1px solid #334155",
+    color: "#cbd5e1",
     fontSize: 12,
     lineHeight: 1.45,
   } as const,
@@ -4364,7 +4372,7 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     gap: 12,
-    color: "#777777",
+    color: "#94a3b8",
     fontSize: 12,
   } as const,
   formGridTwo: {
@@ -4384,7 +4392,7 @@ const styles = {
     fontWeight: 800,
     letterSpacing: "0.04em",
     textTransform: "uppercase" as const,
-    color: "#555555",
+    color: "#cbd5e1",
   },
   input: {
     width: "100%",
@@ -4392,9 +4400,9 @@ const styles = {
     minHeight: 48,
     padding: "12px 14px",
     borderRadius: 14,
-    border: "1px solid #d7d7d7",
-    background: "#ffffff",
-    color: "#232323",
+    border: "1px solid #334155",
+    background: "#0f172a",
+    color: "#f8fafc",
     fontSize: 14,
     outline: "none",
   },
@@ -4404,8 +4412,8 @@ const styles = {
     minHeight: 48,
     padding: 6,
     borderRadius: 14,
-    border: "1px solid #d7d7d7",
-    background: "#ffffff",
+    border: "1px solid #334155",
+    background: "#0f172a",
     cursor: "pointer",
   },
   compactInput: {
@@ -4414,9 +4422,9 @@ const styles = {
     minHeight: 42,
     padding: "10px 12px",
     borderRadius: 12,
-    border: "1px solid #d7d7d7",
-    background: "#ffffff",
-    color: "#232323",
+    border: "1px solid #334155",
+    background: "#0f172a",
+    color: "#f8fafc",
     fontSize: 13,
     outline: "none",
   },
@@ -4425,9 +4433,9 @@ const styles = {
     boxSizing: "border-box" as const,
     padding: "10px 12px",
     borderRadius: 12,
-    border: "1px solid #d7d7d7",
-    background: "#ffffff",
-    color: "#232323",
+    border: "1px solid #334155",
+    background: "#0f172a",
+    color: "#f8fafc",
     fontSize: 13,
     outline: "none",
   },
@@ -4445,9 +4453,9 @@ const styles = {
     width: "100%",
     minHeight: 46,
     borderRadius: 14,
-    border: "1px solid #d7d7d7",
-    background: "#ffffff",
-    color: "#232323",
+    border: "1px solid #334155",
+    background: "#0f172a",
+    color: "#f8fafc",
     fontWeight: 700,
     cursor: "pointer",
   } as const,
@@ -4505,13 +4513,13 @@ const styles = {
       borderRadius: 20,
       padding: 18,
       border: `1px solid ${color}44`,
-      background: "#ffffff",
+      background: "#0f172a",
       boxShadow: `inset 4px 0 0 ${color}, 0 1px 2px rgba(0,0,0,0.08)`,
     }) as const,
   routeDropActive: {
     borderColor: "#38bdf8",
     background:
-      "#e8f7ff",
+      "rgba(56, 189, 248, 0.12)",
     boxShadow:
       "inset 0 0 0 1px rgba(56, 189, 248, 0.45)",
   } as const,
@@ -4520,8 +4528,8 @@ const styles = {
     padding: "10px 12px",
     borderRadius: 14,
     border: "1px dashed rgba(56, 189, 248, 0.28)",
-    background: "#e8f7ff",
-    color: "#0f6384",
+    background: "rgba(56, 189, 248, 0.12)",
+    color: "#7dd3fc",
     fontSize: 12,
     fontWeight: 900,
     textTransform: "uppercase" as const,
@@ -4532,8 +4540,8 @@ const styles = {
     padding: "10px 12px",
     borderRadius: 14,
     border: "1px solid rgba(56, 189, 248, 0.65)",
-    background: "#dff3ff",
-    color: "#0f6384",
+    background: "rgba(56, 189, 248, 0.18)",
+    color: "#7dd3fc",
     fontSize: 12,
     fontWeight: 950,
     textTransform: "uppercase" as const,
@@ -4550,18 +4558,18 @@ const styles = {
   routeCode: {
     fontSize: 13,
     fontWeight: 800,
-    color: "#232323",
+    color: "#f8fafc",
   },
   routeRegion: {
     fontSize: 12,
-    color: "#777777",
+    color: "#94a3b8",
   },
   routeStats: {
     marginTop: 14,
     display: "flex",
     gap: 10,
     flexWrap: "wrap" as const,
-    color: "#555555",
+    color: "#cbd5e1",
     fontSize: 13,
   } as const,
   routeTimePill: {
@@ -4609,9 +4617,9 @@ const styles = {
     gap: 5,
     padding: 14,
     borderRadius: 16,
-    background: "#fbfbfb",
-    border: "1px solid #d7d7d7",
-    color: "#232323",
+    background: "#0b1220",
+    border: "1px solid #334155",
+    color: "#f8fafc",
   } as const,
   resourcePill: {
     display: "inline-flex",
@@ -4619,9 +4627,9 @@ const styles = {
     minHeight: 28,
     padding: "0 10px",
     borderRadius: 999,
-    background: "#f6f6f6",
-    border: "1px solid #d7d7d7",
-    color: "#555555",
+    background: "#111827",
+    border: "1px solid #334155",
+    color: "#cbd5e1",
     fontSize: 12,
     fontWeight: 700,
   } as const,
@@ -4658,10 +4666,10 @@ const styles = {
     alignItems: "center",
     padding: "10px 12px",
     borderRadius: 14,
-    background: "#fbfbfb",
-    border: "1px solid #e2e2e2",
+    background: "#0b1220",
+    border: "1px solid #334155",
     textDecoration: "none",
-    color: "#232323",
+    color: "#f8fafc",
     userSelect: "none" as const,
   } as const,
   dragHandle: {
@@ -4672,8 +4680,8 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     border: "1px solid rgba(56, 189, 248, 0.28)",
-    background: "#e8f7ff",
-    color: "#0f6384",
+    background: "rgba(56, 189, 248, 0.12)",
+    color: "#7dd3fc",
     fontWeight: 950,
     cursor: "grab",
     userSelect: "none" as const,
@@ -4700,8 +4708,8 @@ const styles = {
     maxWidth: 96,
     borderRadius: 10,
     border: "1px solid rgba(34, 197, 94, 0.38)",
-    background: "#f0fdf4",
-    color: "#166534",
+    background: "rgba(34, 197, 94, 0.14)",
+    color: "#86efac",
     fontSize: 11,
     fontWeight: 900,
     padding: "0 8px",
@@ -4714,9 +4722,9 @@ const styles = {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "#ffffff",
-    border: "1px solid #0ea5c6",
-    color: "#0ea5c6",
+    background: "#0f172a",
+    border: "1px solid #38bdf8",
+    color: "#38bdf8",
     fontSize: 11,
     fontWeight: 900,
     textDecoration: "none",
@@ -4729,9 +4737,9 @@ const styles = {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "#ffffff",
-    border: "1px solid #d7d7d7",
-    color: "#555555",
+    background: "#0f172a",
+    border: "1px solid #334155",
+    color: "#cbd5e1",
     fontSize: 12,
     fontWeight: 900,
   } as const,
@@ -4760,8 +4768,8 @@ const styles = {
     gap: 12,
     padding: 14,
     borderRadius: 18,
-    background: "#fbfbfb",
-    border: "1px solid #d7d7d7",
+    background: "#0b1220",
+    border: "1px solid #334155",
   } as const,
   assignmentPanel: {
     display: "grid",
@@ -4769,7 +4777,7 @@ const styles = {
     padding: 14,
     borderRadius: 18,
     background:
-      "#e8f7ff",
+      "rgba(56, 189, 248, 0.12)",
     border: "1px solid #b6e4f8",
   } as const,
   assignmentForm: {
@@ -4788,9 +4796,9 @@ const styles = {
     gap: 8,
     padding: "8px 10px",
     borderRadius: 12,
-    border: "1px solid #d7d7d7",
-    background: "#fbfbfb",
-    color: "#555555",
+    border: "1px solid #334155",
+    background: "#0b1220",
+    color: "#cbd5e1",
     fontSize: 12,
     fontWeight: 800,
   } as const,
@@ -4799,7 +4807,7 @@ const styles = {
     minHeight: 380,
     borderRadius: 0,
     overflow: "hidden",
-    border: "1px solid #d7d7d7",
+    border: "1px solid #334155",
     background: "#dceecf",
   },
   googleMapCanvas: {
@@ -4816,7 +4824,7 @@ const styles = {
     padding: 24,
     background:
       "rgba(255, 255, 255, 0.86)",
-    color: "#232323",
+    color: "#f8fafc",
     fontSize: 14,
     fontWeight: 800,
     textAlign: "center" as const,
@@ -4845,13 +4853,13 @@ const styles = {
     gap: 8,
     padding: 12,
     borderRadius: 16,
-    background: "#ffffff",
-    border: "1px solid #d7d7d7",
-    color: "#232323",
+    background: "#0f172a",
+    border: "1px solid #334155",
+    color: "#f8fafc",
     fontSize: 12,
   } as const,
   detailId: {
-    color: "#0ea5c6",
+    color: "#38bdf8",
     fontSize: 12,
     fontWeight: 800,
     letterSpacing: "0.12em",
@@ -4865,14 +4873,14 @@ const styles = {
   },
   detailMeta: {
     marginTop: 6,
-    color: "#777777",
+    color: "#94a3b8",
   },
   detailGrid: {
     display: "grid",
     gap: 12,
   } as const,
   detailLabel: {
-    color: "#777777",
+    color: "#94a3b8",
     fontSize: 12,
     textTransform: "uppercase" as const,
     letterSpacing: "0.08em",
@@ -4880,15 +4888,15 @@ const styles = {
   },
   detailValue: {
     marginTop: 4,
-    color: "#232323",
+    color: "#f8fafc",
     fontWeight: 700,
     lineHeight: 1.5,
   },
   notesBlock: {
     borderRadius: 18,
     padding: 16,
-    background: "#fbfbfb",
-    border: "1px solid #d7d7d7",
+    background: "#0b1220",
+    border: "1px solid #334155",
   } as const,
   deliveredPhoto: {
     width: "100%",
@@ -4896,14 +4904,14 @@ const styles = {
     marginTop: 10,
     borderRadius: 16,
     objectFit: "contain" as const,
-    background: "#f6f6f6",
-    border: "1px solid #d7d7d7",
+    background: "#111827",
+    border: "1px solid #334155",
   },
   todoItem: {
     display: "flex",
     gap: 10,
     alignItems: "flex-start",
-    color: "#555555",
+    color: "#cbd5e1",
     lineHeight: 1.55,
   } as const,
   todoDot: {
@@ -4911,7 +4919,7 @@ const styles = {
     height: 8,
     marginTop: 7,
     borderRadius: 999,
-    background: "#0ea5c6",
+    background: "#38bdf8",
     boxShadow: "0 0 0 5px rgba(14, 165, 198, 0.12)",
     flex: "0 0 auto",
   } as const,
@@ -4920,7 +4928,7 @@ const styles = {
     borderRadius: 14,
     background: "#ecfdf5",
     border: "1px solid #bbf7d0",
-    color: "#166534",
+    color: "#86efac",
     fontWeight: 700,
   } as const,
   statusWarn: {
@@ -4950,8 +4958,8 @@ const styles = {
     gap: 3,
     padding: "10px 12px",
     borderRadius: 12,
-    background: "#fbfbfb",
-    border: "1px solid #e2e2e2",
+    background: "#0b1220",
+    border: "1px solid #334155",
     color: "inherit",
     fontSize: 13,
     lineHeight: 1.35,

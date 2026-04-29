@@ -43,6 +43,105 @@ export default function App() {
               --ghs-orange: #fb923c;
             }
 
+            html,
+            body {
+              background: var(--ghs-page-bg) !important;
+              color: var(--ghs-text) !important;
+            }
+
+            body,
+            main {
+              background: var(--ghs-page-bg) !important;
+              color: var(--ghs-text) !important;
+            }
+
+            section,
+            article,
+            form,
+            header,
+            aside,
+            nav {
+              border-color: var(--ghs-border) !important;
+              color: var(--ghs-text) !important;
+            }
+
+            section,
+            article,
+            form,
+            header {
+              background: var(--ghs-panel-bg) !important;
+            }
+
+            div:not([role="presentation"]):not([aria-label*="Map"]):not([class*="gm-"]):not([class*="map"]):not([class*="Map"]) {
+              border-color: var(--ghs-border) !important;
+            }
+
+            a,
+            button,
+            input,
+            select,
+            textarea {
+              border-color: var(--ghs-border) !important;
+            }
+
+            input,
+            select,
+            textarea {
+              background: #020617 !important;
+              color: var(--ghs-text) !important;
+            }
+
+            table,
+            th,
+            td {
+              background: var(--ghs-panel-soft) !important;
+              border-color: var(--ghs-border) !important;
+              color: #e5e7eb !important;
+            }
+
+            th {
+              background: #020617 !important;
+              color: #cbd5e1 !important;
+            }
+
+            [style*="background"],
+            [style*="background-color"] {
+              border-color: var(--ghs-border) !important;
+            }
+
+            [style*="background"]:not(button):not([class*="gm-"]):not([class*="map"]):not([class*="Map"]),
+            [style*="background-color"]:not(button):not([class*="gm-"]):not([class*="map"]):not([class*="Map"]) {
+              color: var(--ghs-text) !important;
+            }
+
+            button[style*="background: linear-gradient"],
+            button[style*="background:linear-gradient"],
+            a[style*="background: linear-gradient"],
+            a[style*="background:linear-gradient"] {
+              color: #ffffff !important;
+            }
+
+            [style*="color: rgb(35"],
+            [style*="color:#232323"],
+            [style*="color: #232323"],
+            [style*="color: rgb(17"],
+            [style*="color:#111827"],
+            [style*="color: #111827"] {
+              color: var(--ghs-text) !important;
+            }
+
+            [style*="color: rgb(119"],
+            [style*="color:#777777"],
+            [style*="color: #777777"],
+            [style*="color: rgb(100"],
+            [style*="color:#64748b"],
+            [style*="color: #64748b"],
+            [style*="color: rgb(107"],
+            [style*="color:#6b7280"],
+            [style*="color: #6b7280"] {
+              color: var(--ghs-muted) !important;
+            }
+
             html[data-ghs-theme="dark"] {
               color-scheme: dark;
               --ghs-theme-toggle-bg: #020617;
