@@ -83,6 +83,12 @@ function dateKey(date: Date | null) {
   ).padStart(2, "0")}`;
 }
 
+function startOfWeek(date: Date) {
+  const weekStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  return weekStart;
+}
+
 function formatDateLabel(date: Date | null) {
   if (!date) return "Needs scheduling";
   return date.toLocaleDateString("en-US", {
@@ -155,7 +161,7 @@ export default function DispatchCalendarPage() {
   const loginError = actionData?.loginError;
   const orders = (actionData?.orders ?? loaderData.orders ?? []) as DispatchOrder[];
   const currentUser = actionData?.currentUser ?? loaderData.currentUser ?? null;
-  const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
+  const [viewMode, setViewMode] = useState<"day" | "week" | "month" | "list">("month");
   const [query, setQuery] = useState("");
   const [cursorMonth, setCursorMonth] = useState(() => new Date());
   const [expandedDayKeys, setExpandedDayKeys] = useState<string[]>([]);
@@ -230,7 +236,40 @@ export default function DispatchCalendarPage() {
     day.setDate(gridStart.getDate() + index);
     return day;
   });
-  const monthLabel = `${monthNames[cursorMonth.getMonth()]} ${cursorMonth.getFullYear()}`;
+  const selectedDay = new Date(
+    cursorMonth.getFullYear(),
+    cursorMonth.getMonth(),
+    cursorMonth.getDate(),
+  );
+  const selectedWeekStart = startOfWeek(selectedDay);
+  const weekDays = Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(selectedWeekStart);
+    day.setDate(selectedWeekStart.getDate() + index);
+    return day;
+  });
+  const selectedDayTravelMinutes = travelMinutesByDay.get(dateKey(selectedDay)) || 0;
+  const weekTravelMinutes = weekDays.reduce(
+    (sum, day) => sum + (travelMinutesByDay.get(dateKey(day)) || 0),
+    0,
+  );
+  const monthLabel =
+    viewMode === "day"
+      ? selectedDay.toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        })
+      : viewMode === "week"
+        ? `${weekDays[0].toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          })} - ${weekDays[6].toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}`
+        : `${monthNames[cursorMonth.getMonth()]} ${cursorMonth.getFullYear()}`;
 
   function shiftMonth(amount: number) {
     setCursorMonth(
@@ -238,11 +277,75 @@ export default function DispatchCalendarPage() {
     );
   }
 
+  function shiftCalendar(amount: number) {
+    if (viewMode === "day") {
+      setCursorMonth(
+        (current) => new Date(current.getFullYear(), current.getMonth(), current.getDate() + amount),
+      );
+      return;
+    }
+
+    if (viewMode === "week") {
+      setCursorMonth(
+        (current) => new Date(current.getFullYear(), current.getMonth(), current.getDate() + amount * 7),
+      );
+      return;
+    }
+
+    shiftMonth(amount);
+  }
+
   function toggleDayExpanded(key: string) {
     setExpandedDayKeys((current) =>
       current.includes(key)
         ? current.filter((entry) => entry !== key)
         : [...current, key],
+    );
+  }
+
+  function renderDayCell(day: Date, options: { muted?: boolean; tall?: boolean } = {}) {
+    const key = dateKey(day);
+    const dayOrders = ordersByDay.get(key) || [];
+    const dayTravelMinutes = travelMinutesByDay.get(key) || 0;
+    const expanded = expandedDayKeys.includes(key) || options.tall;
+    const visibleOrders = expanded ? dayOrders : dayOrders.slice(0, 5);
+    const isToday = dateKey(day) === dateKey(new Date());
+
+    return (
+      <div key={key} style={options.tall ? styles.dayLarge : options.muted ? styles.dayMuted : styles.day}>
+        <div style={styles.dayHeader}>
+          <span style={isToday ? (options.tall ? styles.todayLabelBadge : styles.todayBadge) : undefined}>
+            {options.tall
+              ? day.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
+              : day.getDate()}
+          </span>
+          {dayOrders.length ? <span style={styles.dayCount}>{dayOrders.length}</span> : null}
+        </div>
+        {dayOrders.length ? (
+          <div style={styles.dayTotal}>
+            Total delivery time: {formatTravelMinutes(dayTravelMinutes)}
+          </div>
+        ) : null}
+        <div style={styles.dayOrders}>
+          {visibleOrders.map(({ order }) => (
+            <Link key={order.id} to={editorHref(order.id)} style={styles.orderChip}>
+              <strong>{getOrderNumber(order)}</strong>
+              <span>{order.customer}</span>
+              <small>{getLoadLabel(order)}</small>
+            </Link>
+          ))}
+          {!options.tall && dayOrders.length > 5 ? (
+            <button
+              type="button"
+              onClick={() => toggleDayExpanded(key)}
+              style={styles.moreChip}
+            >
+              {expanded ? "Show less" : `+${dayOrders.length - 5} more`}
+            </button>
+          ) : null}
+          {!dayOrders.length ? <div style={styles.emptyDay}>No deliveries scheduled.</div> : null}
+        </div>
+      </div>
     );
   }
 
@@ -308,10 +411,24 @@ export default function DispatchCalendarPage() {
           <div style={styles.headerActions}>
             <button
               type="button"
-              onClick={() => setViewMode("calendar")}
-              style={viewMode === "calendar" ? styles.toggleActive : styles.toggle}
+              onClick={() => setViewMode("day")}
+              style={viewMode === "day" ? styles.toggleActive : styles.toggle}
             >
-              Calendar
+              Day
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("week")}
+              style={viewMode === "week" ? styles.toggleActive : styles.toggle}
+            >
+              Week
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("month")}
+              style={viewMode === "month" ? styles.toggleActive : styles.toggle}
+            >
+              Month
             </button>
             <button
               type="button"
@@ -333,16 +450,16 @@ export default function DispatchCalendarPage() {
             placeholder="Search orders, customers, material, address, notes..."
             style={styles.search}
           />
-          {viewMode === "calendar" ? (
+          {viewMode !== "list" ? (
             <div style={styles.monthControls}>
-              <button type="button" onClick={() => shiftMonth(-1)} style={styles.smallButton}>Previous</button>
+              <button type="button" onClick={() => shiftCalendar(-1)} style={styles.smallButton}>Previous</button>
               <strong style={styles.monthLabel}>{monthLabel}</strong>
-              <button type="button" onClick={() => shiftMonth(1)} style={styles.smallButton}>Next</button>
+              <button type="button" onClick={() => shiftCalendar(1)} style={styles.smallButton}>Next</button>
             </div>
           ) : null}
         </div>
 
-        {viewMode === "calendar" ? (
+        {viewMode === "month" ? (
           <section style={styles.calendarPanel}>
             <div style={styles.weekHeader}>
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
@@ -351,46 +468,31 @@ export default function DispatchCalendarPage() {
             </div>
             <div style={styles.calendarGrid}>
               {calendarDays.map((day) => {
-                const key = dateKey(day);
-                const dayOrders = ordersByDay.get(key) || [];
-                const dayTravelMinutes = travelMinutesByDay.get(key) || 0;
-                const expanded = expandedDayKeys.includes(key);
-                const visibleOrders = expanded ? dayOrders : dayOrders.slice(0, 5);
                 const muted = day.getMonth() !== cursorMonth.getMonth();
-                const today = dateKey(day) === dateKey(new Date());
-                return (
-                  <div key={key} style={muted ? styles.dayMuted : styles.day}>
-                    <div style={styles.dayHeader}>
-                      <span style={today ? styles.todayBadge : undefined}>{day.getDate()}</span>
-                      {dayOrders.length ? <span style={styles.dayCount}>{dayOrders.length}</span> : null}
-                    </div>
-                    {dayOrders.length ? (
-                      <div style={styles.dayTotal}>
-                        Total delivery time: {formatTravelMinutes(dayTravelMinutes)}
-                      </div>
-                    ) : null}
-                    <div style={styles.dayOrders}>
-                      {visibleOrders.map(({ order }) => (
-                        <Link key={order.id} to={editorHref(order.id)} style={styles.orderChip}>
-                          <strong>{getOrderNumber(order)}</strong>
-                          <span>{order.customer}</span>
-                          <small>{getLoadLabel(order)}</small>
-                        </Link>
-                      ))}
-                      {dayOrders.length > 5 ? (
-                        <button
-                          type="button"
-                          onClick={() => toggleDayExpanded(key)}
-                          style={styles.moreChip}
-                        >
-                          {expanded ? "Show less" : `+${dayOrders.length - 5} more`}
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                );
+                return renderDayCell(day, { muted });
               })}
             </div>
+          </section>
+        ) : viewMode === "week" ? (
+          <section style={styles.calendarPanel}>
+            <div style={styles.viewSummary}>
+              Week total delivery time: {formatTravelMinutes(weekTravelMinutes)}
+            </div>
+            <div style={styles.weekHeader}>
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                <div key={day} style={styles.weekDay}>{day}</div>
+              ))}
+            </div>
+            <div style={styles.calendarGrid}>
+              {weekDays.map((day) => renderDayCell(day, { tall: true }))}
+            </div>
+          </section>
+        ) : viewMode === "day" ? (
+          <section style={styles.dayViewPanel}>
+            <div style={styles.viewSummary}>
+              Day total delivery time: {formatTravelMinutes(selectedDayTravelMinutes)}
+            </div>
+            {renderDayCell(selectedDay, { tall: true })}
           </section>
         ) : (
           <section style={styles.listPanel}>
@@ -591,6 +693,21 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: 0,
     overflow: "hidden",
   },
+  dayViewPanel: {
+    background: "var(--calendar-panel)",
+    border: "1px solid var(--calendar-border)",
+    borderRadius: 0,
+    display: "grid",
+    overflow: "hidden",
+  },
+  viewSummary: {
+    background: "#0b1220",
+    borderBottom: "1px solid var(--calendar-border)",
+    color: "var(--calendar-blue)",
+    fontSize: 13,
+    fontWeight: 900,
+    padding: "12px 14px",
+  },
   weekHeader: { display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))" },
   weekDay: {
     background: "var(--calendar-soft)",
@@ -609,6 +726,13 @@ const styles: Record<string, CSSProperties> = {
     borderRight: "1px solid var(--calendar-border)",
     minHeight: 150,
     padding: 12,
+  },
+  dayLarge: {
+    background: "#0f172a",
+    borderBottom: "1px solid var(--calendar-border)",
+    borderRight: "1px solid var(--calendar-border)",
+    minHeight: 520,
+    padding: 14,
   },
   dayMuted: {
     background: "#111827",
@@ -634,6 +758,15 @@ const styles: Record<string, CSSProperties> = {
     height: 28,
     justifyContent: "center",
     width: 28,
+  },
+  todayLabelBadge: {
+    alignItems: "center",
+    background: "var(--calendar-blue)",
+    borderRadius: 999,
+    color: "#fff",
+    display: "inline-flex",
+    justifyContent: "center",
+    padding: "7px 12px",
   },
   dayCount: {
     background: "rgba(34, 197, 94, 0.18)",
@@ -665,6 +798,14 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 900,
     padding: "7px 8px",
     textAlign: "left",
+  },
+  emptyDay: {
+    border: "1px dashed var(--calendar-border)",
+    borderRadius: 12,
+    color: "var(--calendar-muted)",
+    fontSize: 13,
+    fontWeight: 800,
+    padding: 12,
   },
   listPanel: {
     background: "var(--calendar-panel)",
