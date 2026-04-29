@@ -50,6 +50,69 @@ function getOrderDisplayNumber(order: DispatchOrder) {
   return order.orderNumber ? `#${order.orderNumber}` : order.id;
 }
 
+function extractPhone(value?: string | null) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  return "";
+}
+
+function getOneWayTravelMinutes(order: DispatchOrder) {
+  const roundTripMinutes = Number(order.travelMinutes || 0);
+  if (!Number.isFinite(roundTripMinutes) || roundTripMinutes <= 0) return 0;
+  return Math.max(1, Math.round(roundTripMinutes / 2));
+}
+
+function getCustomerEtaText(order: DispatchOrder) {
+  const oneWayMinutes = getOneWayTravelMinutes(order);
+  return oneWayMinutes ? `${oneWayMinutes} minute${oneWayMinutes === 1 ? "" : "s"}` : "soon";
+}
+
+function buildEnrouteSmsPreview({
+  order,
+  route,
+}: {
+  order: DispatchOrder;
+  route: DispatchRoute | null;
+}) {
+  const to = extractPhone(order.contact);
+  const body = [
+    `Green Hills Supply: your delivery is en route and should arrive in about ${getCustomerEtaText(order)}.`,
+    route?.truck ? `Truck: ${route.truck}.` : "",
+    "Please make sure the drop area is clear.",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return {
+    to,
+    body,
+    ready: Boolean(to),
+    reason: to ? "SMS preview is ready." : "No customer phone number was found in the contact field.",
+  };
+}
+
+function getReleaseDelayMs(order: DispatchOrder) {
+  const oneWayMinutes = getOneWayTravelMinutes(order);
+  return Math.max(0, oneWayMinutes - 5) * 60 * 1000;
+}
+
+function getReleaseRemainingMs(order: DispatchOrder, nowMs: number) {
+  if (order.status === "delivered" || order.deliveryStatus === "delivered") return 0;
+  if (order.deliveryStatus !== "en_route" || !order.departedAt) return null;
+
+  const departedMs = new Date(order.departedAt).getTime();
+  if (Number.isNaN(departedMs)) return null;
+  return Math.max(0, getReleaseDelayMs(order) - (nowMs - departedMs));
+}
+
+function formatCountdown(ms: number) {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
 function buildChecklistJson(form: FormData) {
   return JSON.stringify({
     siteSafe: form.get("siteSafe") === "on",
@@ -219,6 +282,17 @@ export async function action({ request }: any) {
 
   const updatedOrder = await updateDispatchOrder(orderId, patch);
 
+  let smsNote = "";
+  if (deliveryStatus === "en_route") {
+    const smsPreview = buildEnrouteSmsPreview({
+      order: updatedOrder,
+      route: currentRoute,
+    });
+    smsNote = smsPreview.ready
+      ? ` Customer enroute text is ready for ${smsPreview.to}: "${smsPreview.body}"`
+      : ` Customer enroute text skipped: ${smsPreview.reason}`;
+  }
+
   let emailNote = "";
   if (deliveryStatus === "delivered") {
     try {
@@ -238,7 +312,7 @@ export async function action({ request }: any) {
   return data({
     allowed: true,
     ok: true,
-    message: `Stop marked ${getStatusLabel(deliveryStatus).toLowerCase()}.${emailNote}`,
+    message: `Stop marked ${getStatusLabel(deliveryStatus).toLowerCase()}.${smsNote}${emailNote}`,
     selectedRouteId: routeId || null,
     selectedOrderId: orderId,
     ...(await loadDriverState()),
@@ -261,6 +335,7 @@ export default function DispatchDriverPage() {
   const routes = (actionData?.routes ?? loaderData.routes ?? []) as DispatchRoute[];
   const storageReady = actionData?.storageReady ?? loaderData.storageReady ?? false;
   const storageError = actionData?.storageError ?? loaderData.storageError ?? null;
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const searchParams = new URLSearchParams(location.search);
   const selectedRouteId =
     actionData?.selectedRouteId || searchParams.get("route") || routes[0]?.id || "";
@@ -286,6 +361,30 @@ export default function DispatchDriverPage() {
   const completedCount = routeStops.filter(
     (stop) => stop.deliveryStatus === "delivered",
   ).length;
+  const visibleStopCount = routeStops.reduce((count, stop, index) => {
+    if (index === 0) return Math.max(count, 1);
+    const previousStop = routeStops[index - 1];
+    const previousRemainingMs = getReleaseRemainingMs(previousStop, nowMs);
+    const previousReleased =
+      previousStop.status === "delivered" ||
+      previousStop.deliveryStatus === "delivered" ||
+      previousRemainingMs === 0;
+    return previousReleased ? index + 1 : count;
+  }, 0);
+  const visibleStops = routeStops.slice(0, Math.max(visibleStopCount, routeStops.length ? 1 : 0));
+  const nextLockedStopCount = Math.max(routeStops.length - visibleStops.length, 0);
+  const activeCountdownStop = visibleStops.find((stop) => {
+    const remainingMs = getReleaseRemainingMs(stop, nowMs);
+    return remainingMs !== null && remainingMs > 0;
+  });
+  const activeCountdownMs = activeCountdownStop
+    ? getReleaseRemainingMs(activeCountdownStop, nowMs) || 0
+    : 0;
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   if (!allowed) {
     return (
@@ -378,7 +477,22 @@ export default function DispatchDriverPage() {
           {routeStops.length === 0 ? (
             <div style={styles.empty}>No stops assigned to this route yet.</div>
           ) : (
-            routeStops.map((stop) => (
+            <>
+            {activeCountdownStop ? (
+              <div style={styles.countdownPanel}>
+                <span>Next stop releases in</span>
+                <strong>{formatCountdown(activeCountdownMs)}</strong>
+                <small>
+                  Based on {getCustomerEtaText(activeCountdownStop)} travel time minus 5 minutes.
+                </small>
+              </div>
+            ) : null}
+            {nextLockedStopCount ? (
+              <div style={styles.lockedNotice}>
+                {nextLockedStopCount} later stop{nextLockedStopCount === 1 ? "" : "s"} hidden until the route timer releases them.
+              </div>
+            ) : null}
+            {visibleStops.map((stop) => (
               <article key={stop.id} style={styles.stopCard}>
                 <div style={styles.stopTop}>
                   <div style={styles.stopNumber}>{stop.stopSequence || "-"}</div>
@@ -433,7 +547,8 @@ export default function DispatchDriverPage() {
                   detailHref={detailHref}
                 />
               </article>
-            ))
+            ))}
+            </>
           )}
         </main>
       </div>
@@ -792,6 +907,23 @@ const styles = {
   stopList: {
     display: "grid",
     gap: 12,
+  } as const,
+  countdownPanel: {
+    display: "grid",
+    gap: 4,
+    padding: 16,
+    borderRadius: 14,
+    background: "rgba(249, 115, 22, 0.14)",
+    border: "1px solid rgba(249, 115, 22, 0.38)",
+    color: "#fed7aa",
+  } as const,
+  lockedNotice: {
+    padding: 14,
+    borderRadius: 12,
+    background: "rgba(56, 189, 248, 0.12)",
+    border: "1px solid rgba(56, 189, 248, 0.34)",
+    color: "#7dd3fc",
+    fontWeight: 900,
   } as const,
   stopCard: {
     padding: 16,
