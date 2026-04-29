@@ -217,9 +217,15 @@ export default function AllotmentPage() {
     return [...totals.values()].sort((a, b) => a.material.localeCompare(b.material));
   }, [selectedItems]);
 
+  const todayDate = new Date();
+  const isViewingCurrentMonth =
+    cursorMonth.getFullYear() === todayDate.getFullYear() &&
+    cursorMonth.getMonth() === todayDate.getMonth();
   const monthStart = new Date(cursorMonth.getFullYear(), cursorMonth.getMonth(), 1);
-  const gridStart = new Date(monthStart);
-  gridStart.setDate(monthStart.getDate() - monthStart.getDay());
+  const gridStart = isViewingCurrentMonth
+    ? new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate())
+    : new Date(monthStart);
+  gridStart.setDate(gridStart.getDate() - gridStart.getDay());
   const calendarDays = Array.from({ length: 42 }, (_, index) => {
     const day = new Date(gridStart);
     day.setDate(gridStart.getDate() + index);
