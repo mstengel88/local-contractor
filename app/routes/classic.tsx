@@ -220,7 +220,9 @@ function ClassicMap({
   driverLocations: DispatchDriverLocation[];
 }) {
   const mapRef = useRef<HTMLDivElement | null>(null);
+  const mapInstanceRef = useRef<any>(null);
   const mapObjectsRef = useRef<any[]>([]);
+  const driverMarkersRef = useRef<any[]>([]);
   const [status, setStatus] = useState("");
   const [useFallback, setUseFallback] = useState(false);
   const [hiddenRouteIds, setHiddenRouteIds] = useState<string[]>([]);
@@ -260,12 +262,9 @@ function ClassicMap({
           color: route.color,
           stops: route.stops.map((stop) => stop.address),
           hidden: hiddenRouteIds.includes(route.id),
-          drivers: driverLocations
-            .filter((location) => location.routeId === route.id)
-            .map((location) => `${location.latitude},${location.longitude},${location.capturedAt}`),
         })),
       ),
-    [routePlan, hiddenRouteIds, driverLocations],
+    [routePlan, hiddenRouteIds],
   );
 
   function toggleRoute(routeId: string) {
@@ -297,13 +296,16 @@ function ClassicMap({
         mapObjectsRef.current.forEach((object) => object.setMap?.(null));
         mapObjectsRef.current = [];
 
-        const map = new google.maps.Map(mapRef.current, {
-          center: { lat: 43.1789, lng: -88.1173 },
-          zoom: 9,
-          mapTypeControl: true,
-          streetViewControl: false,
-          fullscreenControl: true,
-        });
+        const map =
+          mapInstanceRef.current ||
+          new google.maps.Map(mapRef.current, {
+            center: { lat: 43.1789, lng: -88.1173 },
+            zoom: 9,
+            mapTypeControl: true,
+            streetViewControl: false,
+            fullscreenControl: true,
+          });
+        mapInstanceRef.current = map;
         const bounds = new google.maps.LatLngBounds();
         const directionsService = new google.maps.DirectionsService();
         let yardMarkerAdded = false;
@@ -381,6 +383,39 @@ function ClassicMap({
           }
         }
 
+        if (!bounds.isEmpty()) map.fitBounds(bounds);
+        setStatus("");
+      } catch (error) {
+        console.warn("[CLASSIC MAP ERROR]", error);
+        setStatus("Google map unavailable. Showing route preview.");
+        setUseFallback(true);
+      }
+    }
+
+    drawMap();
+
+    return () => {
+      cancelled = true;
+      mapObjectsRef.current.forEach((object) => object.setMap?.(null));
+      mapObjectsRef.current = [];
+    };
+  }, [googleMapsApiKey, originAddress, routePlanKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function drawDriverMarkers() {
+      if (!googleMapsApiKey || !mapInstanceRef.current) return;
+
+      try {
+        await loadClassicGoogleMaps(googleMapsApiKey);
+        if (cancelled || !mapInstanceRef.current) return;
+
+        const google = (window as any).google;
+        const map = mapInstanceRef.current;
+        driverMarkersRef.current.forEach((marker) => marker.setMap?.(null));
+        driverMarkersRef.current = [];
+
         for (const location of driverLocations.filter(
           (item) =>
             item.routeId &&
@@ -388,10 +423,9 @@ function ClassicMap({
             Number.isFinite(item.latitude) &&
             Number.isFinite(item.longitude),
         )) {
-          const position = { lat: location.latitude, lng: location.longitude };
           const marker = new google.maps.Marker({
             map,
-            position,
+            position: { lat: location.latitude, lng: location.longitude },
             title: `${location.truck || "Driver"} · ${location.driverName || "Driver"} · ${new Date(location.capturedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`,
             icon: {
               path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
@@ -409,27 +443,21 @@ function ClassicMap({
               fontSize: "11px",
             },
           });
-          mapObjectsRef.current.push(marker);
-          bounds.extend(position);
+          driverMarkersRef.current.push(marker);
         }
-
-        if (!bounds.isEmpty()) map.fitBounds(bounds);
-        setStatus("");
       } catch (error) {
-        console.warn("[CLASSIC MAP ERROR]", error);
-        setStatus("Google map unavailable. Showing route preview.");
-        setUseFallback(true);
+        console.warn("[CLASSIC DRIVER MARKER ERROR]", error);
       }
     }
 
-    drawMap();
+    void drawDriverMarkers();
 
     return () => {
       cancelled = true;
-      mapObjectsRef.current.forEach((object) => object.setMap?.(null));
-      mapObjectsRef.current = [];
+      driverMarkersRef.current.forEach((marker) => marker.setMap?.(null));
+      driverMarkersRef.current = [];
     };
-  }, [googleMapsApiKey, originAddress, routePlanKey, driverLocations, visibleRouteIds]);
+  }, [driverLocations, googleMapsApiKey, visibleRouteIds]);
 
   if (useFallback) {
     return (
@@ -546,7 +574,7 @@ export default function ClassicDispatchPage() {
       }
     }
 
-    const timer = window.setInterval(loadDriverLocations, 15000);
+    const timer = window.setInterval(loadDriverLocations, 60000);
     void loadDriverLocations();
     return () => {
       cancelled = true;

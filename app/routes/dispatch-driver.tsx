@@ -585,10 +585,18 @@ function DriverLiveTracking({
   route: DispatchRoute;
   activeStop: DispatchOrder | null;
 }) {
-  const [trackingStatus, setTrackingStatus] = useState("Starting GPS tracking...");
+  const [trackingEnabled, setTrackingEnabled] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("dispatchDriverGpsEnabled") === "true";
+  });
+  const [trackingStatus, setTrackingStatus] = useState(
+    trackingEnabled ? "Starting GPS tracking..." : "Live GPS is off on this device.",
+  );
   const [lastPing, setLastPing] = useState("");
 
   useEffect(() => {
+    if (!trackingEnabled) return;
+
     if (!navigator.geolocation) {
       setTrackingStatus("Live GPS is not available on this device.");
       return;
@@ -653,7 +661,29 @@ function DriverLiveTracking({
       cancelled = true;
       navigator.geolocation.clearWatch(watchId);
     };
-  }, [activeStop?.id, route.code, route.driver, route.driverId, route.id, route.truck]);
+  }, [activeStop?.id, route.code, route.driver, route.driverId, route.id, route.truck, trackingEnabled]);
+
+  function enableTracking() {
+    if (!navigator.geolocation) {
+      setTrackingStatus("Live GPS is not available on this device.");
+      return;
+    }
+
+    setTrackingStatus("Requesting location access...");
+    navigator.geolocation.getCurrentPosition(
+      () => {
+        window.localStorage.setItem("dispatchDriverGpsEnabled", "true");
+        setTrackingEnabled(true);
+        setTrackingStatus("GPS tracking active.");
+      },
+      (error) => {
+        window.localStorage.removeItem("dispatchDriverGpsEnabled");
+        setTrackingEnabled(false);
+        setTrackingStatus(error.message || "Location access was not allowed.");
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 },
+    );
+  }
 
   return (
     <section style={styles.trackingPanel}>
@@ -661,7 +691,13 @@ function DriverLiveTracking({
         <span style={styles.trackingLabel}>Live GPS</span>
         <strong>{trackingStatus}</strong>
       </div>
-      <small>{lastPing ? `Last map update ${lastPing}` : "Allow location access when prompted."}</small>
+      {trackingEnabled ? (
+        <small>{lastPing ? `Last map update ${lastPing}` : "Waiting for the first GPS update."}</small>
+      ) : (
+        <button type="button" style={styles.trackingButton} onClick={enableTracking}>
+          Enable Live GPS
+        </button>
+      )}
     </section>
   );
 }
@@ -1005,6 +1041,16 @@ const styles = {
     letterSpacing: "0.08em",
     textTransform: "uppercase" as const,
   },
+  trackingButton: {
+    minHeight: 38,
+    borderRadius: 999,
+    border: "1px solid rgba(34, 197, 94, 0.55)",
+    background: "#22c55e",
+    color: "#052e16",
+    padding: "0 14px",
+    fontWeight: 950,
+    cursor: "pointer",
+  } as const,
   routeChip: {
     display: "grid",
     gridTemplateColumns: "12px minmax(0, 1fr) auto",
