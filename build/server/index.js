@@ -5110,7 +5110,7 @@ function readEmailField(raw, labels) {
   }
   return "";
 }
-function decodeQuotedPrintable(raw) {
+function decodeQuotedPrintable$1(raw) {
   return raw.replace(/=\r?\n/g, "").replace(/(?:=[0-9A-F]{2})+/gi, (encoded) => {
     var _a2;
     const bytes = (_a2 = encoded.match(/=([0-9A-F]{2})/gi)) == null ? void 0 : _a2.map((part) => parseInt(part.slice(1), 16));
@@ -5121,7 +5121,7 @@ function decodeHtmlEntities(value) {
   return value.replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&#215;|&#xD7;|&times;/gi, "x").replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'").replace(/&shy;|&#173;|&#xAD;/gi, "").replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code))).replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16)));
 }
 function emailTextFromHtml(raw) {
-  return decodeHtmlEntities(decodeQuotedPrintable(raw)).replace(/<style[\s\S]*?<\/style>/gi, "\n").replace(/<script[\s\S]*?<\/script>/gi, "\n").replace(/<head[\s\S]*?<\/head>/gi, "\n").replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|div|tr|table|h\d|td|th|li)>/gi, "\n").replace(/<[^>]+>/g, " ").replace(/[\u00ad\u200B-\u200D\uFEFF]/g, "").replace(/\r/g, "").replace(/^\s*=\s*$/gm, "").replace(/\s+=\s*$/gm, "").replace(/[ \t]+/g, " ").replace(/\n\s+/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  return decodeHtmlEntities(decodeQuotedPrintable$1(raw)).replace(/<style[\s\S]*?<\/style>/gi, "\n").replace(/<script[\s\S]*?<\/script>/gi, "\n").replace(/<head[\s\S]*?<\/head>/gi, "\n").replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|div|tr|table|h\d|td|th|li)>/gi, "\n").replace(/<[^>]+>/g, " ").replace(/[\u00ad\u200B-\u200D\uFEFF]/g, "").replace(/\r/g, "").replace(/^\s*=\s*$/gm, "").replace(/\s+=\s*$/gm, "").replace(/[ \t]+/g, " ").replace(/\n\s+/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 function normalizeEmailText(raw) {
   return emailTextFromHtml(raw);
@@ -6380,6 +6380,44 @@ function getMessageBody(raw) {
   const split = raw.split(/\r?\n\r?\n/);
   return split.length > 1 ? split.slice(1).join("\n\n") : raw;
 }
+function decodeQuotedPrintable(raw) {
+  return raw.replace(/=\r?\n/g, "").replace(/(?:=[0-9A-F]{2})+/gi, (encoded) => {
+    var _a2;
+    const bytes = (_a2 = encoded.match(/=([0-9A-F]{2})/gi)) == null ? void 0 : _a2.map((part) => parseInt(part.slice(1), 16));
+    return bytes ? Buffer.from(bytes).toString("utf8") : encoded;
+  });
+}
+function decodeTransferBody(body, encoding) {
+  const normalizedEncoding = encoding.toLowerCase();
+  if (normalizedEncoding.includes("base64")) {
+    try {
+      return Buffer.from(body.replace(/\s+/g, ""), "base64").toString("utf8");
+    } catch {
+      return body;
+    }
+  }
+  if (normalizedEncoding.includes("quoted-printable")) {
+    return decodeQuotedPrintable(body);
+  }
+  return body;
+}
+function readBoundary(contentType) {
+  var _a2, _b;
+  return ((_a2 = contentType.match(/boundary=(?:"([^"]+)"|([^;\s]+))/i)) == null ? void 0 : _a2[1]) || ((_b = contentType.match(/boundary=(?:"([^"]+)"|([^;\s]+))/i)) == null ? void 0 : _b[2]) || "";
+}
+function decodeMimeMessage(raw) {
+  const contentType = readHeader(raw, "Content-Type");
+  const transferEncoding = readHeader(raw, "Content-Transfer-Encoding");
+  const body = getMessageBody(raw);
+  const boundary2 = readBoundary(contentType);
+  if (boundary2) {
+    return body.split(new RegExp(`--${boundary2.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:--)?\\r?\\n?`, "g")).map((part) => part.trim()).filter((part) => part && !part.startsWith("--")).map((part) => decodeMimeMessage(part)).filter(Boolean).join("\n\n");
+  }
+  if (/text\/(?:plain|html)/i.test(contentType) || !contentType) {
+    return decodeTransferBody(body, transferEncoding);
+  }
+  return "";
+}
 class SimpleImapClient {
   constructor(config) {
     __publicField(this, "socket");
@@ -6438,7 +6476,7 @@ function parseFetchResponse(uid, response) {
   if (!raw) return null;
   const subject = readHeader(raw, "Subject");
   const messageId = readHeader(raw, "Message-ID") || `${uid}:${subject}`;
-  const body = getMessageBody(raw);
+  const body = decodeMimeMessage(raw) || getMessageBody(raw);
   return {
     uid,
     messageId,

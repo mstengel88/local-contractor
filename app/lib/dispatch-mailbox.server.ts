@@ -72,6 +72,66 @@ function getMessageBody(raw: string) {
   return split.length > 1 ? split.slice(1).join("\n\n") : raw;
 }
 
+function decodeQuotedPrintable(raw: string) {
+  return raw
+    .replace(/=\r?\n/g, "")
+    .replace(/(?:=[0-9A-F]{2})+/gi, (encoded) => {
+      const bytes = encoded
+        .match(/=([0-9A-F]{2})/gi)
+        ?.map((part) => parseInt(part.slice(1), 16));
+      return bytes ? Buffer.from(bytes).toString("utf8") : encoded;
+    });
+}
+
+function decodeTransferBody(body: string, encoding: string) {
+  const normalizedEncoding = encoding.toLowerCase();
+
+  if (normalizedEncoding.includes("base64")) {
+    try {
+      return Buffer.from(body.replace(/\s+/g, ""), "base64").toString("utf8");
+    } catch {
+      return body;
+    }
+  }
+
+  if (normalizedEncoding.includes("quoted-printable")) {
+    return decodeQuotedPrintable(body);
+  }
+
+  return body;
+}
+
+function readBoundary(contentType: string) {
+  return (
+    contentType.match(/boundary=(?:"([^"]+)"|([^;\s]+))/i)?.[1] ||
+    contentType.match(/boundary=(?:"([^"]+)"|([^;\s]+))/i)?.[2] ||
+    ""
+  );
+}
+
+function decodeMimeMessage(raw: string): string {
+  const contentType = readHeader(raw, "Content-Type");
+  const transferEncoding = readHeader(raw, "Content-Transfer-Encoding");
+  const body = getMessageBody(raw);
+  const boundary = readBoundary(contentType);
+
+  if (boundary) {
+    return body
+      .split(new RegExp(`--${boundary.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:--)?\\r?\\n?`, "g"))
+      .map((part) => part.trim())
+      .filter((part) => part && !part.startsWith("--"))
+      .map((part) => decodeMimeMessage(part))
+      .filter(Boolean)
+      .join("\n\n");
+  }
+
+  if (/text\/(?:plain|html)/i.test(contentType) || !contentType) {
+    return decodeTransferBody(body, transferEncoding);
+  }
+
+  return "";
+}
+
 class SimpleImapClient {
   private socket: tls.TLSSocket;
   private buffer = "";
@@ -140,7 +200,7 @@ function parseFetchResponse(uid: string, response: string): ImapEmail | null {
 
   const subject = readHeader(raw, "Subject");
   const messageId = readHeader(raw, "Message-ID") || `${uid}:${subject}`;
-  const body = getMessageBody(raw);
+  const body = decodeMimeMessage(raw) || getMessageBody(raw);
 
   return {
     uid,
