@@ -6352,7 +6352,7 @@ async function deleteDispatchOrder(id) {
 }
 let lastAutoPollAt = 0;
 const DEFAULT_ORDER_SUBJECT_PREFIX = "You've Got A New Order: #";
-const MAILBOX_IMPORT_VERSION = "phone-fallback-v2";
+const MAILBOX_IMPORT_VERSION = "phone-fallback-v3";
 function getMailboxConfig() {
   const host = process.env.DISPATCH_MAILBOX_HOST || "";
   const user = process.env.DISPATCH_MAILBOX_USER || "";
@@ -6503,7 +6503,22 @@ function suffixMailboxMessageId(messageId, index, total) {
   return `${messageId}#${String.fromCharCode(97 + index)}`;
 }
 function extractPhone$1(value) {
-  const digits = String(value || "").replace(/\D/g, "");
+  const text = String(value || "").replace(/[\u00ad\u200B-\u200D\uFEFF]/g, " ");
+  const candidates = [
+    ...Array.from(text.matchAll(/(?:^|\D)(1?[2-9]\d{9})(?=\D|$)/g), (match) => match[1]),
+    ...Array.from(
+      text.matchAll(/(?:^|\D)(1?[\s.-]?\(?[2-9]\d{2}\)?[\s.-]+\d{3}[\s.-]+\d{4})(?=\D|$)/g),
+      (match) => match[1]
+    )
+  ];
+  for (const candidate of candidates) {
+    const candidateDigits = candidate.replace(/\D/g, "");
+    if (candidateDigits.length === 10) return candidateDigits;
+    if (candidateDigits.length === 11 && candidateDigits.startsWith("1")) {
+      return candidateDigits.slice(1);
+    }
+  }
+  const digits = text.replace(/\D/g, "");
   if (digits.length === 10) return digits;
   if (digits.length === 11 && digits.startsWith("1")) return digits.slice(1);
   return "";
