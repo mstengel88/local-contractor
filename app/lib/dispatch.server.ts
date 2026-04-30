@@ -131,6 +131,42 @@ function cleanOrderNumber(value: string) {
   return value.match(/#?\s*([A-Z0-9-]+)/i)?.[1]?.trim() || "";
 }
 
+function normalizePhoneNumber(value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length === 10) return digits;
+  if (digits.length === 11 && digits.startsWith("1")) return digits.slice(1);
+  return "";
+}
+
+function parsePhoneNumber(raw: string) {
+  const normalized = normalizeEmailText(raw);
+  const labelled =
+    readEmailField(normalized, ["Phone", "Phone Number", "Mobile", "Cell", "Tel", "Telephone"]) ||
+    "";
+  const labelledPhone = normalizePhoneNumber(labelled);
+  if (labelledPhone) return labelledPhone;
+
+  const candidates = normalized.match(
+    /(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}|\d{10})/g,
+  ) || [];
+
+  for (const candidate of candidates) {
+    const phone = normalizePhoneNumber(candidate);
+    if (phone) return phone;
+  }
+
+  return "";
+}
+
+function formatPhoneForContact(phone: string) {
+  const digits = normalizePhoneNumber(phone);
+  return digits ? `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}` : "";
+}
+
+function combineContactParts(email: string, phone: string) {
+  return [email.trim(), formatPhoneForContact(phone)].filter(Boolean).join(" / ");
+}
+
 function isProductHeader(value: string) {
   return /^(product|quantity|price|unit|units|price units?|order summary)$/i.test(
     value.trim(),
@@ -483,7 +519,7 @@ function parseShopifyProducts(raw: string) {
 function parseShopifyShipping(raw: string) {
   const lines = textLines(raw);
   const start = lines.findIndex((line) => /^shipping address\b/i.test(line));
-  if (start < 0) return { customer: "", address: "", city: "", contact: "" };
+  if (start < 0) return { customer: "", address: "", city: "", contact: "", phone: "" };
 
   const block: string[] = [];
   for (const line of lines.slice(start)) {
@@ -498,6 +534,10 @@ function parseShopifyShipping(raw: string) {
     .map((line) => line.trim())
     .filter(Boolean);
   const contact = cleaned.find((line) => /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(line)) || "";
+  const phone =
+    cleaned
+      .map((line) => parsePhoneNumber(line))
+      .find(Boolean) || "";
   const customer = cleaned.find((line) => !/\d/.test(line) && !/address/i.test(line) && !/,/.test(line)) || "";
   const rawAddress = cleaned.find((line) => /\d/.test(line) && !/^\d{7,}$/.test(line) && !/@/.test(line) && !/^\s*[A-Z]{2}\s+\d{5}/i.test(line)) || "";
   const splitAddress = splitStreetAndCity(rawAddress);
@@ -507,7 +547,7 @@ function parseShopifyShipping(raw: string) {
     "";
   const city = splitAddress.city || cleanCityValue(rawCity);
 
-  return { customer, address: splitAddress.address, city, contact };
+  return { customer, address: splitAddress.address, city, contact, phone };
 }
 
 function parseShopifyDeliveryNotes(raw: string) {
@@ -541,11 +581,13 @@ export function parseDispatchEmail(raw: string) {
     readEmailField(normalized, ["Order Number", "Order No"]) ||
       parseShopifyOrderNumber(raw, subject),
   );
-  const contact =
+  const contactEmail =
     readEmailField(normalized, ["Email", "Contact", "Customer Email"]) ||
     shipping.contact ||
     normalized.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] ||
     "";
+  const phone = parsePhoneNumber(normalized) || shipping.phone || "";
+  const contact = combineContactParts(contactEmail, phone);
   const customer =
     readEmailField(normalized, ["Customer", "Client", "Name", "Company"]) ||
     parseShopifyCustomer(raw) ||

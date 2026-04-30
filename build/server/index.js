@@ -5137,6 +5137,33 @@ function cleanOrderNumber(value) {
   var _a2, _b;
   return ((_b = (_a2 = value.match(/#?\s*([A-Z0-9-]+)/i)) == null ? void 0 : _a2[1]) == null ? void 0 : _b.trim()) || "";
 }
+function normalizePhoneNumber(value) {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length === 10) return digits;
+  if (digits.length === 11 && digits.startsWith("1")) return digits.slice(1);
+  return "";
+}
+function parsePhoneNumber(raw) {
+  const normalized = normalizeEmailText(raw);
+  const labelled = readEmailField(normalized, ["Phone", "Phone Number", "Mobile", "Cell", "Tel", "Telephone"]) || "";
+  const labelledPhone = normalizePhoneNumber(labelled);
+  if (labelledPhone) return labelledPhone;
+  const candidates = normalized.match(
+    /(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}|\d{10})/g
+  ) || [];
+  for (const candidate of candidates) {
+    const phone = normalizePhoneNumber(candidate);
+    if (phone) return phone;
+  }
+  return "";
+}
+function formatPhoneForContact(phone) {
+  const digits = normalizePhoneNumber(phone);
+  return digits ? `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}` : "";
+}
+function combineContactParts(email, phone) {
+  return [email.trim(), formatPhoneForContact(phone)].filter(Boolean).join(" / ");
+}
 function isProductHeader(value) {
   return /^(product|quantity|price|unit|units|price units?|order summary)$/i.test(
     value.trim()
@@ -5348,7 +5375,7 @@ function parseShopifyProducts(raw) {
 function parseShopifyShipping(raw) {
   const lines = textLines(raw);
   const start = lines.findIndex((line) => /^shipping address\b/i.test(line));
-  if (start < 0) return { customer: "", address: "", city: "", contact: "" };
+  if (start < 0) return { customer: "", address: "", city: "", contact: "", phone: "" };
   const block = [];
   for (const line of lines.slice(start)) {
     if (block.length && /^what happens next\??$/i.test(line)) break;
@@ -5358,12 +5385,13 @@ function parseShopifyShipping(raw) {
   }
   const cleaned = block.flatMap((line) => line.split(/\s{2,}/)).map((line) => line.trim()).filter(Boolean);
   const contact = cleaned.find((line) => /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(line)) || "";
+  const phone = cleaned.map((line) => parsePhoneNumber(line)).find(Boolean) || "";
   const customer = cleaned.find((line) => !/\d/.test(line) && !/address/i.test(line) && !/,/.test(line)) || "";
   const rawAddress = cleaned.find((line) => /\d/.test(line) && !/^\d{7,}$/.test(line) && !/@/.test(line) && !/^\s*[A-Z]{2}\s+\d{5}/i.test(line)) || "";
   const splitAddress = splitStreetAndCity(rawAddress);
   const rawCity = cleaned.find((line) => /,\s*[A-Z]{2}\s+\d{5}/i.test(line)) || cleaned.find((line) => /\b[A-Z]{2}\s+\d{5}/i.test(line)) || "";
   const city = splitAddress.city || cleanCityValue(rawCity);
-  return { customer, address: splitAddress.address, city, contact };
+  return { customer, address: splitAddress.address, city, contact, phone };
 }
 function parseShopifyDeliveryNotes(raw) {
   var _a2, _b;
@@ -5390,7 +5418,9 @@ function parseDispatchEmail(raw) {
   const orderNumber = cleanOrderNumber(
     readEmailField(normalized, ["Order Number", "Order No"]) || parseShopifyOrderNumber(raw, subject)
   );
-  const contact = readEmailField(normalized, ["Email", "Contact", "Customer Email"]) || shipping.contact || ((_a2 = normalized.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)) == null ? void 0 : _a2[0]) || "";
+  const contactEmail = readEmailField(normalized, ["Email", "Contact", "Customer Email"]) || shipping.contact || ((_a2 = normalized.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)) == null ? void 0 : _a2[0]) || "";
+  const phone = parsePhoneNumber(normalized) || shipping.phone || "";
+  const contact = combineContactParts(contactEmail, phone);
   const customer = readEmailField(normalized, ["Customer", "Client", "Name", "Company"]) || parseShopifyCustomer(raw) || shipping.customer || subject.replace(/^(order|delivery|quote)\s*[:-]\s*/i, "").trim();
   const address = readEmailField(normalized, [
     "Address",
