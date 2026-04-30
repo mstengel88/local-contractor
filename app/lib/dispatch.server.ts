@@ -57,6 +57,23 @@ export type DispatchOrder = {
   updated_at?: string;
 };
 
+export type DispatchDriverLocation = {
+  id: string;
+  routeId?: string | null;
+  orderId?: string | null;
+  driverId?: string | null;
+  driverName: string;
+  truck: string;
+  latitude: number;
+  longitude: number;
+  accuracy?: number | null;
+  heading?: number | null;
+  speed?: number | null;
+  capturedAt: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
 function readEmailField(raw: string, labels: string[]) {
   for (const label of labels) {
     const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -986,6 +1003,7 @@ const ROUTES_TABLE = "dispatch_routes";
 const TRUCKS_TABLE = "dispatch_trucks";
 const EMPLOYEES_TABLE = "dispatch_employees";
 const SETTINGS_TABLE = "dispatch_settings";
+const DRIVER_LOCATIONS_TABLE = "dispatch_driver_locations";
 const CLASSIC_COLUMNS_SETTING_KEY = "classic_columns";
 
 function normalizeOrder(row: any): DispatchOrder {
@@ -1107,6 +1125,27 @@ function normalizeEmployee(row: any): DispatchEmployee {
     phone: row.phone || null,
     email: row.email || null,
     isActive: row.is_active !== false,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+function normalizeDriverLocation(row: any): DispatchDriverLocation {
+  return {
+    id: String(row.id),
+    routeId: row.route_id || null,
+    orderId: row.order_id || null,
+    driverId: row.driver_id || null,
+    driverName: String(row.driver_name || ""),
+    truck: String(row.truck || ""),
+    latitude: Number(row.latitude),
+    longitude: Number(row.longitude),
+    accuracy:
+      row.accuracy === null || row.accuracy === undefined ? null : Number(row.accuracy),
+    heading:
+      row.heading === null || row.heading === undefined ? null : Number(row.heading),
+    speed: row.speed === null || row.speed === undefined ? null : Number(row.speed),
+    capturedAt: row.captured_at || row.updated_at || row.created_at || new Date().toISOString(),
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -1372,6 +1411,74 @@ export async function getDispatchOrders() {
   }
 
   return (data || []).map(normalizeOrder);
+}
+
+export async function getLatestDispatchDriverLocations() {
+  const { data, error } = await supabaseAdmin
+    .from(DRIVER_LOCATIONS_TABLE)
+    .select("*")
+    .order("captured_at", { ascending: false });
+
+  if (error) {
+    if (error.code === "42P01" || /does not exist|schema cache/i.test(error.message || "")) {
+      console.warn("[DISPATCH DRIVER LOCATION STORAGE MISSING]", formatSupabaseError(error));
+      return [];
+    }
+    throw new Error(formatSupabaseError(error));
+  }
+
+  const seen = new Set<string>();
+  return (data || [])
+    .map(normalizeDriverLocation)
+    .filter((location) => {
+      const key = location.routeId || location.driverId || location.driverName || location.id;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return Number.isFinite(location.latitude) && Number.isFinite(location.longitude);
+    });
+}
+
+export async function upsertDispatchDriverLocation(input: {
+  routeId?: string | null;
+  orderId?: string | null;
+  driverId?: string | null;
+  driverName: string;
+  truck: string;
+  latitude: number;
+  longitude: number;
+  accuracy?: number | null;
+  heading?: number | null;
+  speed?: number | null;
+  capturedAt?: string | null;
+}) {
+  const routeId = input.routeId || "unassigned";
+  const payload = {
+    id: routeId,
+    route_id: input.routeId || null,
+    order_id: input.orderId || null,
+    driver_id: input.driverId || null,
+    driver_name: input.driverName || "",
+    truck: input.truck || "",
+    latitude: input.latitude,
+    longitude: input.longitude,
+    accuracy: input.accuracy ?? null,
+    heading: input.heading ?? null,
+    speed: input.speed ?? null,
+    captured_at: input.capturedAt || new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabaseAdmin
+    .from(DRIVER_LOCATIONS_TABLE)
+    .upsert(payload, { onConflict: "id" })
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+
+  return normalizeDriverLocation(data);
 }
 
 export async function getDispatchOrderByMailboxMessageId(messageId: string) {

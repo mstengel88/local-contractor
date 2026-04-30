@@ -16,6 +16,7 @@ alter table if exists public.dispatch_orders enable row level security;
 alter table if exists public.dispatch_routes enable row level security;
 alter table if exists public.dispatch_settings enable row level security;
 alter table if exists public.dispatch_trucks enable row level security;
+alter table if exists public.dispatch_driver_locations enable row level security;
 alter table if exists public.shipping_material_rules enable row level security;
 alter table if exists public.shopify_app_settings enable row level security;
 
@@ -72,6 +73,13 @@ create policy "service role manages dispatch settings"
 drop policy if exists "service role manages dispatch trucks" on public.dispatch_trucks;
 create policy "service role manages dispatch trucks"
   on public.dispatch_trucks
+  for all
+  using (auth.role() = 'service_role')
+  with check (auth.role() = 'service_role');
+
+drop policy if exists "service role manages dispatch driver locations" on public.dispatch_driver_locations;
+create policy "service role manages dispatch driver locations"
+  on public.dispatch_driver_locations
   for all
   using (auth.role() = 'service_role')
   with check (auth.role() = 'service_role');

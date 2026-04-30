@@ -6,6 +6,7 @@ import {
 } from "./dispatch";
 import type {
   DispatchEmployee,
+  DispatchDriverLocation,
   DispatchOrder,
   DispatchRoute,
   DispatchTruck,
@@ -211,10 +212,12 @@ function ClassicMap({
   googleMapsApiKey,
   originAddress,
   routes,
+  driverLocations,
 }: {
   googleMapsApiKey: string;
   originAddress: string;
   routes: Array<DispatchRoute & { orders: DispatchOrder[] }>;
+  driverLocations: DispatchDriverLocation[];
 }) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapObjectsRef = useRef<any[]>([]);
@@ -257,9 +260,12 @@ function ClassicMap({
           color: route.color,
           stops: route.stops.map((stop) => stop.address),
           hidden: hiddenRouteIds.includes(route.id),
+          drivers: driverLocations
+            .filter((location) => location.routeId === route.id)
+            .map((location) => `${location.latitude},${location.longitude},${location.capturedAt}`),
         })),
       ),
-    [routePlan, hiddenRouteIds],
+    [routePlan, hiddenRouteIds, driverLocations],
   );
 
   function toggleRoute(routeId: string) {
@@ -375,6 +381,38 @@ function ClassicMap({
           }
         }
 
+        for (const location of driverLocations.filter(
+          (item) =>
+            item.routeId &&
+            visibleRouteIds.has(item.routeId) &&
+            Number.isFinite(item.latitude) &&
+            Number.isFinite(item.longitude),
+        )) {
+          const position = { lat: location.latitude, lng: location.longitude };
+          const marker = new google.maps.Marker({
+            map,
+            position,
+            title: `${location.truck || "Driver"} · ${location.driverName || "Driver"} · ${new Date(location.capturedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`,
+            icon: {
+              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+              scale: 6,
+              fillColor: "#22c55e",
+              fillOpacity: 1,
+              strokeColor: "#052e16",
+              strokeWeight: 2,
+              rotation: Number.isFinite(Number(location.heading)) ? Number(location.heading) : 0,
+            },
+            label: {
+              text: location.truck || "DRV",
+              color: "#052e16",
+              fontWeight: "900",
+              fontSize: "11px",
+            },
+          });
+          mapObjectsRef.current.push(marker);
+          bounds.extend(position);
+        }
+
         if (!bounds.isEmpty()) map.fitBounds(bounds);
         setStatus("");
       } catch (error) {
@@ -391,7 +429,7 @@ function ClassicMap({
       mapObjectsRef.current.forEach((object) => object.setMap?.(null));
       mapObjectsRef.current = [];
     };
-  }, [googleMapsApiKey, originAddress, routePlanKey]);
+  }, [googleMapsApiKey, originAddress, routePlanKey, driverLocations, visibleRouteIds]);
 
   if (useFallback) {
     return (
@@ -419,6 +457,12 @@ function ClassicMap({
             {route.code} {route.truck || "Unassigned"}
           </button>
         ))}
+        {driverLocations.length ? (
+          <span style={styles.driverLegendItem}>
+            <span style={styles.driverLegendDot} />
+            {driverLocations.length} live driver{driverLocations.length === 1 ? "" : "s"}
+          </span>
+        ) : null}
       </div>
     </div>
   );
@@ -447,6 +491,12 @@ export default function ClassicDispatchPage() {
   const baseRoutes = (actionData?.routes ?? loaderData.routes ?? []) as DispatchRoute[];
   const trucks = (actionData?.trucks ?? loaderData.trucks ?? []) as DispatchTruck[];
   const employees = (actionData?.employees ?? loaderData.employees ?? []) as DispatchEmployee[];
+  const initialDriverLocations = (actionData?.driverLocations ??
+    loaderData.driverLocations ??
+    []) as DispatchDriverLocation[];
+  const [driverLocations, setDriverLocations] = useState<DispatchDriverLocation[]>(
+    initialDriverLocations,
+  );
   const materialOptions = (actionData?.materialOptions ?? loaderData.materialOptions ?? []) as string[];
   const classicColumnSettings = (actionData?.classicColumnSettings ??
     loaderData.classicColumnSettings ??
@@ -476,6 +526,33 @@ export default function ClassicDispatchPage() {
   const orderColumnKeys = classicColumnSettings.orders || defaultClassicColumnSettings.orders;
   const unscheduledColumnKeys =
     classicColumnSettings.unscheduled || defaultClassicColumnSettings.unscheduled;
+
+  useEffect(() => {
+    setDriverLocations(initialDriverLocations);
+  }, [initialDriverLocations]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDriverLocations() {
+      try {
+        const response = await fetch("/api/dispatch-driver-location");
+        const result = await response.json().catch(() => null);
+        if (!cancelled && response.ok && result?.ok !== false) {
+          setDriverLocations(result.locations || []);
+        }
+      } catch {
+        // Keep the last known GPS markers if a refresh misses.
+      }
+    }
+
+    const timer = window.setInterval(loadDriverLocations, 15000);
+    void loadDriverLocations();
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, []);
 
   const routes = useMemo(
     () =>
@@ -984,6 +1061,7 @@ export default function ClassicDispatchPage() {
               googleMapsApiKey={googleMapsApiKey}
               originAddress={mapOriginAddress}
               routes={routes}
+              driverLocations={driverLocations}
             />
 
             <div style={styles.panel}>
@@ -1568,6 +1646,25 @@ const styles: Record<string, any> = {
     width: 10,
     height: 10,
     borderRadius: "50%",
+  },
+  driverLegendItem: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    padding: "5px 8px",
+    borderRadius: 4,
+    border: "1px solid rgba(34, 197, 94, 0.5)",
+    background: "rgba(220, 252, 231, 0.96)",
+    color: "#052e16",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.16)",
+    fontWeight: 900,
+  },
+  driverLegendDot: {
+    width: 0,
+    height: 0,
+    borderLeft: "6px solid transparent",
+    borderRight: "6px solid transparent",
+    borderBottom: "12px solid #22c55e",
   },
   assignForm: { display: "flex", gap: 4 },
   smallSelect: {

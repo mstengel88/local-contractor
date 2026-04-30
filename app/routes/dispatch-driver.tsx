@@ -389,6 +389,11 @@ export default function DispatchDriverPage() {
   const activeCountdownMs = activeCountdownStop
     ? getReleaseRemainingMs(activeCountdownStop, nowMs) || 0
     : 0;
+  const trackingStop =
+    visibleStops.find((stop) => stop.deliveryStatus === "en_route") ||
+    visibleStops[0] ||
+    routeStops[0] ||
+    null;
 
   useEffect(() => {
     const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
@@ -433,6 +438,13 @@ export default function DispatchDriverPage() {
             <a href={logoutHref} style={styles.ghostButton}>Log Out</a>
           </div>
         </header>
+
+        {selectedRoute ? (
+          <DriverLiveTracking
+            route={selectedRoute}
+            activeStop={trackingStop}
+          />
+        ) : null}
 
         {!storageReady ? (
           <div style={styles.warning}>
@@ -563,6 +575,94 @@ export default function DispatchDriverPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+function DriverLiveTracking({
+  route,
+  activeStop,
+}: {
+  route: DispatchRoute;
+  activeStop: DispatchOrder | null;
+}) {
+  const [trackingStatus, setTrackingStatus] = useState("Starting GPS tracking...");
+  const [lastPing, setLastPing] = useState("");
+
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setTrackingStatus("Live GPS is not available on this device.");
+      return;
+    }
+
+    let lastSentAt = 0;
+    let cancelled = false;
+
+    async function sendLocation(position: GeolocationPosition) {
+      const now = Date.now();
+      if (now - lastSentAt < 15000) return;
+      lastSentAt = now;
+
+      const { latitude, longitude, accuracy, heading, speed } = position.coords;
+      setTrackingStatus("GPS tracking active.");
+
+      try {
+        const response = await fetch("/api/dispatch-driver-location", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            routeId: route.id,
+            orderId: activeStop?.id || null,
+            driverId: route.driverId || null,
+            driverName: route.driver || "",
+            truck: route.truck || route.code,
+            latitude,
+            longitude,
+            accuracy,
+            heading,
+            speed,
+            capturedAt: new Date().toISOString(),
+          }),
+        });
+
+        const result = await response.json().catch(() => null);
+        if (!response.ok || result?.ok === false) {
+          throw new Error(result?.message || "Unable to save GPS location.");
+        }
+
+        if (!cancelled) {
+          setLastPing(new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" }));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setTrackingStatus(error instanceof Error ? error.message : "Unable to save GPS location.");
+        }
+      }
+    }
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        void sendLocation(position);
+      },
+      (error) => {
+        setTrackingStatus(error.message || "Unable to start GPS tracking.");
+      },
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 },
+    );
+
+    return () => {
+      cancelled = true;
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, [activeStop?.id, route.code, route.driver, route.driverId, route.id, route.truck]);
+
+  return (
+    <section style={styles.trackingPanel}>
+      <div>
+        <span style={styles.trackingLabel}>Live GPS</span>
+        <strong>{trackingStatus}</strong>
+      </div>
+      <small>{lastPing ? `Last map update ${lastPing}` : "Allow location access when prompted."}</small>
+    </section>
   );
 }
 
@@ -884,6 +984,27 @@ const styles = {
     gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
     gap: 10,
   } as const,
+  trackingPanel: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 14,
+    padding: "12px 14px",
+    borderRadius: 12,
+    border: "1px solid rgba(34, 197, 94, 0.34)",
+    background: "linear-gradient(135deg, rgba(20, 83, 45, 0.5), rgba(15, 23, 42, 0.96))",
+    color: "#dcfce7",
+    flexWrap: "wrap" as const,
+  } as const,
+  trackingLabel: {
+    display: "block",
+    marginBottom: 4,
+    color: "#86efac",
+    fontSize: 11,
+    fontWeight: 950,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase" as const,
+  },
   routeChip: {
     display: "grid",
     gridTemplateColumns: "12px minmax(0, 1fr) auto",

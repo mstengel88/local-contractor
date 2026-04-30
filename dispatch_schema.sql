@@ -196,6 +196,46 @@ alter table public.dispatch_routes
 create index if not exists dispatch_routes_active_idx
   on public.dispatch_routes (is_active, created_at asc);
 
+create table if not exists public.dispatch_driver_locations (
+  id text primary key,
+  route_id text references public.dispatch_routes(id) on delete cascade,
+  order_id text references public.dispatch_orders(id) on delete set null,
+  driver_id text references public.dispatch_employees(id) on delete set null,
+  driver_name text not null default '',
+  truck text not null default '',
+  latitude double precision not null,
+  longitude double precision not null,
+  accuracy double precision,
+  heading double precision,
+  speed double precision,
+  captured_at timestamptz not null default timezone('utc', now()),
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+create index if not exists dispatch_driver_locations_route_idx
+  on public.dispatch_driver_locations (route_id, captured_at desc);
+
+create index if not exists dispatch_driver_locations_captured_idx
+  on public.dispatch_driver_locations (captured_at desc);
+
+create or replace function public.set_dispatch_driver_locations_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = timezone('utc', now());
+  return new;
+end;
+$$;
+
+drop trigger if exists dispatch_driver_locations_set_updated_at on public.dispatch_driver_locations;
+
+create trigger dispatch_driver_locations_set_updated_at
+before update on public.dispatch_driver_locations
+for each row
+execute function public.set_dispatch_driver_locations_updated_at();
+
 create table if not exists public.dispatch_settings (
   key text primary key,
   value text,

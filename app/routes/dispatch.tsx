@@ -24,6 +24,7 @@ import {
   ensureSeedDispatchTrucks,
   getClassicColumnSettings,
   getDispatchEmployees,
+  getLatestDispatchDriverLocations,
   getDispatchMaterialOptions,
   getDispatchOriginAddress,
   getDispatchUnitForMaterial,
@@ -733,6 +734,7 @@ async function loadDispatchState(options: { skipSetup?: boolean } = {}) {
       materialOptions,
       mapOriginAddress,
       classicColumnSettings,
+      driverLocations,
     ] = await Promise.all([
       getDispatchOrders(),
       getDispatchRoutes(),
@@ -741,6 +743,7 @@ async function loadDispatchState(options: { skipSetup?: boolean } = {}) {
       getDispatchMaterialOptions(),
       getDispatchOriginAddress(),
       getClassicColumnSettings(),
+      getLatestDispatchDriverLocations(),
     ]);
 
     return {
@@ -751,6 +754,7 @@ async function loadDispatchState(options: { skipSetup?: boolean } = {}) {
       materialOptions,
       mapOriginAddress,
       classicColumnSettings,
+      driverLocations,
       storageReady: true,
       storageError: null,
     };
@@ -766,6 +770,7 @@ async function loadDispatchState(options: { skipSetup?: boolean } = {}) {
       materialOptions: [],
       mapOriginAddress: "W185 N7487 Narrow Ln, Menomonee Falls, WI 53051",
       classicColumnSettings: undefined,
+      driverLocations: [],
       storageReady: false,
       storageError: message,
     };
@@ -829,6 +834,7 @@ export async function loader({ request }: any) {
       googleMapsApiKey: getBrowserGoogleMapsApiKey(),
       mapOriginAddress: "",
       classicColumnSettings: undefined,
+      driverLocations: [],
       storageReady: false,
       storageError: null,
     });
