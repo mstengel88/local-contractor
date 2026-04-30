@@ -242,6 +242,17 @@ function formatPhone(phone: string) {
   return digits ? `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}` : "";
 }
 
+function findPhoneInMailboxText(value: string) {
+  const candidates = String(value || "").match(/(?:\+?1[\s().-]*)?(?:\d[\s().-]*){10}/g) || [];
+
+  for (const candidate of candidates) {
+    const phone = extractPhone(candidate);
+    if (phone) return phone;
+  }
+
+  return "";
+}
+
 function mergeContactWithPhone(existingContact: string, parsedContact: string) {
   const existing = String(existingContact || "").trim();
   const parsed = String(parsedContact || "").trim();
@@ -290,6 +301,26 @@ function mailboxDebugExcerpt(raw: string) {
     .slice(0, 260);
 
   return excerpt || "(no readable body excerpt)";
+}
+
+function extractMailboxPhone(raw: string) {
+  const text = compactDebugText(raw);
+  const lines = text.split("\n").map((line) => line.trim()).filter(Boolean);
+
+  for (const [index, line] of lines.entries()) {
+    if (!/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(line)) continue;
+    const nearbyBlock = lines.slice(Math.max(0, index - 6), index + 3).join(" ");
+    const phone = findPhoneInMailboxText(nearbyBlock);
+    if (phone) return phone;
+  }
+
+  const addressStart = lines.findIndex((line) => /^(billing|shipping)\s+address\b/i.test(line));
+  if (addressStart >= 0) {
+    const phone = findPhoneInMailboxText(lines.slice(addressStart, addressStart + 18).join(" "));
+    if (phone) return phone;
+  }
+
+  return findPhoneInMailboxText(text);
 }
 
 async function fetchOrderEmails(config: ImapConfig) {
@@ -350,6 +381,11 @@ export async function pollDispatchMailbox() {
     }
 
     const parsed = parseDispatchEmail(email.raw);
+    const mailboxPhone = extractMailboxPhone(email.raw);
+    const parsedContact =
+      extractPhone(parsed.contact) || !mailboxPhone
+        ? parsed.contact
+        : [parsed.contact, formatPhone(mailboxPhone)].filter(Boolean).join(" / ");
     const products = parsed.products?.length
       ? parsed.products
       : [{ material: parsed.material, quantity: parsed.quantity }];
@@ -380,9 +416,9 @@ export async function pollDispatchMailbox() {
 
     if (importedOrders.length) {
       let updatedForEmail = 0;
-      const parsedPhone = extractPhone(parsed.contact);
+      const parsedPhone = extractPhone(parsedContact);
       for (const order of importedOrders) {
-        const nextContact = mergeContactWithPhone(order.contact, parsed.contact);
+        const nextContact = mergeContactWithPhone(order.contact, parsedContact);
         if (nextContact && nextContact !== order.contact) {
           await updateDispatchOrderDetails(order.id, { contact: nextContact });
           updated += 1;
@@ -420,7 +456,7 @@ export async function pollDispatchMailbox() {
         source: "email",
         orderNumber: suffixOrderNumber(parsed.orderNumber, index, validProducts.length),
         customer: parsed.customer,
-        contact: parsed.contact,
+        contact: parsedContact,
         address: parsed.address,
         city: parsed.city,
         material: product.material,

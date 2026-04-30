@@ -680,7 +680,7 @@ export function parseDispatchEmail(raw: string) {
     shipping.contact ||
     normalized.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] ||
     "";
-  const phone = parsePhoneNumber(normalized) || shipping.phone || "";
+  const phone = parsePhoneNumber(raw) || shipping.phone || "";
   const contact = combineContactParts(contactEmail, phone);
   const customer =
     readEmailField(normalized, ["Customer", "Client", "Name", "Company"]) ||

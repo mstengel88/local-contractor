@@ -5481,7 +5481,7 @@ function parseDispatchEmail(raw) {
     readEmailField(normalized, ["Order Number", "Order No"]) || parseShopifyOrderNumber(raw, subject)
   );
   const contactEmail = readEmailField(normalized, ["Email", "Contact", "Customer Email"]) || shipping.contact || ((_a2 = normalized.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)) == null ? void 0 : _a2[0]) || "";
-  const phone = parsePhoneNumber(normalized) || shipping.phone || "";
+  const phone = parsePhoneNumber(raw) || shipping.phone || "";
   const contact = combineContactParts(contactEmail, phone);
   const customer = readEmailField(normalized, ["Customer", "Client", "Name", "Company"]) || parseShopifyCustomer(raw) || shipping.customer || subject.replace(/^(order|delivery|quote)\s*[:-]\s*/i, "").trim();
   const address = readEmailField(normalized, [
@@ -6511,6 +6511,14 @@ function formatPhone$1(phone) {
   const digits = extractPhone$1(phone);
   return digits ? `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}` : "";
 }
+function findPhoneInMailboxText(value) {
+  const candidates = String(value || "").match(/(?:\+?1[\s().-]*)?(?:\d[\s().-]*){10}/g) || [];
+  for (const candidate of candidates) {
+    const phone = extractPhone$1(candidate);
+    if (phone) return phone;
+  }
+  return "";
+}
 function mergeContactWithPhone(existingContact, parsedContact) {
   const existing = String(existingContact || "").trim();
   const parsed = String(parsedContact || "").trim();
@@ -6538,6 +6546,22 @@ function mailboxDebugExcerpt(raw) {
   );
   const excerpt = (start >= 0 ? lines.slice(start, start + 10) : lines.slice(-12)).join(" | ").replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[email]").slice(0, 260);
   return excerpt || "(no readable body excerpt)";
+}
+function extractMailboxPhone(raw) {
+  const text = compactDebugText(raw);
+  const lines = text.split("\n").map((line) => line.trim()).filter(Boolean);
+  for (const [index, line] of lines.entries()) {
+    if (!/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(line)) continue;
+    const nearbyBlock = lines.slice(Math.max(0, index - 6), index + 3).join(" ");
+    const phone = findPhoneInMailboxText(nearbyBlock);
+    if (phone) return phone;
+  }
+  const addressStart = lines.findIndex((line) => /^(billing|shipping)\s+address\b/i.test(line));
+  if (addressStart >= 0) {
+    const phone = findPhoneInMailboxText(lines.slice(addressStart, addressStart + 18).join(" "));
+    if (phone) return phone;
+  }
+  return findPhoneInMailboxText(text);
 }
 async function fetchOrderEmails(config) {
   const client = new SimpleImapClient(config);
@@ -6588,6 +6612,8 @@ async function pollDispatchMailbox() {
       continue;
     }
     const parsed = parseDispatchEmail(email.raw);
+    const mailboxPhone = extractMailboxPhone(email.raw);
+    const parsedContact = extractPhone$1(parsed.contact) || !mailboxPhone ? parsed.contact : [parsed.contact, formatPhone$1(mailboxPhone)].filter(Boolean).join(" / ");
     const products = ((_a2 = parsed.products) == null ? void 0 : _a2.length) ? parsed.products : [{ material: parsed.material, quantity: parsed.quantity }];
     const validProducts = products.filter((product) => product.material);
     const messageIdOrders = await Promise.all(
@@ -6606,9 +6632,9 @@ async function pollDispatchMailbox() {
     ]);
     if (importedOrders.length) {
       let updatedForEmail = 0;
-      const parsedPhone = extractPhone$1(parsed.contact);
+      const parsedPhone = extractPhone$1(parsedContact);
       for (const order of importedOrders) {
-        const nextContact = mergeContactWithPhone(order.contact, parsed.contact);
+        const nextContact = mergeContactWithPhone(order.contact, parsedContact);
         if (nextContact && nextContact !== order.contact) {
           await updateDispatchOrderDetails(order.id, { contact: nextContact });
           updated += 1;
@@ -6639,7 +6665,7 @@ async function pollDispatchMailbox() {
         source: "email",
         orderNumber: suffixOrderNumber$1(parsed.orderNumber, index, validProducts.length),
         customer: parsed.customer,
-        contact: parsed.contact,
+        contact: parsedContact,
         address: parsed.address,
         city: parsed.city,
         material: product.material,
