@@ -2,6 +2,7 @@ import tls from "node:tls";
 import {
   createDispatchOrder,
   getDispatchOrderByMailboxMessageId,
+  getDispatchOrdersByOrderNumber,
   getDispatchUnitForMaterial,
   parseDispatchEmail,
   updateDispatchOrderDetails,
@@ -190,6 +191,15 @@ function mergeContactWithPhone(existingContact: string, parsedContact: string) {
   return `${existing} / ${formatPhone(phone)}`;
 }
 
+function uniqueOrders<T extends { id: string }>(orders: Array<T | null | undefined>) {
+  const seen = new Set<string>();
+  return orders.filter((order): order is T => {
+    if (!order || seen.has(order.id)) return false;
+    seen.add(order.id);
+    return true;
+  });
+}
+
 async function fetchOrderEmails(config: ImapConfig) {
   const client = new SimpleImapClient(config);
   const emails: ImapEmail[] = [];
@@ -252,7 +262,7 @@ export async function pollDispatchMailbox() {
       ? parsed.products
       : [{ material: parsed.material, quantity: parsed.quantity }];
     const validProducts = products.filter((product) => product.material);
-    const existingOrders = (
+    const messageIdOrders = (
       await Promise.all(
         (validProducts.length ? validProducts : [{ material: "", quantity: "" }]).map((_, index, list) =>
           getDispatchOrderByMailboxMessageId(
@@ -260,16 +270,25 @@ export async function pollDispatchMailbox() {
           ),
         ),
       )
-    ).filter(Boolean);
+    );
     const legacyExisting =
-      existingOrders.length
+      messageIdOrders.some(Boolean)
         ? null
         : (await getDispatchOrderByMailboxMessageId(email.messageId)) ||
           (await getDispatchOrderByMailboxMessageId(`${email.messageId}#a`));
-    const importedOrders = legacyExisting ? [legacyExisting] : existingOrders;
+    const orderNumberExisting =
+      messageIdOrders.some(Boolean) || legacyExisting || !parsed.orderNumber
+        ? []
+        : await getDispatchOrdersByOrderNumber(parsed.orderNumber);
+    const importedOrders = uniqueOrders([
+      ...messageIdOrders,
+      legacyExisting,
+      ...orderNumberExisting,
+    ]);
 
     if (importedOrders.length) {
       let updatedForEmail = 0;
+      const parsedPhone = extractPhone(parsed.contact);
       for (const order of importedOrders) {
         const nextContact = mergeContactWithPhone(order.contact, parsed.contact);
         if (nextContact && nextContact !== order.contact) {
@@ -284,7 +303,9 @@ export async function pollDispatchMailbox() {
         subject: email.subject || "(No subject)",
         reason: updatedForEmail
           ? `skipped because it was already imported; updated phone on ${updatedForEmail} existing order${updatedForEmail === 1 ? "" : "s"}`
-          : "skipped because it was already imported and no new phone number was found",
+          : parsedPhone
+            ? "skipped because it was already imported and the existing order already has a phone number"
+            : "skipped because it was already imported but no phone number was found in the email",
       });
       continue;
     }

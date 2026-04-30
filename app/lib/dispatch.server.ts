@@ -79,19 +79,27 @@ function decodeQuotedPrintable(raw: string) {
     });
 }
 
-function normalizeEmailText(raw: string) {
-  return decodeQuotedPrintable(raw)
+function decodeHtmlEntities(value: string) {
+  return value
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&#215;|&#xD7;|&times;/gi, "x")
+    .replace(/&quot;/gi, "\"")
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&shy;|&#173;|&#xAD;/gi, "")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16)));
+}
+
+function emailTextFromHtml(raw: string) {
+  return decodeHtmlEntities(decodeQuotedPrintable(raw))
     .replace(/<style[\s\S]*?<\/style>/gi, "\n")
     .replace(/<script[\s\S]*?<\/script>/gi, "\n")
     .replace(/<head[\s\S]*?<\/head>/gi, "\n")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/(p|div|tr|table|h\d|td|th|li)>/gi, "\n")
     .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&#215;|&#xD7;|&times;/gi, "x")
-    .replace(/&quot;/gi, "\"")
-    .replace(/&#39;/gi, "'")
+    .replace(/[\u00ad\u200B-\u200D\uFEFF]/g, "")
     .replace(/\r/g, "")
     .replace(/^\s*=\s*$/gm, "")
     .replace(/\s+=\s*$/gm, "")
@@ -99,6 +107,10 @@ function normalizeEmailText(raw: string) {
     .replace(/\n\s+/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+function normalizeEmailText(raw: string) {
+  return emailTextFromHtml(raw);
 }
 
 function textLines(raw: string) {
@@ -139,8 +151,11 @@ function normalizePhoneNumber(value: string) {
 }
 
 function findPhoneInText(value: string) {
-  const candidates = String(value || "").match(
-    /(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}|\d{10})/g,
+  const cleaned = String(value || "")
+    .replace(/[\u00ad\u200B-\u200D\uFEFF]/g, "")
+    .replace(/[^\S\r\n]+/g, " ");
+  const candidates = cleaned.match(
+    /(?:\+?1[\s().-]*)?(?:\(?\d{3}\)?[\s().-]*\d{3}[\s().-]*\d{4}|\d{10})/g,
   ) || [];
 
   for (const candidate of candidates) {
@@ -151,14 +166,29 @@ function findPhoneInText(value: string) {
   return "";
 }
 
-function parsePhoneNumber(raw: string) {
-  const decodedRaw = decodeQuotedPrintable(raw)
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&");
-  const rawPhone = findPhoneInText(decodedRaw);
-  if (rawPhone) return rawPhone;
+function findPhoneNearEmail(lines: string[]) {
+  for (const [index, line] of lines.entries()) {
+    if (!/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(line)) continue;
+    const nearbyLines = [
+      lines[index - 5] || "",
+      lines[index - 4] || "",
+      lines[index - 3] || "",
+      lines[index - 2] || "",
+      lines[index - 1] || "",
+      line,
+      lines[index + 1] || "",
+      lines[index + 2] || "",
+    ];
+    for (const nearbyLine of nearbyLines) {
+      const phone = findPhoneInText(nearbyLine);
+      if (phone) return phone;
+    }
+  }
 
+  return "";
+}
+
+function parsePhoneNumber(raw: string) {
   const normalized = normalizeEmailText(raw);
   const lines = normalized
     .split("\n")
@@ -170,20 +200,8 @@ function parsePhoneNumber(raw: string) {
   const labelledPhone = normalizePhoneNumber(labelled);
   if (labelledPhone) return labelledPhone;
 
-  for (const [index, line] of lines.entries()) {
-    if (!/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(line)) continue;
-    const nearbyLines = [
-      lines[index - 3] || "",
-      lines[index - 2] || "",
-      lines[index - 1] || "",
-      line,
-      lines[index + 1] || "",
-    ];
-    for (const nearbyLine of nearbyLines) {
-      const phone = findPhoneInText(nearbyLine);
-      if (phone) return phone;
-    }
-  }
+  const nearEmailPhone = findPhoneNearEmail(lines);
+  if (nearEmailPhone) return nearEmailPhone;
 
   return findPhoneInText(normalized);
 }
@@ -1322,6 +1340,26 @@ export async function getDispatchOrderByMailboxMessageId(messageId: string) {
   }
 
   return data ? normalizeOrder(data) : null;
+}
+
+export async function getDispatchOrdersByOrderNumber(orderNumber: string) {
+  const baseOrderNumber = cleanOrderNumber(orderNumber);
+  if (!baseOrderNumber) return [];
+
+  const { data, error } = await supabaseAdmin
+    .from(ORDERS_TABLE)
+    .select("*")
+    .ilike("order_number", `${baseOrderNumber}%`)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+
+  const orderNumberPattern = new RegExp(`^${baseOrderNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[a-z]?$`, "i");
+  return (data || [])
+    .map(normalizeOrder)
+    .filter((order) => order.orderNumber && orderNumberPattern.test(order.orderNumber));
 }
 
 export async function getDispatchRoutes() {

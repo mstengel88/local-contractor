@@ -5117,8 +5117,14 @@ function decodeQuotedPrintable(raw) {
     return bytes ? Buffer.from(bytes).toString("utf8") : encoded;
   });
 }
+function decodeHtmlEntities(value) {
+  return value.replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&#215;|&#xD7;|&times;/gi, "x").replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'").replace(/&shy;|&#173;|&#xAD;/gi, "").replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code))).replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16)));
+}
+function emailTextFromHtml(raw) {
+  return decodeHtmlEntities(decodeQuotedPrintable(raw)).replace(/<style[\s\S]*?<\/style>/gi, "\n").replace(/<script[\s\S]*?<\/script>/gi, "\n").replace(/<head[\s\S]*?<\/head>/gi, "\n").replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|div|tr|table|h\d|td|th|li)>/gi, "\n").replace(/<[^>]+>/g, " ").replace(/[\u00ad\u200B-\u200D\uFEFF]/g, "").replace(/\r/g, "").replace(/^\s*=\s*$/gm, "").replace(/\s+=\s*$/gm, "").replace(/[ \t]+/g, " ").replace(/\n\s+/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+}
 function normalizeEmailText(raw) {
-  return decodeQuotedPrintable(raw).replace(/<style[\s\S]*?<\/style>/gi, "\n").replace(/<script[\s\S]*?<\/script>/gi, "\n").replace(/<head[\s\S]*?<\/head>/gi, "\n").replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|div|tr|table|h\d|td|th|li)>/gi, "\n").replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&#215;|&#xD7;|&times;/gi, "x").replace(/&quot;/gi, '"').replace(/&#39;/gi, "'").replace(/\r/g, "").replace(/^\s*=\s*$/gm, "").replace(/\s+=\s*$/gm, "").replace(/[ \t]+/g, " ").replace(/\n\s+/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  return emailTextFromHtml(raw);
 }
 function textLines(raw) {
   return normalizeEmailText(raw).split("\n").map((line) => line.trim()).filter(Boolean);
@@ -5144,8 +5150,9 @@ function normalizePhoneNumber(value) {
   return "";
 }
 function findPhoneInText(value) {
-  const candidates = String(value || "").match(
-    /(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}|\d{10})/g
+  const cleaned = String(value || "").replace(/[\u00ad\u200B-\u200D\uFEFF]/g, "").replace(/[^\S\r\n]+/g, " ");
+  const candidates = cleaned.match(
+    /(?:\+?1[\s().-]*)?(?:\(?\d{3}\)?[\s().-]*\d{3}[\s().-]*\d{4}|\d{10})/g
   ) || [];
   for (const candidate of candidates) {
     const phone = normalizePhoneNumber(candidate);
@@ -5153,29 +5160,34 @@ function findPhoneInText(value) {
   }
   return "";
 }
-function parsePhoneNumber(raw) {
-  const decodedRaw = decodeQuotedPrintable(raw).replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&");
-  const rawPhone = findPhoneInText(decodedRaw);
-  if (rawPhone) return rawPhone;
-  const normalized = normalizeEmailText(raw);
-  const lines = normalized.split("\n").map((line) => line.trim()).filter(Boolean);
-  const labelled = readEmailField(normalized, ["Phone", "Phone Number", "Mobile", "Cell", "Tel", "Telephone"]) || "";
-  const labelledPhone = normalizePhoneNumber(labelled);
-  if (labelledPhone) return labelledPhone;
+function findPhoneNearEmail(lines) {
   for (const [index, line] of lines.entries()) {
     if (!/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(line)) continue;
     const nearbyLines = [
+      lines[index - 5] || "",
+      lines[index - 4] || "",
       lines[index - 3] || "",
       lines[index - 2] || "",
       lines[index - 1] || "",
       line,
-      lines[index + 1] || ""
+      lines[index + 1] || "",
+      lines[index + 2] || ""
     ];
     for (const nearbyLine of nearbyLines) {
       const phone = findPhoneInText(nearbyLine);
       if (phone) return phone;
     }
   }
+  return "";
+}
+function parsePhoneNumber(raw) {
+  const normalized = normalizeEmailText(raw);
+  const lines = normalized.split("\n").map((line) => line.trim()).filter(Boolean);
+  const labelled = readEmailField(normalized, ["Phone", "Phone Number", "Mobile", "Cell", "Tel", "Telephone"]) || "";
+  const labelledPhone = normalizePhoneNumber(labelled);
+  if (labelledPhone) return labelledPhone;
+  const nearEmailPhone = findPhoneNearEmail(lines);
+  if (nearEmailPhone) return nearEmailPhone;
   return findPhoneInText(normalized);
 }
 function formatPhoneForContact(phone) {
@@ -5983,6 +5995,16 @@ async function getDispatchOrderByMailboxMessageId(messageId) {
   }
   return data2 ? normalizeOrder(data2) : null;
 }
+async function getDispatchOrdersByOrderNumber(orderNumber) {
+  const baseOrderNumber = cleanOrderNumber(orderNumber);
+  if (!baseOrderNumber) return [];
+  const { data: data2, error } = await supabaseAdmin.from(ORDERS_TABLE).select("*").ilike("order_number", `${baseOrderNumber}%`).order("created_at", { ascending: false });
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
+  const orderNumberPattern = new RegExp(`^${baseOrderNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[a-z]?$`, "i");
+  return (data2 || []).map(normalizeOrder).filter((order) => order.orderNumber && orderNumberPattern.test(order.orderNumber));
+}
 async function getDispatchRoutes() {
   const { data: data2, error } = await supabaseAdmin.from(ROUTES_TABLE).select("*").eq("is_active", true).order("created_at", { ascending: true });
   if (error) {
@@ -6429,6 +6451,14 @@ function mergeContactWithPhone(existingContact, parsedContact) {
   if (!existing) return parsed || formatPhone$1(phone);
   return `${existing} / ${formatPhone$1(phone)}`;
 }
+function uniqueOrders(orders) {
+  const seen = /* @__PURE__ */ new Set();
+  return orders.filter((order) => {
+    if (!order || seen.has(order.id)) return false;
+    seen.add(order.id);
+    return true;
+  });
+}
 async function fetchOrderEmails(config) {
   const client = new SimpleImapClient(config);
   const emails = [];
@@ -6480,17 +6510,23 @@ async function pollDispatchMailbox() {
     const parsed = parseDispatchEmail(email.raw);
     const products = ((_a2 = parsed.products) == null ? void 0 : _a2.length) ? parsed.products : [{ material: parsed.material, quantity: parsed.quantity }];
     const validProducts = products.filter((product) => product.material);
-    const existingOrders = (await Promise.all(
+    const messageIdOrders = await Promise.all(
       (validProducts.length ? validProducts : [{ material: "", quantity: "" }]).map(
         (_, index, list) => getDispatchOrderByMailboxMessageId(
           suffixMailboxMessageId(email.messageId, index, list.length)
         )
       )
-    )).filter(Boolean);
-    const legacyExisting = existingOrders.length ? null : await getDispatchOrderByMailboxMessageId(email.messageId) || await getDispatchOrderByMailboxMessageId(`${email.messageId}#a`);
-    const importedOrders = legacyExisting ? [legacyExisting] : existingOrders;
+    );
+    const legacyExisting = messageIdOrders.some(Boolean) ? null : await getDispatchOrderByMailboxMessageId(email.messageId) || await getDispatchOrderByMailboxMessageId(`${email.messageId}#a`);
+    const orderNumberExisting = messageIdOrders.some(Boolean) || legacyExisting || !parsed.orderNumber ? [] : await getDispatchOrdersByOrderNumber(parsed.orderNumber);
+    const importedOrders = uniqueOrders([
+      ...messageIdOrders,
+      legacyExisting,
+      ...orderNumberExisting
+    ]);
     if (importedOrders.length) {
       let updatedForEmail = 0;
+      const parsedPhone = extractPhone$1(parsed.contact);
       for (const order of importedOrders) {
         const nextContact = mergeContactWithPhone(order.contact, parsed.contact);
         if (nextContact && nextContact !== order.contact) {
@@ -6502,7 +6538,7 @@ async function pollDispatchMailbox() {
       skipReasons.push({
         uid: email.uid,
         subject: email.subject || "(No subject)",
-        reason: updatedForEmail ? `skipped because it was already imported; updated phone on ${updatedForEmail} existing order${updatedForEmail === 1 ? "" : "s"}` : "skipped because it was already imported and no new phone number was found"
+        reason: updatedForEmail ? `skipped because it was already imported; updated phone on ${updatedForEmail} existing order${updatedForEmail === 1 ? "" : "s"}` : parsedPhone ? "skipped because it was already imported and the existing order already has a phone number" : "skipped because it was already imported but no phone number was found in the email"
       });
       continue;
     }
