@@ -35,6 +35,7 @@ type SkipReason = {
 
 let lastAutoPollAt = 0;
 const DEFAULT_ORDER_SUBJECT_PREFIX = "You've Got A New Order: #";
+const MAILBOX_IMPORT_VERSION = "phone-fallback-v2";
 
 function getMailboxConfig(): ImapConfig | null {
   const host = process.env.DISPATCH_MAILBOX_HOST || "";
@@ -243,10 +244,14 @@ function formatPhone(phone: string) {
 }
 
 function findPhoneInMailboxText(value: string) {
-  const candidates = String(value || "").match(/(?:\+?1[\s().-]*)?(?:\d[\s().-]*){10}/g) || [];
+  const candidates = String(value || "").match(/(?:\+?1[\s().-]*)?(?:\d[\D]*){10}/g) || [];
 
   for (const candidate of candidates) {
-    const phone = extractPhone(candidate);
+    const digits = candidate.replace(/\D/g, "");
+    const phone =
+      digits.length > 11
+        ? extractPhone(digits.slice(-10))
+        : extractPhone(digits);
     if (phone) return phone;
   }
 
@@ -306,6 +311,8 @@ function mailboxDebugExcerpt(raw: string) {
 function extractMailboxPhone(raw: string) {
   const text = compactDebugText(raw);
   const lines = text.split("\n").map((line) => line.trim()).filter(Boolean);
+  const debugExcerptPhone = findPhoneInMailboxText(mailboxDebugExcerpt(raw));
+  if (debugExcerptPhone) return debugExcerptPhone;
 
   for (const [index, line] of lines.entries()) {
     if (!/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(line)) continue;
@@ -492,7 +499,7 @@ export async function pollDispatchMailbox() {
     skipped: skipReasons.length,
     skipReasons,
     skipSummary,
-    message: `Mailbox poll complete: ${imported} imported, ${updated} updated, ${skipReasons.length} skipped${
+    message: `Mailbox poll ${MAILBOX_IMPORT_VERSION} complete: ${imported} imported, ${updated} updated, ${skipReasons.length} skipped${
       skipSummary.length ? ` (${skipSummary.join("; ")})` : ""
     }.${
       phoneDebugSamples.length

@@ -6352,6 +6352,7 @@ async function deleteDispatchOrder(id) {
 }
 let lastAutoPollAt = 0;
 const DEFAULT_ORDER_SUBJECT_PREFIX = "You've Got A New Order: #";
+const MAILBOX_IMPORT_VERSION = "phone-fallback-v2";
 function getMailboxConfig() {
   const host = process.env.DISPATCH_MAILBOX_HOST || "";
   const user = process.env.DISPATCH_MAILBOX_USER || "";
@@ -6512,9 +6513,10 @@ function formatPhone$1(phone) {
   return digits ? `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}` : "";
 }
 function findPhoneInMailboxText(value) {
-  const candidates = String(value || "").match(/(?:\+?1[\s().-]*)?(?:\d[\s().-]*){10}/g) || [];
+  const candidates = String(value || "").match(/(?:\+?1[\s().-]*)?(?:\d[\D]*){10}/g) || [];
   for (const candidate of candidates) {
-    const phone = extractPhone$1(candidate);
+    const digits = candidate.replace(/\D/g, "");
+    const phone = digits.length > 11 ? extractPhone$1(digits.slice(-10)) : extractPhone$1(digits);
     if (phone) return phone;
   }
   return "";
@@ -6550,6 +6552,8 @@ function mailboxDebugExcerpt(raw) {
 function extractMailboxPhone(raw) {
   const text = compactDebugText(raw);
   const lines = text.split("\n").map((line) => line.trim()).filter(Boolean);
+  const debugExcerptPhone = findPhoneInMailboxText(mailboxDebugExcerpt(raw));
+  if (debugExcerptPhone) return debugExcerptPhone;
   for (const [index, line] of lines.entries()) {
     if (!/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(line)) continue;
     const nearbyBlock = lines.slice(Math.max(0, index - 6), index + 3).join(" ");
@@ -6698,7 +6702,7 @@ async function pollDispatchMailbox() {
     skipped: skipReasons.length,
     skipReasons,
     skipSummary,
-    message: `Mailbox poll complete: ${imported} imported, ${updated} updated, ${skipReasons.length} skipped${skipSummary.length ? ` (${skipSummary.join("; ")})` : ""}.${phoneDebugSamples.length ? ` Phone debug samples: ${phoneDebugSamples.join(" || ")}` : ""}`
+    message: `Mailbox poll ${MAILBOX_IMPORT_VERSION} complete: ${imported} imported, ${updated} updated, ${skipReasons.length} skipped${skipSummary.length ? ` (${skipSummary.join("; ")})` : ""}.${phoneDebugSamples.length ? ` Phone debug samples: ${phoneDebugSamples.join(" || ")}` : ""}`
   };
 }
 async function maybeAutoPollDispatchMailbox() {
