@@ -6389,14 +6389,32 @@ function suffixMailboxMessageId(messageId, index, total) {
   if (!messageId || total <= 1) return messageId;
   return `${messageId}#${String.fromCharCode(97 + index)}`;
 }
-async function fetchUnreadEmails(config) {
+function extractPhone$1(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (digits.length === 10) return digits;
+  if (digits.length === 11 && digits.startsWith("1")) return digits.slice(1);
+  return "";
+}
+function formatPhone$1(phone) {
+  const digits = extractPhone$1(phone);
+  return digits ? `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}` : "";
+}
+function mergeContactWithPhone(existingContact, parsedContact) {
+  const existing = String(existingContact || "").trim();
+  const parsed = String(parsedContact || "").trim();
+  const phone = extractPhone$1(parsed);
+  if (!phone || extractPhone$1(existing)) return existing;
+  if (!existing) return parsed || formatPhone$1(phone);
+  return `${existing} / ${formatPhone$1(phone)}`;
+}
+async function fetchOrderEmails(config) {
   const client = new SimpleImapClient(config);
   const emails = [];
   await client.connect();
   await client.command(`LOGIN ${escapeImapString(config.user)} ${escapeImapString(config.password)}`);
   await client.command(`SELECT ${escapeImapString(config.mailbox)}`);
   const searchResponse = await client.command(
-    `UID SEARCH UNSEEN SUBJECT ${escapeImapString(config.subjectPrefix)}`
+    `UID SEARCH SUBJECT ${escapeImapString(config.subjectPrefix)}`
   );
   const uids = parseSearchResponse(searchResponse).slice(-config.limit);
   for (const uid of uids) {
@@ -6422,8 +6440,9 @@ async function pollDispatchMailbox() {
       message: "Mailbox polling is not configured yet."
     };
   }
-  const emails = await fetchUnreadEmails(config);
+  const emails = await fetchOrderEmails(config);
   let imported = 0;
+  let updated = 0;
   const skipReasons = [];
   for (const email of emails) {
     if (!email.subject.startsWith(config.subjectPrefix)) {
@@ -6434,17 +6453,35 @@ async function pollDispatchMailbox() {
       });
       continue;
     }
-    const existing = await getDispatchOrderByMailboxMessageId(email.messageId) || await getDispatchOrderByMailboxMessageId(`${email.messageId}#a`);
-    if (existing) {
+    const parsed = parseDispatchEmail(email.raw);
+    const products = ((_a2 = parsed.products) == null ? void 0 : _a2.length) ? parsed.products : [{ material: parsed.material, quantity: parsed.quantity }];
+    const validProducts = products.filter((product) => product.material);
+    const existingOrders = (await Promise.all(
+      (validProducts.length ? validProducts : [{ material: "", quantity: "" }]).map(
+        (_, index, list) => getDispatchOrderByMailboxMessageId(
+          suffixMailboxMessageId(email.messageId, index, list.length)
+        )
+      )
+    )).filter(Boolean);
+    const legacyExisting = existingOrders.length ? null : await getDispatchOrderByMailboxMessageId(email.messageId) || await getDispatchOrderByMailboxMessageId(`${email.messageId}#a`);
+    const importedOrders = legacyExisting ? [legacyExisting] : existingOrders;
+    if (importedOrders.length) {
+      let updatedForEmail = 0;
+      for (const order of importedOrders) {
+        const nextContact = mergeContactWithPhone(order.contact, parsed.contact);
+        if (nextContact && nextContact !== order.contact) {
+          await updateDispatchOrderDetails(order.id, { contact: nextContact });
+          updated += 1;
+          updatedForEmail += 1;
+        }
+      }
       skipReasons.push({
         uid: email.uid,
         subject: email.subject || "(No subject)",
-        reason: "skipped because it was already imported"
+        reason: updatedForEmail ? `skipped because it was already imported; updated phone on ${updatedForEmail} existing order${updatedForEmail === 1 ? "" : "s"}` : "skipped because it was already imported and no new phone number was found"
       });
       continue;
     }
-    const parsed = parseDispatchEmail(email.raw);
-    const products = ((_a2 = parsed.products) == null ? void 0 : _a2.length) ? parsed.products : [{ material: parsed.material, quantity: parsed.quantity }];
     if (!parsed.address || products.every((product) => !product.material)) {
       const missing = [
         !parsed.address ? "address" : "",
@@ -6457,7 +6494,6 @@ async function pollDispatchMailbox() {
       });
       continue;
     }
-    const validProducts = products.filter((product) => product.material);
     for (const [index, product] of validProducts.entries()) {
       await createDispatchOrder({
         source: "email",
@@ -6488,10 +6524,11 @@ async function pollDispatchMailbox() {
   return {
     configured: true,
     imported,
+    updated,
     skipped: skipReasons.length,
     skipReasons,
     skipSummary,
-    message: `Mailbox poll complete: ${imported} imported, ${skipReasons.length} skipped${skipSummary.length ? ` (${skipSummary.join("; ")})` : ""}.`
+    message: `Mailbox poll complete: ${imported} imported, ${updated} updated, ${skipReasons.length} skipped${skipSummary.length ? ` (${skipSummary.join("; ")})` : ""}.`
   };
 }
 async function maybeAutoPollDispatchMailbox() {

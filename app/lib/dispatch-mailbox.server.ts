@@ -4,6 +4,7 @@ import {
   getDispatchOrderByMailboxMessageId,
   getDispatchUnitForMaterial,
   parseDispatchEmail,
+  updateDispatchOrderDetails,
 } from "./dispatch.server";
 
 type ImapConfig = {
@@ -165,7 +166,29 @@ function suffixMailboxMessageId(messageId: string, index: number, total: number)
   return `${messageId}#${String.fromCharCode(97 + index)}`;
 }
 
-async function fetchUnreadEmails(config: ImapConfig) {
+function extractPhone(value?: string | null) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (digits.length === 10) return digits;
+  if (digits.length === 11 && digits.startsWith("1")) return digits.slice(1);
+  return "";
+}
+
+function formatPhone(phone: string) {
+  const digits = extractPhone(phone);
+  return digits ? `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}` : "";
+}
+
+function mergeContactWithPhone(existingContact: string, parsedContact: string) {
+  const existing = String(existingContact || "").trim();
+  const parsed = String(parsedContact || "").trim();
+  const phone = extractPhone(parsed);
+
+  if (!phone || extractPhone(existing)) return existing;
+  if (!existing) return parsed || formatPhone(phone);
+  return `${existing} / ${formatPhone(phone)}`;
+}
+
+async function fetchOrderEmails(config: ImapConfig) {
   const client = new SimpleImapClient(config);
   const emails: ImapEmail[] = [];
 
@@ -173,7 +196,7 @@ async function fetchUnreadEmails(config: ImapConfig) {
   await client.command(`LOGIN ${escapeImapString(config.user)} ${escapeImapString(config.password)}`);
   await client.command(`SELECT ${escapeImapString(config.mailbox)}`);
   const searchResponse = await client.command(
-    `UID SEARCH UNSEEN SUBJECT ${escapeImapString(config.subjectPrefix)}`,
+    `UID SEARCH SUBJECT ${escapeImapString(config.subjectPrefix)}`,
   );
   const uids = parseSearchResponse(searchResponse).slice(-config.limit);
 
@@ -205,8 +228,9 @@ export async function pollDispatchMailbox() {
     };
   }
 
-  const emails = await fetchUnreadEmails(config);
+  const emails = await fetchOrderEmails(config);
   let imported = 0;
+  let updated = 0;
   const skipReasons: SkipReason[] = [];
 
   for (const email of emails) {
@@ -219,22 +243,47 @@ export async function pollDispatchMailbox() {
       continue;
     }
 
-    const existing =
-      (await getDispatchOrderByMailboxMessageId(email.messageId)) ||
-      (await getDispatchOrderByMailboxMessageId(`${email.messageId}#a`));
-    if (existing) {
-      skipReasons.push({
-        uid: email.uid,
-        subject: email.subject || "(No subject)",
-        reason: "skipped because it was already imported",
-      });
-      continue;
-    }
-
     const parsed = parseDispatchEmail(email.raw);
     const products = parsed.products?.length
       ? parsed.products
       : [{ material: parsed.material, quantity: parsed.quantity }];
+    const validProducts = products.filter((product) => product.material);
+    const existingOrders = (
+      await Promise.all(
+        (validProducts.length ? validProducts : [{ material: "", quantity: "" }]).map((_, index, list) =>
+          getDispatchOrderByMailboxMessageId(
+            suffixMailboxMessageId(email.messageId, index, list.length),
+          ),
+        ),
+      )
+    ).filter(Boolean);
+    const legacyExisting =
+      existingOrders.length
+        ? null
+        : (await getDispatchOrderByMailboxMessageId(email.messageId)) ||
+          (await getDispatchOrderByMailboxMessageId(`${email.messageId}#a`));
+    const importedOrders = legacyExisting ? [legacyExisting] : existingOrders;
+
+    if (importedOrders.length) {
+      let updatedForEmail = 0;
+      for (const order of importedOrders) {
+        const nextContact = mergeContactWithPhone(order.contact, parsed.contact);
+        if (nextContact && nextContact !== order.contact) {
+          await updateDispatchOrderDetails(order.id, { contact: nextContact });
+          updated += 1;
+          updatedForEmail += 1;
+        }
+      }
+
+      skipReasons.push({
+        uid: email.uid,
+        subject: email.subject || "(No subject)",
+        reason: updatedForEmail
+          ? `skipped because it was already imported; updated phone on ${updatedForEmail} existing order${updatedForEmail === 1 ? "" : "s"}`
+          : "skipped because it was already imported and no new phone number was found",
+      });
+      continue;
+    }
 
     if (!parsed.address || products.every((product) => !product.material)) {
       const missing = [
@@ -248,8 +297,6 @@ export async function pollDispatchMailbox() {
       });
       continue;
     }
-
-    const validProducts = products.filter((product) => product.material);
 
     for (const [index, product] of validProducts.entries()) {
       await createDispatchOrder({
@@ -283,10 +330,11 @@ export async function pollDispatchMailbox() {
   return {
     configured: true,
     imported,
+    updated,
     skipped: skipReasons.length,
     skipReasons,
     skipSummary,
-    message: `Mailbox poll complete: ${imported} imported, ${skipReasons.length} skipped${
+    message: `Mailbox poll complete: ${imported} imported, ${updated} updated, ${skipReasons.length} skipped${
       skipSummary.length ? ` (${skipSummary.join("; ")})` : ""
     }.`,
   };
