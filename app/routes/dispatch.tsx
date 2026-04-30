@@ -3650,20 +3650,6 @@ export default function DispatchPage() {
                       </div>
                     ) : null}
 
-                    {route.orders.length ? (
-                      <Form method="post" style={styles.sequenceForm}>
-                        <input type="hidden" name="intent" value="sequence-route" />
-                        <input type="hidden" name="routeId" value={route.id} />
-                        <select name="sequenceMode" style={styles.compactSelect}>
-                          <option value="city">Sequence by city/address</option>
-                          <option value="address">Sequence by address</option>
-                          <option value="reverse">Reverse current order</option>
-                        </select>
-                        <button type="submit" style={styles.assignButton}>
-                          Sequence Stops
-                        </button>
-                      </Form>
-                    ) : null}
                   </div>
                 ))}
                 {searchedRoutes.length === 0 ? (

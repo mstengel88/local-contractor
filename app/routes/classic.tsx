@@ -234,6 +234,13 @@ function ClassicMap({
     () => new Set(activeRoutes.map((route) => route.id).filter((id) => !hiddenRouteIds.includes(id))),
     [activeRoutes, hiddenRouteIds],
   );
+  const routeColorById = useMemo(
+    () =>
+      new Map(
+        routes.map((route) => [route.id, route.color || "#f97316"]),
+      ),
+    [routes],
+  );
   const routePlan = useMemo(
     () =>
       routes
@@ -423,6 +430,7 @@ function ClassicMap({
             Number.isFinite(item.latitude) &&
             Number.isFinite(item.longitude),
         )) {
+          const routeColor = routeColorById.get(location.routeId || "") || "#22c55e";
           const marker = new google.maps.Marker({
             map,
             position: { lat: location.latitude, lng: location.longitude },
@@ -430,15 +438,15 @@ function ClassicMap({
             icon: {
               path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
               scale: 6,
-              fillColor: "#22c55e",
+              fillColor: routeColor,
               fillOpacity: 1,
-              strokeColor: "#052e16",
+              strokeColor: "#111827",
               strokeWeight: 2,
               rotation: Number.isFinite(Number(location.heading)) ? Number(location.heading) : 0,
             },
             label: {
               text: location.truck || "DRV",
-              color: "#052e16",
+              color: "#111827",
               fontWeight: "900",
               fontSize: "11px",
             },
@@ -457,7 +465,7 @@ function ClassicMap({
       driverMarkersRef.current.forEach((marker) => marker.setMap?.(null));
       driverMarkersRef.current = [];
     };
-  }, [driverLocations, googleMapsApiKey, visibleRouteIds]);
+  }, [driverLocations, googleMapsApiKey, routeColorById, visibleRouteIds]);
 
   if (useFallback) {
     return (
@@ -487,7 +495,15 @@ function ClassicMap({
         ))}
         {driverLocations.length ? (
           <span style={styles.driverLegendItem}>
-            <span style={styles.driverLegendDot} />
+            {driverLocations.slice(0, 4).map((location) => (
+              <span
+                key={`${location.id}-${location.routeId || "route"}`}
+                style={{
+                  ...styles.driverLegendDot,
+                  borderBottomColor: routeColorById.get(location.routeId || "") || "#22c55e",
+                }}
+              />
+            ))}
             {driverLocations.length} live driver{driverLocations.length === 1 ? "" : "s"}
           </span>
         ) : null}
@@ -988,9 +1004,6 @@ export default function ClassicDispatchPage() {
                       <td>
                         <Form method="post" style={styles.inlineActions}>
                           <input type="hidden" name="routeId" value={route.id} />
-                          <button name="intent" value="sequence-route" style={styles.iconButton} title="Optimize route">
-                            ⟳
-                          </button>
                           <button
                             name="intent"
                             value="delete-route"
@@ -1210,12 +1223,6 @@ export default function ClassicDispatchPage() {
               <dt>Total route time</dt>
               <dd>{formatTime(selectedRoute.totalMinutes)}</dd>
             </dl>
-            <Form method="post" style={styles.drawerForm}>
-              <input type="hidden" name="routeId" value={selectedRoute.id} />
-              <button name="intent" value="sequence-route" style={styles.drawerButton}>
-                Optimize / resequence route
-              </button>
-            </Form>
           </aside>
         ) : null}
         {orderDrawerOpen && selectedOrder ? (
