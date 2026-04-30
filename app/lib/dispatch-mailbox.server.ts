@@ -244,14 +244,17 @@ function formatPhone(phone: string) {
 }
 
 function findPhoneInMailboxText(value: string) {
-  const candidates = String(value || "").match(/(?:\+?1[\s().-]*)?(?:\d[\D]*){10}/g) || [];
+  const text = String(value || "").replace(/[\u00ad\u200B-\u200D\uFEFF]/g, " ");
+  const candidates = [
+    ...Array.from(text.matchAll(/(?:^|\D)(1?[2-9]\d{9})(?=\D|$)/g), (match) => match[1]),
+    ...Array.from(
+      text.matchAll(/(?:^|\D)(1?[\s.-]?\(?[2-9]\d{2}\)?[\s.-]+\d{3}[\s.-]+\d{4})(?=\D|$)/g),
+      (match) => match[1],
+    ),
+  ];
 
   for (const candidate of candidates) {
-    const digits = candidate.replace(/\D/g, "");
-    const phone =
-      digits.length > 11
-        ? extractPhone(digits.slice(-10))
-        : extractPhone(digits);
+    const phone = extractPhone(candidate);
     if (phone) return phone;
   }
 
