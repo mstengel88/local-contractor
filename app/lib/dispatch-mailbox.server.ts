@@ -212,7 +212,8 @@ function parseFetchResponse(uid: string, response: string): ImapEmail | null {
 
 function summarizeSkipReasons(skipReasons: SkipReason[]) {
   const counts = skipReasons.reduce<Record<string, number>>((summary, item) => {
-    summary[item.reason] = (summary[item.reason] || 0) + 1;
+    const summaryReason = item.reason.replace(/\s*\[order[\s\S]*$/, "");
+    summary[summaryReason] = (summary[summaryReason] || 0) + 1;
     return summary;
   }, {});
 
@@ -258,6 +259,37 @@ function uniqueOrders<T extends { id: string }>(orders: Array<T | null | undefin
     seen.add(order.id);
     return true;
   });
+}
+
+function compactDebugText(value: string) {
+  return String(value || "")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|tr|td|th|li)>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/[\u00ad\u200B-\u200D\uFEFF]/g, "")
+    .replace(/\r/g, "")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n\s+/g, "\n")
+    .replace(/\n{2,}/g, "\n")
+    .trim();
+}
+
+function mailboxDebugExcerpt(raw: string) {
+  const text = compactDebugText(raw);
+  const lines = text.split("\n").map((line) => line.trim()).filter(Boolean);
+  const start = lines.findIndex((line) =>
+    /billing\s+address|shipping\s+address|@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(line),
+  );
+  const excerpt = (start >= 0 ? lines.slice(start, start + 10) : lines.slice(-12))
+    .join(" | ")
+    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[email]")
+    .slice(0, 260);
+
+  return excerpt || "(no readable body excerpt)";
 }
 
 async function fetchOrderEmails(config: ImapConfig) {
@@ -365,7 +397,7 @@ export async function pollDispatchMailbox() {
           ? `skipped because it was already imported; updated phone on ${updatedForEmail} existing order${updatedForEmail === 1 ? "" : "s"}`
           : parsedPhone
             ? "skipped because it was already imported and the existing order already has a phone number"
-            : "skipped because it was already imported but no phone number was found in the email",
+            : `skipped because it was already imported but no phone number was found in the email [order ${parsed.orderNumber || "unknown"} ${parsed.customer || "unknown customer"}; excerpt: ${mailboxDebugExcerpt(email.raw)}]`,
       });
       continue;
     }
@@ -411,6 +443,11 @@ export async function pollDispatchMailbox() {
   }
 
   const skipSummary = summarizeSkipReasons(skipReasons);
+  const phoneDebugSamples = skipReasons
+    .filter((item) => /no phone number was found/.test(item.reason) && /\[order /.test(item.reason))
+    .slice(0, 3)
+    .map((item) => item.reason.match(/\[order ([\s\S]+)\]$/)?.[1])
+    .filter(Boolean);
 
   return {
     configured: true,
@@ -421,7 +458,11 @@ export async function pollDispatchMailbox() {
     skipSummary,
     message: `Mailbox poll complete: ${imported} imported, ${updated} updated, ${skipReasons.length} skipped${
       skipSummary.length ? ` (${skipSummary.join("; ")})` : ""
-    }.`,
+    }.${
+      phoneDebugSamples.length
+        ? ` Phone debug samples: ${phoneDebugSamples.join(" || ")}`
+        : ""
+    }`,
   };
 }
 

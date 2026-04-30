@@ -6487,7 +6487,8 @@ ${body}`
 }
 function summarizeSkipReasons(skipReasons) {
   const counts = skipReasons.reduce((summary, item) => {
-    summary[item.reason] = (summary[item.reason] || 0) + 1;
+    const summaryReason = item.reason.replace(/\s*\[order[\s\S]*$/, "");
+    summary[summaryReason] = (summary[summaryReason] || 0) + 1;
     return summary;
   }, {});
   return Object.entries(counts).map(([reason, count]) => `${count} ${reason}`);
@@ -6525,6 +6526,18 @@ function uniqueOrders(orders) {
     seen.add(order.id);
     return true;
   });
+}
+function compactDebugText(value) {
+  return String(value || "").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|div|tr|td|th|li)>/gi, "\n").replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/[\u00ad\u200B-\u200D\uFEFF]/g, "").replace(/\r/g, "").replace(/[ \t]+/g, " ").replace(/\n\s+/g, "\n").replace(/\n{2,}/g, "\n").trim();
+}
+function mailboxDebugExcerpt(raw) {
+  const text = compactDebugText(raw);
+  const lines = text.split("\n").map((line) => line.trim()).filter(Boolean);
+  const start = lines.findIndex(
+    (line) => /billing\s+address|shipping\s+address|@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(line)
+  );
+  const excerpt = (start >= 0 ? lines.slice(start, start + 10) : lines.slice(-12)).join(" | ").replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[email]").slice(0, 260);
+  return excerpt || "(no readable body excerpt)";
 }
 async function fetchOrderEmails(config) {
   const client = new SimpleImapClient(config);
@@ -6605,7 +6618,7 @@ async function pollDispatchMailbox() {
       skipReasons.push({
         uid: email.uid,
         subject: email.subject || "(No subject)",
-        reason: updatedForEmail ? `skipped because it was already imported; updated phone on ${updatedForEmail} existing order${updatedForEmail === 1 ? "" : "s"}` : parsedPhone ? "skipped because it was already imported and the existing order already has a phone number" : "skipped because it was already imported but no phone number was found in the email"
+        reason: updatedForEmail ? `skipped because it was already imported; updated phone on ${updatedForEmail} existing order${updatedForEmail === 1 ? "" : "s"}` : parsedPhone ? "skipped because it was already imported and the existing order already has a phone number" : `skipped because it was already imported but no phone number was found in the email [order ${parsed.orderNumber || "unknown"} ${parsed.customer}; excerpt: ${mailboxDebugExcerpt(email.raw)}]`
       });
       continue;
     }
@@ -6648,6 +6661,10 @@ async function pollDispatchMailbox() {
     }
   }
   const skipSummary = summarizeSkipReasons(skipReasons);
+  const phoneDebugSamples = skipReasons.filter((item) => /no phone number was found/.test(item.reason) && /\[order /.test(item.reason)).slice(0, 3).map((item) => {
+    var _a3;
+    return (_a3 = item.reason.match(/\[order ([\s\S]+)\]$/)) == null ? void 0 : _a3[1];
+  }).filter(Boolean);
   return {
     configured: true,
     imported,
@@ -6655,7 +6672,7 @@ async function pollDispatchMailbox() {
     skipped: skipReasons.length,
     skipReasons,
     skipSummary,
-    message: `Mailbox poll complete: ${imported} imported, ${updated} updated, ${skipReasons.length} skipped${skipSummary.length ? ` (${skipSummary.join("; ")})` : ""}.`
+    message: `Mailbox poll complete: ${imported} imported, ${updated} updated, ${skipReasons.length} skipped${skipSummary.length ? ` (${skipSummary.join("; ")})` : ""}.${phoneDebugSamples.length ? ` Phone debug samples: ${phoneDebugSamples.join(" || ")}` : ""}`
   };
 }
 async function maybeAutoPollDispatchMailbox() {
