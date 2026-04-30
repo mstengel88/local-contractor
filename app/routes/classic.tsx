@@ -48,6 +48,13 @@ function statusLabel(order: DispatchOrder) {
   return "Unscheduled";
 }
 
+function getStatusTone(order: DispatchOrder) {
+  if (order.status === "delivered" || order.deliveryStatus === "delivered") return "delivered";
+  if (order.status === "hold") return "hold";
+  if (order.assignedRouteId || order.status === "scheduled") return "scheduled";
+  return "unscheduled";
+}
+
 function buildSearchText(order: DispatchOrder) {
   return [
     order.id,
@@ -810,7 +817,9 @@ export default function ClassicDispatchPage() {
     }
     if (key === "eta") return order.eta || order.requestedWindow || "-";
     if (key === "miles") return order.travelMiles || "-";
-    if (key === "status") return <span style={styles.statusPill}>{statusLabel(order)}</span>;
+    if (key === "status") {
+      return <span style={styles.statusPill(getStatusTone(order))}>{statusLabel(order)}</span>;
+    }
     if (key === "notes") return order.notes || "-";
     if (key === "route") return order.assignedRouteId || "Unassigned";
     return "-";
@@ -1494,14 +1503,46 @@ const styles: Record<string, any> = {
     height: 32,
     borderRadius: 2,
   },
-  statusPill: {
-    display: "inline-flex",
-    padding: "3px 8px",
-    borderRadius: 999,
-    background: "#e9dcf2",
-    color: "#6b4f8a",
-    fontSize: 11,
-    fontWeight: 800,
+  statusPill: (tone: string) => {
+    const tones: Record<string, { background: string; border: string; color: string }> = {
+      delivered: {
+        background: "rgba(34, 197, 94, 0.18)",
+        border: "rgba(34, 197, 94, 0.55)",
+        color: "#86efac",
+      },
+      scheduled: {
+        background: "rgba(14, 165, 233, 0.18)",
+        border: "rgba(14, 165, 233, 0.55)",
+        color: "#7dd3fc",
+      },
+      hold: {
+        background: "rgba(245, 158, 11, 0.2)",
+        border: "rgba(245, 158, 11, 0.58)",
+        color: "#fcd34d",
+      },
+      unscheduled: {
+        background: "rgba(249, 115, 22, 0.18)",
+        border: "rgba(249, 115, 22, 0.55)",
+        color: "#fdba74",
+      },
+    };
+    const selected = tones[tone] || tones.unscheduled;
+    return {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minWidth: 76,
+      padding: "3px 8px",
+      borderRadius: 999,
+      border: `1px solid ${selected.border}`,
+      background: selected.background,
+      color: selected.color,
+      fontSize: 11,
+      fontWeight: 950,
+      lineHeight: 1.2,
+      textTransform: "uppercase" as const,
+      letterSpacing: "0.035em",
+    };
   },
   rowRouteButton: (active: boolean) => ({
     border: "none",
