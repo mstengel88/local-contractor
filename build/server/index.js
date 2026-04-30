@@ -5143,7 +5143,20 @@ function normalizePhoneNumber(value) {
   if (digits.length === 11 && digits.startsWith("1")) return digits.slice(1);
   return "";
 }
+function findPhoneInText(value) {
+  const candidates = String(value || "").match(
+    /(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}|\d{10})/g
+  ) || [];
+  for (const candidate of candidates) {
+    const phone = normalizePhoneNumber(candidate);
+    if (phone) return phone;
+  }
+  return "";
+}
 function parsePhoneNumber(raw) {
+  const decodedRaw = decodeQuotedPrintable(raw).replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&");
+  const rawPhone = findPhoneInText(decodedRaw);
+  if (rawPhone) return rawPhone;
   const normalized = normalizeEmailText(raw);
   const lines = normalized.split("\n").map((line) => line.trim()).filter(Boolean);
   const labelled = readEmailField(normalized, ["Phone", "Phone Number", "Mobile", "Cell", "Tel", "Telephone"]) || "";
@@ -5152,24 +5165,18 @@ function parsePhoneNumber(raw) {
   for (const [index, line] of lines.entries()) {
     if (!/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(line)) continue;
     const nearbyLines = [
+      lines[index - 3] || "",
       lines[index - 2] || "",
       lines[index - 1] || "",
       line,
       lines[index + 1] || ""
     ];
     for (const nearbyLine of nearbyLines) {
-      const phone = normalizePhoneNumber(nearbyLine);
+      const phone = findPhoneInText(nearbyLine);
       if (phone) return phone;
     }
   }
-  const candidates = normalized.match(
-    /(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}|\d{10})/g
-  ) || [];
-  for (const candidate of candidates) {
-    const phone = normalizePhoneNumber(candidate);
-    if (phone) return phone;
-  }
-  return "";
+  return findPhoneInText(normalized);
 }
 function formatPhoneForContact(phone) {
   const digits = normalizePhoneNumber(phone);
