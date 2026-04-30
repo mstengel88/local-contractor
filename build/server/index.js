@@ -5160,6 +5160,15 @@ function findPhoneInText(value) {
   }
   return "";
 }
+function findPhoneInLooseText(value) {
+  const text = String(value || "").replace(/[\u00ad\u200B-\u200D\uFEFF]/g, "");
+  const candidates = text.match(/(?:\d[\s().-]*){10,11}/g) || [];
+  for (const candidate of candidates) {
+    const phone = normalizePhoneNumber(candidate);
+    if (phone) return phone;
+  }
+  return "";
+}
 function findPhoneNearEmail(lines) {
   for (const [index, line] of lines.entries()) {
     if (!/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(line)) continue;
@@ -5173,10 +5182,28 @@ function findPhoneNearEmail(lines) {
       lines[index + 1] || "",
       lines[index + 2] || ""
     ];
+    const nearbyBlock = nearbyLines.join(" ");
+    const blockPhone = findPhoneInText(nearbyBlock) || findPhoneInLooseText(nearbyBlock);
+    if (blockPhone) return blockPhone;
     for (const nearbyLine of nearbyLines) {
-      const phone = findPhoneInText(nearbyLine);
+      const phone = findPhoneInText(nearbyLine) || findPhoneInLooseText(nearbyLine);
       if (phone) return phone;
     }
+  }
+  return "";
+}
+function findPhoneInAddressBlocks(lines) {
+  const starts = lines.map((line, index) => ({ line, index })).filter(({ line }) => /^(billing|shipping)\s+address\b/i.test(line)).map(({ index }) => index);
+  for (const start of starts) {
+    const block = [];
+    for (const line of lines.slice(start, start + 12)) {
+      if (block.length && /^(billing|shipping)\s+address\b|what happens next\??|order summary|subtotal|total:?$/i.test(line)) {
+        break;
+      }
+      block.push(line);
+    }
+    const blockPhone = findPhoneNearEmail(block) || findPhoneInText(block.join(" ")) || findPhoneInLooseText(block.join(" "));
+    if (blockPhone) return blockPhone;
   }
   return "";
 }
@@ -5188,7 +5215,9 @@ function parsePhoneNumber(raw) {
   if (labelledPhone) return labelledPhone;
   const nearEmailPhone = findPhoneNearEmail(lines);
   if (nearEmailPhone) return nearEmailPhone;
-  return findPhoneInText(normalized);
+  const addressBlockPhone = findPhoneInAddressBlocks(lines);
+  if (addressBlockPhone) return addressBlockPhone;
+  return findPhoneInText(normalized) || findPhoneInLooseText(normalized);
 }
 function formatPhoneForContact(phone) {
   const digits = normalizePhoneNumber(phone);
