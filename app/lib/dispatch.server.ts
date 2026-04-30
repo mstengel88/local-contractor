@@ -140,11 +140,29 @@ function normalizePhoneNumber(value: string) {
 
 function parsePhoneNumber(raw: string) {
   const normalized = normalizeEmailText(raw);
+  const lines = normalized
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
   const labelled =
     readEmailField(normalized, ["Phone", "Phone Number", "Mobile", "Cell", "Tel", "Telephone"]) ||
     "";
   const labelledPhone = normalizePhoneNumber(labelled);
   if (labelledPhone) return labelledPhone;
+
+  for (const [index, line] of lines.entries()) {
+    if (!/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(line)) continue;
+    const nearbyLines = [
+      lines[index - 2] || "",
+      lines[index - 1] || "",
+      line,
+      lines[index + 1] || "",
+    ];
+    for (const nearbyLine of nearbyLines) {
+      const phone = normalizePhoneNumber(nearbyLine);
+      if (phone) return phone;
+    }
+  }
 
   const candidates = normalized.match(
     /(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}|\d{10})/g,

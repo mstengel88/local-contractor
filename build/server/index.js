@@ -5145,9 +5145,23 @@ function normalizePhoneNumber(value) {
 }
 function parsePhoneNumber(raw) {
   const normalized = normalizeEmailText(raw);
+  const lines = normalized.split("\n").map((line) => line.trim()).filter(Boolean);
   const labelled = readEmailField(normalized, ["Phone", "Phone Number", "Mobile", "Cell", "Tel", "Telephone"]) || "";
   const labelledPhone = normalizePhoneNumber(labelled);
   if (labelledPhone) return labelledPhone;
+  for (const [index, line] of lines.entries()) {
+    if (!/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(line)) continue;
+    const nearbyLines = [
+      lines[index - 2] || "",
+      lines[index - 1] || "",
+      line,
+      lines[index + 1] || ""
+    ];
+    for (const nearbyLine of nearbyLines) {
+      const phone = normalizePhoneNumber(nearbyLine);
+      if (phone) return phone;
+    }
+  }
   const candidates = normalized.match(
     /(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}|\d{10})/g
   ) || [];
@@ -6292,6 +6306,7 @@ function getMailboxConfig() {
     password,
     mailbox: process.env.DISPATCH_MAILBOX_NAME || "INBOX",
     limit: Number(process.env.DISPATCH_MAILBOX_LIMIT || 10),
+    backfillLimit: Number(process.env.DISPATCH_MAILBOX_BACKFILL_LIMIT || 250),
     markSeen: process.env.DISPATCH_MAILBOX_MARK_SEEN === "true",
     subjectPrefix: process.env.DISPATCH_MAILBOX_SUBJECT_PREFIX || DEFAULT_ORDER_SUBJECT_PREFIX
   };
@@ -6416,7 +6431,9 @@ async function fetchOrderEmails(config) {
   const searchResponse = await client.command(
     `UID SEARCH SUBJECT ${escapeImapString(config.subjectPrefix)}`
   );
-  const uids = parseSearchResponse(searchResponse).slice(-config.limit);
+  const uids = parseSearchResponse(searchResponse).slice(
+    -Math.max(config.limit, config.backfillLimit)
+  );
   for (const uid of uids) {
     const fetchCommand = config.markSeen ? `UID FETCH ${uid} BODY[]` : `UID FETCH ${uid} BODY.PEEK[]`;
     const fetchResponse = await client.command(fetchCommand);

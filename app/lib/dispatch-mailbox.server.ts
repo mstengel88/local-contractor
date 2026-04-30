@@ -14,6 +14,7 @@ type ImapConfig = {
   password: string;
   mailbox: string;
   limit: number;
+  backfillLimit: number;
   markSeen: boolean;
   subjectPrefix: string;
 };
@@ -48,6 +49,7 @@ function getMailboxConfig(): ImapConfig | null {
     password,
     mailbox: process.env.DISPATCH_MAILBOX_NAME || "INBOX",
     limit: Number(process.env.DISPATCH_MAILBOX_LIMIT || 10),
+    backfillLimit: Number(process.env.DISPATCH_MAILBOX_BACKFILL_LIMIT || 250),
     markSeen: process.env.DISPATCH_MAILBOX_MARK_SEEN === "true",
     subjectPrefix:
       process.env.DISPATCH_MAILBOX_SUBJECT_PREFIX ||
@@ -198,7 +200,9 @@ async function fetchOrderEmails(config: ImapConfig) {
   const searchResponse = await client.command(
     `UID SEARCH SUBJECT ${escapeImapString(config.subjectPrefix)}`,
   );
-  const uids = parseSearchResponse(searchResponse).slice(-config.limit);
+  const uids = parseSearchResponse(searchResponse).slice(
+    -Math.max(config.limit, config.backfillLimit),
+  );
 
   for (const uid of uids) {
     const fetchCommand = config.markSeen
