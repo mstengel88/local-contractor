@@ -1683,6 +1683,56 @@ export async function action({ request }: any) {
       });
     }
 
+    if (intent === "move-route-stop") {
+      const orderId = String(form.get("orderId") || "").trim();
+      const routeId = String(form.get("routeId") || "").trim();
+      const direction = String(form.get("direction") || "").trim();
+
+      if (!orderId || !routeId || !["up", "down"].includes(direction)) {
+        throw new Error("Missing route stop reorder details");
+      }
+
+      const routeOrders = (await getDispatchOrders())
+        .filter(
+          (order) =>
+            order.assignedRouteId === routeId &&
+            order.status !== "delivered" &&
+            order.deliveryStatus !== "delivered",
+        )
+        .sort(
+          (a, b) =>
+            Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999) ||
+            String(a.created_at || "").localeCompare(String(b.created_at || "")),
+        );
+
+      const currentIndex = routeOrders.findIndex((order) => order.id === orderId);
+      const nextIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
+      if (currentIndex >= 0 && nextIndex >= 0 && nextIndex < routeOrders.length) {
+        const reordered = [...routeOrders];
+        const [movedOrder] = reordered.splice(currentIndex, 1);
+        reordered.splice(nextIndex, 0, movedOrder);
+
+        await Promise.all(
+          reordered.map((order, index) =>
+            Number(order.stopSequence || 0) === index + 1
+              ? Promise.resolve(order)
+              : updateDispatchOrder(order.id, { stopSequence: index + 1 }),
+          ),
+        );
+      }
+
+      const dispatchState = await loadDispatchState({ skipSetup: true });
+
+      return data({
+        allowed: true,
+        ok: true,
+        message: "Route stop order updated.",
+        selectedOrderId: orderId,
+        ...dispatchState,
+      });
+    }
+
     if (intent === "hold-order") {
       const orderId = String(form.get("orderId") || "").trim();
       if (!orderId) throw new Error("Missing order selection");
@@ -3578,7 +3628,7 @@ export default function DispatchPage() {
 
                     {route.orders.length ? (
                       <div style={styles.stopList}>
-                        {route.orders.map((order) => (
+                        {route.orders.map((order, index) => (
                           <div
                             key={order.id}
                             draggable={canManageDispatch}
@@ -3614,6 +3664,39 @@ export default function DispatchPage() {
                               </span>
                             </div>
                             <div style={styles.stopActions}>
+                              {canManageDispatch ? (
+                                <Form method="post" style={styles.routeReorderForm}>
+                                  <input type="hidden" name="intent" value="move-route-stop" />
+                                  <input type="hidden" name="routeId" value={route.id} />
+                                  <input type="hidden" name="orderId" value={order.id} />
+                                  <button
+                                    name="direction"
+                                    value="up"
+                                    style={{
+                                      ...styles.stopDetailButton,
+                                      ...(index === 0 ? styles.disabledStopButton : null),
+                                    }}
+                                    disabled={index === 0}
+                                    title="Move stop up"
+                                  >
+                                    Up
+                                  </button>
+                                  <button
+                                    name="direction"
+                                    value="down"
+                                    style={{
+                                      ...styles.stopDetailButton,
+                                      ...(index === route.orders.length - 1
+                                        ? styles.disabledStopButton
+                                        : null),
+                                    }}
+                                    disabled={index === route.orders.length - 1}
+                                    title="Move stop down"
+                                  >
+                                    Down
+                                  </button>
+                                </Form>
+                              ) : null}
                               <select
                                 defaultValue={order.assignedRouteId || ""}
                                 onChange={(event) => {
@@ -4695,6 +4778,11 @@ const styles = {
     flexWrap: "wrap" as const,
     justifyContent: "flex-end",
   } as const,
+  routeReorderForm: {
+    display: "flex",
+    gap: 4,
+    alignItems: "center",
+  } as const,
   stopMoveSelect: {
     minHeight: 30,
     maxWidth: 96,
@@ -4721,6 +4809,10 @@ const styles = {
     fontWeight: 900,
     textDecoration: "none",
     whiteSpace: "nowrap" as const,
+  } as const,
+  disabledStopButton: {
+    opacity: 0.35,
+    cursor: "not-allowed",
   } as const,
   stopNumber: {
     width: 28,

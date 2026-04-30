@@ -1065,11 +1065,40 @@ export default function ClassicDispatchPage() {
                         <td key={key}>{orderColumnValue(order, key, index)}</td>
                       ))}
                       <td>
-                        <Form method="post">
+                        <div style={styles.siteActions}>
+                          <Form method="post" style={styles.reorderForm}>
+                            <input type="hidden" name="intent" value="move-route-stop" />
+                            <input type="hidden" name="routeId" value={selectedRoute?.id || ""} />
+                            <input type="hidden" name="orderId" value={order.id} />
+                            <button
+                              name="direction"
+                              value="up"
+                              style={{
+                                ...styles.reorderButton,
+                                ...(index === 0 ? styles.reorderButtonDisabled : null),
+                              }}
+                              disabled={index === 0}
+                            >
+                              Up
+                            </button>
+                            <button
+                              name="direction"
+                              value="down"
+                              style={{
+                                ...styles.reorderButton,
+                                ...(index === sortedSiteOrders.length - 1 ? styles.reorderButtonDisabled : null),
+                              }}
+                              disabled={index === sortedSiteOrders.length - 1}
+                            >
+                              Down
+                            </button>
+                          </Form>
+                          <Form method="post">
                           <input type="hidden" name="intent" value="unassign-order" />
                           <input type="hidden" name="orderId" value={order.id} />
                           <button style={styles.linkButton}>Unassign</button>
-                        </Form>
+                          </Form>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1583,6 +1612,31 @@ const styles: Record<string, any> = {
     cursor: "grab",
   },
   inlineActions: { display: "flex", gap: 4 },
+  siteActions: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  reorderForm: {
+    display: "flex",
+    gap: 4,
+  },
+  reorderButton: {
+    minHeight: 24,
+    border: "1px solid rgba(14, 165, 198, 0.5)",
+    borderRadius: 4,
+    background: "rgba(14, 165, 198, 0.1)",
+    color: "#0ea5c6",
+    fontSize: 10,
+    fontWeight: 900,
+    cursor: "pointer",
+  },
+  reorderButtonDisabled: {
+    opacity: 0.35,
+    cursor: "not-allowed",
+  },
   iconButton: {
     width: 25,
     height: 25,

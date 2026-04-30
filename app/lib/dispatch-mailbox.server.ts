@@ -5,7 +5,6 @@ import {
   getDispatchOrdersByOrderNumber,
   getDispatchUnitForMaterial,
   parseDispatchEmail,
-  updateDispatchOrderDetails,
 } from "./dispatch.server";
 
 type ImapConfig = {
@@ -35,7 +34,7 @@ type SkipReason = {
 
 let lastAutoPollAt = 0;
 const DEFAULT_ORDER_SUBJECT_PREFIX = "You've Got A New Order: #";
-const MAILBOX_IMPORT_VERSION = "phone-fallback-v3";
+const MAILBOX_IMPORT_VERSION = "new-orders-phone-only-v1";
 
 function getMailboxConfig(): ImapConfig | null {
   const host = process.env.DISPATCH_MAILBOX_HOST || "";
@@ -278,16 +277,6 @@ function findPhoneInMailboxText(value: string) {
   return "";
 }
 
-function mergeContactWithPhone(existingContact: string, parsedContact: string) {
-  const existing = String(existingContact || "").trim();
-  const parsed = String(parsedContact || "").trim();
-  const phone = extractPhone(parsed);
-
-  if (!phone || extractPhone(existing)) return existing;
-  if (!existing) return parsed || formatPhone(phone);
-  return `${existing} / ${formatPhone(phone)}`;
-}
-
 function uniqueOrders<T extends { id: string }>(orders: Array<T | null | undefined>) {
   const seen = new Set<string>();
   return orders.filter((order): order is T => {
@@ -361,7 +350,7 @@ async function fetchOrderEmails(config: ImapConfig) {
     `UID SEARCH SUBJECT ${escapeImapString(config.subjectPrefix)}`,
   );
   const uids = parseSearchResponse(searchResponse).slice(
-    -Math.max(config.limit, config.backfillLimit),
+    -config.limit,
   );
 
   for (const uid of uids) {
@@ -394,7 +383,6 @@ export async function pollDispatchMailbox() {
 
   const emails = await fetchOrderEmails(config);
   let imported = 0;
-  let updated = 0;
   const skipReasons: SkipReason[] = [];
 
   for (const email of emails) {
@@ -442,25 +430,10 @@ export async function pollDispatchMailbox() {
     ]);
 
     if (importedOrders.length) {
-      let updatedForEmail = 0;
-      const parsedPhone = extractPhone(parsedContact);
-      for (const order of importedOrders) {
-        const nextContact = mergeContactWithPhone(order.contact, parsedContact);
-        if (nextContact && nextContact !== order.contact) {
-          await updateDispatchOrderDetails(order.id, { contact: nextContact });
-          updated += 1;
-          updatedForEmail += 1;
-        }
-      }
-
       skipReasons.push({
         uid: email.uid,
         subject: email.subject || "(No subject)",
-        reason: updatedForEmail
-          ? `skipped because it was already imported; updated phone on ${updatedForEmail} existing order${updatedForEmail === 1 ? "" : "s"}`
-          : parsedPhone
-            ? "skipped because it was already imported and the existing order already has a phone number"
-            : `skipped because it was already imported but no phone number was found in the email [order ${parsed.orderNumber || "unknown"} ${parsed.customer || "unknown customer"}; excerpt: ${mailboxDebugExcerpt(email.raw)}]`,
+        reason: "skipped because it was already imported",
       });
       continue;
     }
@@ -506,26 +479,17 @@ export async function pollDispatchMailbox() {
   }
 
   const skipSummary = summarizeSkipReasons(skipReasons);
-  const phoneDebugSamples = skipReasons
-    .filter((item) => /no phone number was found/.test(item.reason) && /\[order /.test(item.reason))
-    .slice(0, 3)
-    .map((item) => item.reason.match(/\[order ([\s\S]+)\]$/)?.[1])
-    .filter(Boolean);
 
   return {
     configured: true,
     imported,
-    updated,
+    updated: 0,
     skipped: skipReasons.length,
     skipReasons,
     skipSummary,
-    message: `Mailbox poll ${MAILBOX_IMPORT_VERSION} complete: ${imported} imported, ${updated} updated, ${skipReasons.length} skipped${
+    message: `Mailbox poll ${MAILBOX_IMPORT_VERSION} complete: ${imported} imported, 0 updated, ${skipReasons.length} skipped${
       skipSummary.length ? ` (${skipSummary.join("; ")})` : ""
-    }.${
-      phoneDebugSamples.length
-        ? ` Phone debug samples: ${phoneDebugSamples.join(" || ")}`
-        : ""
-    }`,
+    }.`,
   };
 }
 
