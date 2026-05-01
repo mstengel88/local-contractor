@@ -85,6 +85,7 @@ type ClassicSortConfig = {
 type ClassicColumnWidths = Partial<Record<ClassicSortTable, Record<string, number>>>;
 
 const CLASSIC_COLUMN_WIDTHS_KEY = "classicDispatchColumnWidths";
+const DISPATCH_NAV_COLLAPSED_KEY = "dispatchNavCollapsed";
 const MIN_CLASSIC_COLUMN_WIDTH = 48;
 const defaultColumnWidths: Record<ClassicSortTable, Record<string, number>> = {
   routes: {
@@ -585,6 +586,10 @@ export default function ClassicDispatchPage() {
   const [routeDrawerOpen, setRouteDrawerOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState("");
   const [orderDrawerOpen, setOrderDrawerOpen] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(DISPATCH_NAV_COLLAPSED_KEY) === "1";
+  });
   const [tableSorts, setTableSorts] = useState<Record<ClassicSortTable, ClassicSortConfig>>({
     routes: { key: "code", direction: "asc" },
     sites: { key: "stop", direction: "asc" },
@@ -641,6 +646,18 @@ export default function ClassicDispatchPage() {
   const orderColumnKeys = classicColumnSettings.orders || defaultClassicColumnSettings.orders;
   const unscheduledColumnKeys =
     classicColumnSettings.unscheduled || defaultClassicColumnSettings.unscheduled;
+
+  function toggleNavCollapsed() {
+    setNavCollapsed((current) => {
+      const next = !current;
+      try {
+        window.localStorage.setItem(DISPATCH_NAV_COLLAPSED_KEY, next ? "1" : "0");
+      } catch {
+        // The nav still collapses even if browser storage is unavailable.
+      }
+      return next;
+    });
+  }
 
   useEffect(() => {
     setDriverLocations(initialDriverLocations);
@@ -1019,7 +1036,13 @@ export default function ClassicDispatchPage() {
   }
 
   return (
-    <main className="classic-shell" style={styles.page}>
+    <main
+      className="classic-shell"
+      style={{
+        ...styles.page,
+        gridTemplateColumns: navCollapsed ? "56px minmax(1420px, 1fr)" : "230px minmax(1420px, 1fr)",
+      }}
+    >
       <style>
         {`
           .classic-shell {
@@ -1066,15 +1089,23 @@ export default function ClassicDispatchPage() {
           }
         `}
       </style>
-      <aside style={styles.sideRail}>
+      <aside style={{ ...styles.sideRail, padding: navCollapsed ? "12px 8px" : "16px 14px" }}>
+        <button
+          type="button"
+          onClick={toggleNavCollapsed}
+          style={styles.navToggle}
+          title={navCollapsed ? "Open navigation" : "Close navigation"}
+        >
+          {navCollapsed ? ">" : "<"}
+        </button>
         <div style={styles.classicBrand}>
           <div style={styles.railLogo}>GH</div>
-          <div>
+          <div style={navCollapsed ? styles.collapsedOnlyHidden : undefined}>
             <div style={styles.classicBrandTitle}>Contractor</div>
             <div style={styles.classicBrandSub}>Classic</div>
           </div>
         </div>
-        <nav style={styles.classicNav}>
+        <nav style={navCollapsed ? styles.collapsedOnlyHidden : styles.classicNav}>
           <Link to={classicHref} style={styles.classicNavLinkActive}>Classic</Link>
           <Link to={calendarHref} style={styles.classicNavLink}>Calendar</Link>
           <Link to={allotmentHref} style={styles.classicNavLink}>Allotment</Link>
@@ -1086,7 +1117,7 @@ export default function ClassicDispatchPage() {
           <Link to={dispatchViewHref("delivered")} style={styles.classicNavLink}>Delivered</Link>
         </nav>
         <div style={{ flex: 1 }} />
-        <div style={styles.classicFooterNav}>
+        <div style={navCollapsed ? styles.collapsedOnlyHidden : styles.classicFooterNav}>
           {canAccess("driver") ? <Link to={driverHref} style={styles.classicUtility}>Driver Route</Link> : null}
           {canAccess("quoteTool") ? <Link to={quoteHref} style={styles.classicUtility}>Quote Tool</Link> : null}
           <Link to={mobileHref} style={styles.classicUtility}>Mobile</Link>
@@ -1485,12 +1516,12 @@ const styles: Record<string, any> = {
   page: {
     minHeight: "100vh",
     display: "grid",
-    gridTemplateColumns: "230px minmax(1420px, 1fr)",
     background: "var(--classic-bg)",
     color: "var(--classic-text)",
     fontFamily: "Verdana, Geneva, Tahoma, sans-serif",
     fontSize: 12,
     overflowX: "auto",
+    transition: "grid-template-columns 160ms ease",
   },
   sideRail: {
     minHeight: "100vh",
@@ -1499,7 +1530,24 @@ const styles: Record<string, any> = {
     gap: 12,
     background: "var(--classic-rail-bg)",
     borderRight: "1px solid var(--classic-rail-border)",
-    padding: "16px 14px",
+    overflow: "hidden",
+    transition: "padding 160ms ease",
+  },
+  navToggle: {
+    width: 34,
+    height: 30,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    border: "1px solid var(--classic-rail-border)",
+    background: "var(--classic-rail-active-bg)",
+    color: "#ff7a1a",
+    fontWeight: 900,
+    cursor: "pointer",
+  },
+  collapsedOnlyHidden: {
+    display: "none",
   },
   classicBrand: {
     display: "flex",

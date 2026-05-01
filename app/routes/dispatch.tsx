@@ -56,6 +56,8 @@ import {
 import { attachAddressAutocomplete, loadGooglePlaces } from "../lib/google-places";
 import { getCurrentUser } from "../lib/user-auth.server";
 
+const DISPATCH_NAV_COLLAPSED_KEY = "dispatchNavCollapsed";
+
 function getDeliveryStatusLabel(status?: DispatchOrder["deliveryStatus"]) {
   if (status === "en_route") return "Enroute";
   if (status === "delivered") return "Delivered";
@@ -2069,9 +2071,25 @@ export default function DispatchPage() {
   const [dragOverRouteId, setDragOverRouteId] = useState<string | null>(null);
   const [dragOverQueue, setDragOverQueue] = useState(false);
   const [orderSearch, setOrderSearch] = useState("");
+  const [navCollapsed, setNavCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(DISPATCH_NAV_COLLAPSED_KEY) === "1";
+  });
   const deferredOrderSearch = useDeferredValue(orderSearch);
   const normalizedOrderSearch = deferredOrderSearch.trim().toLowerCase();
   const isAssigningByDrag = assignmentFetcher.state === "submitting";
+
+  function toggleNavCollapsed() {
+    setNavCollapsed((current) => {
+      const next = !current;
+      try {
+        window.localStorage.setItem(DISPATCH_NAV_COLLAPSED_KEY, next ? "1" : "0");
+      } catch {
+        // Keep the control usable even when localStorage is blocked.
+      }
+      return next;
+    });
+  }
 
   const searchOrders = (items: DispatchOrder[]) => {
     if (!normalizedOrderSearch) return items;
@@ -2251,8 +2269,21 @@ export default function DispatchPage() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.appFrame}>
-        <aside style={styles.sidebar}>
+      <div
+        style={{
+          ...styles.appFrame,
+          gridTemplateColumns: navCollapsed ? "56px minmax(0, 1fr)" : "230px minmax(0, 1fr)",
+        }}
+      >
+        <aside style={{ ...styles.sidebar, padding: navCollapsed ? "12px 8px" : "16px 14px" }}>
+          <button
+            type="button"
+            onClick={toggleNavCollapsed}
+            style={styles.navToggle}
+            title={navCollapsed ? "Open navigation" : "Close navigation"}
+          >
+            {navCollapsed ? ">" : "<"}
+          </button>
           <div style={styles.brandBlock}>
             <div style={styles.brandMark}>
               <img
@@ -2261,13 +2292,13 @@ export default function DispatchPage() {
                 style={styles.brandLogo}
               />
             </div>
-            <div>
+            <div style={navCollapsed ? styles.collapsedOnlyHidden : undefined}>
               <div style={styles.brandTitle}>Contractor</div>
               <div style={styles.brandSub}>Dispatch v2.0</div>
             </div>
           </div>
 
-          <nav style={styles.sideNav}>
+          <nav style={navCollapsed ? styles.collapsedOnlyHidden : styles.sideNav}>
             <a href={classicHref} style={styles.sideNavLink(false)}>Classic</a>
             <a href={calendarHref} style={styles.sideNavLink(false)}>Calendar</a>
             <a href={allotmentHref} style={styles.sideNavLink(false)}>Allotment</a>
@@ -2287,7 +2318,7 @@ export default function DispatchPage() {
             <a href={dispatchViewHref("delivered")} style={styles.sideNavLink(activeView === "delivered")}>Delivered</a>
           </nav>
 
-          <div style={styles.sidebarFooter}>
+          <div style={navCollapsed ? styles.collapsedOnlyHidden : styles.sidebarFooter}>
             {canAccess("driver") ? (
               <a href={driverHref} style={styles.sideUtility}>Driver Route</a>
             ) : null}
@@ -4066,8 +4097,8 @@ const styles = {
     width: "100%",
     minHeight: "100vh",
     display: "grid",
-    gridTemplateColumns: "230px minmax(0, 1fr)",
     alignItems: "start",
+    transition: "grid-template-columns 160ms ease",
   } as const,
   sidebar: {
     position: "sticky" as const,
@@ -4076,11 +4107,28 @@ const styles = {
     display: "grid",
     gridTemplateRows: "auto 1fr auto",
     gap: 12,
-    padding: "16px 14px",
     borderRadius: 0,
     borderRight: "1px solid #1e293b",
     background: "#020617",
     boxShadow: "none",
+    overflow: "hidden",
+    transition: "padding 160ms ease",
+  } as const,
+  navToggle: {
+    width: 34,
+    height: 30,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    border: "1px solid #334155",
+    background: "#1e293b",
+    color: "#ff7a1a",
+    fontWeight: 900,
+    cursor: "pointer",
+  } as const,
+  collapsedOnlyHidden: {
+    display: "none",
   } as const,
   brandBlock: {
     display: "flex",

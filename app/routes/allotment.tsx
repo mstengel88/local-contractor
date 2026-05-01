@@ -9,6 +9,8 @@ import type { DispatchOrder } from "../lib/dispatch.server";
 export const loader = dispatchLoader;
 export const action = dispatchAction;
 
+const DISPATCH_NAV_COLLAPSED_KEY = "dispatchNavCollapsed";
+
 type AllotmentOrder = {
   order: DispatchOrder;
   date: Date | null;
@@ -154,6 +156,10 @@ export default function AllotmentPage() {
   const [query, setQuery] = useState("");
   const [cursorMonth, setCursorMonth] = useState(() => new Date());
   const [selectedDayKey, setSelectedDayKey] = useState(() => dateKey(new Date()));
+  const [navCollapsed, setNavCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(DISPATCH_NAV_COLLAPSED_KEY) === "1";
+  });
 
   const isEmbeddedRoute = location.pathname.startsWith("/app/");
   const classicHref = isEmbeddedRoute ? "/app/classic" : "/classic";
@@ -167,6 +173,18 @@ export default function AllotmentPage() {
   const canAccess = (permission: string) =>
     !currentUser || currentUser.permissions?.includes(permission);
   const logoutHref = currentUser ? "/login?logout=1" : `${dispatchHref}?logout=1`;
+
+  function toggleNavCollapsed() {
+    setNavCollapsed((current) => {
+      const next = !current;
+      try {
+        window.localStorage.setItem(DISPATCH_NAV_COLLAPSED_KEY, next ? "1" : "0");
+      } catch {
+        // Keep the nav control working even if storage is unavailable.
+      }
+      return next;
+    });
+  }
 
   const allotmentOrders = useMemo<AllotmentOrder[]>(() => {
     const search = query.trim().toLowerCase();
@@ -259,15 +277,23 @@ export default function AllotmentPage() {
 
   return (
     <main style={styles.page}>
-      <aside style={styles.sideRail}>
+      <aside style={{ ...styles.sideRail, width: navCollapsed ? 56 : 250, padding: navCollapsed ? "12px 8px" : "16px 14px" }}>
+        <button
+          type="button"
+          onClick={toggleNavCollapsed}
+          style={styles.navToggle}
+          title={navCollapsed ? "Open navigation" : "Close navigation"}
+        >
+          {navCollapsed ? ">" : "<"}
+        </button>
         <div style={styles.brand}>
           <img src="/green-hills-logo.png" alt="Green Hills Supply" style={styles.logo} />
-          <div>
+          <div style={navCollapsed ? styles.collapsedOnlyHidden : undefined}>
             <div style={styles.brandTitle}>Contractor</div>
             <div style={styles.brandSub}>Allotment</div>
           </div>
         </div>
-        <nav style={styles.nav}>
+        <nav style={navCollapsed ? styles.collapsedOnlyHidden : styles.nav}>
           <Link to={classicHref} style={styles.navLink}>Classic</Link>
           <Link to={calendarHref} style={styles.navLink}>Calendar</Link>
           <Link to={allotmentHref} style={styles.navLinkActive}>Allotment</Link>
@@ -279,7 +305,7 @@ export default function AllotmentPage() {
           <Link to={dispatchViewHref("delivered")} style={styles.navLink}>Delivered</Link>
         </nav>
         <div style={{ flex: 1 }} />
-        <div style={styles.footerNav}>
+        <div style={navCollapsed ? styles.collapsedOnlyHidden : styles.footerNav}>
           {canAccess("driver") ? <Link to={driverHref} style={styles.utility}>Driver Route</Link> : null}
           {canAccess("quoteTool") ? <Link to={quoteHref} style={styles.utility}>Quote Tool</Link> : null}
           <Link to={mobileHref} style={styles.utility}>Mobile</Link>
@@ -449,11 +475,25 @@ const styles: Record<string, CSSProperties> = {
     flexDirection: "column",
     gap: 12,
     minHeight: "100vh",
-    padding: "16px 14px",
     position: "sticky",
     top: 0,
-    width: 250,
+    overflow: "hidden",
+    transition: "width 160ms ease, padding 160ms ease",
   },
+  navToggle: {
+    alignItems: "center",
+    background: "#1e293b",
+    border: "1px solid #334155",
+    borderRadius: 8,
+    color: "#ff7a1a",
+    cursor: "pointer",
+    display: "inline-flex",
+    fontWeight: 900,
+    height: 30,
+    justifyContent: "center",
+    width: 34,
+  },
+  collapsedOnlyHidden: { display: "none" },
   brand: { alignItems: "center", display: "flex", gap: 12 },
   logo: { height: 52, objectFit: "contain", width: 52 },
   brandTitle: { color: "#f8fafc", fontSize: 18, fontWeight: 900 },
