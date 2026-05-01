@@ -1,4 +1,4 @@
-import { type DragEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type DragEvent, type MouseEvent as ReactMouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Form, Link, useActionData, useLoaderData, useLocation, useSubmit } from "react-router";
 import {
   action as dispatchAction,
@@ -81,6 +81,61 @@ type ClassicSortTable = "routes" | "sites" | "orders" | "unscheduled";
 type ClassicSortConfig = {
   key: string;
   direction: ClassicSortDirection;
+};
+type ClassicColumnWidths = Partial<Record<ClassicSortTable, Record<string, number>>>;
+
+const CLASSIC_COLUMN_WIDTHS_KEY = "classicDispatchColumnWidths";
+const MIN_CLASSIC_COLUMN_WIDTH = 48;
+const defaultColumnWidths: Record<ClassicSortTable, Record<string, number>> = {
+  routes: {
+    code: 90,
+    driver: 170,
+    status: 90,
+    weight: 80,
+    start: 95,
+    finish: 95,
+    distance: 110,
+  },
+  sites: {
+    stop: 60,
+    orderNo: 95,
+    customer: 160,
+    product: 180,
+    quantity: 80,
+    unit: 80,
+    address: 220,
+    requested: 130,
+    timePreference: 150,
+    arrived: 95,
+    departed: 95,
+    eta: 110,
+    miles: 70,
+  },
+  orders: {
+    type: 55,
+    orderNo: 95,
+    date: 100,
+    client: 160,
+    address: 220,
+    weight: 80,
+    volume: 85,
+    status: 105,
+    material: 180,
+    timePreference: 150,
+    route: 100,
+  },
+  unscheduled: {
+    orderNo: 95,
+    date: 100,
+    client: 160,
+    address: 220,
+    product: 180,
+    weight: 80,
+    volume: 85,
+    timePreference: 150,
+    notes: 220,
+    route: 100,
+  },
 };
 
 function normalizeSortValue(value: unknown) {
@@ -536,6 +591,15 @@ export default function ClassicDispatchPage() {
     orders: { key: "date", direction: "asc" },
     unscheduled: { key: "date", direction: "asc" },
   });
+  const [columnWidths, setColumnWidths] = useState<ClassicColumnWidths>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const stored = window.localStorage.getItem(CLASSIC_COLUMN_WIDTHS_KEY);
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
 
   const allowed = actionData?.allowed ?? loaderData.allowed;
   const orders = (actionData?.orders ?? loaderData.orders ?? []) as DispatchOrder[];
@@ -737,18 +801,110 @@ export default function ClassicDispatchPage() {
     });
   }
 
+  function getColumnWidth(table: ClassicSortTable, key: string) {
+    return columnWidths[table]?.[key] || defaultColumnWidths[table]?.[key] || 120;
+  }
+
+  function getTableMinWidth(
+    table: ClassicSortTable,
+    keys: string[],
+    fixedWidth = 0,
+  ) {
+    return keys.reduce((sum, key) => sum + getColumnWidth(table, key), fixedWidth);
+  }
+
+  function persistColumnWidths(nextWidths: ClassicColumnWidths) {
+    try {
+      window.localStorage.setItem(CLASSIC_COLUMN_WIDTHS_KEY, JSON.stringify(nextWidths));
+    } catch {
+      // Keep resizing functional even if localStorage is unavailable.
+    }
+  }
+
+  function resizeColumn(table: ClassicSortTable, key: string, nextWidth: number) {
+    setColumnWidths((current) => {
+      const next = {
+        ...current,
+        [table]: {
+          ...(current[table] || {}),
+          [key]: Math.max(MIN_CLASSIC_COLUMN_WIDTH, Math.round(nextWidth)),
+        },
+      };
+      persistColumnWidths(next);
+      return next;
+    });
+  }
+
+  function beginColumnResize(
+    table: ClassicSortTable,
+    key: string,
+    event: ReactMouseEvent<HTMLSpanElement>,
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const startX = event.clientX;
+    const startWidth = getColumnWidth(table, key);
+
+    function handleMouseMove(moveEvent: MouseEvent) {
+      resizeColumn(table, key, startWidth + moveEvent.clientX - startX);
+    }
+
+    function handleMouseUp() {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  }
+
+  function columnGroup(
+    table: ClassicSortTable,
+    keys: string[],
+    leadingFixedColumns: number[] = [],
+    trailingFixedColumns: number[] = [],
+  ) {
+    return (
+      <colgroup>
+        {leadingFixedColumns.map((width, index) => (
+          <col key={`leading-${index}`} style={{ width }} />
+        ))}
+        {keys.map((key) => (
+          <col key={key} style={{ width: getColumnWidth(table, key) }} />
+        ))}
+        {trailingFixedColumns.map((width, index) => (
+          <col key={`trailing-${index}`} style={{ width }} />
+        ))}
+      </colgroup>
+    );
+  }
+
   function sortHeader(table: ClassicSortTable, key: string, label: string) {
     const active = tableSorts[table].key === key;
     const direction = tableSorts[table].direction === "asc" ? "↑" : "↓";
     return (
-      <button
-        type="button"
-        onClick={() => updateTableSort(table, key)}
-        style={active ? styles.sortHeaderActive : styles.sortHeader}
-        title={`Sort ${label}`}
-      >
-        {label} {active ? direction : ""}
-      </button>
+      <div style={styles.resizableHeader}>
+        <button
+          type="button"
+          onClick={() => updateTableSort(table, key)}
+          style={active ? styles.sortHeaderActive : styles.sortHeader}
+          title={`Sort ${label}`}
+        >
+          {label} {active ? direction : ""}
+        </button>
+        <span
+          role="separator"
+          aria-orientation="vertical"
+          title="Drag to resize column"
+          style={styles.columnResizeHandle}
+          onMouseDown={(event) => beginColumnResize(table, key, event)}
+        />
+      </div>
     );
   }
 
@@ -867,45 +1023,24 @@ export default function ClassicDispatchPage() {
       <style>
         {`
           .classic-shell {
-            --classic-bg: #e8e8e8;
-            --classic-text: #232323;
-            --classic-rail-bg: #4a4a4a;
-            --classic-rail-border: #343434;
-            --classic-rail-link: #ffffff;
-            --classic-rail-active-bg: #f7f7f7;
-            --classic-panel-bg: #ffffff;
-            --classic-panel-header-bg: #fbfbfb;
-            --classic-border: #d7d7d7;
-            --classic-soft-border: #e2e2e2;
-            --classic-input-bg: #ffffff;
-            --classic-muted: #777777;
-            --classic-table-head-bg: #f6f6f6;
-            --classic-table-head-text: #555555;
-            --classic-table-hover: #f7fbff;
-            --classic-drawer-bg: #ffffff;
-            --classic-map-bg: #dceecf;
-          }
-
-          @media (prefers-color-scheme: dark) {
-            .classic-shell {
-              --classic-bg: #0f172a;
-              --classic-text: #e5e7eb;
-              --classic-rail-bg: #020617;
-              --classic-rail-border: #1e293b;
-              --classic-rail-link: #cbd5e1;
-              --classic-rail-active-bg: #1e293b;
-              --classic-panel-bg: #111827;
-              --classic-panel-header-bg: #0b1220;
-              --classic-border: #334155;
-              --classic-soft-border: #263449;
-              --classic-input-bg: #020617;
-              --classic-muted: #94a3b8;
-              --classic-table-head-bg: #0b1220;
-              --classic-table-head-text: #cbd5e1;
-              --classic-table-hover: #172033;
-              --classic-drawer-bg: #0f172a;
-              --classic-map-bg: #101827;
-            }
+            color-scheme: dark;
+            --classic-bg: #0f172a;
+            --classic-text: #e5e7eb;
+            --classic-rail-bg: #020617;
+            --classic-rail-border: #1e293b;
+            --classic-rail-link: #cbd5e1;
+            --classic-rail-active-bg: #1e293b;
+            --classic-panel-bg: #111827;
+            --classic-panel-header-bg: #0b1220;
+            --classic-border: #334155;
+            --classic-soft-border: #263449;
+            --classic-input-bg: #020617;
+            --classic-muted: #94a3b8;
+            --classic-table-head-bg: #0b1220;
+            --classic-table-head-text: #cbd5e1;
+            --classic-table-hover: #172033;
+            --classic-drawer-bg: #0f172a;
+            --classic-map-bg: #101827;
           }
 
           .classic-table th,
@@ -993,7 +1128,14 @@ export default function ClassicDispatchPage() {
                 <strong>Routes {routes.length}</strong>
                 <span>Today</span>
               </div>
-              <table className="classic-table" style={styles.table}>
+              <table
+                className="classic-table"
+                style={{
+                  ...styles.table,
+                  minWidth: getTableMinWidth("routes", routeColumnKeys, 104),
+                }}
+              >
+                {columnGroup("routes", routeColumnKeys, [24], [80])}
                 <thead>
                   <tr>
                     <th />
@@ -1049,7 +1191,14 @@ export default function ClassicDispatchPage() {
               >
                 Drag and Drop to the Current Route
               </div>
-              <table className="classic-table" style={styles.table}>
+              <table
+                className="classic-table"
+                style={{
+                  ...styles.table,
+                  minWidth: getTableMinWidth("sites", siteColumnKeys, 190),
+                }}
+              >
+                {columnGroup("sites", siteColumnKeys, [], [190])}
                 <thead>
                   <tr>
                     {siteColumnKeys.map((key) => (
@@ -1114,7 +1263,14 @@ export default function ClassicDispatchPage() {
                 <strong>Orders {visibleOrders.length}</strong>
                 <span>{deliveredCount} delivered</span>
               </div>
-              <table className="classic-table" style={styles.table}>
+              <table
+                className="classic-table"
+                style={{
+                  ...styles.table,
+                  minWidth: getTableMinWidth("orders", orderColumnKeys),
+                }}
+              >
+                {columnGroup("orders", orderColumnKeys)}
                 <thead>
                   <tr>
                     {orderColumnKeys.map((key) => (
@@ -1148,7 +1304,14 @@ export default function ClassicDispatchPage() {
                 <strong>Unscheduled {unscheduledOrders.length}</strong>
                 <span>Routing</span>
               </div>
-              <table className="classic-table" style={styles.table}>
+              <table
+                className="classic-table"
+                style={{
+                  ...styles.table,
+                  minWidth: getTableMinWidth("unscheduled", unscheduledColumnKeys, 160),
+                }}
+              >
+                {columnGroup("unscheduled", unscheduledColumnKeys, [], [160])}
                 <thead>
                   <tr>
                     {unscheduledColumnKeys.map((key) => (
@@ -1322,11 +1485,12 @@ const styles: Record<string, any> = {
   page: {
     minHeight: "100vh",
     display: "grid",
-    gridTemplateColumns: "230px 1fr",
+    gridTemplateColumns: "230px minmax(1420px, 1fr)",
     background: "var(--classic-bg)",
     color: "var(--classic-text)",
     fontFamily: "Verdana, Geneva, Tahoma, sans-serif",
     fontSize: 12,
+    overflowX: "auto",
   },
   sideRail: {
     minHeight: "100vh",
@@ -1406,7 +1570,7 @@ const styles: Record<string, any> = {
     fontSize: 12,
   },
   workspace: {
-    minWidth: 0,
+    minWidth: 1420,
     overflow: "hidden",
   },
   topBar: {
@@ -1488,7 +1652,7 @@ const styles: Record<string, any> = {
   mainGrid: {
     height: "calc(100vh - 58px)",
     display: "grid",
-    gridTemplateColumns: "50% 50%",
+    gridTemplateColumns: "minmax(710px, 1fr) minmax(710px, 1fr)",
     gap: 0,
     overflow: "hidden",
   },
@@ -1523,6 +1687,7 @@ const styles: Record<string, any> = {
   },
   table: {
     width: "100%",
+    minWidth: 620,
     borderCollapse: "collapse",
     tableLayout: "fixed",
   },
@@ -1652,6 +1817,22 @@ const styles: Record<string, any> = {
     color: "#0ea5c6",
     fontWeight: 800,
     cursor: "pointer",
+  },
+  resizableHeader: {
+    position: "relative",
+    minHeight: 22,
+    display: "flex",
+    alignItems: "center",
+    paddingRight: 8,
+  },
+  columnResizeHandle: {
+    position: "absolute",
+    top: -3,
+    right: -7,
+    width: 12,
+    height: "calc(100% + 6px)",
+    cursor: "col-resize",
+    zIndex: 2,
   },
   sortHeader: {
     width: "100%",
