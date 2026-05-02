@@ -17,6 +17,7 @@ const MONITOR_VIEWPORT_KEY = "dispatchMonitorMapViewport";
 const MONITOR_HIDDEN_ROUTES_KEY = "dispatchMonitorHiddenRoutes";
 const MONITOR_SELECTED_DATE_KEY = "dispatchMonitorSelectedDate";
 const MONITOR_DATE_FILTER_KEY = "dispatchMonitorDateFilter";
+const MONITOR_COMPACT_ROUTES_KEY = "dispatchMonitorCompactRoutes";
 const DISPATCH_NAV_COLLAPSED_KEY = "dispatchNavCollapsed";
 
 let monitorGoogleMapsLoader: Promise<void> | null = null;
@@ -408,13 +409,13 @@ export default function DispatchMonitorPage() {
   const baseRoutes = (actionData?.routes ?? loaderData.routes ?? []) as DispatchRoute[];
   const initialDriverLocations = (actionData?.driverLocations ?? loaderData.driverLocations ?? []) as DispatchDriverLocation[];
   const [driverLocations, setDriverLocations] = useState<DispatchDriverLocation[]>(initialDriverLocations);
-  const [selectedDateKey, setSelectedDateKey] = useState(() => {
-    if (typeof window === "undefined") return dateKey(new Date());
-    return window.localStorage.getItem(MONITOR_SELECTED_DATE_KEY) || dateKey(new Date());
-  });
   const [filterByDate, setFilterByDate] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(MONITOR_DATE_FILTER_KEY) === "1";
+  });
+  const [selectedDateKey] = useState(() => {
+    if (typeof window === "undefined") return dateKey(new Date());
+    return window.localStorage.getItem(MONITOR_SELECTED_DATE_KEY) || dateKey(new Date());
   });
   const [hiddenRouteIds, setHiddenRouteIds] = useState<string[]>(() =>
     readStorageJson<string[]>(MONITOR_HIDDEN_ROUTES_KEY, []),
@@ -422,6 +423,10 @@ export default function DispatchMonitorPage() {
   const [navCollapsed, setNavCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(DISPATCH_NAV_COLLAPSED_KEY) === "1";
+  });
+  const [compactRoutes, setCompactRoutes] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(MONITOR_COMPACT_ROUTES_KEY) === "1";
   });
 
   const currentUser = actionData?.currentUser ?? loaderData.currentUser ?? null;
@@ -481,39 +486,21 @@ export default function DispatchMonitorPage() {
       }),
     [baseRoutes, orders],
   );
-  const calendarOrders = useMemo(
-    () =>
-      orders
-        .filter((order) => order.status !== "delivered" && order.deliveryStatus !== "delivered")
-        .map((order) => {
-          const date = parseRequestedDate(order.requestedWindow);
-          return { order, date, dateKey: dateKey(date) };
-        }),
-    [orders],
-  );
-  const ordersByDay = useMemo(() => {
-    const grouped = new Map<string, Array<{ order: DispatchOrder; date: Date | null; dateKey: string }>>();
-    for (const item of calendarOrders) {
-      if (!item.date) continue;
-      grouped.set(item.dateKey, [...(grouped.get(item.dateKey) || []), item]);
-    }
-    return grouped;
-  }, [calendarOrders]);
-  const today = new Date();
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  const gridStart = new Date(monthStart);
-  gridStart.setDate(gridStart.getDate() - gridStart.getDay());
-  const calendarDays = Array.from({ length: 35 }, (_, index) => {
-    const day = new Date(gridStart);
-    day.setDate(gridStart.getDate() + index);
-    return day;
+  const activeRoutes = routes.filter((route) => route.orders.length);
+  const visibleRouteOrders = activeRoutes.map((route) => {
+    const routeOrders = filterByDate
+      ? route.orders.filter((order) => dateKey(parseRequestedDate(order.requestedWindow)) === selectedDateKey)
+      : route.orders;
+    return {
+      ...route,
+      orders: routeOrders,
+      totalTravelMinutes: routeOrders.reduce((sum, order) => sum + getTravelMinutes(order), 0),
+    };
   });
-  const selectedDateOrders = ordersByDay.get(selectedDateKey) || [];
-  const selectedDateTravel = selectedDateOrders.reduce(
-    (sum, item) => sum + getTravelMinutes(item.order),
+  const visibleRouteOrderCount = visibleRouteOrders.reduce(
+    (sum, route) => sum + route.orders.length,
     0,
   );
-  const activeRoutes = routes.filter((route) => route.orders.length);
 
   function toggleNavCollapsed() {
     setNavCollapsed((current) => {
@@ -523,15 +510,18 @@ export default function DispatchMonitorPage() {
     });
   }
 
-  function selectDate(key: string) {
-    setSelectedDateKey(key);
-    window.localStorage.setItem(MONITOR_SELECTED_DATE_KEY, key);
-  }
-
   function toggleDateFilter() {
     setFilterByDate((current) => {
       const next = !current;
       window.localStorage.setItem(MONITOR_DATE_FILTER_KEY, next ? "1" : "0");
+      return next;
+    });
+  }
+
+  function toggleCompactRoutes() {
+    setCompactRoutes((current) => {
+      const next = !current;
+      window.localStorage.setItem(MONITOR_COMPACT_ROUTES_KEY, next ? "1" : "0");
       return next;
     });
   }
@@ -596,62 +586,62 @@ export default function DispatchMonitorPage() {
       </aside>
 
       <section style={styles.monitorGrid}>
-        <section style={styles.calendarPane}>
+        <section style={styles.orderPane}>
           <header style={styles.header}>
             <p style={styles.kicker}>Dispatch Monitor</p>
-            <h1 style={styles.title}>Calendar + Live Routes</h1>
-            <p style={styles.muted}>Map zoom, position, route visibility, and selected date stay saved after refresh.</p>
+            <h1 style={styles.title}>Orders by Truck</h1>
+            <p style={styles.muted}>Map zoom, position, route visibility, and filters stay saved after refresh.</p>
           </header>
           <div style={styles.controls}>
             <button type="button" onClick={toggleDateFilter} style={filterByDate ? styles.activeButton : styles.ghostButton}>
               {filterByDate ? "Showing selected date" : "Showing all active routes"}
             </button>
+            <button type="button" onClick={toggleCompactRoutes} style={compactRoutes ? styles.activeButton : styles.ghostButton}>
+              {compactRoutes ? "Compact on" : "Compact routes"}
+            </button>
             <button type="button" onClick={resetMapView} style={styles.ghostButton}>Reset map view</button>
           </div>
-          <div style={styles.monthLabel}>
-            {today.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+          <div style={styles.summaryBar}>
+            <strong>{visibleRouteOrderCount} active load{visibleRouteOrderCount === 1 ? "" : "s"}</strong>
+            {filterByDate ? <span>{formatDateLabel(parseRequestedDate(selectedDateKey))}</span> : <span>All scheduled route loads</span>}
           </div>
-          <div style={styles.calendarGrid}>
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-              <div key={day} style={styles.dayName}>{day}</div>
+          <div style={styles.truckList}>
+            {visibleRouteOrders.map((route) => (
+              <section key={route.id} style={compactRoutes ? styles.truckCardCompact : styles.truckCard}>
+                <div style={compactRoutes ? styles.truckHeaderCompact : styles.truckHeader}>
+                  <span style={{ ...styles.routeDot, background: route.color || "#f97316" }} />
+                  <div>
+                    <strong>{route.code} · {route.truck || "No truck"}</strong>
+                    <small>{route.driver || "No driver"} · {route.orders.length} stop{route.orders.length === 1 ? "" : "s"} · {formatTravel(route.totalTravelMinutes)}</small>
+                  </div>
+                </div>
+                <div style={compactRoutes ? styles.truckOrdersCompact : styles.truckOrders}>
+                  {route.orders.map((order, index) => (
+                    <Link
+                      key={order.id}
+                      to={`${dispatchHref}?view=orders&order=${encodeURIComponent(order.id)}&returnTo=${encodeURIComponent(monitorHref)}`}
+                      style={compactRoutes ? styles.orderCardCompact : styles.orderCard}
+                    >
+                      <span style={compactRoutes ? styles.stopBadgeCompact : styles.stopBadge}>{order.stopSequence || index + 1}</span>
+                      <div style={compactRoutes ? styles.orderTextCompact : styles.orderText}>
+                        <strong>{getOrderNumber(order)} {order.customer}</strong>
+                        {compactRoutes ? (
+                          <span>{getLoadLabel(order)}</span>
+                        ) : (
+                          <>
+                            <span>{getLoadLabel(order)}</span>
+                            <small>{getOrderAddress(order)}</small>
+                          </>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                  {!route.orders.length ? <div style={styles.empty}>No loads for this filter.</div> : null}
+                </div>
+              </section>
             ))}
-            {calendarDays.map((day) => {
-              const key = dateKey(day);
-              const dayOrders = ordersByDay.get(key) || [];
-              const selected = key === selectedDateKey;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => selectDate(key)}
-                  style={selected ? styles.dayCellSelected : styles.dayCell}
-                >
-                  <strong>{day.getDate()}</strong>
-                  {dayOrders.length ? <span>{dayOrders.length} load{dayOrders.length === 1 ? "" : "s"}</span> : null}
-                </button>
-              );
-            })}
+            {!visibleRouteOrders.length ? <div style={styles.empty}>No active routes yet.</div> : null}
           </div>
-          <section style={styles.panel}>
-            <div style={styles.panelTitle}>
-              <strong>{formatDateLabel(parseRequestedDate(selectedDateKey))}</strong>
-              <span>{formatTravel(selectedDateTravel)}</span>
-            </div>
-            <div style={styles.orderList}>
-              {selectedDateOrders.slice(0, 12).map(({ order }) => (
-                <Link
-                  key={order.id}
-                  to={`${dispatchHref}?view=orders&order=${encodeURIComponent(order.id)}&returnTo=${encodeURIComponent(monitorHref)}`}
-                  style={styles.orderCard}
-                >
-                  <strong>{getOrderNumber(order)} {order.customer}</strong>
-                  <span>{getLoadLabel(order)}</span>
-                  <small>{getOrderAddress(order)}</small>
-                </Link>
-              ))}
-              {!selectedDateOrders.length ? <div style={styles.empty}>No loads on selected date.</div> : null}
-            </div>
-          </section>
         </section>
 
         <section style={styles.mapSide}>
@@ -772,14 +762,14 @@ const styles: Record<string, any> = {
     display: "grid",
     gridTemplateColumns: "420px minmax(0, 1fr)",
   },
-  calendarPane: {
+  orderPane: {
     minHeight: 0,
     display: "grid",
-    gridTemplateRows: "auto auto auto auto minmax(0, 1fr)",
+    gridTemplateRows: "auto auto auto minmax(0, 1fr)",
     gap: 12,
     padding: 14,
     borderRight: "1px solid #334155",
-    overflow: "auto",
+    overflow: "hidden",
   },
   header: {
     padding: 16,
@@ -817,63 +807,64 @@ const styles: Record<string, any> = {
     fontWeight: 900,
     cursor: "pointer",
   },
-  monthLabel: { fontSize: 18, fontWeight: 900 },
-  calendarGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(7, 1fr)",
+  summaryBar: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    padding: "10px 12px",
     border: "1px solid #334155",
     background: "#0f172a",
-  },
-  dayName: {
-    padding: "8px 5px",
-    color: "#94a3b8",
-    fontSize: 10,
-    fontWeight: 900,
-    textAlign: "center",
-    borderBottom: "1px solid #334155",
-  },
-  dayCell: {
-    minHeight: 58,
-    display: "grid",
-    alignContent: "start",
-    gap: 4,
-    padding: 7,
-    border: "none",
-    borderRight: "1px solid #1e293b",
-    borderBottom: "1px solid #1e293b",
-    background: "#111827",
     color: "#e5e7eb",
-    textAlign: "left",
-    cursor: "pointer",
   },
-  dayCellSelected: {
-    minHeight: 58,
+  truckList: {
+    minHeight: 0,
     display: "grid",
     alignContent: "start",
-    gap: 4,
-    padding: 7,
-    border: "1px solid #38bdf8",
-    background: "rgba(56, 189, 248, 0.18)",
-    color: "#f8fafc",
-    textAlign: "left",
-    cursor: "pointer",
+    gap: 10,
+    overflow: "auto",
+    paddingRight: 4,
   },
-  panel: {
-    minHeight: 0,
+  truckCard: {
     border: "1px solid #334155",
     background: "#0f172a",
     overflow: "hidden",
   },
-  panelTitle: {
-    display: "flex",
-    justifyContent: "space-between",
+  truckCardCompact: {
+    border: "1px solid #334155",
+    background: "#0f172a",
+    overflow: "hidden",
+  },
+  truckHeader: {
+    display: "grid",
+    gridTemplateColumns: "12px minmax(0, 1fr)",
     gap: 10,
+    alignItems: "center",
     padding: 12,
     borderBottom: "1px solid #334155",
   },
-  orderList: { display: "grid", gap: 8, padding: 10, overflow: "auto" },
+  truckHeaderCompact: {
+    display: "grid",
+    gridTemplateColumns: "10px minmax(0, 1fr)",
+    gap: 8,
+    alignItems: "center",
+    padding: "6px 8px",
+    borderBottom: "1px solid #334155",
+  },
+  truckOrders: {
+    display: "grid",
+    gap: 8,
+    padding: 10,
+  },
+  truckOrdersCompact: {
+    display: "grid",
+    gap: 4,
+    padding: 6,
+  },
   orderCard: {
     display: "grid",
+    gridTemplateColumns: "30px minmax(0, 1fr)",
+    alignItems: "start",
     gap: 4,
     padding: 10,
     borderRadius: 10,
@@ -881,6 +872,54 @@ const styles: Record<string, any> = {
     background: "#111827",
     color: "#f8fafc",
     textDecoration: "none",
+  },
+  orderCardCompact: {
+    display: "grid",
+    gridTemplateColumns: "24px minmax(0, 1fr)",
+    alignItems: "center",
+    gap: 5,
+    padding: "4px 6px",
+    borderRadius: 7,
+    border: "1px solid #263449",
+    background: "#111827",
+    color: "#f8fafc",
+    textDecoration: "none",
+    fontSize: 11,
+  },
+  stopBadge: {
+    width: 24,
+    height: 24,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "50%",
+    background: "#1e293b",
+    color: "#38bdf8",
+    fontWeight: 900,
+  },
+  stopBadgeCompact: {
+    width: 20,
+    height: 20,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "50%",
+    background: "#1e293b",
+    color: "#38bdf8",
+    fontSize: 10,
+    fontWeight: 900,
+  },
+  orderText: {
+    minWidth: 0,
+    display: "grid",
+    gap: 3,
+  },
+  orderTextCompact: {
+    minWidth: 0,
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    gap: 8,
+    alignItems: "center",
   },
   empty: { color: "#94a3b8", padding: 12 },
   mapSide: {
