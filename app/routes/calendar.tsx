@@ -174,6 +174,7 @@ export default function DispatchCalendarPage() {
 
   const isEmbeddedRoute = location.pathname.startsWith("/app/");
   const classicHref = isEmbeddedRoute ? "/app/classic" : "/classic";
+  const monitorHref = isEmbeddedRoute ? "/app/monitor" : "/monitor";
   const calendarHref = isEmbeddedRoute ? "/app/calendar" : "/calendar";
   const allotmentHref = isEmbeddedRoute ? "/app/allotment" : "/allotment";
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
@@ -405,6 +406,7 @@ export default function DispatchCalendarPage() {
         </div>
         <nav style={navCollapsed ? styles.collapsedOnlyHidden : styles.nav}>
           <Link to={classicHref} style={styles.navLink}>Classic</Link>
+          <Link to={monitorHref} style={styles.navLink}>Monitor</Link>
           <Link to={calendarHref} style={styles.navLinkActive}>Calendar</Link>
           <Link to={allotmentHref} style={styles.navLink}>Allotment</Link>
           {canAccess("manageDispatch") ? <Link to={dispatchViewHref("orders")} style={styles.navLink}>Orders</Link> : null}

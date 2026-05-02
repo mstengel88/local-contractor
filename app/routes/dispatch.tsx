@@ -1955,6 +1955,7 @@ export default function DispatchPage() {
   const mobileHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
   const classicHref = isEmbeddedRoute ? "/app/classic" : "/classic";
+  const monitorHref = isEmbeddedRoute ? "/app/monitor" : "/monitor";
   const calendarHref = isEmbeddedRoute ? "/app/calendar" : "/calendar";
   const allotmentHref = isEmbeddedRoute ? "/app/allotment" : "/allotment";
   const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
@@ -2346,6 +2347,7 @@ export default function DispatchPage() {
 
           <nav style={navCollapsed ? styles.collapsedOnlyHidden : styles.sideNav}>
             <a href={classicHref} style={styles.sideNavLink(false)}>Classic</a>
+            <a href={monitorHref} style={styles.sideNavLink(false)}>Monitor</a>
             <a href={calendarHref} style={styles.sideNavLink(false)}>Calendar</a>
             <a href={allotmentHref} style={styles.sideNavLink(false)}>Allotment</a>
             {canAccess("manageDispatch") ? (

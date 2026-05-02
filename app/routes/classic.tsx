@@ -83,10 +83,21 @@ type ClassicSortConfig = {
   direction: ClassicSortDirection;
 };
 type ClassicColumnWidths = Partial<Record<ClassicSortTable, Record<string, number>>>;
+type ClassicPanelLayout = {
+  mainLeft: number;
+  leftRows: [number, number, number];
+  rightRows: [number, number, number];
+};
 
 const CLASSIC_COLUMN_WIDTHS_KEY = "classicDispatchColumnWidths";
+const CLASSIC_PANEL_LAYOUT_KEY = "classicDispatchPanelLayout";
 const DISPATCH_NAV_COLLAPSED_KEY = "dispatchNavCollapsed";
 const MIN_CLASSIC_COLUMN_WIDTH = 48;
+const DEFAULT_CLASSIC_PANEL_LAYOUT: ClassicPanelLayout = {
+  mainLeft: 50,
+  leftRows: [25, 31, 44],
+  rightRows: [55, 27, 18],
+};
 const defaultColumnWidths: Record<ClassicSortTable, Record<string, number>> = {
   routes: {
     code: 90,
@@ -153,6 +164,40 @@ function normalizeSortValue(value: unknown) {
   }
 
   return text.toLowerCase();
+}
+
+function normalizeRows(
+  rows: readonly number[],
+  fallback: ClassicPanelLayout["leftRows"],
+): [number, number, number] {
+  if (rows.length !== 3 || rows.some((row) => !Number.isFinite(row))) {
+    return [...fallback] as [number, number, number];
+  }
+
+  const clamped = rows.map((row) => Math.max(12, row));
+  const total = clamped.reduce((sum, row) => sum + row, 0) || 100;
+  const normalized = clamped.map((row) => (row / total) * 100);
+  return [normalized[0], normalized[1], normalized[2]];
+}
+
+function normalizePanelLayout(value: unknown): ClassicPanelLayout {
+  const layout = value as Partial<ClassicPanelLayout> | null | undefined;
+  const mainLeft =
+    typeof layout?.mainLeft === "number" && Number.isFinite(layout.mainLeft)
+      ? Math.min(68, Math.max(32, layout.mainLeft))
+      : DEFAULT_CLASSIC_PANEL_LAYOUT.mainLeft;
+
+  return {
+    mainLeft,
+    leftRows: normalizeRows(
+      Array.isArray(layout?.leftRows) ? layout.leftRows : DEFAULT_CLASSIC_PANEL_LAYOUT.leftRows,
+      DEFAULT_CLASSIC_PANEL_LAYOUT.leftRows,
+    ),
+    rightRows: normalizeRows(
+      Array.isArray(layout?.rightRows) ? layout.rightRows : DEFAULT_CLASSIC_PANEL_LAYOUT.rightRows,
+      DEFAULT_CLASSIC_PANEL_LAYOUT.rightRows,
+    ),
+  };
 }
 
 function compareSortValues(left: unknown, right: unknown, direction: ClassicSortDirection) {
@@ -605,6 +650,15 @@ export default function ClassicDispatchPage() {
       return {};
     }
   });
+  const [panelLayout, setPanelLayout] = useState<ClassicPanelLayout>(() => {
+    if (typeof window === "undefined") return DEFAULT_CLASSIC_PANEL_LAYOUT;
+    try {
+      const stored = window.localStorage.getItem(CLASSIC_PANEL_LAYOUT_KEY);
+      return normalizePanelLayout(stored ? JSON.parse(stored) : DEFAULT_CLASSIC_PANEL_LAYOUT);
+    } catch {
+      return DEFAULT_CLASSIC_PANEL_LAYOUT;
+    }
+  });
 
   const allowed = actionData?.allowed ?? loaderData.allowed;
   const orders = (actionData?.orders ?? loaderData.orders ?? []) as DispatchOrder[];
@@ -627,6 +681,7 @@ export default function ClassicDispatchPage() {
   const currentUser = actionData?.currentUser ?? loaderData.currentUser ?? null;
   const isEmbeddedRoute = location.pathname.startsWith("/app/");
   const classicHref = isEmbeddedRoute ? "/app/classic" : "/classic";
+  const monitorHref = isEmbeddedRoute ? "/app/monitor" : "/monitor";
   const calendarHref = isEmbeddedRoute ? "/app/calendar" : "/calendar";
   const allotmentHref = isEmbeddedRoute ? "/app/allotment" : "/allotment";
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
@@ -850,6 +905,79 @@ export default function ClassicDispatchPage() {
       persistColumnWidths(next);
       return next;
     });
+  }
+
+  function savePanelLayout(nextLayout: ClassicPanelLayout) {
+    const normalized = normalizePanelLayout(nextLayout);
+    setPanelLayout(normalized);
+    try {
+      window.localStorage.setItem(CLASSIC_PANEL_LAYOUT_KEY, JSON.stringify(normalized));
+    } catch {
+      // Panel resizing still works for the current session if storage is blocked.
+    }
+  }
+
+  function beginMainPanelResize(event: ReactMouseEvent<HTMLDivElement>) {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startLeft = panelLayout.mainLeft;
+    const container = event.currentTarget.parentElement;
+    const containerWidth = container?.getBoundingClientRect().width || 1;
+
+    function handleMouseMove(moveEvent: MouseEvent) {
+      const deltaPercent = ((moveEvent.clientX - startX) / containerWidth) * 100;
+      savePanelLayout({
+        ...panelLayout,
+        mainLeft: startLeft + deltaPercent,
+      });
+    }
+
+    function handleMouseUp() {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  }
+
+  function beginRowResize(
+    stack: "leftRows" | "rightRows",
+    dividerIndex: 0 | 1,
+    event: ReactMouseEvent<HTMLDivElement>,
+  ) {
+    event.preventDefault();
+    const startY = event.clientY;
+    const startRows = [...panelLayout[stack]] as [number, number, number];
+    const container = event.currentTarget.parentElement;
+    const containerHeight = container?.getBoundingClientRect().height || 1;
+
+    function handleMouseMove(moveEvent: MouseEvent) {
+      const deltaPercent = ((moveEvent.clientY - startY) / containerHeight) * 100;
+      const nextRows = [...startRows] as [number, number, number];
+      nextRows[dividerIndex] = startRows[dividerIndex] + deltaPercent;
+      nextRows[dividerIndex + 1] = startRows[dividerIndex + 1] - deltaPercent;
+      savePanelLayout({
+        ...panelLayout,
+        [stack]: normalizeRows(nextRows, DEFAULT_CLASSIC_PANEL_LAYOUT[stack]),
+      });
+    }
+
+    function handleMouseUp() {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+
+    document.body.style.cursor = "row-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
   }
 
   function beginColumnResize(
@@ -1107,6 +1235,7 @@ export default function ClassicDispatchPage() {
         </div>
         <nav style={navCollapsed ? styles.collapsedOnlyHidden : styles.classicNav}>
           <Link to={classicHref} style={styles.classicNavLinkActive}>Classic</Link>
+          <Link to={monitorHref} style={styles.classicNavLink}>Monitor</Link>
           <Link to={calendarHref} style={styles.classicNavLink}>Calendar</Link>
           <Link to={allotmentHref} style={styles.classicNavLink}>Allotment</Link>
           {canAccess("manageDispatch") ? <Link to={dispatchViewHref("orders")} style={styles.classicNavLink}>Orders</Link> : null}
@@ -1152,8 +1281,18 @@ export default function ClassicDispatchPage() {
           </div>
         ) : null}
 
-        <div style={styles.mainGrid}>
-          <section style={styles.leftStack}>
+        <div
+          style={{
+            ...styles.mainGrid,
+            gridTemplateColumns: `${panelLayout.mainLeft}fr 8px ${100 - panelLayout.mainLeft}fr`,
+          }}
+        >
+          <section
+            style={{
+              ...styles.leftStack,
+              gridTemplateRows: `${panelLayout.leftRows[0]}fr 8px ${panelLayout.leftRows[1]}fr 8px ${panelLayout.leftRows[2]}fr`,
+            }}
+          >
             <div style={styles.panel}>
               <div style={styles.panelHeader}>
                 <strong>Routes {routes.length}</strong>
@@ -1209,6 +1348,12 @@ export default function ClassicDispatchPage() {
                 </tbody>
               </table>
             </div>
+
+            <div
+              style={styles.rowResizeHandle}
+              onMouseDown={(event) => beginRowResize("leftRows", 0, event)}
+              title="Drag to resize Routes and Sites"
+            />
 
             <div style={styles.panel}>
               <div style={styles.panelHeader}>
@@ -1289,6 +1434,12 @@ export default function ClassicDispatchPage() {
               </table>
             </div>
 
+            <div
+              style={styles.rowResizeHandle}
+              onMouseDown={(event) => beginRowResize("leftRows", 1, event)}
+              title="Drag to resize Sites and Orders"
+            />
+
             <div style={styles.panel}>
               <div style={styles.panelHeader}>
                 <strong>Orders {visibleOrders.length}</strong>
@@ -1322,12 +1473,29 @@ export default function ClassicDispatchPage() {
             </div>
           </section>
 
-          <section style={styles.rightStack}>
+          <div
+            style={styles.columnResizePanelHandle}
+            onMouseDown={beginMainPanelResize}
+            title="Drag to resize left and right work areas"
+          />
+
+          <section
+            style={{
+              ...styles.rightStack,
+              gridTemplateRows: `${panelLayout.rightRows[0]}fr 8px ${panelLayout.rightRows[1]}fr 8px ${panelLayout.rightRows[2]}fr`,
+            }}
+          >
             <ClassicMap
               googleMapsApiKey={googleMapsApiKey}
               originAddress={mapOriginAddress}
               routes={routes}
               driverLocations={driverLocations}
+            />
+
+            <div
+              style={styles.rowResizeHandle}
+              onMouseDown={(event) => beginRowResize("rightRows", 0, event)}
+              title="Drag to resize Map and Unscheduled"
             />
 
             <div style={styles.panel}>
@@ -1386,6 +1554,12 @@ export default function ClassicDispatchPage() {
                 </tbody>
               </table>
             </div>
+
+            <div
+              style={styles.rowResizeHandle}
+              onMouseDown={(event) => beginRowResize("rightRows", 1, event)}
+              title="Drag to resize Unscheduled and Add forms"
+            />
 
             <div style={styles.formGrid}>
               <Form id="add-route" method="post" style={styles.compactForm}>
@@ -1700,22 +1874,33 @@ const styles: Record<string, any> = {
   mainGrid: {
     height: "calc(100vh - 58px)",
     display: "grid",
-    gridTemplateColumns: "minmax(710px, 1fr) minmax(710px, 1fr)",
     gap: 0,
     overflow: "hidden",
   },
   leftStack: {
     minWidth: 0,
     display: "grid",
-    gridTemplateRows: "25% 31% 44%",
-    borderRight: "1px solid var(--classic-border)",
     overflow: "hidden",
   },
   rightStack: {
     minWidth: 0,
     display: "grid",
-    gridTemplateRows: "55% 27% 18%",
     overflow: "hidden",
+  },
+  columnResizePanelHandle: {
+    width: 8,
+    height: "100%",
+    cursor: "col-resize",
+    background: "linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.25), transparent)",
+    borderLeft: "1px solid var(--classic-border)",
+    borderRight: "1px solid var(--classic-border)",
+  },
+  rowResizeHandle: {
+    height: 8,
+    cursor: "row-resize",
+    background: "linear-gradient(180deg, transparent, rgba(56, 189, 248, 0.24), transparent)",
+    borderTop: "1px solid var(--classic-border)",
+    borderBottom: "1px solid var(--classic-border)",
   },
   panel: {
     minHeight: 0,
