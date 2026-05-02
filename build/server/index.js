@@ -7212,7 +7212,15 @@ function getDispatchPath$1(url) {
 function getBrowserGoogleMapsApiKey() {
   return process.env.GOOGLE_MAPS_BROWSER_API_KEY || "";
 }
+let dispatchStateCache = null;
+const DISPATCH_STATE_CACHE_MS = 5e3;
+function clearDispatchStateCache() {
+  dispatchStateCache = null;
+}
 async function loadDispatchState(options = {}) {
+  if (options.useCache && dispatchStateCache && Date.now() - dispatchStateCache.loadedAt < DISPATCH_STATE_CACHE_MS) {
+    return dispatchStateCache.state;
+  }
   try {
     if (!options.skipSetup) {
       await Promise.all([ensureSeedDispatchTrucks(), ensureSeedDispatchEmployees(), ensureSeedDispatchOrders(), ensureSeedDispatchRoutes()]);
@@ -7221,7 +7229,7 @@ async function loadDispatchState(options = {}) {
       }
     }
     const [orders, routes2, trucks, employees, materialOptions, mapOriginAddress, classicColumnSettings, driverLocations] = await Promise.all([getDispatchOrders(), getDispatchRoutes(), getDispatchTrucks(), getDispatchEmployees(), getDispatchMaterialOptions(), getDispatchOriginAddress(), getClassicColumnSettings(), getLatestDispatchDriverLocations()]);
-    return {
+    const state = {
       orders,
       routes: routes2,
       trucks,
@@ -7233,10 +7241,17 @@ async function loadDispatchState(options = {}) {
       storageReady: true,
       storageError: null
     };
+    if (options.useCache) {
+      dispatchStateCache = {
+        loadedAt: Date.now(),
+        state
+      };
+    }
+    return state;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to load dispatch storage";
     console.error("[DISPATCH STORAGE ERROR]", message);
-    return {
+    const fallbackState = {
       orders: seedDispatchOrders,
       routes: seedDispatchRoutes,
       trucks: seedDispatchTrucks,
@@ -7248,6 +7263,13 @@ async function loadDispatchState(options = {}) {
       storageReady: false,
       storageError: message
     };
+    if (options.useCache) {
+      dispatchStateCache = {
+        loadedAt: Date.now(),
+        state: fallbackState
+      };
+    }
+    return fallbackState;
   }
 }
 async function resequenceRouteStops(routeId) {
@@ -7299,7 +7321,11 @@ async function loader$i({
     return redirect(dispatchPath);
   }
   const shouldPollMailbox = url.searchParams.get("pollMailbox") === "1" || process.env.DISPATCH_AUTO_POLL_ON_PAGE_LOAD === "true";
-  const [dispatchState, mailboxStatus] = await Promise.all([loadDispatchState(), shouldPollMailbox ? maybeAutoPollDispatchMailbox().catch((error) => {
+  const isEditorOpen = requestedView === "orders" && Boolean(url.searchParams.get("order"));
+  const [dispatchState, mailboxStatus] = await Promise.all([loadDispatchState({
+    skipSetup: isEditorOpen || shouldPollMailbox,
+    useCache: !shouldPollMailbox
+  }), shouldPollMailbox ? maybeAutoPollDispatchMailbox().catch((error) => {
     console.error("[DISPATCH MAILBOX AUTO POLL ERROR]", error);
     return {
       configured: true,
@@ -7322,6 +7348,7 @@ async function action$l({
   var _a2, _b, _c;
   const form = await request.formData();
   const intent = String(form.get("intent") || "");
+  clearDispatchStateCache();
   if (intent === "login") {
     const password = String(form.get("password") || "");
     const expected = getAdminQuotePassword();

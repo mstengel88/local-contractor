@@ -715,7 +715,30 @@ function getBrowserGoogleMapsApiKey() {
   return process.env.GOOGLE_MAPS_BROWSER_API_KEY || "";
 }
 
-async function loadDispatchState(options: { skipSetup?: boolean } = {}) {
+let dispatchStateCache:
+  | {
+      loadedAt: number;
+      state: any;
+    }
+  | null = null;
+
+const DISPATCH_STATE_CACHE_MS = 5000;
+
+function clearDispatchStateCache() {
+  dispatchStateCache = null;
+}
+
+async function loadDispatchState(
+  options: { skipSetup?: boolean; useCache?: boolean } = {},
+) {
+  if (
+    options.useCache &&
+    dispatchStateCache &&
+    Date.now() - dispatchStateCache.loadedAt < DISPATCH_STATE_CACHE_MS
+  ) {
+    return dispatchStateCache.state;
+  }
+
   try {
     if (!options.skipSetup) {
       await Promise.all([
@@ -748,7 +771,7 @@ async function loadDispatchState(options: { skipSetup?: boolean } = {}) {
       getLatestDispatchDriverLocations(),
     ]);
 
-    return {
+    const state = {
       orders,
       routes,
       trucks,
@@ -760,11 +783,20 @@ async function loadDispatchState(options: { skipSetup?: boolean } = {}) {
       storageReady: true,
       storageError: null,
     };
+
+    if (options.useCache) {
+      dispatchStateCache = {
+        loadedAt: Date.now(),
+        state,
+      };
+    }
+
+    return state;
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to load dispatch storage";
     console.error("[DISPATCH STORAGE ERROR]", message);
-    return {
+    const fallbackState = {
       orders: seedDispatchOrders,
       routes: seedDispatchRoutes,
       trucks: seedDispatchTrucks,
@@ -776,6 +808,15 @@ async function loadDispatchState(options: { skipSetup?: boolean } = {}) {
       storageReady: false,
       storageError: message,
     };
+
+    if (options.useCache) {
+      dispatchStateCache = {
+        loadedAt: Date.now(),
+        state: fallbackState,
+      };
+    }
+
+    return fallbackState;
   }
 }
 
@@ -856,8 +897,12 @@ export async function loader({ request }: any) {
     url.searchParams.get("pollMailbox") === "1" ||
     process.env.DISPATCH_AUTO_POLL_ON_PAGE_LOAD === "true";
 
+  const isEditorOpen = requestedView === "orders" && Boolean(url.searchParams.get("order"));
   const [dispatchState, mailboxStatus] = await Promise.all([
-    loadDispatchState(),
+    loadDispatchState({
+      skipSetup: isEditorOpen || shouldPollMailbox,
+      useCache: !shouldPollMailbox,
+    }),
     shouldPollMailbox
       ? maybeAutoPollDispatchMailbox().catch((error) => {
           console.error("[DISPATCH MAILBOX AUTO POLL ERROR]", error);
@@ -883,6 +928,7 @@ export async function loader({ request }: any) {
 export async function action({ request }: any) {
   const form = await request.formData();
   const intent = String(form.get("intent") || "");
+  clearDispatchStateCache();
 
   if (intent === "login") {
     const password = String(form.get("password") || "");
