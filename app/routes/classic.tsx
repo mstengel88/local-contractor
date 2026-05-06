@@ -55,6 +55,40 @@ function getStatusTone(order: DispatchOrder) {
   return "unscheduled";
 }
 
+function dateSearchValues(value?: string | null) {
+  const raw = String(value || "").trim();
+  if (!raw) return [];
+
+  const normalized = raw.replace(/\s+/g, " ");
+  const match = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/) ||
+    normalized.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+
+  if (!match) return [normalized];
+
+  const isIso = match[1].length === 4;
+  const year = isIso ? match[1] : match[3];
+  const month = isIso ? match[2] : match[1];
+  const day = isIso ? match[3] : match[2];
+  const monthNumber = Number(month);
+  const dayNumber = Number(day);
+  const date = new Date(Number(year), monthNumber - 1, dayNumber);
+  const monthName = Number.isFinite(date.getTime())
+    ? date.toLocaleString("en-US", { month: "long" })
+    : "";
+  const shortMonthName = Number.isFinite(date.getTime())
+    ? date.toLocaleString("en-US", { month: "short" })
+    : "";
+
+  return [
+    normalized,
+    `${year}-${String(monthNumber).padStart(2, "0")}-${String(dayNumber).padStart(2, "0")}`,
+    `${monthNumber}/${dayNumber}/${year}`,
+    `${String(monthNumber).padStart(2, "0")}/${String(dayNumber).padStart(2, "0")}/${year}`,
+    `${monthName} ${dayNumber} ${year}`,
+    `${shortMonthName} ${dayNumber} ${year}`,
+  ].filter(Boolean);
+}
+
 function buildSearchText(order: DispatchOrder) {
   return [
     order.id,
@@ -67,6 +101,15 @@ function buildSearchText(order: DispatchOrder) {
     order.quantity,
     order.unit,
     order.requestedWindow,
+    ...dateSearchValues(order.requestedWindow),
+    order.eta,
+    ...dateSearchValues(order.eta),
+    order.arrivedAt,
+    ...dateSearchValues(order.arrivedAt),
+    order.departedAt,
+    ...dateSearchValues(order.departedAt),
+    order.deliveredAt,
+    ...dateSearchValues(order.deliveredAt),
     order.timePreference,
     order.notes,
     order.status,
@@ -91,6 +134,7 @@ type ClassicPanelLayout = {
 
 const CLASSIC_COLUMN_WIDTHS_KEY = "classicDispatchColumnWidths";
 const CLASSIC_PANEL_LAYOUT_KEY = "classicDispatchPanelLayout";
+const CLASSIC_SELECTED_ROUTE_KEY = "classicDispatchSelectedRouteId";
 const DISPATCH_NAV_COLLAPSED_KEY = "dispatchNavCollapsed";
 const MIN_CLASSIC_COLUMN_WIDTH = 48;
 const DEFAULT_CLASSIC_PANEL_LAYOUT: ClassicPanelLayout = {
@@ -626,7 +670,10 @@ export default function ClassicDispatchPage() {
   const location = useLocation();
   const submit = useSubmit();
   const [query, setQuery] = useState("");
-  const [selectedRouteId, setSelectedRouteId] = useState("");
+  const [selectedRouteId, setSelectedRouteId] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem(CLASSIC_SELECTED_ROUTE_KEY) || "";
+  });
   const [draggedOrderId, setDraggedOrderId] = useState("");
   const [routeDrawerOpen, setRouteDrawerOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState("");
@@ -778,6 +825,23 @@ export default function ClassicDispatchPage() {
   const selectedRoute =
     sortedRoutes.find((route) => route.id === selectedRouteId) || sortedRoutes[0] || null;
   const selectedOrder = orders.find((order) => order.id === selectedOrderId) || null;
+
+  useEffect(() => {
+    if (!sortedRoutes.length) return;
+    if (selectedRouteId && sortedRoutes.some((route) => route.id === selectedRouteId)) return;
+
+    setSelectedRouteId(sortedRoutes[0].id);
+  }, [selectedRouteId, sortedRoutes]);
+
+  useEffect(() => {
+    if (!selectedRouteId) return;
+    try {
+      window.localStorage.setItem(CLASSIC_SELECTED_ROUTE_KEY, selectedRouteId);
+    } catch {
+      // Selecting routes still works if browser storage is unavailable.
+    }
+  }, [selectedRouteId]);
+
   const sortedSiteOrders = useMemo(
     () =>
       sortItems(selectedRoute?.orders || [], tableSorts.sites, (order, key) => {
@@ -1065,7 +1129,8 @@ export default function ClassicDispatchPage() {
           style={styles.rowRouteButton(selectedRoute?.id === route.id)}
           onClick={() => {
             setSelectedRouteId(route.id);
-            setRouteDrawerOpen(true);
+            setRouteDrawerOpen(false);
+            setOrderDrawerOpen(false);
           }}
         >
           {route.code}
