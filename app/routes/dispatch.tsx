@@ -926,6 +926,8 @@ export async function loader({ request }: any) {
 }
 
 export async function action({ request }: any) {
+  const url = new URL(request.url);
+  const dispatchPath = getDispatchPath(url);
   const form = await request.formData();
   const intent = String(form.get("intent") || "");
   clearDispatchStateCache();
@@ -1242,15 +1244,7 @@ export async function action({ request }: any) {
         }
       }
 
-      const dispatchState = await loadDispatchState({ skipSetup: true });
-
-      return data({
-        allowed: true,
-        ok: true,
-        message: `Updated ${finalOrder.customer}.`,
-        selectedOrderId: finalOrder.id,
-        ...dispatchState,
-      });
+      return redirect(`${dispatchPath}?view=orders`);
     }
 
     if (intent === "delete-order") {
@@ -2149,6 +2143,22 @@ export default function DispatchPage() {
     () => searchOrders(activeOrders),
     [activeOrders, normalizedOrderSearch, routes],
   );
+  const selectedActiveOrderIndex = searchedActiveOrders.findIndex(
+    (order) => order.id === selectedOrder?.id,
+  );
+  const previousOrderHref =
+    selectedActiveOrderIndex > 0
+      ? `${dispatchHref}?view=orders&order=${encodeURIComponent(
+          searchedActiveOrders[selectedActiveOrderIndex - 1].id,
+        )}`
+      : "";
+  const nextOrderHref =
+    selectedActiveOrderIndex >= 0 &&
+    selectedActiveOrderIndex < searchedActiveOrders.length - 1
+      ? `${dispatchHref}?view=orders&order=${encodeURIComponent(
+          searchedActiveOrders[selectedActiveOrderIndex + 1].id,
+        )}`
+      : "";
   const searchedScheduledOrders = useMemo(
     () => searchOrders(scheduledOrders),
     [scheduledOrders, normalizedOrderSearch, routes],
@@ -2507,6 +2517,172 @@ export default function DispatchPage() {
             </div>
 
             <div style={styles.panel}>
+              {orderEditorOpen && selectedOrder ? (
+                <div style={{ display: "grid", gap: 14 }}>
+                  <div style={styles.modalHeader}>
+                    <div>
+                      <h2 style={styles.panelTitle}>Edit Selected Order</h2>
+                      <p style={styles.panelSub}>Update this dispatch card.</p>
+                    </div>
+                    <div style={styles.editorNavActions}>
+                      <a
+                        href={previousOrderHref || "#"}
+                        aria-disabled={!previousOrderHref}
+                        style={previousOrderHref ? styles.modalCloseButton : styles.disabledNavButton}
+                      >
+                        ←
+                      </a>
+                      <a
+                        href={nextOrderHref || "#"}
+                        aria-disabled={!nextOrderHref}
+                        style={nextOrderHref ? styles.modalCloseButton : styles.disabledNavButton}
+                      >
+                        →
+                      </a>
+                      <a href={dispatchViewHref("orders")} style={styles.modalCloseButton}>
+                        Close
+                      </a>
+                    </div>
+                  </div>
+
+                  <Form method="post" action={dispatchViewHref("orders")} style={{ display: "grid", gap: 12 }}>
+                    <input type="hidden" name="intent" value="update-order" />
+                    <input type="hidden" name="orderId" value={selectedOrder.id} />
+
+                    <div style={styles.formGridTwo}>
+                      <div>
+                        <label style={styles.label}>Order Number</label>
+                        <input name="orderNumber" defaultValue={selectedOrder.orderNumber || ""} style={styles.input} />
+                      </div>
+                      <div>
+                        <label style={styles.label}>Internal Dispatch ID</label>
+                        <input value={selectedOrder.id} readOnly style={{ ...styles.input, opacity: 0.75 }} />
+                      </div>
+                    </div>
+
+                    <div style={styles.formGridTwo}>
+                      <div>
+                        <label style={styles.label}>Customer</label>
+                        <input name="customer" defaultValue={selectedOrder.customer} style={styles.input} />
+                      </div>
+                      <div>
+                        <label style={styles.label}>Contact / Email</label>
+                        <input name="contact" defaultValue={selectedOrder.contact} style={styles.input} />
+                      </div>
+                    </div>
+
+                    <div style={styles.formGridTwo}>
+                      <div>
+                        <label style={styles.label}>Address</label>
+                        <input name="address" defaultValue={selectedOrder.address} style={styles.input} />
+                      </div>
+                      <div>
+                        <label style={styles.label}>City</label>
+                        <input name="city" defaultValue={selectedOrder.city} style={styles.input} />
+                      </div>
+                    </div>
+
+                    <div style={styles.formGridThree}>
+                      <div>
+                        <label style={styles.label}>Material</label>
+                        <input name="material" defaultValue={selectedOrder.material} style={styles.input} />
+                      </div>
+                      <div>
+                        <label style={styles.label}>Quantity</label>
+                        <input name="quantity" defaultValue={selectedOrder.quantity} style={styles.input} />
+                      </div>
+                      <div>
+                        <label style={styles.label}>Unit</label>
+                        <input name="unit" defaultValue={selectedOrder.unit} style={styles.input} />
+                      </div>
+                    </div>
+
+                    <div style={styles.formGridTwo}>
+                      <div>
+                        <label style={styles.label}>Requested Window</label>
+                        <input
+                          name="requestedWindow"
+                          type="date"
+                          defaultValue={getRequestedWindowDateInputValue(selectedOrder.requestedWindow)}
+                          style={styles.input}
+                        />
+                      </div>
+                      <div>
+                        <label style={styles.label}>Time Preference</label>
+                        <select name="timePreference" defaultValue={selectedOrder.timePreference || ""} style={styles.input}>
+                          <option value="">Infer from notes</option>
+                          <option value="Morning">Morning</option>
+                          <option value="Afternoon">Afternoon</option>
+                          <option value="Evening">Evening</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={styles.formGridTwo}>
+                      <div>
+                        <label style={styles.label}>Status</label>
+                        <select name="status" defaultValue={selectedOrder.status} style={styles.input}>
+                          <option value="new">New</option>
+                          <option value="scheduled">Scheduled</option>
+                          <option value="hold">Hold</option>
+                          <option value="delivered">Delivered</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={styles.label}>Truck Preference</label>
+                        <input name="truckPreference" defaultValue={selectedOrder.truckPreference || ""} style={styles.input} />
+                      </div>
+                    </div>
+
+                    <div style={styles.formGridTwo}>
+                      <div>
+                        <label style={styles.label}>Assigned Route / Driver</label>
+                        <select name="routeId" defaultValue={selectedOrder.assignedRouteId || ""} style={styles.input}>
+                          <option value="">Unassigned</option>
+                          {routes.map((route) => (
+                            <option key={route.id} value={route.id}>
+                              {route.code} - {route.truck} - {route.driver}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={styles.label}>ETA</label>
+                        <input name="eta" defaultValue={selectedOrder.eta || ""} placeholder="Optional" style={styles.input} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={styles.label}>Notes</label>
+                      <textarea
+                        name="notes"
+                        rows={4}
+                        defaultValue={selectedOrder.notes}
+                        style={{ ...styles.input, resize: "vertical" }}
+                      />
+                    </div>
+
+                    <button type="submit" style={styles.primaryButton}>Save Order Changes</button>
+                  </Form>
+
+                  <Form
+                    method="post"
+                    action={dispatchViewHref("orders")}
+                    onSubmit={(event) => {
+                      if (!window.confirm("Delete this order? This cannot be undone.")) {
+                        event.preventDefault();
+                      }
+                    }}
+                  >
+                    <input type="hidden" name="intent" value="delete-order" />
+                    <input type="hidden" name="orderId" value={selectedOrder.id} />
+                    <button type="submit" style={styles.dangerButton}>
+                      Delete Order
+                    </button>
+                  </Form>
+                </div>
+              ) : (
+                <>
               <div style={styles.panelHeader}>
                 <div>
                   <h2 style={styles.panelTitle}>Add / Import Order</h2>
@@ -2623,11 +2799,13 @@ export default function DispatchPage() {
                   Parse Email Into Dispatch Card
                 </button>
               </Form>
+                </>
+              )}
             </div>
           </div>
         ) : null}
 
-        {orderEditorOpen && selectedOrder ? (
+        {false && orderEditorOpen && selectedOrder ? (
           <div style={styles.modalOverlay}>
             <div style={styles.orderModal}>
               <div style={styles.modalHeader}>
@@ -4398,6 +4576,28 @@ const styles = {
     fontSize: 13,
     fontWeight: 800,
   } as const,
+  editorNavActions: {
+    display: "flex",
+    gap: 8,
+    alignItems: "center",
+    flexWrap: "wrap" as const,
+    justifyContent: "flex-end",
+  },
+  disabledNavButton: {
+    minHeight: 40,
+    padding: "0 14px",
+    borderRadius: 999,
+    border: "1px solid #1f2937",
+    background: "#020617",
+    color: "#475569",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    textDecoration: "none",
+    fontSize: 13,
+    fontWeight: 800,
+    pointerEvents: "none" as const,
+  },
   panelHeader: {
     display: "flex",
     justifyContent: "space-between",
