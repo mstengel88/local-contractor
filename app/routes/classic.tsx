@@ -63,28 +63,37 @@ async function playDispatchChime() {
 
   if (!AudioContextClass) return;
 
-  const audio = new AudioContextClass();
+  const audio = dispatchChimeAudio || new AudioContextClass();
+  dispatchChimeAudio = audio;
+
   if (audio.state === "suspended") {
     await audio.resume();
   }
 
   const now = audio.currentTime;
   const masterGain = audio.createGain();
-  masterGain.connect(audio.destination);
+  const compressor = audio.createDynamicsCompressor();
+  compressor.threshold.setValueAtTime(-24, now);
+  compressor.knee.setValueAtTime(30, now);
+  compressor.ratio.setValueAtTime(8, now);
+  compressor.attack.setValueAtTime(0.003, now);
+  compressor.release.setValueAtTime(0.25, now);
+  compressor.connect(audio.destination);
+  masterGain.connect(compressor);
   masterGain.gain.setValueAtTime(0.0001, now);
-  masterGain.gain.exponentialRampToValueAtTime(0.24, now + 0.02);
-  masterGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.95);
+  masterGain.gain.exponentialRampToValueAtTime(0.72, now + 0.025);
+  masterGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.25);
 
-  [659.25, 880, 1174.66].forEach((frequency, index) => {
+  [784, 1046.5, 1318.5].forEach((frequency, index) => {
     const oscillator = audio.createOscillator();
     const noteGain = audio.createGain();
-    const start = now + index * 0.12;
-    const end = start + 0.42;
+    const start = now + index * 0.16;
+    const end = start + 0.55;
 
-    oscillator.type = "sine";
+    oscillator.type = index === 1 ? "triangle" : "square";
     oscillator.frequency.setValueAtTime(frequency, start);
     noteGain.gain.setValueAtTime(0.0001, start);
-    noteGain.gain.exponentialRampToValueAtTime(0.5, start + 0.03);
+    noteGain.gain.exponentialRampToValueAtTime(0.4, start + 0.025);
     noteGain.gain.exponentialRampToValueAtTime(0.0001, end);
     oscillator.connect(noteGain);
     noteGain.connect(masterGain);
@@ -92,7 +101,7 @@ async function playDispatchChime() {
     oscillator.stop(end);
   });
 
-  window.setTimeout(() => void audio.close(), 1200);
+  navigator.vibrate?.([80, 40, 80]);
 }
 
 function dateSearchValues(value?: string | null) {
@@ -176,6 +185,7 @@ const CLASSIC_COLUMN_WIDTHS_KEY = "classicDispatchColumnWidths";
 const CLASSIC_PANEL_LAYOUT_KEY = "classicDispatchPanelLayout";
 const CLASSIC_SELECTED_ROUTE_KEY = "classicDispatchSelectedRouteId";
 const DISPATCH_NAV_COLLAPSED_KEY = "dispatchNavCollapsed";
+const DISPATCH_CHIME_ENABLED_KEY = "dispatchChimeEnabled";
 const MIN_CLASSIC_COLUMN_WIDTH = 48;
 const DEFAULT_CLASSIC_PANEL_LAYOUT: ClassicPanelLayout = {
   mainLeft: 50,
@@ -233,6 +243,8 @@ const defaultColumnWidths: Record<ClassicSortTable, Record<string, number>> = {
     route: 100,
   },
 };
+
+let dispatchChimeAudio: AudioContext | null = null;
 
 function normalizeSortValue(value: unknown) {
   if (value === null || value === undefined || value === "") return "";
@@ -719,6 +731,10 @@ export default function ClassicDispatchPage() {
   const [selectedOrderId, setSelectedOrderId] = useState("");
   const [orderDrawerOpen, setOrderDrawerOpen] = useState(false);
   const [chimeStatus, setChimeStatus] = useState("");
+  const [chimeEnabled, setChimeEnabled] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(DISPATCH_CHIME_ENABLED_KEY) === "1";
+  });
   const lastChimeKey = useRef("");
   const [navCollapsed, setNavCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -807,7 +823,9 @@ export default function ClassicDispatchPage() {
   async function testChime() {
     try {
       await playDispatchChime();
-      setChimeStatus("Chime ready");
+      setChimeEnabled(true);
+      window.localStorage.setItem(DISPATCH_CHIME_ENABLED_KEY, "1");
+      setChimeStatus("Chime armed");
       window.setTimeout(() => setChimeStatus(""), 2200);
     } catch {
       setChimeStatus("Click again or check browser sound");
@@ -831,10 +849,16 @@ export default function ClassicDispatchPage() {
 
     if (!chimeKey || lastChimeKey.current === chimeKey) return;
     lastChimeKey.current = chimeKey;
+    if (!chimeEnabled) {
+      setChimeStatus("Press Test Chime once to enable alerts");
+      window.setTimeout(() => setChimeStatus(""), 4200);
+      return;
+    }
+
     void playDispatchChime().catch(() => {
       // Some browsers require the Test Chime button before allowing sound.
     });
-  }, [mailboxStatus]);
+  }, [chimeEnabled, mailboxStatus]);
 
   useEffect(() => {
     let cancelled = false;
