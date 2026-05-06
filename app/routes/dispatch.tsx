@@ -1136,6 +1136,8 @@ export async function action({ request }: any) {
 
     if (intent === "update-order") {
       const orderId = String(form.get("orderId") || "").trim();
+      const returnTo = String(form.get("returnTo") || "").trim();
+      const safeReturnTo = returnTo.startsWith("/") ? returnTo : "";
       const customer = String(form.get("customer") || "").trim();
       const rawAddress = String(form.get("address") || "").trim();
       const splitAddress = splitStreetAndCity(rawAddress);
@@ -1244,7 +1246,7 @@ export async function action({ request }: any) {
         }
       }
 
-      return redirect(`${dispatchPath}?view=orders`);
+      return redirect(safeReturnTo || `${dispatchPath}?view=orders`);
     }
 
     if (intent === "delete-order") {
@@ -2539,7 +2541,7 @@ export default function DispatchPage() {
                       >
                         →
                       </a>
-                      <a href={dispatchViewHref("orders")} style={styles.modalCloseButton}>
+                      <a href={modalReturnHref} style={styles.modalCloseButton}>
                         Close
                       </a>
                     </div>
@@ -2548,6 +2550,7 @@ export default function DispatchPage() {
                   <Form method="post" action={dispatchViewHref("orders")} style={{ display: "grid", gap: 12 }}>
                     <input type="hidden" name="intent" value="update-order" />
                     <input type="hidden" name="orderId" value={selectedOrder.id} />
+                    <input type="hidden" name="returnTo" value={rawReturnTo} />
 
                     <div style={styles.formGridTwo}>
                       <div>
