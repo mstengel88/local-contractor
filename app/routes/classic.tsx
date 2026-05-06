@@ -683,7 +683,7 @@ export default function ClassicDispatchPage() {
     return window.localStorage.getItem(DISPATCH_NAV_COLLAPSED_KEY) === "1";
   });
   const [tableSorts, setTableSorts] = useState<Record<ClassicSortTable, ClassicSortConfig>>({
-    routes: { key: "code", direction: "asc" },
+    routes: { key: "weight", direction: "desc" },
     sites: { key: "stop", direction: "asc" },
     orders: { key: "date", direction: "asc" },
     unscheduled: { key: "date", direction: "asc" },
@@ -802,7 +802,7 @@ export default function ClassicDispatchPage() {
         return {
           ...route,
           orders: routeOrders,
-          weight: routeOrders.reduce((sum, order) => sum + Number(order.quantity || 0), 0),
+          weight: routeOrders.length,
           totalMinutes: routeOrders.reduce((sum, order) => sum + getTravelMinutes(order), 0),
         };
       }),
@@ -1139,7 +1139,7 @@ export default function ClassicDispatchPage() {
     }
     if (key === "driver") return `${route.truck || "No truck"} (${route.driver || "No driver"})`;
     if (key === "status") return route.orders.length ? "Active" : "Open";
-    if (key === "weight") return route.weight || "-";
+    if (key === "weight") return route.orders.length || "-";
     if (key === "start") return route.shift?.split("-")[0]?.trim() || "6:00 am";
     if (key === "finish") return route.shift?.split("-")[1]?.trim() || formatTime(route.totalMinutes);
     if (key === "distance") return formatTime(route.totalMinutes);

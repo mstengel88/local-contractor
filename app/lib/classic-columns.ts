@@ -9,7 +9,7 @@ export const classicColumnOptions: Record<
     { key: "code", label: "Code" },
     { key: "driver", label: "Driver" },
     { key: "status", label: "Status" },
-    { key: "weight", label: "Weight" },
+    { key: "weight", label: "Stops" },
     { key: "start", label: "Start" },
     { key: "finish", label: "Finish" },
     { key: "distance", label: "Distance" },
