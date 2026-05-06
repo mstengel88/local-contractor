@@ -55,6 +55,46 @@ function getStatusTone(order: DispatchOrder) {
   return "unscheduled";
 }
 
+async function playDispatchChime() {
+  if (typeof window === "undefined") return;
+
+  const AudioContextClass =
+    window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+
+  if (!AudioContextClass) return;
+
+  const audio = new AudioContextClass();
+  if (audio.state === "suspended") {
+    await audio.resume();
+  }
+
+  const now = audio.currentTime;
+  const masterGain = audio.createGain();
+  masterGain.connect(audio.destination);
+  masterGain.gain.setValueAtTime(0.0001, now);
+  masterGain.gain.exponentialRampToValueAtTime(0.24, now + 0.02);
+  masterGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.95);
+
+  [659.25, 880, 1174.66].forEach((frequency, index) => {
+    const oscillator = audio.createOscillator();
+    const noteGain = audio.createGain();
+    const start = now + index * 0.12;
+    const end = start + 0.42;
+
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(frequency, start);
+    noteGain.gain.setValueAtTime(0.0001, start);
+    noteGain.gain.exponentialRampToValueAtTime(0.5, start + 0.03);
+    noteGain.gain.exponentialRampToValueAtTime(0.0001, end);
+    oscillator.connect(noteGain);
+    noteGain.connect(masterGain);
+    oscillator.start(start);
+    oscillator.stop(end);
+  });
+
+  window.setTimeout(() => void audio.close(), 1200);
+}
+
 function dateSearchValues(value?: string | null) {
   const raw = String(value || "").trim();
   if (!raw) return [];
@@ -678,6 +718,8 @@ export default function ClassicDispatchPage() {
   const [routeDrawerOpen, setRouteDrawerOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState("");
   const [orderDrawerOpen, setOrderDrawerOpen] = useState(false);
+  const [chimeStatus, setChimeStatus] = useState("");
+  const lastChimeKey = useRef("");
   const [navCollapsed, setNavCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(DISPATCH_NAV_COLLAPSED_KEY) === "1";
@@ -723,6 +765,7 @@ export default function ClassicDispatchPage() {
     loaderData.classicColumnSettings ??
     defaultClassicColumnSettings) as ClassicColumnSettings;
   const message = actionData?.message || loaderData?.mailboxStatus?.message || "";
+  const mailboxStatus = actionData?.mailboxStatus || loaderData?.mailboxStatus || null;
   const googleMapsApiKey = actionData?.googleMapsApiKey ?? loaderData.googleMapsApiKey ?? "";
   const mapOriginAddress = actionData?.mapOriginAddress ?? loaderData.mapOriginAddress ?? "";
   const currentUser = actionData?.currentUser ?? loaderData.currentUser ?? null;
@@ -761,9 +804,37 @@ export default function ClassicDispatchPage() {
     });
   }
 
+  async function testChime() {
+    try {
+      await playDispatchChime();
+      setChimeStatus("Chime ready");
+      window.setTimeout(() => setChimeStatus(""), 2200);
+    } catch {
+      setChimeStatus("Click again or check browser sound");
+      window.setTimeout(() => setChimeStatus(""), 3000);
+    }
+  }
+
   useEffect(() => {
     setDriverLocations(initialDriverLocations);
   }, [initialDriverLocations]);
+
+  useEffect(() => {
+    const imported = Number(mailboxStatus?.imported || 0);
+    if (imported <= 0) return;
+
+    const chimeKey = [
+      mailboxStatus?.message || "",
+      imported,
+      mailboxStatus?.skipped || 0,
+    ].join("|");
+
+    if (!chimeKey || lastChimeKey.current === chimeKey) return;
+    lastChimeKey.current = chimeKey;
+    void playDispatchChime().catch(() => {
+      // Some browsers require the Test Chime button before allowing sound.
+    });
+  }, [mailboxStatus]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1335,6 +1406,10 @@ export default function ClassicDispatchPage() {
             <input type="hidden" name="intent" value="poll-mailbox" />
             <button type="submit" style={styles.outlineButton}>Import Mail</button>
           </Form>
+          <button type="button" style={styles.outlineButton} onClick={testChime}>
+            Test Chime
+          </button>
+          {chimeStatus ? <span style={styles.chimeStatus}>{chimeStatus}</span> : null}
           <a href="#add-route" style={styles.outlineButton}>Add Route</a>
           <a href="#add-order" style={styles.orangeButton}>Add Order</a>
           <div style={styles.company}>Green Hills Dispatch</div>
@@ -1921,6 +1996,12 @@ const styles: Record<string, any> = {
     textDecoration: "none",
     fontWeight: 900,
     cursor: "pointer",
+  },
+  chimeStatus: {
+    color: "#93c5fd",
+    fontSize: 12,
+    fontWeight: 800,
+    whiteSpace: "nowrap",
   },
   messageBanner: {
     padding: "8px 14px",
