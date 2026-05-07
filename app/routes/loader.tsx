@@ -51,6 +51,13 @@ export default function LoaderPage() {
   const unread = notifications.filter((notification) => notification.status === "unread");
   const history = notifications.filter((notification) => notification.status === "read");
   const canUseRealtime = Boolean(loaderData.supabaseUrl && loaderData.supabaseAnonKey);
+  const [pushStatus, setPushStatus] = useState("Push alerts not enabled on this device.");
+  const [pushBusy, setPushBusy] = useState(false);
+  const pushSupported =
+    typeof window !== "undefined" &&
+    "serviceWorker" in navigator &&
+    "PushManager" in window &&
+    "Notification" in window;
 
   useEffect(() => {
     if (actionData?.notifications) setNotifications(actionData.notifications);
@@ -117,6 +124,60 @@ export default function LoaderPage() {
     [canUseRealtime],
   );
 
+  function urlBase64ToUint8Array(value: string) {
+    const padding = "=".repeat((4 - (value.length % 4)) % 4);
+    const base64 = `${value}${padding}`.replace(/-/g, "+").replace(/_/g, "/");
+    const rawData = window.atob(base64);
+    return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+  }
+
+  async function enablePushAlerts() {
+    if (!pushSupported) {
+      setPushStatus("Push is not supported in this browser. On iPad, install the site to Home Screen first.");
+      return;
+    }
+
+    setPushBusy(true);
+    try {
+      const keyResponse = await fetch("/api/loader-push-subscription");
+      const keyResult = await keyResponse.json();
+      if (!keyResult?.publicKey) {
+        setPushStatus("Push is not configured yet. Add VAPID keys to the server environment.");
+        return;
+      }
+
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        setPushStatus("Push permission was not allowed on this device.");
+        return;
+      }
+
+      const registration = await navigator.serviceWorker.register("/loader-push-sw.js");
+      const existing = await registration.pushManager.getSubscription();
+      const subscription =
+        existing ||
+        (await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(keyResult.publicKey),
+        }));
+
+      const response = await fetch("/api/loader-push-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          intent: "subscribe",
+          subscription: subscription.toJSON(),
+        }),
+      });
+      const result = await response.json();
+      setPushStatus(result?.message || "Push alerts enabled.");
+    } catch (error) {
+      setPushStatus(error instanceof Error ? error.message : "Unable to enable push alerts.");
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
   return (
     <main style={styles.page}>
       <section style={styles.shell}>
@@ -129,10 +190,20 @@ export default function LoaderPage() {
             </p>
           </div>
           <nav style={styles.nav}>
+            <button
+              type="button"
+              onClick={enablePushAlerts}
+              style={styles.navButton}
+              disabled={pushBusy}
+            >
+              {pushBusy ? "Enabling..." : "Enable Push Alerts"}
+            </button>
             <Link to="/classic" style={styles.navButton}>Dispatch</Link>
             <Link to="/login?logout=1" style={styles.navButton}>Log Out</Link>
           </nav>
         </header>
+
+        <div style={styles.pushStatus}>{pushStatus}</div>
 
         {actionData?.message ? (
           <div style={actionData.ok ? styles.success : styles.error}>{actionData.message}</div>
@@ -232,6 +303,15 @@ const styles: Record<string, CSSProperties> = {
     border: "1px solid #334155",
     borderRadius: 999,
     padding: "10px 14px",
+    background: "#020617",
+    fontWeight: 900,
+  },
+  pushStatus: {
+    border: "1px solid #1e293b",
+    borderRadius: 14,
+    padding: 12,
+    background: "#0f172a",
+    color: "#cbd5e1",
   },
   success: { background: "#052e16", border: "1px solid #16a34a", borderRadius: 14, padding: 12 },
   error: { background: "#450a0a", border: "1px solid #dc2626", borderRadius: 14, padding: 12 },

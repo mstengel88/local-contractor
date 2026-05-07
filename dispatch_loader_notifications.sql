@@ -20,4 +20,23 @@ create index if not exists dispatch_notifications_target_idx
 create index if not exists dispatch_notifications_status_idx
   on public.dispatch_notifications (status, created_at desc);
 
+create table if not exists public.dispatch_push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  user_email text not null default '',
+  target_role text not null default 'loader',
+  endpoint text not null unique,
+  subscription jsonb not null,
+  user_agent text,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now()),
+  last_seen_at timestamptz not null default timezone('utc', now())
+);
+
+create index if not exists dispatch_push_subscriptions_user_idx
+  on public.dispatch_push_subscriptions (user_id, updated_at desc);
+
+create index if not exists dispatch_push_subscriptions_role_idx
+  on public.dispatch_push_subscriptions (target_role, updated_at desc);
+
 alter publication supabase_realtime add table public.dispatch_notifications;

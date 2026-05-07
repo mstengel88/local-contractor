@@ -13,6 +13,7 @@ import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prism
 import { PrismaClient } from "@prisma/client";
 import { createClient } from "@supabase/supabase-js";
 import { useState, useDeferredValue, useMemo, useEffect, useRef } from "react";
+import * as webpush from "web-push";
 import tls from "node:tls";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
 if (process.env.NODE_ENV !== "production") {
@@ -765,7 +766,7 @@ const route0 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProper
   default: root,
   links
 }, Symbol.toStringTag, { value: "Module" }));
-async function loader$o({
+async function loader$p({
   request
 }) {
   const url = new URL(request.url);
@@ -778,7 +779,7 @@ const route$1 = UNSAFE_withComponentProps(function Index() {
 const route1 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: route$1,
-  loader: loader$o
+  loader: loader$p
 }, Symbol.toStringTag, { value: "Module" }));
 function getCreatorPayload(input) {
   return {
@@ -1292,7 +1293,7 @@ function attachAddressAutocomplete(options) {
     const place = autocomplete.getPlace();
     const components = (place == null ? void 0 : place.address_components) || [];
     let streetNumber = "";
-    let route53 = "";
+    let route54 = "";
     let locality = "";
     let administrativeArea = "";
     let zip = "";
@@ -1300,7 +1301,7 @@ function attachAddressAutocomplete(options) {
     for (const component of components) {
       const types = component.types || [];
       if (types.includes("street_number")) streetNumber = component.long_name || "";
-      if (types.includes("route")) route53 = component.long_name || "";
+      if (types.includes("route")) route54 = component.long_name || "";
       if (types.includes("locality")) locality = component.long_name || "";
       if (types.includes("administrative_area_level_1")) {
         administrativeArea = component.short_name || component.long_name || "";
@@ -1310,7 +1311,7 @@ function attachAddressAutocomplete(options) {
         countryCode = component.short_name || component.long_name || "US";
       }
     }
-    address1.value = [streetNumber, route53].filter(Boolean).join(" ").trim();
+    address1.value = [streetNumber, route54].filter(Boolean).join(" ").trim();
     city.value = options.cityFormat === "cityStateZip" ? [locality, [administrativeArea, zip].filter(Boolean).join(" ")].filter(Boolean).join(", ") : locality;
     province.value = administrativeArea;
     postalCode.value = zip;
@@ -1833,7 +1834,7 @@ function formatQuantityWithUnit(quantity, unitLabel) {
 function getBrowserGoogleMapsApiKey$1() {
   return process.env.GOOGLE_MAPS_BROWSER_API_KEY || process.env.GOOGLE_MAPS_API_KEY || "";
 }
-async function loader$n({
+async function loader$o({
   request
 }) {
   const url = new URL(request.url);
@@ -1856,7 +1857,7 @@ async function loader$n({
     googleMapsApiKey: getBrowserGoogleMapsApiKey$1()
   });
 }
-async function action$q({
+async function action$r({
   request
 }) {
   const form = await request.formData();
@@ -3830,9 +3831,9 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
 });
 const route2 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$q,
+  action: action$r,
   default: customQuote,
-  loader: loader$n
+  loader: loader$o
 }, Symbol.toStringTag, { value: "Module" }));
 function formatMoney$1(cents) {
   return `$${(Number(cents || 0) / 100).toFixed(2)}`;
@@ -3933,7 +3934,7 @@ const styles$c = {
     color: "#fee2e2"
   }
 };
-async function loader$m({
+async function loader$n({
   request
 }) {
   const url = new URL(request.url);
@@ -3956,7 +3957,7 @@ async function loader$m({
     quotes
   });
 }
-async function action$p({
+async function action$q({
   request
 }) {
   const form = await request.formData();
@@ -4851,9 +4852,9 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
 });
 const route3 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$p,
+  action: action$q,
   default: quoteReview,
-  loader: loader$m
+  loader: loader$n
 }, Symbol.toStringTag, { value: "Module" }));
 function escapeHtml(value) {
   return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -4880,12 +4881,12 @@ function getQuantityColumns(order) {
 }
 function buildDeliveryConfirmationEmail({
   order,
-  route: route53
+  route: route54
 }) {
   const quantity = getQuantityColumns(order);
   const orderNumber = getOrderDisplayNumber$3(order);
   const deliveredAt = formatDeliveredAt(order);
-  const driverName = order.signatureName || (route53 == null ? void 0 : route53.driver) || order.proofName || "";
+  const driverName = order.signatureName || (route54 == null ? void 0 : route54.driver) || order.proofName || "";
   const photoProof = order.photoUrls || "Not captured";
   const gpsProof = order.signatureData || "Not captured";
   const subject = `Green Hills Supply delivery confirmation ${orderNumber}`;
@@ -4896,9 +4897,9 @@ function buildDeliveryConfirmationEmail({
     `Delivered: ${deliveredAt}`,
     ``,
     `Driver and Truck Information`,
-    `Truck: ${(route53 == null ? void 0 : route53.truck) || ""}`,
+    `Truck: ${(route54 == null ? void 0 : route54.truck) || ""}`,
     `Driver: ${driverName}`,
-    `Route: ${(route53 == null ? void 0 : route53.code) || ""}`,
+    `Route: ${(route54 == null ? void 0 : route54.code) || ""}`,
     ``,
     `Customer Information`,
     `Customer: ${order.customer}`,
@@ -4934,7 +4935,7 @@ function buildDeliveryConfirmationEmail({
       ${sectionTitle("Driver and Truck Information")}
       <table role="presentation" width="100%" cellspacing="12" cellpadding="0" style="border-collapse:separate;margin-top:10px;">
         <tr>
-          ${fieldCell("Truck Number", (route53 == null ? void 0 : route53.truck) || "")}
+          ${fieldCell("Truck Number", (route54 == null ? void 0 : route54.truck) || "")}
           ${fieldCell("Driver Name", driverName)}
         </tr>
         <tr>
@@ -5011,7 +5012,7 @@ function tableCell(value) {
 }
 async function sendDeliveryConfirmationEmail({
   order,
-  route: route53
+  route: route54
 }) {
   const to = getCustomerEmail(order);
   if (!to) return { sent: false, skipped: true, reason: "No customer email found." };
@@ -5024,7 +5025,7 @@ async function sendDeliveryConfirmationEmail({
       reason: "Delivery email is not configured. Set RESEND_API_KEY and DELIVERY_CONFIRMATION_FROM."
     };
   }
-  const email = buildDeliveryConfirmationEmail({ order, route: route53 });
+  const email = buildDeliveryConfirmationEmail({ order, route: route54 });
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -5044,6 +5045,90 @@ async function sendDeliveryConfirmationEmail({
     throw new Error(`Delivery confirmation email failed: ${body}`);
   }
   return { sent: true };
+}
+const TABLE$1 = "dispatch_push_subscriptions";
+function getVapidPublicKey() {
+  return process.env.VAPID_PUBLIC_KEY || "";
+}
+function configureWebPush() {
+  const publicKey = process.env.VAPID_PUBLIC_KEY || "";
+  const privateKey = process.env.VAPID_PRIVATE_KEY || "";
+  const subject = process.env.VAPID_SUBJECT || process.env.SHOPIFY_APP_URL || "mailto:info@greenhillssupply.com";
+  if (!publicKey || !privateKey) return false;
+  webpush.setVapidDetails(subject, publicKey, privateKey);
+  return true;
+}
+async function savePushSubscription(input) {
+  var _a2;
+  if (!((_a2 = input.subscription) == null ? void 0 : _a2.endpoint)) {
+    throw new Error("Push subscription endpoint is missing.");
+  }
+  const { error } = await supabaseAdmin.from(TABLE$1).upsert(
+    {
+      user_id: input.user.id,
+      user_email: input.user.email,
+      target_role: input.user.permissions.includes("loader") ? "loader" : input.user.role,
+      endpoint: input.subscription.endpoint,
+      subscription: input.subscription,
+      user_agent: input.userAgent || "",
+      last_seen_at: (/* @__PURE__ */ new Date()).toISOString(),
+      updated_at: (/* @__PURE__ */ new Date()).toISOString()
+    },
+    { onConflict: "endpoint" }
+  );
+  if ((error == null ? void 0 : error.code) === "42P01") {
+    throw new Error("Push subscription storage is not ready. Run dispatch_loader_notifications.sql in Supabase.");
+  }
+  if (error) throw new Error(error.message);
+}
+async function deletePushSubscription(endpoint, user) {
+  if (!endpoint) return;
+  const { error } = await supabaseAdmin.from(TABLE$1).delete().eq("endpoint", endpoint).eq("user_id", user.id);
+  if ((error == null ? void 0 : error.code) === "42P01") return;
+  if (error) throw new Error(error.message);
+}
+async function listPushSubscriptionsForTarget(input) {
+  let query = supabaseAdmin.from(TABLE$1).select("*");
+  if (input.targetUserId) {
+    query = query.eq("user_id", input.targetUserId);
+  } else {
+    query = query.eq("target_role", input.targetRole || "loader");
+  }
+  const { data: data2, error } = await query.order("created_at", { ascending: false });
+  if ((error == null ? void 0 : error.code) === "42P01") return [];
+  if (error) throw new Error(error.message);
+  return data2 || [];
+}
+async function sendPushToTarget(input) {
+  if (!configureWebPush()) {
+    return { sent: 0, skipped: true, reason: "Missing VAPID_PUBLIC_KEY or VAPID_PRIVATE_KEY." };
+  }
+  const subscriptions = await listPushSubscriptionsForTarget(input);
+  let sent = 0;
+  await Promise.all(
+    subscriptions.map(async (row) => {
+      try {
+        await webpush.sendNotification(
+          row.subscription,
+          JSON.stringify({
+            title: input.title,
+            body: input.message,
+            url: input.url || "/loader",
+            tag: input.tag || "loader-load-next"
+          })
+        );
+        sent += 1;
+      } catch (error) {
+        const statusCode = Number((error == null ? void 0 : error.statusCode) || 0);
+        if (statusCode === 404 || statusCode === 410) {
+          await supabaseAdmin.from(TABLE$1).delete().eq("id", row.id);
+        } else {
+          console.warn("[PUSH SEND ERROR]", (error == null ? void 0 : error.message) || error);
+        }
+      }
+    })
+  );
+  return { sent, skipped: false };
 }
 const TABLE = "dispatch_notifications";
 function normalizeNotification(row) {
@@ -5086,7 +5171,18 @@ async function createLoaderNotification(input) {
     throw new Error("Loader notification storage is not ready. Run dispatch_loader_notifications.sql in Supabase.");
   }
   if (error) throw new Error(error.message);
-  return normalizeNotification(data2);
+  const notification = normalizeNotification(data2);
+  await sendPushToTarget({
+    targetUserId: notification.targetUserId,
+    targetRole: notification.targetRole,
+    title: "New loader assignment",
+    message: "Open Loader View to see the next load.",
+    url: "/loader",
+    tag: `loader-${notification.orderId || notification.id}`
+  }).catch((error2) => {
+    console.warn("[LOADER PUSH NOTIFICATION ERROR]", error2);
+  });
+  return notification;
 }
 async function listLoaderNotifications(user, limit = 30) {
   const { data: data2, error } = await supabaseAdmin.from(TABLE).select("*").or(`target_user_id.eq.${user.id},target_role.eq.loader`).order("created_at", { ascending: false }).limit(limit);
@@ -6030,19 +6126,19 @@ async function ensureSeedDispatchRoutes() {
     return;
   }
   const { error: insertError } = await supabaseAdmin.from(ROUTES_TABLE).insert(
-    seedDispatchRoutes.map((route53) => ({
-      id: route53.id,
-      code: route53.code,
-      truck_id: route53.truckId || null,
-      truck: route53.truck,
-      driver_id: route53.driverId || null,
-      driver: route53.driver,
-      helper_id: route53.helperId || null,
-      helper: route53.helper,
-      color: route53.color,
-      shift: route53.shift,
-      region: route53.region,
-      is_active: route53.isActive !== false
+    seedDispatchRoutes.map((route54) => ({
+      id: route54.id,
+      code: route54.code,
+      truck_id: route54.truckId || null,
+      truck: route54.truck,
+      driver_id: route54.driverId || null,
+      driver: route54.driver,
+      helper_id: route54.helperId || null,
+      helper: route54.helper,
+      color: route54.color,
+      shift: route54.shift,
+      region: route54.region,
+      is_active: route54.isActive !== false
     }))
   );
   if (insertError) {
@@ -6927,21 +7023,21 @@ function formatTravelMinutes$3(minutes) {
   return remainder ? `${hours} hr ${remainder} min` : `${hours} hr`;
 }
 function buildDispatchOrderSearchText(order, routes2) {
-  const route53 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
-  return [order.id, order.orderNumber, order.source, order.customer, order.contact, order.address, order.city, order.material, order.quantity, order.unit, order.requestedWindow, order.timePreference, order.truckPreference, order.notes, order.status, order.deliveryStatus, order.eta, order.travelMinutes, order.travelMiles, order.travelSummary, order.emailSubject, order.rawEmail, order.proofName, order.proofNotes, order.signatureName, order.inspectionStatus, route53 == null ? void 0 : route53.code, route53 == null ? void 0 : route53.truck, route53 == null ? void 0 : route53.driver, route53 == null ? void 0 : route53.helper, route53 == null ? void 0 : route53.region].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
+  const route54 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
+  return [order.id, order.orderNumber, order.source, order.customer, order.contact, order.address, order.city, order.material, order.quantity, order.unit, order.requestedWindow, order.timePreference, order.truckPreference, order.notes, order.status, order.deliveryStatus, order.eta, order.travelMinutes, order.travelMiles, order.travelSummary, order.emailSubject, order.rawEmail, order.proofName, order.proofNotes, order.signatureName, order.inspectionStatus, route54 == null ? void 0 : route54.code, route54 == null ? void 0 : route54.truck, route54 == null ? void 0 : route54.driver, route54 == null ? void 0 : route54.helper, route54 == null ? void 0 : route54.region].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
 }
-function buildRouteSearchText(route53, orders) {
+function buildRouteSearchText(route54, orders) {
   var _a2;
-  const routeOrders = ((_a2 = route53.orders) == null ? void 0 : _a2.length) ? route53.orders : orders.filter((order) => order.assignedRouteId === route53.id);
-  return [route53.id, route53.code, route53.truckId, route53.truck, route53.driverId, route53.driver, route53.helperId, route53.helper, route53.color, route53.shift, route53.region, route53.stops, route53.totalTravelMinutes, route53.loadSummary, route53.created_at, route53.updated_at, ...routeOrders.map((order) => buildDispatchOrderSearchText(order, [route53]))].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
+  const routeOrders = ((_a2 = route54.orders) == null ? void 0 : _a2.length) ? route54.orders : orders.filter((order) => order.assignedRouteId === route54.id);
+  return [route54.id, route54.code, route54.truckId, route54.truck, route54.driverId, route54.driver, route54.helperId, route54.helper, route54.color, route54.shift, route54.region, route54.stops, route54.totalTravelMinutes, route54.loadSummary, route54.created_at, route54.updated_at, ...routeOrders.map((order) => buildDispatchOrderSearchText(order, [route54]))].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
 }
 function buildTruckSearchText(truck, routes2, orders) {
-  const truckRoutes = routes2.filter((route53) => route53.truckId === truck.id || route53.truck === truck.label);
-  return [truck.id, truck.label, truck.truckType, truck.tons, truck.yards, truck.capacity, truck.licensePlate, truck.created_at, truck.updated_at, ...truckRoutes.map((route53) => buildRouteSearchText(route53, orders))].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
+  const truckRoutes = routes2.filter((route54) => route54.truckId === truck.id || route54.truck === truck.label);
+  return [truck.id, truck.label, truck.truckType, truck.tons, truck.yards, truck.capacity, truck.licensePlate, truck.created_at, truck.updated_at, ...truckRoutes.map((route54) => buildRouteSearchText(route54, orders))].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
 }
 function buildEmployeeSearchText(employee, routes2, orders) {
-  const employeeRoutes = routes2.filter((route53) => route53.driverId === employee.id || route53.helperId === employee.id || route53.driver === employee.name || route53.helper === employee.name);
-  return [employee.id, employee.name, employee.role, employee.phone, employee.email, employee.created_at, employee.updated_at, ...employeeRoutes.map((route53) => buildRouteSearchText(route53, orders))].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
+  const employeeRoutes = routes2.filter((route54) => route54.driverId === employee.id || route54.helperId === employee.id || route54.driver === employee.name || route54.helper === employee.name);
+  return [employee.id, employee.name, employee.role, employee.phone, employee.email, employee.created_at, employee.updated_at, ...employeeRoutes.map((route54) => buildRouteSearchText(route54, orders))].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
 }
 function getTruckCapacityForOrderUnit(truck, unit) {
   if (/tons?/i.test(unit)) return Number(truck.tons || 0);
@@ -7158,16 +7254,16 @@ function RouteMapPreview({
     if (order.travelMinutes) return `${order.travelMinutes} min RT`;
     return order.travelSummary || "RT not calculated";
   };
-  const routePlan = useMemo(() => routes2.map((route53) => ({
-    id: route53.id,
-    color: route53.color || "#38bdf8",
-    label: `${route53.code} · ${route53.truck}`,
-    stops: route53.orders.map((order) => ({
+  const routePlan = useMemo(() => routes2.map((route54) => ({
+    id: route54.id,
+    color: route54.color || "#38bdf8",
+    label: `${route54.code} · ${route54.truck}`,
+    stops: route54.orders.map((order) => ({
       address: [order.address, order.city].map((part) => String(part || "").trim()).filter(Boolean).join(", "),
       customer: order.customer,
       travelLabel: getTravelLabel(order)
     })).filter((stop) => stop.address)
-  })).filter((route53) => route53.stops.length > 0), [routes2]);
+  })).filter((route54) => route54.stops.length > 0), [routes2]);
   useEffect(() => {
     let cancelled = false;
     async function drawMap() {
@@ -7238,7 +7334,7 @@ function RouteMapPreview({
           overlay.setMap(map);
           mapObjectsRef.current.push(overlay);
         };
-        const addStopMarker = (position, route53, stop, stopIndex) => {
+        const addStopMarker = (position, route54, stop, stopIndex) => {
           const marker = new google.maps.Marker({
             map,
             position,
@@ -7246,7 +7342,7 @@ function RouteMapPreview({
             title: `${stop.customer} · ${stop.travelLabel}`
           });
           mapObjectsRef.current.push(marker);
-          addTimeBadge(position, stop.travelLabel, route53.color);
+          addTimeBadge(position, stop.travelLabel, route54.color);
           bounds.extend(position);
         };
         const geocodeAddress = (address) => new Promise((resolve) => {
@@ -7262,13 +7358,13 @@ function RouteMapPreview({
             resolve(null);
           });
         });
-        const drawFallbackRoute = async (route53) => {
-          const points = (await Promise.all([originAddress, ...route53.stops.map((stop) => stop.address), originAddress].map((address) => geocodeAddress(address)))).filter(Boolean);
+        const drawFallbackRoute = async (route54) => {
+          const points = (await Promise.all([originAddress, ...route54.stops.map((stop) => stop.address), originAddress].map((address) => geocodeAddress(address)))).filter(Boolean);
           if (points.length < 2) return false;
           const polyline = new google.maps.Polyline({
             map,
             path: points,
-            strokeColor: route53.color,
+            strokeColor: route54.color,
             strokeOpacity: 0.82,
             strokeWeight: 5
           });
@@ -7279,23 +7375,23 @@ function RouteMapPreview({
               map,
               position: point,
               label: isYard ? "Y" : String(index),
-              title: isYard ? "Yard" : `${route53.stops[index - 1].customer} · ${route53.stops[index - 1].travelLabel}`
+              title: isYard ? "Yard" : `${route54.stops[index - 1].customer} · ${route54.stops[index - 1].travelLabel}`
             });
             mapObjectsRef.current.push(marker);
             if (!isYard) {
-              addTimeBadge(point, route53.stops[index - 1].travelLabel, route53.color);
+              addTimeBadge(point, route54.stops[index - 1].travelLabel, route54.color);
             }
             bounds.extend(point);
           });
           return true;
         };
-        await Promise.all(routePlan.map((route53) => new Promise((resolve) => {
+        await Promise.all(routePlan.map((route54) => new Promise((resolve) => {
           const renderer = new google.maps.DirectionsRenderer({
             map,
             preserveViewport: true,
             suppressMarkers: true,
             polylineOptions: {
-              strokeColor: route53.color,
+              strokeColor: route54.color,
               strokeOpacity: 0.9,
               strokeWeight: 6
             }
@@ -7304,7 +7400,7 @@ function RouteMapPreview({
           directionsService.route({
             origin: originAddress,
             destination: originAddress,
-            waypoints: route53.stops.map((stop) => ({
+            waypoints: route54.stops.map((stop) => ({
               location: stop.address,
               stopover: true
             })),
@@ -7328,18 +7424,18 @@ function RouteMapPreview({
                 });
                 mapObjectsRef.current.push(yardMarker);
               }
-              route53.stops.forEach((stop, stopIndex) => {
+              route54.stops.forEach((stop, stopIndex) => {
                 var _a3, _b2, _c2;
                 const leg = (_c2 = (_b2 = (_a3 = result.routes) == null ? void 0 : _a3[0]) == null ? void 0 : _b2.legs) == null ? void 0 : _c2[stopIndex];
                 if (leg == null ? void 0 : leg.end_location) {
-                  addStopMarker(leg.end_location, route53, stop, stopIndex);
+                  addStopMarker(leg.end_location, route54, stop, stopIndex);
                 }
               });
             } else {
-              console.warn("[DISPATCH MAP ROUTE ERROR]", route53.label, routeStatus);
+              console.warn("[DISPATCH MAP ROUTE ERROR]", route54.label, routeStatus);
               renderer.setMap(null);
-              const drewFallback = await drawFallbackRoute(route53);
-              warnings.push(drewFallback ? `${route53.label}: showing fallback stop-to-stop lines because Google Directions returned ${routeStatus}.` : `${route53.label}: Google Directions returned ${routeStatus}, and the stop addresses could not be geocoded.`);
+              const drewFallback = await drawFallbackRoute(route54);
+              warnings.push(drewFallback ? `${route54.label}: showing fallback stop-to-stop lines because Google Directions returned ${routeStatus}.` : `${route54.label}: Google Directions returned ${routeStatus}, and the stop addresses could not be geocoded.`);
             }
             resolve();
           });
@@ -7375,18 +7471,18 @@ function RouteMapPreview({
       }, warning))
     }) : null, routePlan.length ? /* @__PURE__ */ jsx("div", {
       style: styles$b.mapLegend,
-      children: routePlan.map((route53) => /* @__PURE__ */ jsxs("div", {
+      children: routePlan.map((route54) => /* @__PURE__ */ jsxs("div", {
         style: {
           display: "flex",
           alignItems: "center",
           gap: 8
         },
         children: [/* @__PURE__ */ jsx("div", {
-          style: styles$b.routeColor(route53.color)
+          style: styles$b.routeColor(route54.color)
         }), /* @__PURE__ */ jsx("span", {
-          children: route53.label
+          children: route54.label
         })]
-      }, route53.id))
+      }, route54.id))
     }) : null]
   });
 }
@@ -7467,7 +7563,7 @@ async function resequenceChangedRoutes(routeIds) {
   const uniqueRouteIds = Array.from(new Set(routeIds.filter((routeId) => Boolean(routeId))));
   await Promise.all(uniqueRouteIds.map((routeId) => resequenceRouteStops(routeId)));
 }
-async function loader$l({
+async function loader$m({
   request
 }) {
   const url = new URL(request.url);
@@ -7526,7 +7622,7 @@ async function loader$l({
     ...dispatchState
   });
 }
-async function action$o({
+async function action$p({
   request
 }) {
   var _a2, _b, _c;
@@ -7755,7 +7851,7 @@ async function action$o({
         const previousRouteId = updated.assignedRouteId || null;
         if (routeId) {
           const [allRoutes, allTrucks] = await Promise.all([getDispatchRoutes(), getDispatchTrucks()]);
-          const selectedRoute = allRoutes.find((route53) => route53.id === routeId);
+          const selectedRoute = allRoutes.find((route54) => route54.id === routeId);
           const selectedTruck = allTrucks.find((truck) => truck.id === (selectedRoute == null ? void 0 : selectedRoute.truckId));
           const splitCount = getSplitCountFromForm(form);
           const capacityError = !selectedRoute ? "Select a valid route before assigning this order." : getSplitCapacityError(updated, selectedTruck, splitCount);
@@ -8128,7 +8224,7 @@ async function action$o({
       }
       const [allOrders, allRoutes, allTrucks] = await Promise.all([getDispatchOrders(), getDispatchRoutes(), getDispatchTrucks()]);
       const selectedOrder = allOrders.find((order) => order.id === orderId);
-      const selectedRoute = allRoutes.find((route53) => route53.id === routeId);
+      const selectedRoute = allRoutes.find((route54) => route54.id === routeId);
       const selectedTruck = allTrucks.find((truck) => truck.id === (selectedRoute == null ? void 0 : selectedRoute.truckId));
       const splitCount = getSplitCountFromForm(form);
       const capacityError = !selectedOrder ? "Order was not found." : !selectedRoute ? "Select a valid route before assigning this order." : getSplitCapacityError(selectedOrder, selectedTruck, splitCount);
@@ -8170,10 +8266,10 @@ async function action$o({
       const [allOrders, allRoutes] = await Promise.all([getDispatchOrders(), getDispatchRoutes()]);
       const order = allOrders.find((entry2) => entry2.id === orderId);
       if (!order) throw new Error("Order was not found.");
-      const route53 = allRoutes.find((entry2) => entry2.id === order.assignedRouteId) || null;
+      const route54 = allRoutes.find((entry2) => entry2.id === order.assignedRouteId) || null;
       const notification = await createLoaderNotification({
         order,
-        route: route53,
+        route: route54,
         actor: currentUser
       });
       await logAuditEvent({
@@ -8185,7 +8281,7 @@ async function action$o({
         details: {
           notificationId: notification.id,
           message: notification.message,
-          route: (route53 == null ? void 0 : route53.code) || null
+          route: (route54 == null ? void 0 : route54.code) || null
         }
       });
       const dispatchState = await loadDispatchState({
@@ -8344,13 +8440,13 @@ async function action$o({
         patch.deliveredAt = now;
       }
       const updatedOrder = await updateDispatchOrder(orderId, patch);
-      const route53 = updatedOrder.assignedRouteId ? (await getDispatchRoutes()).find((entry2) => entry2.id === updatedOrder.assignedRouteId) || null : null;
+      const route54 = updatedOrder.assignedRouteId ? (await getDispatchRoutes()).find((entry2) => entry2.id === updatedOrder.assignedRouteId) || null : null;
       let emailNote = "";
       if (deliveryStatus === "delivered") {
         try {
           const emailResult = await sendDeliveryConfirmationEmail({
             order: updatedOrder,
-            route: route53
+            route: route54
           });
           emailNote = emailResult.sent ? " Delivery confirmation email sent." : ` Delivery confirmation email skipped: ${emailResult.reason}`;
         } catch (error) {
@@ -8444,17 +8540,17 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
   const queryDashboardSelectedOrderId = searchParams.get("selected");
   const selectedOrderId = (actionData == null ? void 0 : actionData.selectedOrderId) || queryDashboardSelectedOrderId || querySelectedOrderId || ((_a2 = orders[0]) == null ? void 0 : _a2.id);
   const selectedOrder = useMemo(() => orders.find((order) => order.id === selectedOrderId) || orders[0] || null, [orders, selectedOrderId]);
-  const routes2 = useMemo(() => dispatchRoutes.map((route53) => {
-    const routeOrders = orders.filter((order) => order.assignedRouteId === route53.id && order.status !== "delivered" && order.deliveryStatus !== "delivered").sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999));
+  const routes2 = useMemo(() => dispatchRoutes.map((route54) => {
+    const routeOrders = orders.filter((order) => order.assignedRouteId === route54.id && order.status !== "delivered" && order.deliveryStatus !== "delivered").sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999));
     return {
-      ...route53,
+      ...route54,
       stops: routeOrders.length,
       totalTravelMinutes: routeOrders.reduce((sum, order) => sum + getOrderTravelMinutes(order), 0),
       loadSummary: routeOrders.map((order) => `${order.quantity} ${order.unit} ${order.material}`).slice(0, 2).join(" • "),
       orders: routeOrders
     };
   }), [dispatchRoutes, orders]);
-  const selectedOrderRoute = (selectedOrder == null ? void 0 : selectedOrder.assignedRouteId) ? routes2.find((route53) => route53.id === selectedOrder.assignedRouteId) || null : null;
+  const selectedOrderRoute = (selectedOrder == null ? void 0 : selectedOrder.assignedRouteId) ? routes2.find((route54) => route54.id === selectedOrder.assignedRouteId) || null : null;
   const activeOrders = useMemo(() => orders.filter((order) => !order.assignedRouteId && order.status !== "scheduled" && order.status !== "delivered" && order.deliveryStatus !== "delivered").sort((a, b) => {
     const dateDiff = getRequestedDeliverySortValue(a) - getRequestedDeliverySortValue(b);
     if (dateDiff !== 0) return dateDiff;
@@ -8489,18 +8585,18 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
   const deferredOrderSearch = useDeferredValue(orderSearch);
   const normalizedOrderSearch = deferredOrderSearch.trim().toLowerCase();
   assignmentFetcher.state === "submitting";
-  function getRouteTruck(route53) {
-    if (!route53) return null;
-    return trucks.find((truck) => truck.id === route53.truckId) || trucks.find((truck) => truck.label === route53.truck) || null;
+  function getRouteTruck(route54) {
+    if (!route54) return null;
+    return trucks.find((truck) => truck.id === route54.truckId) || trucks.find((truck) => truck.label === route54.truck) || null;
   }
-  function getAssignmentSplitCount(order, route53) {
-    if (!order || !route53 || !/yards?/i.test(order.unit)) return "";
-    const truck = getRouteTruck(route53);
+  function getAssignmentSplitCount(order, route54) {
+    if (!order || !route54 || !/yards?/i.test(order.unit)) return "";
+    const truck = getRouteTruck(route54);
     const capacity = Number((truck == null ? void 0 : truck.yards) || 30);
     const quantity = Number(order.quantity || 0);
     if (!quantity || !capacity || quantity <= capacity) return "";
     const minimumSplits = Math.ceil(quantity / capacity);
-    const routeLabel = `${route53.code}${(truck == null ? void 0 : truck.label) ? ` / ${truck.label}` : ""}`;
+    const routeLabel = `${route54.code}${(truck == null ? void 0 : truck.label) ? ` / ${truck.label}` : ""}`;
     const answer = window.prompt(`${getOrderDisplayNumber$2(order)} is ${quantity} yards, which is over the ${capacity} yard truck limit for ${routeLabel}.
 
 How many tickets should I split it into?`, String(minimumSplits));
@@ -8513,8 +8609,8 @@ How many tickets should I split it into?`, String(minimumSplits));
     return String(splitCount);
   }
   function prepareAssignmentSubmit(order, routeId, form, event) {
-    const route53 = routes2.find((entry2) => entry2.id === routeId);
-    const splitCount = getAssignmentSplitCount(order, route53);
+    const route54 = routes2.find((entry2) => entry2.id === routeId);
+    const splitCount = getAssignmentSplitCount(order, route54);
     if (splitCount === null) {
       event.preventDefault();
       return;
@@ -8550,7 +8646,7 @@ How many tickets should I split it into?`, String(minimumSplits));
   const searchedDeliveredOrders = useMemo(() => searchOrders(deliveredOrders), [deliveredOrders, normalizedOrderSearch, routes2]);
   const searchedRoutes = useMemo(() => {
     if (!normalizedOrderSearch) return routes2;
-    return routes2.filter((route53) => buildRouteSearchText(route53, orders).includes(normalizedOrderSearch));
+    return routes2.filter((route54) => buildRouteSearchText(route54, orders).includes(normalizedOrderSearch));
   }, [normalizedOrderSearch, orders, routes2]);
   const searchedTrucks = useMemo(() => {
     if (!normalizedOrderSearch) return trucks;
@@ -8596,8 +8692,8 @@ How many tickets should I split it into?`, String(minimumSplits));
     clearDragState();
     if (!orderId || !routeId || !canManageDispatch) return;
     const order = orders.find((entry2) => entry2.id === orderId);
-    const route53 = routes2.find((entry2) => entry2.id === routeId);
-    const splitCount = getAssignmentSplitCount(order, route53);
+    const route54 = routes2.find((entry2) => entry2.id === routeId);
+    const splitCount = getAssignmentSplitCount(order, route54);
     if (splitCount === null) return;
     assignmentFetcher.submit({
       intent: "assign-order",
@@ -8626,8 +8722,8 @@ How many tickets should I split it into?`, String(minimumSplits));
   function moveOrderWithSelect(orderId, routeId) {
     if (!orderId || !canManageDispatch) return;
     const order = orders.find((entry2) => entry2.id === orderId);
-    const route53 = routes2.find((entry2) => entry2.id === routeId);
-    const splitCount = routeId ? getAssignmentSplitCount(order, route53) : "";
+    const route54 = routes2.find((entry2) => entry2.id === routeId);
+    const splitCount = routeId ? getAssignmentSplitCount(order, route54) : "";
     if (splitCount === null) return;
     assignmentFetcher.submit(routeId ? {
       intent: "assign-order",
@@ -8910,7 +9006,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                 gap: 10
               },
               children: [searchedActiveOrders.map((order) => {
-                const route53 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
+                const route54 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
                 return /* @__PURE__ */ jsxs("a", {
                   href: `${dispatchHref}?view=orders&order=${encodeURIComponent(order.id)}`,
                   style: {
@@ -8946,7 +9042,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                     }), order.travelMinutes ? /* @__PURE__ */ jsxs("span", {
                       children: [order.travelMinutes, " min RT"]
                     }) : null, /* @__PURE__ */ jsx("span", {
-                      children: route53 ? route53.truck : "Unassigned"
+                      children: route54 ? route54.truck : "Unassigned"
                     })]
                   })]
                 }, order.id);
@@ -9190,10 +9286,10 @@ How many tickets should I split it into?`, String(minimumSplits));
                       children: [/* @__PURE__ */ jsx("option", {
                         value: "",
                         children: "Unassigned"
-                      }), routes2.map((route53) => /* @__PURE__ */ jsxs("option", {
-                        value: route53.id,
-                        children: [route53.code, " - ", route53.truck, " - ", route53.driver]
-                      }, route53.id))]
+                      }), routes2.map((route54) => /* @__PURE__ */ jsxs("option", {
+                        value: route54.id,
+                        children: [route54.code, " - ", route54.truck, " - ", route54.driver]
+                      }, route54.id))]
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
@@ -9504,7 +9600,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                 },
                 children: scheduledOrders.length ? "No scheduled orders matched that search." : "No scheduled orders yet."
               }) : searchedScheduledOrders.map((order) => {
-                const route53 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
+                const route54 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
                 return /* @__PURE__ */ jsxs("div", {
                   style: styles$b.queueCard,
                   children: [/* @__PURE__ */ jsxs("div", {
@@ -9540,7 +9636,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                     }) : null, order.stopSequence ? /* @__PURE__ */ jsxs("span", {
                       children: ["Stop ", order.stopSequence]
                     }) : null, /* @__PURE__ */ jsx("span", {
-                      children: route53 ? `${route53.truck || route53.code} / ${route53.driver || "No driver"}` : "No route"
+                      children: route54 ? `${route54.truck || route54.code} / ${route54.driver || "No driver"}` : "No route"
                     })]
                   }), order.notes ? /* @__PURE__ */ jsxs("div", {
                     style: styles$b.queueNotes,
@@ -9593,7 +9689,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                 },
                 children: deliveredOrders.length ? "No delivered orders matched that search." : "No delivered orders yet."
               }) : searchedDeliveredOrders.map((order) => {
-                const route53 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
+                const route54 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
                 return /* @__PURE__ */ jsxs("div", {
                   style: styles$b.queueCard,
                   children: [/* @__PURE__ */ jsxs("div", {
@@ -9625,7 +9721,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                     }), order.deliveredAt ? /* @__PURE__ */ jsx("span", {
                       children: new Date(order.deliveredAt).toLocaleString()
                     }) : null, /* @__PURE__ */ jsx("span", {
-                      children: route53 ? route53.truck || route53.code : "No route"
+                      children: route54 ? route54.truck || route54.code : "No route"
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     style: styles$b.deliveredActions,
@@ -10280,9 +10376,9 @@ How many tickets should I split it into?`, String(minimumSplits));
                 display: "grid",
                 gap: 12
               },
-              children: [searchedRoutes.map((route53) => /* @__PURE__ */ jsxs(Form, {
+              children: [searchedRoutes.map((route54) => /* @__PURE__ */ jsxs(Form, {
                 method: "post",
-                style: styles$b.routeCard(route53.color),
+                style: styles$b.routeCard(route54.color),
                 onSubmit: (event) => {
                   const submitter = event.nativeEvent.submitter;
                   if ((submitter == null ? void 0 : submitter.value) === "delete-route" && !window.confirm("Delete this route from the active board? Move or unassign active orders first. This cannot be undone.")) {
@@ -10292,7 +10388,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                 children: [/* @__PURE__ */ jsx("input", {
                   type: "hidden",
                   name: "routeId",
-                  value: route53.id
+                  value: route54.id
                 }), /* @__PURE__ */ jsxs("div", {
                   style: {
                     display: "flex",
@@ -10307,13 +10403,13 @@ How many tickets should I split it into?`, String(minimumSplits));
                         gap: 10
                       },
                       children: [/* @__PURE__ */ jsx("div", {
-                        style: styles$b.routeColor(route53.color)
+                        style: styles$b.routeColor(route54.color)
                       }), /* @__PURE__ */ jsx("div", {
                         style: styles$b.routeCode,
-                        children: route53.code
+                        children: route54.code
                       }), /* @__PURE__ */ jsx("div", {
                         style: styles$b.routeRegion,
-                        children: route53.region
+                        children: route54.region
                       })]
                     }), /* @__PURE__ */ jsxs("div", {
                       style: {
@@ -10321,10 +10417,10 @@ How many tickets should I split it into?`, String(minimumSplits));
                         color: "#e2e8f0",
                         fontWeight: 700
                       },
-                      children: [route53.truck || "No truck", " · ", route53.driver || "No driver", " / ", route53.helper || "No helper"]
+                      children: [route54.truck || "No truck", " · ", route54.driver || "No driver", " / ", route54.helper || "No helper"]
                     })]
                   }), /* @__PURE__ */ jsx("a", {
-                    href: `${driverHref}?route=${encodeURIComponent(route53.id)}`,
+                    href: `${driverHref}?route=${encodeURIComponent(route54.id)}`,
                     style: styles$b.assignButton,
                     children: "Driver View"
                   })]
@@ -10339,7 +10435,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       children: "Route Code"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "code",
-                      defaultValue: route53.code,
+                      defaultValue: route54.code,
                       style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
@@ -10348,7 +10444,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       children: "Truck"
                     }), /* @__PURE__ */ jsxs("select", {
                       name: "truckId",
-                      defaultValue: route53.truckId || "",
+                      defaultValue: route54.truckId || "",
                       style: styles$b.input,
                       children: [/* @__PURE__ */ jsx("option", {
                         value: "",
@@ -10365,7 +10461,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                     }), /* @__PURE__ */ jsx("input", {
                       type: "color",
                       name: "color",
-                      defaultValue: route53.color,
+                      defaultValue: route54.color,
                       style: styles$b.colorInput
                     })]
                   })]
@@ -10380,7 +10476,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       children: "Driver"
                     }), /* @__PURE__ */ jsxs("select", {
                       name: "driverId",
-                      defaultValue: route53.driverId || "",
+                      defaultValue: route54.driverId || "",
                       style: styles$b.input,
                       children: [/* @__PURE__ */ jsx("option", {
                         value: "",
@@ -10396,7 +10492,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       children: "Helper"
                     }), /* @__PURE__ */ jsxs("select", {
                       name: "helperId",
-                      defaultValue: route53.helperId || "",
+                      defaultValue: route54.helperId || "",
                       style: styles$b.input,
                       children: [/* @__PURE__ */ jsx("option", {
                         value: "",
@@ -10412,7 +10508,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       children: "Shift"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "shift",
-                      defaultValue: route53.shift,
+                      defaultValue: route54.shift,
                       style: styles$b.input
                     })]
                   })]
@@ -10427,7 +10523,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       children: "Region"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "region",
-                      defaultValue: route53.region,
+                      defaultValue: route54.region,
                       style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
@@ -10459,14 +10555,14 @@ How many tickets should I split it into?`, String(minimumSplits));
                 }), /* @__PURE__ */ jsxs("div", {
                   style: styles$b.routeStats,
                   children: [/* @__PURE__ */ jsx("span", {
-                    children: route53.shift
+                    children: route54.shift
                   }), /* @__PURE__ */ jsxs("span", {
-                    children: [route53.stops, " stops"]
+                    children: [route54.stops, " stops"]
                   }), /* @__PURE__ */ jsx("span", {
-                    children: route53.loadSummary || "No assigned loads yet"
+                    children: route54.loadSummary || "No assigned loads yet"
                   })]
                 })]
-              }, route53.id)), searchedRoutes.length === 0 ? /* @__PURE__ */ jsx("div", {
+              }, route54.id)), searchedRoutes.length === 0 ? /* @__PURE__ */ jsx("div", {
                 style: styles$b.emptySearch,
                 children: "No routes matched that search."
               }) : null]
@@ -10623,7 +10719,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                 },
                 children: [searchedActiveOrders.map((order) => {
                   const active = order.id === (selectedOrder == null ? void 0 : selectedOrder.id);
-                  const route53 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
+                  const route54 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
                   return /* @__PURE__ */ jsx("div", {
                     draggable: canManageDispatch,
                     onDragStart: (event) => startOrderDrag(order.id, event),
@@ -10684,7 +10780,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                           children: [/* @__PURE__ */ jsx("span", {
                             children: order.requestedWindow
                           }), /* @__PURE__ */ jsx("span", {
-                            children: route53 ? `${route53.truck} / ${getDeliveryStatusLabel(order.deliveryStatus)}` : "Unassigned"
+                            children: route54 ? `${route54.truck} / ${getDeliveryStatusLabel(order.deliveryStatus)}` : "Unassigned"
                           })]
                         })]
                       }), /* @__PURE__ */ jsx("a", {
@@ -10728,24 +10824,24 @@ How many tickets should I split it into?`, String(minimumSplits));
                   display: "grid",
                   gap: 12
                 },
-                children: [searchedRoutes.map((route53) => /* @__PURE__ */ jsxs("div", {
+                children: [searchedRoutes.map((route54) => /* @__PURE__ */ jsxs("div", {
                   onDragEnter: (event) => {
                     if (!draggedOrderId || !canManageDispatch) return;
                     event.preventDefault();
                     setDragOverQueue(false);
-                    setDragOverRouteId(route53.id);
+                    setDragOverRouteId(route54.id);
                   },
                   onDragOver: (event) => {
                     if (!draggedOrderId || !canManageDispatch) return;
                     event.preventDefault();
                     event.dataTransfer.dropEffect = "move";
                     setDragOverQueue(false);
-                    setDragOverRouteId(route53.id);
+                    setDragOverRouteId(route54.id);
                   },
-                  onDrop: (event) => assignDraggedOrder(route53.id, event),
+                  onDrop: (event) => assignDraggedOrder(route54.id, event),
                   style: {
-                    ...styles$b.routeCard(route53.color),
-                    ...dragOverRouteId === route53.id ? styles$b.routeDropActive : {}
+                    ...styles$b.routeCard(route54.color),
+                    ...dragOverRouteId === route54.id ? styles$b.routeDropActive : {}
                   },
                   children: [/* @__PURE__ */ jsxs("div", {
                     style: {
@@ -10762,13 +10858,13 @@ How many tickets should I split it into?`, String(minimumSplits));
                           gap: 10
                         },
                         children: [/* @__PURE__ */ jsx("div", {
-                          style: styles$b.routeColor(route53.color)
+                          style: styles$b.routeColor(route54.color)
                         }), /* @__PURE__ */ jsx("div", {
                           style: styles$b.routeCode,
-                          children: route53.code
+                          children: route54.code
                         }), /* @__PURE__ */ jsx("div", {
                           style: styles$b.routeRegion,
-                          children: route53.region
+                          children: route54.region
                         })]
                       }), /* @__PURE__ */ jsxs("div", {
                         style: {
@@ -10776,20 +10872,20 @@ How many tickets should I split it into?`, String(minimumSplits));
                           color: "#e2e8f0",
                           fontWeight: 700
                         },
-                        children: [route53.truck, " · ", route53.driver, " / ", route53.helper]
+                        children: [route54.truck, " · ", route54.driver, " / ", route54.helper]
                       })]
                     }), /* @__PURE__ */ jsx("a", {
-                      href: `${driverHref}?route=${encodeURIComponent(route53.id)}`,
+                      href: `${driverHref}?route=${encodeURIComponent(route54.id)}`,
                       draggable: false,
                       style: styles$b.assignButton,
                       children: "Driver View"
                     }), /* @__PURE__ */ jsxs("div", {
                       style: styles$b.routeTimePill,
-                      children: ["Total Time: ", formatTravelMinutes$3(route53.totalTravelMinutes)]
-                    }), selectedOrder ? selectedOrder.assignedRouteId === route53.id ? /* @__PURE__ */ jsxs(Form, {
+                      children: ["Total Time: ", formatTravelMinutes$3(route54.totalTravelMinutes)]
+                    }), selectedOrder ? selectedOrder.assignedRouteId === route54.id ? /* @__PURE__ */ jsxs(Form, {
                       method: "post",
                       style: styles$b.assignForm,
-                      onSubmit: (event) => prepareAssignmentSubmit(selectedOrder, route53.id, event.currentTarget, event),
+                      onSubmit: (event) => prepareAssignmentSubmit(selectedOrder, route54.id, event.currentTarget, event),
                       children: [/* @__PURE__ */ jsx("input", {
                         type: "hidden",
                         name: "intent",
@@ -10806,7 +10902,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                     }) : /* @__PURE__ */ jsxs(Form, {
                       method: "post",
                       style: styles$b.assignForm,
-                      onSubmit: (event) => prepareAssignmentSubmit(selectedOrder, route53.id, event.currentTarget, event),
+                      onSubmit: (event) => prepareAssignmentSubmit(selectedOrder, route54.id, event.currentTarget, event),
                       children: [/* @__PURE__ */ jsx("input", {
                         type: "hidden",
                         name: "intent",
@@ -10818,7 +10914,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       }), /* @__PURE__ */ jsx("input", {
                         type: "hidden",
                         name: "routeId",
-                        value: route53.id
+                        value: route54.id
                       }), /* @__PURE__ */ jsx("input", {
                         name: "eta",
                         placeholder: "ETA",
@@ -10831,22 +10927,22 @@ How many tickets should I split it into?`, String(minimumSplits));
                       })]
                     }) : null]
                   }), draggedOrderId && canManageDispatch ? /* @__PURE__ */ jsxs("div", {
-                    style: dragOverRouteId === route53.id ? styles$b.dropHintActive : styles$b.dropHint,
-                    children: ["Drop here to assign to ", route53.code]
+                    style: dragOverRouteId === route54.id ? styles$b.dropHintActive : styles$b.dropHint,
+                    children: ["Drop here to assign to ", route54.code]
                   }) : null, /* @__PURE__ */ jsxs("div", {
                     style: styles$b.routeStats,
                     children: [/* @__PURE__ */ jsx("span", {
-                      children: route53.shift
+                      children: route54.shift
                     }), /* @__PURE__ */ jsxs("span", {
-                      children: [route53.stops, " stops"]
+                      children: [route54.stops, " stops"]
                     }), /* @__PURE__ */ jsxs("span", {
-                      children: ["Total route: ", formatTravelMinutes$3(route53.totalTravelMinutes)]
+                      children: ["Total route: ", formatTravelMinutes$3(route54.totalTravelMinutes)]
                     }), /* @__PURE__ */ jsx("span", {
-                      children: route53.loadSummary || "No assigned loads yet"
+                      children: route54.loadSummary || "No assigned loads yet"
                     })]
-                  }), route53.orders.length ? /* @__PURE__ */ jsx("div", {
+                  }), route54.orders.length ? /* @__PURE__ */ jsx("div", {
                     style: styles$b.stopList,
-                    children: route53.orders.map((order, index) => /* @__PURE__ */ jsxs("div", {
+                    children: route54.orders.map((order, index) => /* @__PURE__ */ jsxs("div", {
                       draggable: canManageDispatch,
                       onDragStart: (event) => startOrderDrag(order.id, event),
                       onDragEnd: clearDragState,
@@ -10887,7 +10983,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                           }), /* @__PURE__ */ jsx("input", {
                             type: "hidden",
                             name: "routeId",
-                            value: route53.id
+                            value: route54.id
                           }), /* @__PURE__ */ jsx("input", {
                             type: "hidden",
                             name: "orderId",
@@ -10907,9 +11003,9 @@ How many tickets should I split it into?`, String(minimumSplits));
                             value: "down",
                             style: {
                               ...styles$b.stopDetailButton,
-                              ...index === route53.orders.length - 1 ? styles$b.disabledStopButton : null
+                              ...index === route54.orders.length - 1 ? styles$b.disabledStopButton : null
                             },
-                            disabled: index === route53.orders.length - 1,
+                            disabled: index === route54.orders.length - 1,
                             title: "Move stop down",
                             children: "Down"
                           })]
@@ -10959,7 +11055,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       })]
                     }, order.id))
                   }) : null]
-                }, route53.id)), searchedRoutes.length === 0 ? /* @__PURE__ */ jsx("div", {
+                }, route54.id)), searchedRoutes.length === 0 ? /* @__PURE__ */ jsx("div", {
                   style: styles$b.emptySearch,
                   children: "No routes matched that search."
                 }) : null]
@@ -11148,10 +11244,10 @@ How many tickets should I split it into?`, String(minimumSplits));
                             value: "",
                             disabled: true,
                             children: "Select route"
-                          }), routes2.map((route53) => /* @__PURE__ */ jsxs("option", {
-                            value: route53.id,
-                            children: [route53.code, " - ", route53.truck, " - ", route53.driver]
-                          }, route53.id))]
+                          }), routes2.map((route54) => /* @__PURE__ */ jsxs("option", {
+                            value: route54.id,
+                            children: [route54.code, " - ", route54.truck, " - ", route54.driver]
+                          }, route54.id))]
                         })]
                       }), /* @__PURE__ */ jsxs("div", {
                         children: [/* @__PURE__ */ jsx("label", {
@@ -12447,12 +12543,12 @@ const styles$b = {
 };
 const route4 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$o,
+  action: action$p,
   default: dispatch,
-  loader: loader$l
+  loader: loader$m
 }, Symbol.toStringTag, { value: "Module" }));
-const loader$k = loader$l;
-const action$n = action$o;
+const loader$l = loader$m;
+const action$o = action$p;
 function getOrderNumber$5(order) {
   return order.orderNumber ? `#${order.orderNumber}` : order.id;
 }
@@ -12694,7 +12790,7 @@ function ClassicMapFallback({
   routes: routes2
 }) {
   const colors = ["#d93025", "#f97316", "#2563eb", "#0f9f9a", "#9333ea"];
-  const activeRoutes = useMemo(() => routes2.filter((route53) => route53.orders.length), [routes2]);
+  const activeRoutes = useMemo(() => routes2.filter((route54) => route54.orders.length), [routes2]);
   return /* @__PURE__ */ jsxs("div", {
     style: styles$a.mapCanvas,
     children: [/* @__PURE__ */ jsxs("div", {
@@ -12754,8 +12850,8 @@ function ClassicMapFallback({
         strokeWidth: "10",
         fill: "none",
         opacity: "0.75"
-      }), activeRoutes.slice(0, 5).map((route53, routeIndex) => {
-        const color = route53.color || colors[routeIndex % colors.length];
+      }), activeRoutes.slice(0, 5).map((route54, routeIndex) => {
+        const color = route54.color || colors[routeIndex % colors.length];
         const startY = 88 + routeIndex * 60;
         const path = `M ${78 + routeIndex * 12} ${startY} C ${180 + routeIndex * 22} ${45 + routeIndex * 52}, ${260 + routeIndex * 18} ${220 - routeIndex * 20}, ${370 + routeIndex * 28} ${160 + routeIndex * 44} S ${570 - routeIndex * 25} ${280 - routeIndex * 18}, ${650 - routeIndex * 18} ${120 + routeIndex * 56}`;
         return /* @__PURE__ */ jsxs("g", {
@@ -12766,7 +12862,7 @@ function ClassicMapFallback({
             fill: "none",
             strokeLinecap: "round",
             strokeLinejoin: "round"
-          }), route53.orders.slice(0, 8).map((order, stopIndex) => {
+          }), route54.orders.slice(0, 8).map((order, stopIndex) => {
             const x = 90 + stopIndex * 72 + routeIndex * 10;
             const y = startY + Math.sin(stopIndex + routeIndex) * 54 + stopIndex * 18;
             return /* @__PURE__ */ jsxs("g", {
@@ -12788,19 +12884,19 @@ function ClassicMapFallback({
               })]
             }, order.id);
           })]
-        }, route53.id);
+        }, route54.id);
       })]
     }), /* @__PURE__ */ jsx("div", {
       style: styles$a.mapLegend,
-      children: activeRoutes.slice(0, 5).map((route53) => /* @__PURE__ */ jsxs("span", {
+      children: activeRoutes.slice(0, 5).map((route54) => /* @__PURE__ */ jsxs("span", {
         style: styles$a.legendItem,
         children: [/* @__PURE__ */ jsx("span", {
           style: {
             ...styles$a.legendDot,
-            background: route53.color
+            background: route54.color
           }
-        }), route53.code, " ", route53.truck || "Unassigned"]
-      }, route53.id))
+        }), route54.code, " ", route54.truck || "Unassigned"]
+      }, route54.id))
     })]
   });
 }
@@ -12817,25 +12913,25 @@ function ClassicMap({
   const [status, setStatus] = useState("");
   const [useFallback, setUseFallback] = useState(false);
   const [hiddenRouteIds, setHiddenRouteIds] = useState([]);
-  const activeRoutes = useMemo(() => routes2.filter((route53) => route53.orders.length), [routes2]);
-  const visibleRouteIds = useMemo(() => new Set(activeRoutes.map((route53) => route53.id).filter((id) => !hiddenRouteIds.includes(id))), [activeRoutes, hiddenRouteIds]);
-  const routeColorById = useMemo(() => new Map(routes2.map((route53) => [route53.id, route53.color || "#f97316"])), [routes2]);
-  const routePlan = useMemo(() => routes2.filter((route53) => route53.orders.length && visibleRouteIds.has(route53.id)).map((route53) => ({
-    id: route53.id,
-    code: route53.code,
-    truck: route53.truck,
-    color: route53.color || "#f97316",
-    stops: route53.orders.map((order) => ({
+  const activeRoutes = useMemo(() => routes2.filter((route54) => route54.orders.length), [routes2]);
+  const visibleRouteIds = useMemo(() => new Set(activeRoutes.map((route54) => route54.id).filter((id) => !hiddenRouteIds.includes(id))), [activeRoutes, hiddenRouteIds]);
+  const routeColorById = useMemo(() => new Map(routes2.map((route54) => [route54.id, route54.color || "#f97316"])), [routes2]);
+  const routePlan = useMemo(() => routes2.filter((route54) => route54.orders.length && visibleRouteIds.has(route54.id)).map((route54) => ({
+    id: route54.id,
+    code: route54.code,
+    truck: route54.truck,
+    color: route54.color || "#f97316",
+    stops: route54.orders.map((order) => ({
       address: getOrderAddress$4(order),
       customer: order.customer,
       label: getOrderNumber$5(order)
     })).filter((stop) => stop.address)
-  })).filter((route53) => route53.stops.length), [routes2, visibleRouteIds]);
-  const routePlanKey = useMemo(() => JSON.stringify(routePlan.map((route53) => ({
-    id: route53.id,
-    color: route53.color,
-    stops: route53.stops.map((stop) => stop.address),
-    hidden: hiddenRouteIds.includes(route53.id)
+  })).filter((route54) => route54.stops.length), [routes2, visibleRouteIds]);
+  const routePlanKey = useMemo(() => JSON.stringify(routePlan.map((route54) => ({
+    id: route54.id,
+    color: route54.color,
+    stops: route54.stops.map((stop) => stop.address),
+    hidden: hiddenRouteIds.includes(route54.id)
   }))), [routePlan, hiddenRouteIds]);
   function toggleRoute(routeId) {
     setHiddenRouteIds((current) => current.includes(routeId) ? current.filter((id) => id !== routeId) : [...current, routeId]);
@@ -12873,15 +12969,15 @@ function ClassicMap({
         const bounds = new google.maps.LatLngBounds();
         const directionsService = new google.maps.DirectionsService();
         let yardMarkerAdded = false;
-        for (const route53 of routePlan.slice(0, 6)) {
-          for (const [stopIndex, stop] of route53.stops.entries()) {
+        for (const route54 of routePlan.slice(0, 6)) {
+          for (const [stopIndex, stop] of route54.stops.entries()) {
             await new Promise((resolve) => {
               const renderer = new google.maps.DirectionsRenderer({
                 map,
                 preserveViewport: true,
                 suppressMarkers: true,
                 polylineOptions: {
-                  strokeColor: route53.color,
+                  strokeColor: route54.color,
                   strokeOpacity: 0.78,
                   strokeWeight: 5
                 }
@@ -12932,7 +13028,7 @@ function ClassicMap({
                   }
                   if (returnLeg == null ? void 0 : returnLeg.end_location) bounds.extend(returnLeg.end_location);
                 } else {
-                  console.warn("[CLASSIC MAP ROUND TRIP ERROR]", route53.code, stop.address, routeStatus);
+                  console.warn("[CLASSIC MAP ROUND TRIP ERROR]", route54.code, stop.address, routeStatus);
                 }
                 resolve();
               });
@@ -13019,7 +13115,7 @@ function ClassicMap({
     return /* @__PURE__ */ jsxs("div", {
       style: styles$a.mapCanvas,
       children: [/* @__PURE__ */ jsx(ClassicMapFallback, {
-        routes: routes2.filter((route53) => !hiddenRouteIds.includes(route53.id))
+        routes: routes2.filter((route54) => !hiddenRouteIds.includes(route54.id))
       }), status ? /* @__PURE__ */ jsx("div", {
         style: styles$a.classicMapStatus,
         children: status
@@ -13036,18 +13132,18 @@ function ClassicMap({
       children: status
     }) : null, /* @__PURE__ */ jsxs("div", {
       style: styles$a.mapLegend,
-      children: [activeRoutes.slice(0, 6).map((route53) => /* @__PURE__ */ jsxs("button", {
+      children: [activeRoutes.slice(0, 6).map((route54) => /* @__PURE__ */ jsxs("button", {
         type: "button",
-        style: hiddenRouteIds.includes(route53.id) ? styles$a.legendItemOff : styles$a.legendItem,
-        onClick: () => toggleRoute(route53.id),
-        title: `${hiddenRouteIds.includes(route53.id) ? "Show" : "Hide"} ${route53.code}`,
+        style: hiddenRouteIds.includes(route54.id) ? styles$a.legendItemOff : styles$a.legendItem,
+        onClick: () => toggleRoute(route54.id),
+        title: `${hiddenRouteIds.includes(route54.id) ? "Show" : "Hide"} ${route54.code}`,
         children: [/* @__PURE__ */ jsx("span", {
           style: {
             ...styles$a.legendDot,
-            background: route53.color
+            background: route54.color
           }
-        }), route53.code, " ", route53.truck || "Unassigned"]
-      }, route53.id)), driverLocations.length ? /* @__PURE__ */ jsxs("span", {
+        }), route54.code, " ", route54.truck || "Unassigned"]
+      }, route54.id)), driverLocations.length ? /* @__PURE__ */ jsxs("span", {
         style: styles$a.driverLegendItem,
         children: [driverLocations.slice(0, 4).map((location) => /* @__PURE__ */ jsx("span", {
           style: {
@@ -13215,31 +13311,31 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
       window.clearInterval(timer);
     };
   }, []);
-  const routes2 = useMemo(() => baseRoutes.map((route53) => {
-    const routeOrders = orders.filter((order) => order.assignedRouteId === route53.id && isActiveBoardOrder(order)).sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999));
+  const routes2 = useMemo(() => baseRoutes.map((route54) => {
+    const routeOrders = orders.filter((order) => order.assignedRouteId === route54.id && isActiveBoardOrder(order)).sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999));
     return {
-      ...route53,
+      ...route54,
       orders: routeOrders,
       weight: routeOrders.length,
       totalMinutes: routeOrders.reduce((sum, order) => sum + getTravelMinutes$4(order), 0)
     };
   }), [baseRoutes, orders]);
-  const sortedRoutes = useMemo(() => sortItems(routes2, tableSorts.routes, (route53, key) => {
+  const sortedRoutes = useMemo(() => sortItems(routes2, tableSorts.routes, (route54, key) => {
     var _a3, _b2, _c, _d;
-    if (key === "code") return route53.code;
-    if (key === "driver") return `${route53.truck || ""} ${route53.driver || ""}`;
-    if (key === "status") return route53.orders.length ? "Active" : "Open";
-    if (key === "weight") return route53.weight;
-    if (key === "start") return ((_b2 = (_a3 = route53.shift) == null ? void 0 : _a3.split("-")[0]) == null ? void 0 : _b2.trim()) || "6:00 am";
-    if (key === "finish") return ((_d = (_c = route53.shift) == null ? void 0 : _c.split("-")[1]) == null ? void 0 : _d.trim()) || formatTime$1(route53.totalMinutes);
-    if (key === "distance") return route53.totalMinutes;
+    if (key === "code") return route54.code;
+    if (key === "driver") return `${route54.truck || ""} ${route54.driver || ""}`;
+    if (key === "status") return route54.orders.length ? "Active" : "Open";
+    if (key === "weight") return route54.weight;
+    if (key === "start") return ((_b2 = (_a3 = route54.shift) == null ? void 0 : _a3.split("-")[0]) == null ? void 0 : _b2.trim()) || "6:00 am";
+    if (key === "finish") return ((_d = (_c = route54.shift) == null ? void 0 : _c.split("-")[1]) == null ? void 0 : _d.trim()) || formatTime$1(route54.totalMinutes);
+    if (key === "distance") return route54.totalMinutes;
     return "";
   }), [routes2, tableSorts.routes]);
-  const selectedRoute = sortedRoutes.find((route53) => route53.id === selectedRouteId) || sortedRoutes[0] || null;
+  const selectedRoute = sortedRoutes.find((route54) => route54.id === selectedRouteId) || sortedRoutes[0] || null;
   const selectedOrder = orders.find((order) => order.id === selectedOrderId) || null;
   useEffect(() => {
     if (!sortedRoutes.length) return;
-    if (selectedRouteId && sortedRoutes.some((route53) => route53.id === selectedRouteId)) return;
+    if (selectedRouteId && sortedRoutes.some((route54) => route54.id === selectedRouteId)) return;
     setSelectedRouteId(sortedRoutes[0].id);
   }, [selectedRouteId, sortedRoutes]);
   useEffect(() => {
@@ -13454,26 +13550,26 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
     var _a3;
     return ((_a3 = classicColumnOptions[table].find((option) => option.key === key)) == null ? void 0 : _a3.label) || key;
   }
-  function routeColumnValue(route53, key) {
+  function routeColumnValue(route54, key) {
     var _a3, _b2, _c, _d;
     if (key === "code") {
       return /* @__PURE__ */ jsx("button", {
         type: "button",
-        style: styles$a.rowRouteButton((selectedRoute == null ? void 0 : selectedRoute.id) === route53.id),
+        style: styles$a.rowRouteButton((selectedRoute == null ? void 0 : selectedRoute.id) === route54.id),
         onClick: () => {
-          setSelectedRouteId(route53.id);
+          setSelectedRouteId(route54.id);
           setRouteDrawerOpen(false);
           setOrderDrawerOpen(false);
         },
-        children: route53.code
+        children: route54.code
       });
     }
-    if (key === "driver") return `${route53.truck || "No truck"} (${route53.driver || "No driver"})`;
-    if (key === "status") return route53.orders.length ? "Active" : "Open";
-    if (key === "weight") return route53.orders.length || "-";
-    if (key === "start") return ((_b2 = (_a3 = route53.shift) == null ? void 0 : _a3.split("-")[0]) == null ? void 0 : _b2.trim()) || "6:00 am";
-    if (key === "finish") return ((_d = (_c = route53.shift) == null ? void 0 : _c.split("-")[1]) == null ? void 0 : _d.trim()) || formatTime$1(route53.totalMinutes);
-    if (key === "distance") return formatTime$1(route53.totalMinutes);
+    if (key === "driver") return `${route54.truck || "No truck"} (${route54.driver || "No driver"})`;
+    if (key === "status") return route54.orders.length ? "Active" : "Open";
+    if (key === "weight") return route54.orders.length || "-";
+    if (key === "start") return ((_b2 = (_a3 = route54.shift) == null ? void 0 : _a3.split("-")[0]) == null ? void 0 : _b2.trim()) || "6:00 am";
+    if (key === "finish") return ((_d = (_c = route54.shift) == null ? void 0 : _c.split("-")[1]) == null ? void 0 : _d.trim()) || formatTime$1(route54.totalMinutes);
+    if (key === "distance") return formatTime$1(route54.totalMinutes);
     return "-";
   }
   function orderColumnValue(order, key, index = 0) {
@@ -13548,18 +13644,18 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
     });
     setDraggedOrderId("");
   }
-  function getRouteTruck(route53) {
-    if (!route53) return null;
-    return trucks.find((truck) => truck.id === route53.truckId) || trucks.find((truck) => truck.label === route53.truck) || null;
+  function getRouteTruck(route54) {
+    if (!route54) return null;
+    return trucks.find((truck) => truck.id === route54.truckId) || trucks.find((truck) => truck.label === route54.truck) || null;
   }
-  function getAssignmentSplitCount(order, route53) {
-    if (!order || !route53 || !/yards?/i.test(order.unit)) return "";
-    const truck = getRouteTruck(route53);
+  function getAssignmentSplitCount(order, route54) {
+    if (!order || !route54 || !/yards?/i.test(order.unit)) return "";
+    const truck = getRouteTruck(route54);
     const capacity = Number((truck == null ? void 0 : truck.yards) || 30);
     const quantity = Number(order.quantity || 0);
     if (!quantity || !capacity || quantity <= capacity) return "";
     const minimumSplits = Math.ceil(quantity / capacity);
-    const routeLabel = `${route53.code}${(truck == null ? void 0 : truck.label) ? ` / ${truck.label}` : ""}`;
+    const routeLabel = `${route54.code}${(truck == null ? void 0 : truck.label) ? ` / ${truck.label}` : ""}`;
     const answer = window.prompt(`${getOrderNumber$5(order)} is ${quantity} yards, which is over the ${capacity} yard truck limit for ${routeLabel}.
 
 How many tickets should I split it into?`, String(minimumSplits));
@@ -13572,8 +13668,8 @@ How many tickets should I split it into?`, String(minimumSplits));
     return String(splitCount);
   }
   function prepareAssignmentSubmit(order, routeId, form, event) {
-    const route53 = routes2.find((entry2) => entry2.id === routeId);
-    const splitCount = getAssignmentSplitCount(order, route53);
+    const route54 = routes2.find((entry2) => entry2.id === routeId);
+    const splitCount = getAssignmentSplitCount(order, route54);
     if (splitCount === null) {
       event.preventDefault();
       return;
@@ -13858,16 +13954,16 @@ How many tickets should I split it into?`, String(minimumSplits));
                   }, key)), /* @__PURE__ */ jsx("th", {})]
                 })
               }), /* @__PURE__ */ jsxs("tbody", {
-                children: [sortedRoutes.map((route53) => /* @__PURE__ */ jsxs("tr", {
+                children: [sortedRoutes.map((route54) => /* @__PURE__ */ jsxs("tr", {
                   children: [/* @__PURE__ */ jsx("td", {
                     children: /* @__PURE__ */ jsx("span", {
                       style: {
                         ...styles$a.colorBar,
-                        background: route53.color || "#f97316"
+                        background: route54.color || "#f97316"
                       }
                     })
                   }), routeColumnKeys.map((key) => /* @__PURE__ */ jsx("td", {
-                    children: routeColumnValue(route53, key)
+                    children: routeColumnValue(route54, key)
                   }, key)), /* @__PURE__ */ jsx("td", {
                     children: /* @__PURE__ */ jsxs(Form, {
                       method: "post",
@@ -13875,14 +13971,14 @@ How many tickets should I split it into?`, String(minimumSplits));
                       children: [/* @__PURE__ */ jsx("input", {
                         type: "hidden",
                         name: "routeId",
-                        value: route53.id
+                        value: route54.id
                       }), /* @__PURE__ */ jsx("button", {
                         name: "intent",
                         value: "delete-route",
                         style: styles$a.iconButton,
                         title: "Delete route",
                         onClick: (event) => {
-                          if (!window.confirm(`Delete route ${route53.code}? Active orders must be moved first.`)) {
+                          if (!window.confirm(`Delete route ${route54.code}? Active orders must be moved first.`)) {
                             event.preventDefault();
                           }
                         },
@@ -13890,7 +13986,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       })]
                     })
                   })]
-                }, route53.id)), !routes2.length ? /* @__PURE__ */ jsx("tr", {
+                }, route54.id)), !routes2.length ? /* @__PURE__ */ jsx("tr", {
                   children: /* @__PURE__ */ jsx("td", {
                     colSpan: routeColumnKeys.length + 2,
                     style: styles$a.emptyCell,
@@ -13969,6 +14065,21 @@ How many tickets should I split it into?`, String(minimumSplits));
                           },
                           disabled: index === sortedSiteOrders.length - 1,
                           children: "Down"
+                        })]
+                      }), /* @__PURE__ */ jsxs(Form, {
+                        method: "post",
+                        children: [/* @__PURE__ */ jsx("input", {
+                          type: "hidden",
+                          name: "intent",
+                          value: "notify-loader"
+                        }), /* @__PURE__ */ jsx("input", {
+                          type: "hidden",
+                          name: "orderId",
+                          value: order.id
+                        }), /* @__PURE__ */ jsx("button", {
+                          style: styles$a.linkButton,
+                          title: "Tell the loader this is the next load",
+                          children: "Load Next"
                         })]
                       }), /* @__PURE__ */ jsxs(Form, {
                         method: "post",
@@ -14100,10 +14211,10 @@ How many tickets should I split it into?`, String(minimumSplits));
                         children: [/* @__PURE__ */ jsx("option", {
                           value: "",
                           children: "Route"
-                        }), routes2.map((route53) => /* @__PURE__ */ jsx("option", {
-                          value: route53.id,
-                          children: route53.code
-                        }, route53.id))]
+                        }), routes2.map((route54) => /* @__PURE__ */ jsx("option", {
+                          value: route54.id,
+                          children: route54.code
+                        }, route54.id))]
                       }), /* @__PURE__ */ jsx("button", {
                         style: styles$a.assignMini,
                         children: "Assign"
@@ -14344,7 +14455,7 @@ How many tickets should I split it into?`, String(minimumSplits));
           }), /* @__PURE__ */ jsx("dt", {
             children: "Route"
           }), /* @__PURE__ */ jsx("dd", {
-            children: ((_b = routes2.find((route53) => route53.id === selectedOrder.assignedRouteId)) == null ? void 0 : _b.code) || "Unassigned"
+            children: ((_b = routes2.find((route54) => route54.id === selectedOrder.assignedRouteId)) == null ? void 0 : _b.code) || "Unassigned"
           }), /* @__PURE__ */ jsx("dt", {
             children: "Travel"
           }), /* @__PURE__ */ jsx("dd", {
@@ -15101,12 +15212,12 @@ const styles$a = {
 };
 const route5 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$n,
+  action: action$o,
   default: classic,
-  loader: loader$k
+  loader: loader$l
 }, Symbol.toStringTag, { value: "Module" }));
-const loader$j = loader$l;
-const action$m = action$o;
+const loader$k = loader$m;
+const action$n = action$p;
 const MONITOR_VIEWPORT_KEY = "dispatchMonitorMapViewport";
 const MONITOR_HIDDEN_ROUTES_KEY = "dispatchMonitorHiddenRoutes";
 const MONITOR_SELECTED_DATE_KEY = "dispatchMonitorSelectedDate";
@@ -15224,15 +15335,15 @@ function MonitorMap({
   const routeObjectsRef = useRef([]);
   const driverMarkersRef = useRef([]);
   const [status, setStatus] = useState("");
-  const visibleRouteIds = useMemo(() => new Set(routes2.map((route53) => route53.id).filter((id) => !hiddenRouteIds.includes(id))), [routes2, hiddenRouteIds]);
-  const routeColorById = useMemo(() => new Map(routes2.map((route53) => [route53.id, route53.color || "#f97316"])), [routes2]);
-  const routePlan = useMemo(() => routes2.filter((route53) => route53.orders.length && visibleRouteIds.has(route53.id)).map((route53) => {
-    const orders = filterByDate ? route53.orders.filter((order) => dateKey$4(parseRequestedDate$4(order.requestedWindow)) === selectedDateKey) : route53.orders;
+  const visibleRouteIds = useMemo(() => new Set(routes2.map((route54) => route54.id).filter((id) => !hiddenRouteIds.includes(id))), [routes2, hiddenRouteIds]);
+  const routeColorById = useMemo(() => new Map(routes2.map((route54) => [route54.id, route54.color || "#f97316"])), [routes2]);
+  const routePlan = useMemo(() => routes2.filter((route54) => route54.orders.length && visibleRouteIds.has(route54.id)).map((route54) => {
+    const orders = filterByDate ? route54.orders.filter((order) => dateKey$4(parseRequestedDate$4(order.requestedWindow)) === selectedDateKey) : route54.orders;
     return {
-      id: route53.id,
-      code: route53.code,
-      truck: route53.truck,
-      color: route53.color || "#f97316",
+      id: route54.id,
+      code: route54.code,
+      truck: route54.truck,
+      color: route54.color || "#f97316",
       stops: orders.map((order) => ({
         address: getOrderAddress$3(order),
         customer: order.customer,
@@ -15240,11 +15351,11 @@ function MonitorMap({
         load: getLoadLabel$3(order)
       })).filter((stop) => stop.address)
     };
-  }).filter((route53) => route53.stops.length), [filterByDate, routes2, selectedDateKey, visibleRouteIds]);
-  const routePlanKey = useMemo(() => JSON.stringify(routePlan.map((route53) => ({
-    id: route53.id,
-    color: route53.color,
-    stops: route53.stops.map((stop) => stop.address)
+  }).filter((route54) => route54.stops.length), [filterByDate, routes2, selectedDateKey, visibleRouteIds]);
+  const routePlanKey = useMemo(() => JSON.stringify(routePlan.map((route54) => ({
+    id: route54.id,
+    color: route54.color,
+    stops: route54.stops.map((stop) => stop.address)
   }))), [routePlan]);
   useEffect(() => {
     let cancelled = false;
@@ -15293,15 +15404,15 @@ function MonitorMap({
         const bounds = new google.maps.LatLngBounds();
         const directionsService = new google.maps.DirectionsService();
         let yardMarkerAdded = false;
-        for (const route53 of routePlan.slice(0, 8)) {
-          for (const [stopIndex, stop] of route53.stops.entries()) {
+        for (const route54 of routePlan.slice(0, 8)) {
+          for (const [stopIndex, stop] of route54.stops.entries()) {
             await new Promise((resolve) => {
               const renderer = new google.maps.DirectionsRenderer({
                 map,
                 preserveViewport: true,
                 suppressMarkers: true,
                 polylineOptions: {
-                  strokeColor: route53.color,
+                  strokeColor: route54.color,
                   strokeOpacity: 0.8,
                   strokeWeight: 5
                 }
@@ -15346,13 +15457,13 @@ function MonitorMap({
                       map,
                       position: outboundLeg.end_location,
                       label: String(stopIndex + 1),
-                      title: `${route53.code} ${stop.label} · ${stop.customer} · ${stop.load}`
+                      title: `${route54.code} ${stop.label} · ${stop.customer} · ${stop.load}`
                     });
                     routeObjectsRef.current.push(marker);
                   }
                   if (returnLeg == null ? void 0 : returnLeg.end_location) bounds.extend(returnLeg.end_location);
                 } else {
-                  console.warn("[MONITOR MAP ROUTE ERROR]", route53.code, stop.address, routeStatus);
+                  console.warn("[MONITOR MAP ROUTE ERROR]", route54.code, stop.address, routeStatus);
                 }
                 resolve();
               });
@@ -15504,23 +15615,23 @@ const monitor = UNSAFE_withComponentProps(function DispatchMonitorPage() {
       window.clearInterval(timer);
     };
   }, []);
-  const routes2 = useMemo(() => baseRoutes.map((route53) => {
-    const routeOrders = orders.filter((order) => order.assignedRouteId === route53.id && order.status !== "delivered" && order.deliveryStatus !== "delivered").sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999));
+  const routes2 = useMemo(() => baseRoutes.map((route54) => {
+    const routeOrders = orders.filter((order) => order.assignedRouteId === route54.id && order.status !== "delivered" && order.deliveryStatus !== "delivered").sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999));
     return {
-      ...route53,
+      ...route54,
       orders: routeOrders
     };
   }), [baseRoutes, orders]);
-  const activeRoutes = routes2.filter((route53) => route53.orders.length);
-  const visibleRouteOrders = activeRoutes.map((route53) => {
-    const routeOrders = filterByDate ? route53.orders.filter((order) => dateKey$4(parseRequestedDate$4(order.requestedWindow)) === selectedDateKey) : route53.orders;
+  const activeRoutes = routes2.filter((route54) => route54.orders.length);
+  const visibleRouteOrders = activeRoutes.map((route54) => {
+    const routeOrders = filterByDate ? route54.orders.filter((order) => dateKey$4(parseRequestedDate$4(order.requestedWindow)) === selectedDateKey) : route54.orders;
     return {
-      ...route53,
+      ...route54,
       orders: routeOrders,
       totalTravelMinutes: routeOrders.reduce((sum, order) => sum + getTravelMinutes$3(order), 0)
     };
   });
-  const visibleRouteOrderCount = visibleRouteOrders.reduce((sum, route53) => sum + route53.orders.length, 0);
+  const visibleRouteOrderCount = visibleRouteOrders.reduce((sum, route54) => sum + route54.orders.length, 0);
   function toggleNavCollapsed() {
     setNavCollapsed((current) => {
       const next = !current;
@@ -15705,25 +15816,25 @@ const monitor = UNSAFE_withComponentProps(function DispatchMonitorPage() {
           })]
         }), /* @__PURE__ */ jsxs("div", {
           style: styles$9.truckList,
-          children: [visibleRouteOrders.map((route53) => /* @__PURE__ */ jsxs("section", {
+          children: [visibleRouteOrders.map((route54) => /* @__PURE__ */ jsxs("section", {
             style: compactRoutes ? styles$9.truckCardCompact : styles$9.truckCard,
             children: [/* @__PURE__ */ jsxs("div", {
               style: compactRoutes ? styles$9.truckHeaderCompact : styles$9.truckHeader,
               children: [/* @__PURE__ */ jsx("span", {
                 style: {
                   ...styles$9.routeDot,
-                  background: route53.color || "#f97316"
+                  background: route54.color || "#f97316"
                 }
               }), /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsxs("strong", {
-                  children: [route53.code, " · ", route53.truck || "No truck"]
+                  children: [route54.code, " · ", route54.truck || "No truck"]
                 }), /* @__PURE__ */ jsxs("small", {
-                  children: [route53.driver || "No driver", " · ", route53.orders.length, " stop", route53.orders.length === 1 ? "" : "s", " · ", formatTravel(route53.totalTravelMinutes)]
+                  children: [route54.driver || "No driver", " · ", route54.orders.length, " stop", route54.orders.length === 1 ? "" : "s", " · ", formatTravel(route54.totalTravelMinutes)]
                 })]
               })]
             }), /* @__PURE__ */ jsxs("div", {
               style: compactRoutes ? styles$9.truckOrdersCompact : styles$9.truckOrders,
-              children: [route53.orders.map((order, index) => /* @__PURE__ */ jsxs(Link, {
+              children: [route54.orders.map((order, index) => /* @__PURE__ */ jsxs(Link, {
                 to: `${dispatchHref}?view=orders&order=${encodeURIComponent(order.id)}&returnTo=${encodeURIComponent(monitorHref)}`,
                 style: compactRoutes ? styles$9.orderCardCompact : styles$9.orderCard,
                 children: [/* @__PURE__ */ jsx("span", {
@@ -15743,12 +15854,12 @@ const monitor = UNSAFE_withComponentProps(function DispatchMonitorPage() {
                     })]
                   })]
                 })]
-              }, order.id)), !route53.orders.length ? /* @__PURE__ */ jsx("div", {
+              }, order.id)), !route54.orders.length ? /* @__PURE__ */ jsx("div", {
                 style: styles$9.empty,
                 children: "No loads for this filter."
               }) : null]
             })]
-          }, route53.id)), !visibleRouteOrders.length ? /* @__PURE__ */ jsx("div", {
+          }, route54.id)), !visibleRouteOrders.length ? /* @__PURE__ */ jsx("div", {
             style: styles$9.empty,
             children: "No active routes yet."
           }) : null]
@@ -15757,19 +15868,19 @@ const monitor = UNSAFE_withComponentProps(function DispatchMonitorPage() {
         style: styles$9.mapSide,
         children: [/* @__PURE__ */ jsx("div", {
           style: styles$9.routeLegend,
-          children: activeRoutes.map((route53) => {
-            const hidden = hiddenRouteIds.includes(route53.id);
+          children: activeRoutes.map((route54) => {
+            const hidden = hiddenRouteIds.includes(route54.id);
             return /* @__PURE__ */ jsxs("button", {
               type: "button",
-              onClick: () => toggleRoute(route53.id),
+              onClick: () => toggleRoute(route54.id),
               style: hidden ? styles$9.routeButtonHidden : styles$9.routeButton,
               children: [/* @__PURE__ */ jsx("span", {
                 style: {
                   ...styles$9.routeDot,
-                  background: route53.color || "#f97316"
+                  background: route54.color || "#f97316"
                 }
-              }), route53.code, " ", route53.truck || ""]
-            }, route53.id);
+              }), route54.code, " ", route54.truck || ""]
+            }, route54.id);
           })
         }), /* @__PURE__ */ jsx(MonitorMap, {
           googleMapsApiKey,
@@ -16143,11 +16254,11 @@ const styles$9 = {
 };
 const route6 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$m,
+  action: action$n,
   default: monitor,
-  loader: loader$j
+  loader: loader$k
 }, Symbol.toStringTag, { value: "Module" }));
-async function loader$i({
+async function loader$j({
   request
 }) {
   const currentUser = await requireUserPermission(request, "loader");
@@ -16159,7 +16270,7 @@ async function loader$i({
     supabaseAnonKey: process.env.SUPABASE_ANON_KEY || ""
   });
 }
-async function action$l({
+async function action$m({
   request
 }) {
   const currentUser = await requireUserPermission(request, "loader");
@@ -16199,6 +16310,9 @@ const loader_default = UNSAFE_withComponentProps(function LoaderPage() {
   const unread = notifications.filter((notification) => notification.status === "unread");
   const history = notifications.filter((notification) => notification.status === "read");
   const canUseRealtime = Boolean(loaderData.supabaseUrl && loaderData.supabaseAnonKey);
+  const [pushStatus, setPushStatus] = useState("Push alerts not enabled on this device.");
+  const [pushBusy, setPushBusy] = useState(false);
+  const pushSupported = typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
   useEffect(() => {
     if (actionData == null ? void 0 : actionData.notifications) setNotifications(actionData.notifications);
   }, [actionData]);
@@ -16244,6 +16358,54 @@ const loader_default = UNSAFE_withComponentProps(function LoaderPage() {
     }, 5e3);
   }, [notifications]);
   const connectionLabel = useMemo(() => canUseRealtime ? "Live + polling backup" : "Polling every 10 seconds", [canUseRealtime]);
+  function urlBase64ToUint8Array(value) {
+    const padding = "=".repeat((4 - value.length % 4) % 4);
+    const base64 = `${value}${padding}`.replace(/-/g, "+").replace(/_/g, "/");
+    const rawData = window.atob(base64);
+    return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+  }
+  async function enablePushAlerts() {
+    if (!pushSupported) {
+      setPushStatus("Push is not supported in this browser. On iPad, install the site to Home Screen first.");
+      return;
+    }
+    setPushBusy(true);
+    try {
+      const keyResponse = await fetch("/api/loader-push-subscription");
+      const keyResult = await keyResponse.json();
+      if (!(keyResult == null ? void 0 : keyResult.publicKey)) {
+        setPushStatus("Push is not configured yet. Add VAPID keys to the server environment.");
+        return;
+      }
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        setPushStatus("Push permission was not allowed on this device.");
+        return;
+      }
+      const registration = await navigator.serviceWorker.register("/loader-push-sw.js");
+      const existing = await registration.pushManager.getSubscription();
+      const subscription = existing || await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(keyResult.publicKey)
+      });
+      const response = await fetch("/api/loader-push-subscription", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          intent: "subscribe",
+          subscription: subscription.toJSON()
+        })
+      });
+      const result = await response.json();
+      setPushStatus((result == null ? void 0 : result.message) || "Push alerts enabled.");
+    } catch (error) {
+      setPushStatus(error instanceof Error ? error.message : "Unable to enable push alerts.");
+    } finally {
+      setPushBusy(false);
+    }
+  }
   return /* @__PURE__ */ jsx("main", {
     style: styles$8.page,
     children: /* @__PURE__ */ jsxs("section", {
@@ -16263,7 +16425,13 @@ const loader_default = UNSAFE_withComponentProps(function LoaderPage() {
           })]
         }), /* @__PURE__ */ jsxs("nav", {
           style: styles$8.nav,
-          children: [/* @__PURE__ */ jsx(Link, {
+          children: [/* @__PURE__ */ jsx("button", {
+            type: "button",
+            onClick: enablePushAlerts,
+            style: styles$8.navButton,
+            disabled: pushBusy,
+            children: pushBusy ? "Enabling..." : "Enable Push Alerts"
+          }), /* @__PURE__ */ jsx(Link, {
             to: "/classic",
             style: styles$8.navButton,
             children: "Dispatch"
@@ -16273,6 +16441,9 @@ const loader_default = UNSAFE_withComponentProps(function LoaderPage() {
             children: "Log Out"
           })]
         })]
+      }), /* @__PURE__ */ jsx("div", {
+        style: styles$8.pushStatus,
+        children: pushStatus
       }), (actionData == null ? void 0 : actionData.message) ? /* @__PURE__ */ jsx("div", {
         style: actionData.ok ? styles$8.success : styles$8.error,
         children: actionData.message
@@ -16427,7 +16598,16 @@ const styles$8 = {
     textDecoration: "none",
     border: "1px solid #334155",
     borderRadius: 999,
-    padding: "10px 14px"
+    padding: "10px 14px",
+    background: "#020617",
+    fontWeight: 900
+  },
+  pushStatus: {
+    border: "1px solid #1e293b",
+    borderRadius: 14,
+    padding: 12,
+    background: "#0f172a",
+    color: "#cbd5e1"
   },
   success: {
     background: "#052e16",
@@ -16536,12 +16716,12 @@ const styles$8 = {
 };
 const route7 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$l,
+  action: action$m,
   default: loader_default,
-  loader: loader$i
+  loader: loader$j
 }, Symbol.toStringTag, { value: "Module" }));
-const loader$h = loader$l;
-const action$k = action$o;
+const loader$i = loader$m;
+const action$l = action$p;
 const DISPATCH_NAV_COLLAPSED_KEY$1 = "dispatchNavCollapsed";
 const monthNames$1 = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 function parseRequestedDate$3(value) {
@@ -17573,12 +17753,12 @@ const styles$7 = {
 };
 const route8 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$k,
+  action: action$l,
   default: calendar,
-  loader: loader$h
+  loader: loader$i
 }, Symbol.toStringTag, { value: "Module" }));
-const loader$g = loader$l;
-const action$j = action$o;
+const loader$h = loader$m;
+const action$k = action$p;
 const DISPATCH_NAV_COLLAPSED_KEY = "dispatchNavCollapsed";
 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 function parseRequestedDate$2(value) {
@@ -18381,9 +18561,9 @@ const styles$6 = {
 };
 const route9 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$j,
+  action: action$k,
   default: allotment,
-  loader: loader$g
+  loader: loader$h
 }, Symbol.toStringTag, { value: "Module" }));
 function isAuthorized$2(request, params) {
   const expected = process.env.DISPATCH_CALENDAR_FEED_SECRET || process.env.DISPATCH_POLL_SECRET || "";
@@ -18471,7 +18651,7 @@ function shouldIncludeInCalendarFeed$1(order) {
   const status = getOrderStatus$1(order);
   return status !== "Delivered" && status !== "Cancelled";
 }
-async function loader$f({
+async function loader$g({
   request,
   params
 }) {
@@ -18514,11 +18694,11 @@ async function loader$f({
 }
 const route10 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  loader: loader$f
+  loader: loader$g
 }, Symbol.toStringTag, { value: "Module" }));
 const route11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  loader: loader$f
+  loader: loader$g
 }, Symbol.toStringTag, { value: "Module" }));
 function isAuthorized$1(request) {
   const expected = process.env.DISPATCH_CALENDAR_FEED_SECRET || process.env.DISPATCH_POLL_SECRET || "";
@@ -18598,7 +18778,7 @@ function shouldIncludeInCalendarFeed(order) {
   const status = getOrderStatus(order);
   return status !== "Delivered" && status !== "Cancelled";
 }
-async function loader$e({
+async function loader$f({
   request
 }) {
   if (!isAuthorized$1(request)) {
@@ -18654,7 +18834,7 @@ async function loader$e({
 }
 const route12 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  loader: loader$e
+  loader: loader$f
 }, Symbol.toStringTag, { value: "Module" }));
 function getDriverPath(url) {
   return url.pathname.startsWith("/app/") ? "/app/dispatch/driver" : "/dispatch/driver";
@@ -18700,10 +18880,10 @@ function getCustomerEtaText(order) {
 }
 function buildEnrouteSmsPreview({
   order,
-  route: route53
+  route: route54
 }) {
   const to = extractPhone(order.contact);
-  const body = [`Green Hills Supply: your delivery is en route and should arrive in about ${getCustomerEtaText(order)}.`, (route53 == null ? void 0 : route53.truck) ? `Truck: ${route53.truck}.` : "", "Please make sure the drop area is clear."].filter(Boolean).join(" ");
+  const body = [`Green Hills Supply: your delivery is en route and should arrive in about ${getCustomerEtaText(order)}.`, (route54 == null ? void 0 : route54.truck) ? `Truck: ${route54.truck}.` : "", "Please make sure the drop area is clear."].filter(Boolean).join(" ");
   return {
     to,
     body,
@@ -18763,7 +18943,7 @@ async function loadDriverState() {
     };
   }
 }
-async function loader$d({
+async function loader$e({
   request
 }) {
   const url = new URL(request.url);
@@ -18792,7 +18972,7 @@ async function loader$d({
     ...await loadDriverState()
   });
 }
-async function action$i({
+async function action$j({
   request
 }) {
   const form = await request.formData();
@@ -18859,7 +19039,7 @@ async function action$i({
   const now = (/* @__PURE__ */ new Date()).toISOString();
   const currentState = await loadDriverState();
   const currentOrder = currentState.orders.find((order) => order.id === orderId) || null;
-  const currentRoute = currentState.routes.find((route53) => route53.id === (routeId || (currentOrder == null ? void 0 : currentOrder.assignedRouteId))) || null;
+  const currentRoute = currentState.routes.find((route54) => route54.id === (routeId || (currentOrder == null ? void 0 : currentOrder.assignedRouteId))) || null;
   const patch = {
     deliveryStatus,
     proofName: String(form.get("proofName") || "").trim() || null,
@@ -18925,7 +19105,7 @@ const dispatchDriver = UNSAFE_withComponentProps(function DispatchDriverPage() {
   const [nowMs, setNowMs] = useState(() => Date.now());
   const searchParams = new URLSearchParams(location.search);
   const selectedRouteId = (actionData == null ? void 0 : actionData.selectedRouteId) || searchParams.get("route") || ((_a2 = routes2[0]) == null ? void 0 : _a2.id) || "";
-  const selectedRoute = routes2.find((route53) => route53.id === selectedRouteId) || routes2[0] || null;
+  const selectedRoute = routes2.find((route54) => route54.id === selectedRouteId) || routes2[0] || null;
   const routeStops = useMemo(() => selectedRoute ? orders.filter((order) => order.assignedRouteId === selectedRoute.id && order.status !== "delivered" && order.deliveryStatus !== "delivered").sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999)) : [], [orders, selectedRoute]);
   const completedCount = routeStops.filter((stop) => stop.deliveryStatus === "delivered").length;
   const visibleStopCount = routeStops.reduce((count, stop, index) => {
@@ -19028,24 +19208,24 @@ const dispatchDriver = UNSAFE_withComponentProps(function DispatchDriverPage() {
         children: actionData.message
       }) : null, /* @__PURE__ */ jsx("section", {
         style: styles$5.routePicker,
-        children: routes2.map((route53) => /* @__PURE__ */ jsxs("a", {
-          href: `${driverHref}?route=${encodeURIComponent(route53.id)}`,
+        children: routes2.map((route54) => /* @__PURE__ */ jsxs("a", {
+          href: `${driverHref}?route=${encodeURIComponent(route54.id)}`,
           style: {
             ...styles$5.routeChip,
-            borderColor: route53.id === (selectedRoute == null ? void 0 : selectedRoute.id) ? route53.color : "rgba(203, 213, 225, 0.28)",
-            background: route53.id === (selectedRoute == null ? void 0 : selectedRoute.id) ? `${route53.color}22` : "#0f172a"
+            borderColor: route54.id === (selectedRoute == null ? void 0 : selectedRoute.id) ? route54.color : "rgba(203, 213, 225, 0.28)",
+            background: route54.id === (selectedRoute == null ? void 0 : selectedRoute.id) ? `${route54.color}22` : "#0f172a"
           },
           children: [/* @__PURE__ */ jsx("span", {
             style: {
               ...styles$5.routeDot,
-              background: route53.color
+              background: route54.color
             }
           }), /* @__PURE__ */ jsx("span", {
-            children: route53.code
+            children: route54.code
           }), /* @__PURE__ */ jsx("small", {
-            children: route53.truck
+            children: route54.truck
           })]
-        }, route53.id))
+        }, route54.id))
       }), /* @__PURE__ */ jsxs("section", {
         style: styles$5.summaryGrid,
         children: [/* @__PURE__ */ jsxs("div", {
@@ -19191,7 +19371,7 @@ const dispatchDriver = UNSAFE_withComponentProps(function DispatchDriverPage() {
   });
 });
 function DriverLiveTracking({
-  route: route53,
+  route: route54,
   activeStop
 }) {
   const [trackingEnabled, setTrackingEnabled] = useState(() => {
@@ -19227,11 +19407,11 @@ function DriverLiveTracking({
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            routeId: route53.id,
+            routeId: route54.id,
             orderId: (activeStop == null ? void 0 : activeStop.id) || null,
-            driverId: route53.driverId || null,
-            driverName: route53.driver || "",
-            truck: route53.truck || route53.code,
+            driverId: route54.driverId || null,
+            driverName: route54.driver || "",
+            truck: route54.truck || route54.code,
             latitude,
             longitude,
             accuracy,
@@ -19270,7 +19450,7 @@ function DriverLiveTracking({
       cancelled = true;
       navigator.geolocation.clearWatch(watchId);
     };
-  }, [activeStop == null ? void 0 : activeStop.id, route53.code, route53.driver, route53.driverId, route53.id, route53.truck, trackingEnabled]);
+  }, [activeStop == null ? void 0 : activeStop.id, route54.code, route54.driver, route54.driverId, route54.id, route54.truck, trackingEnabled]);
   function enableTracking() {
     if (!navigator.geolocation) {
       setTrackingStatus("Live GPS is not available on this device.");
@@ -20015,9 +20195,9 @@ const styles$5 = {
 };
 const route13 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$i,
+  action: action$j,
   default: dispatchDriver,
-  loader: loader$d
+  loader: loader$e
 }, Symbol.toStringTag, { value: "Module" }));
 function getDetailPath(url) {
   return url.pathname.startsWith("/app/") ? "/app/dispatch/driver/detail" : "/dispatch/driver/detail";
@@ -20046,7 +20226,7 @@ async function loadOrder(orderId) {
   const orders = await getDispatchOrders();
   return orders.find((order) => order.id === orderId) || null;
 }
-async function loader$c({
+async function loader$d({
   request
 }) {
   const url = new URL(request.url);
@@ -20314,7 +20494,7 @@ const styles$4 = {
 const route14 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: dispatchDriverDetail,
-  loader: loader$c
+  loader: loader$d
 }, Symbol.toStringTag, { value: "Module" }));
 function formatMoney(cents) {
   return `$${(Number(cents || 0) / 100).toFixed(2)}`;
@@ -20478,7 +20658,7 @@ function navIconStyle(active) {
     lineHeight: 1
   };
 }
-async function loader$b({
+async function loader$c({
   request
 }) {
   const url = new URL(request.url);
@@ -20500,7 +20680,7 @@ async function loader$b({
     recentQuotes
   });
 }
-async function action$h({
+async function action$i({
   request
 }) {
   const form = await request.formData();
@@ -20779,11 +20959,11 @@ const mobileDashboard = UNSAFE_withComponentProps(function MobileDashboardPage()
 });
 const route15 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$h,
+  action: action$i,
   default: mobileDashboard,
-  loader: loader$b
+  loader: loader$c
 }, Symbol.toStringTag, { value: "Module" }));
-async function loader$a({
+async function loader$b({
   request
 }) {
   const url = new URL(request.url);
@@ -20803,7 +20983,7 @@ async function loader$a({
     next
   });
 }
-async function action$g({
+async function action$h({
   request
 }) {
   const form = await request.formData();
@@ -20999,11 +21179,11 @@ const styles$2 = {
 };
 const route16 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$g,
+  action: action$h,
   default: login,
-  loader: loader$a
+  loader: loader$b
 }, Symbol.toStringTag, { value: "Module" }));
-async function loader$9({
+async function loader$a({
   request
 }) {
   const url = new URL(request.url);
@@ -21016,7 +21196,7 @@ async function loader$9({
     next: url.searchParams.get("next") || "/custom-quote"
   });
 }
-async function action$f({
+async function action$g({
   request
 }) {
   const form = await request.formData();
@@ -21217,11 +21397,11 @@ const styles$1 = {
 };
 const route17 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$f,
+  action: action$g,
   default: changePassword,
-  loader: loader$9
+  loader: loader$a
 }, Symbol.toStringTag, { value: "Module" }));
-async function loader$8({
+async function loader$9({
   request
 }) {
   const currentUser = await requireUserPermission(request, "manageUsers");
@@ -21236,7 +21416,7 @@ async function loader$8({
     classicColumnOptions
   });
 }
-async function action$e({
+async function action$f({
   request
 }) {
   const currentUser = await requireUserPermission(request, "manageUsers");
@@ -21928,9 +22108,9 @@ const styles = {
 };
 const route18 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$e,
+  action: action$f,
   default: settings,
-  loader: loader$8
+  loader: loader$9
 }, Symbol.toStringTag, { value: "Module" }));
 function loginErrorMessage(loginErrors) {
   if ((loginErrors == null ? void 0 : loginErrors.shop) === LoginErrorType.MissingShop) {
@@ -21940,7 +22120,7 @@ function loginErrorMessage(loginErrors) {
   }
   return {};
 }
-const loader$7 = async ({
+const loader$8 = async ({
   request
 }) => {
   const url = new URL(request.url);
@@ -21951,7 +22131,7 @@ const loader$7 = async ({
     shop
   };
 };
-const action$d = async ({
+const action$e = async ({
   request
 }) => {
   const errors = loginErrorMessage(await login$1(request));
@@ -21992,11 +22172,11 @@ const route = UNSAFE_withComponentProps(function Auth() {
 });
 const route19 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$d,
+  action: action$e,
   default: route,
-  loader: loader$7
+  loader: loader$8
 }, Symbol.toStringTag, { value: "Module" }));
-async function loader$6({
+async function loader$7({
   request
 }) {
   await authenticate.admin(request);
@@ -22008,9 +22188,9 @@ const auth_$ = UNSAFE_withComponentProps(function AuthCatchAll() {
 const route20 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: auth_$,
-  loader: loader$6
+  loader: loader$7
 }, Symbol.toStringTag, { value: "Module" }));
-async function loader$5({
+async function loader$6({
   request
 }) {
   const {
@@ -22207,7 +22387,7 @@ const route21 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.definePrope
   ErrorBoundary,
   default: app,
   headers,
-  loader: loader$5
+  loader: loader$6
 }, Symbol.toStringTag, { value: "Module" }));
 const CARRIER_NAME = "GHS Shipping Calc";
 const LIST_CARRIER_SERVICES = `#graphql
@@ -22354,7 +22534,7 @@ async function registerCarrierService(admin) {
     };
   }
 }
-async function loader$4({
+async function loader$5({
   request
 }) {
   const {
@@ -22367,7 +22547,7 @@ async function loader$4({
     settings: settings2
   });
 }
-async function action$c({
+async function action$d({
   request
 }) {
   const {
@@ -22500,9 +22680,9 @@ const app__index = UNSAFE_withComponentProps(function AppIndex() {
 });
 const route22 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$c,
+  action: action$d,
   default: app__index,
-  loader: loader$4
+  loader: loader$5
 }, Symbol.toStringTag, { value: "Module" }));
 async function getOriginAddresses() {
   const { data: data2, error } = await supabaseAdmin.from("origin_addresses").select("id, label, address, is_active").order("label", { ascending: true });
@@ -22551,7 +22731,7 @@ async function saveShippingMaterialRule(row) {
   }
   return data2;
 }
-async function loader$3({
+async function loader$4({
   request
 }) {
   await authenticate.admin(request);
@@ -22561,7 +22741,7 @@ async function loader$3({
     rules
   });
 }
-async function action$b({
+async function action$c({
   request
 }) {
   await authenticate.admin(request);
@@ -22973,9 +23153,9 @@ const app_admin = UNSAFE_withComponentProps(function AdminPage() {
 });
 const route23 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$b,
+  action: action$c,
   default: app_admin,
-  loader: loader$3
+  loader: loader$4
 }, Symbol.toStringTag, { value: "Module" }));
 const app_additional = UNSAFE_withComponentProps(function AdditionalPage() {
   return /* @__PURE__ */ jsxs("s-page", {
@@ -23018,70 +23198,70 @@ const route24 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.definePrope
 }, Symbol.toStringTag, { value: "Module" }));
 const route25 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$q,
+  action: action$r,
   default: customQuote,
-  loader: loader$n
+  loader: loader$o
 }, Symbol.toStringTag, { value: "Module" }));
 const route26 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$p,
+  action: action$q,
   default: quoteReview,
-  loader: loader$m
+  loader: loader$n
 }, Symbol.toStringTag, { value: "Module" }));
 const route27 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$o,
+  action: action$p,
   default: dispatch,
-  loader: loader$l
+  loader: loader$m
 }, Symbol.toStringTag, { value: "Module" }));
 const route28 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$n,
+  action: action$o,
   default: classic,
-  loader: loader$k
+  loader: loader$l
 }, Symbol.toStringTag, { value: "Module" }));
 const route29 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$m,
+  action: action$n,
   default: monitor,
-  loader: loader$j
+  loader: loader$k
 }, Symbol.toStringTag, { value: "Module" }));
 const route30 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$l,
+  action: action$m,
   default: loader_default,
-  loader: loader$i
+  loader: loader$j
 }, Symbol.toStringTag, { value: "Module" }));
 const route31 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$k,
+  action: action$l,
   default: calendar,
-  loader: loader$h
+  loader: loader$i
 }, Symbol.toStringTag, { value: "Module" }));
 const route32 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$j,
+  action: action$k,
   default: allotment,
-  loader: loader$g
+  loader: loader$h
 }, Symbol.toStringTag, { value: "Module" }));
 const route33 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$i,
+  action: action$j,
   default: dispatchDriver,
-  loader: loader$d
+  loader: loader$e
 }, Symbol.toStringTag, { value: "Module" }));
 const route34 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: dispatchDriverDetail,
-  loader: loader$c
+  loader: loader$d
 }, Symbol.toStringTag, { value: "Module" }));
 const route35 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$h,
+  action: action$i,
   default: mobileDashboard,
-  loader: loader$b
+  loader: loader$c
 }, Symbol.toStringTag, { value: "Module" }));
-async function action$a({
+async function action$b({
   request
 }) {
   const body = await request.json();
@@ -23123,9 +23303,9 @@ async function action$a({
 }
 const route36 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$a
+  action: action$b
 }, Symbol.toStringTag, { value: "Module" }));
-async function action$9({
+async function action$a({
   request
 }) {
   const url = new URL(request.url);
@@ -23181,9 +23361,9 @@ async function action$9({
 }
 const route37 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$9
+  action: action$a
 }, Symbol.toStringTag, { value: "Module" }));
-async function action$8({
+async function action$9({
   request
 }) {
   const {
@@ -23211,7 +23391,7 @@ async function action$8({
 }
 const route38 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$8
+  action: action$9
 }, Symbol.toStringTag, { value: "Module" }));
 const SHOPIFY_TITLE_LIMIT = 40;
 function getStoreHandle(shop) {
@@ -23297,7 +23477,7 @@ async function findOrCreateCustomerId(admin, input) {
   }
   return ((_i = (_h = (_g = createJson == null ? void 0 : createJson.data) == null ? void 0 : _g.customerCreate) == null ? void 0 : _h.customer) == null ? void 0 : _i.id) || null;
 }
-async function action$7({
+async function action$8({
   request
 }) {
   var _a2;
@@ -23489,15 +23669,15 @@ async function action$7({
     draftOrderAdminUrl: draftOrder.legacyResourceId ? `https://admin.shopify.com/store/${getStoreHandle(shop)}/draft_orders/${draftOrder.legacyResourceId}` : null
   });
 }
-const route47 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route48 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$7
+  action: action$8
 }, Symbol.toStringTag, { value: "Module" }));
 const route39 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$7
+  action: action$8
 }, Symbol.toStringTag, { value: "Module" }));
-async function action$6({
+async function action$7({
   request
 }) {
   const url = new URL(request.url);
@@ -23541,13 +23721,13 @@ async function action$6({
     deletedQuoteId: quoteId
   });
 }
-const route48 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route49 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$6
+  action: action$7
 }, Symbol.toStringTag, { value: "Module" }));
 const route40 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$6
+  action: action$7
 }, Symbol.toStringTag, { value: "Module" }));
 function normalizeQuantity(value) {
   const quantity = Number(value || 0);
@@ -23568,7 +23748,7 @@ function buildSourceBreakdown(lineItems) {
   }
   return Array.from(grouped.values());
 }
-async function action$5({
+async function action$6({
   request
 }) {
   const url = new URL(request.url);
@@ -23680,13 +23860,13 @@ async function action$5({
     quote: updatedQuote
   });
 }
-const route49 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route50 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$5
+  action: action$6
 }, Symbol.toStringTag, { value: "Module" }));
 const route41 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$5
+  action: action$6
 }, Symbol.toStringTag, { value: "Module" }));
 function isAuthorized(request) {
   const expected = process.env.DISPATCH_POLL_SECRET || "";
@@ -23695,7 +23875,7 @@ function isAuthorized(request) {
   const provided = request.headers.get("x-dispatch-poll-secret") || url.searchParams.get("secret") || "";
   return provided === expected;
 }
-async function loader$2({
+async function loader$3({
   request
 }) {
   if (!isAuthorized(request)) {
@@ -23723,9 +23903,9 @@ async function loader$2({
 }
 const route42 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  loader: loader$2
+  loader: loader$3
 }, Symbol.toStringTag, { value: "Module" }));
-async function loader$1({
+async function loader$2({
   request
 }) {
   const allowed = await hasAdminQuotePermissionAccess(request, "dispatch") || await hasAdminQuotePermissionAccess(request, "driver");
@@ -23753,7 +23933,7 @@ async function loader$1({
     });
   }
 }
-async function action$4({
+async function action$5({
   request
 }) {
   const allowed = await hasAdminQuotePermissionAccess(request, "driver");
@@ -23805,10 +23985,10 @@ async function action$4({
 }
 const route43 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$4,
-  loader: loader$1
+  action: action$5,
+  loader: loader$2
 }, Symbol.toStringTag, { value: "Module" }));
-async function loader({
+async function loader$1({
   request
 }) {
   const currentUser = await requireUserPermission(request, "loader");
@@ -23818,7 +23998,7 @@ async function loader({
     notifications
   });
 }
-async function action$3({
+async function action$4({
   request
 }) {
   const currentUser = await requireUserPermission(request, "loader");
@@ -23847,16 +24027,60 @@ async function action$3({
 }
 const route44 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
+  action: action$4,
+  loader: loader$1
+}, Symbol.toStringTag, { value: "Module" }));
+async function loader() {
+  return data({
+    ok: true,
+    publicKey: getVapidPublicKey(),
+    configured: Boolean(getVapidPublicKey())
+  });
+}
+async function action$3({
+  request
+}) {
+  const currentUser = await requireUserPermission(request, "loader");
+  const contentType = request.headers.get("content-type") || "";
+  const body = contentType.includes("application/json") ? await request.json() : Object.fromEntries(await request.formData());
+  const intent = String(body.intent || "");
+  if (intent === "subscribe") {
+    await savePushSubscription({
+      user: currentUser,
+      subscription: body.subscription,
+      userAgent: request.headers.get("user-agent") || ""
+    });
+    return data({
+      ok: true,
+      message: "Push alerts enabled."
+    });
+  }
+  if (intent === "unsubscribe") {
+    await deletePushSubscription(String(body.endpoint || ""), currentUser);
+    return data({
+      ok: true,
+      message: "Push alerts disabled."
+    });
+  }
+  return data({
+    ok: false,
+    message: "Unknown push action."
+  }, {
+    status: 400
+  });
+}
+const route45 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
   action: action$3,
   loader
 }, Symbol.toStringTag, { value: "Module" }));
-const route45 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-  __proto__: null,
-  action: action$a
-}, Symbol.toStringTag, { value: "Module" }));
 const route46 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$9
+  action: action$b
+}, Symbol.toStringTag, { value: "Module" }));
+const route47 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  action: action$a
 }, Symbol.toStringTag, { value: "Module" }));
 function toVariantGid(variant) {
   if (variant == null ? void 0 : variant.admin_graphql_api_id) return String(variant.admin_graphql_api_id);
@@ -23894,7 +24118,7 @@ async function action$2({
   console.log("[WEBHOOK SYNC]", shop, product.title);
   return new Response();
 }
-const route50 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route51 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$2
 }, Symbol.toStringTag, { value: "Module" }));
@@ -23921,7 +24145,7 @@ const action$1 = async ({
   }
   return new Response();
 };
-const route51 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route52 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$1
 }, Symbol.toStringTag, { value: "Module" }));
@@ -23943,11 +24167,11 @@ const action = async ({
   }
   return new Response();
 };
-const route52 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route53 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action
 }, Symbol.toStringTag, { value: "Module" }));
-const serverManifest = { "entry": { "module": "/assets/entry.client-oNGMiw6i.js", "imports": ["/assets/jsx-runtime-DJxbfBsx.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/root-FaUif2c0.js", "imports": ["/assets/jsx-runtime-DJxbfBsx.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/_index/route": { "id": "routes/_index/route", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-Cmf56Jwf.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/custom-quote": { "id": "routes/custom-quote", "parentId": "root", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/custom-quote-DiOlRPJA.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/quote-review": { "id": "routes/quote-review", "parentId": "root", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/quote-review-BYEZif_z.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch": { "id": "routes/dispatch", "parentId": "root", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-CT44PxDW.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/classic": { "id": "routes/classic", "parentId": "root", "path": "classic", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/classic-D7SUNENC.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-DSXwe04k.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/monitor": { "id": "routes/monitor", "parentId": "root", "path": "monitor", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/monitor-D-6D68Te.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/loader": { "id": "routes/loader", "parentId": "root", "path": "loader", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/loader-BIaFamt1.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar": { "id": "routes/calendar", "parentId": "root", "path": "calendar", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/calendar-D2HhWQqX.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/allotment": { "id": "routes/allotment", "parentId": "root", "path": "allotment", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/allotment-RU0rdK1w.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar.ics": { "id": "routes/calendar.ics", "parentId": "root", "path": "calendar.ics", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar.ics-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar-feed.$secret": { "id": "routes/calendar-feed.$secret", "parentId": "root", "path": "calendar-feed/:secret", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar-feed._secret-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar.rss": { "id": "routes/calendar.rss", "parentId": "root", "path": "calendar.rss", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar.rss-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch-driver": { "id": "routes/dispatch-driver", "parentId": "root", "path": "dispatch/driver", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-driver-CIDh0JOn.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch-driver-detail": { "id": "routes/dispatch-driver-detail", "parentId": "root", "path": "dispatch/driver/detail", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-driver-detail-DVs_f_11.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/mobile-dashboard": { "id": "routes/mobile-dashboard", "parentId": "root", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/mobile-dashboard-Bu62B7DL.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/login": { "id": "routes/login", "parentId": "root", "path": "login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/login-BLokXFd3.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/change-password": { "id": "routes/change-password", "parentId": "root", "path": "change-password", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/change-password-DNG9C_4s.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/settings": { "id": "routes/settings", "parentId": "root", "path": "settings", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/settings-C34cRtvl.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-DSXwe04k.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.login/route": { "id": "routes/auth.login/route", "parentId": "root", "path": "auth/login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-CG8tQ2tr.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.$": { "id": "routes/auth.$", "parentId": "root", "path": "auth/*", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/auth._-p3tFrFib.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app": { "id": "routes/app", "parentId": "root", "path": "app", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": true, "module": "/assets/app--bd_F85Q.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app._index": { "id": "routes/app._index", "parentId": "routes/app", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app._index-BoDF1DO_.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.admin": { "id": "routes/app.admin", "parentId": "routes/app", "path": "admin", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.admin-CW6O1zQ4.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.additional": { "id": "routes/app.additional", "parentId": "routes/app", "path": "additional", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.additional-CCXuFT6z.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.custom-quote": { "id": "routes/app.custom-quote", "parentId": "routes/app", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.custom-quote-eC0hOSjc.js", "imports": ["/assets/custom-quote-DiOlRPJA.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.quote-review": { "id": "routes/app.quote-review", "parentId": "routes/app", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.quote-review-su2sDfLQ.js", "imports": ["/assets/quote-review-BYEZif_z.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch": { "id": "routes/app.dispatch", "parentId": "routes/app", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-B8Qfy7XM.js", "imports": ["/assets/dispatch-CT44PxDW.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.classic": { "id": "routes/app.classic", "parentId": "routes/app", "path": "classic", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.classic-c-c1Pkns.js", "imports": ["/assets/classic-D7SUNENC.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-DSXwe04k.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.monitor": { "id": "routes/app.monitor", "parentId": "routes/app", "path": "monitor", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.monitor-CCjPg_Q9.js", "imports": ["/assets/monitor-D-6D68Te.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.loader": { "id": "routes/app.loader", "parentId": "routes/app", "path": "loader", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.loader-DNvcY_tj.js", "imports": ["/assets/loader-BIaFamt1.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.calendar": { "id": "routes/app.calendar", "parentId": "routes/app", "path": "calendar", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.calendar-CoNgeiv8.js", "imports": ["/assets/calendar-D2HhWQqX.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.allotment": { "id": "routes/app.allotment", "parentId": "routes/app", "path": "allotment", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.allotment-sQBbhOPn.js", "imports": ["/assets/allotment-RU0rdK1w.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch-driver": { "id": "routes/app.dispatch-driver", "parentId": "routes/app", "path": "dispatch/driver", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-driver-BMLjcSx6.js", "imports": ["/assets/dispatch-driver-CIDh0JOn.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch-driver-detail": { "id": "routes/app.dispatch-driver-detail", "parentId": "routes/app", "path": "dispatch/driver/detail", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-driver-detail-CcJGmFUW.js", "imports": ["/assets/dispatch-driver-detail-DVs_f_11.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.mobile": { "id": "routes/app.mobile", "parentId": "routes/app", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.mobile-B7VYsfmU.js", "imports": ["/assets/mobile-dashboard-Bu62B7DL.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.shipping-estimate": { "id": "routes/api.shipping-estimate", "parentId": "root", "path": "api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.carrier-service": { "id": "routes/api.carrier-service", "parentId": "root", "path": "api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.sync-products": { "id": "routes/api.sync-products", "parentId": "root", "path": "api/sync-products", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.sync-products-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.create-draft-order": { "id": "routes/api.create-draft-order", "parentId": "root", "path": "api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.delete-quote": { "id": "routes/api.delete-quote", "parentId": "root", "path": "api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.update-quote": { "id": "routes/api.update-quote", "parentId": "root", "path": "api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.dispatch-poll-mailbox": { "id": "routes/api.dispatch-poll-mailbox", "parentId": "root", "path": "api/dispatch-poll-mailbox", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.dispatch-poll-mailbox-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.dispatch-driver-location": { "id": "routes/api.dispatch-driver-location", "parentId": "root", "path": "api/dispatch-driver-location", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.dispatch-driver-location-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.loader-notifications": { "id": "routes/api.loader-notifications", "parentId": "root", "path": "api/loader-notifications", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.loader-notifications-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.shipping-estimate": { "id": "routes/app.api.shipping-estimate", "parentId": "root", "path": "app/api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.carrier-service": { "id": "routes/app.api.carrier-service", "parentId": "root", "path": "app/api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.create-draft-order": { "id": "routes/app.api.create-draft-order", "parentId": "root", "path": "app/api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.delete-quote": { "id": "routes/app.api.delete-quote", "parentId": "root", "path": "app/api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.update-quote": { "id": "routes/app.api.update-quote", "parentId": "root", "path": "app/api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.products.update": { "id": "routes/webhooks.products.update", "parentId": "root", "path": "webhooks/products/update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.products.update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.scopes_update": { "id": "routes/webhooks.app.scopes_update", "parentId": "root", "path": "webhooks/app/scopes_update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.scopes_update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.uninstalled": { "id": "routes/webhooks.app.uninstalled", "parentId": "root", "path": "webhooks/app/uninstalled", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.uninstalled-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-1d018bdf.js", "version": "1d018bdf", "sri": void 0 };
+const serverManifest = { "entry": { "module": "/assets/entry.client-oNGMiw6i.js", "imports": ["/assets/jsx-runtime-DJxbfBsx.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/root-FaUif2c0.js", "imports": ["/assets/jsx-runtime-DJxbfBsx.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/_index/route": { "id": "routes/_index/route", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-Cmf56Jwf.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/custom-quote": { "id": "routes/custom-quote", "parentId": "root", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/custom-quote-DiOlRPJA.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/quote-review": { "id": "routes/quote-review", "parentId": "root", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/quote-review-BYEZif_z.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch": { "id": "routes/dispatch", "parentId": "root", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-CT44PxDW.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/classic": { "id": "routes/classic", "parentId": "root", "path": "classic", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/classic-Bca7XlC9.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-DSXwe04k.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/monitor": { "id": "routes/monitor", "parentId": "root", "path": "monitor", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/monitor-D-6D68Te.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/loader": { "id": "routes/loader", "parentId": "root", "path": "loader", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/loader-CLFwaSvZ.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar": { "id": "routes/calendar", "parentId": "root", "path": "calendar", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/calendar-D2HhWQqX.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/allotment": { "id": "routes/allotment", "parentId": "root", "path": "allotment", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/allotment-RU0rdK1w.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar.ics": { "id": "routes/calendar.ics", "parentId": "root", "path": "calendar.ics", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar.ics-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar-feed.$secret": { "id": "routes/calendar-feed.$secret", "parentId": "root", "path": "calendar-feed/:secret", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar-feed._secret-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar.rss": { "id": "routes/calendar.rss", "parentId": "root", "path": "calendar.rss", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar.rss-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch-driver": { "id": "routes/dispatch-driver", "parentId": "root", "path": "dispatch/driver", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-driver-CIDh0JOn.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch-driver-detail": { "id": "routes/dispatch-driver-detail", "parentId": "root", "path": "dispatch/driver/detail", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-driver-detail-DVs_f_11.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/mobile-dashboard": { "id": "routes/mobile-dashboard", "parentId": "root", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/mobile-dashboard-Bu62B7DL.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/login": { "id": "routes/login", "parentId": "root", "path": "login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/login-BLokXFd3.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/change-password": { "id": "routes/change-password", "parentId": "root", "path": "change-password", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/change-password-DNG9C_4s.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/settings": { "id": "routes/settings", "parentId": "root", "path": "settings", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/settings-C34cRtvl.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-DSXwe04k.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.login/route": { "id": "routes/auth.login/route", "parentId": "root", "path": "auth/login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-CG8tQ2tr.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.$": { "id": "routes/auth.$", "parentId": "root", "path": "auth/*", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/auth._-p3tFrFib.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app": { "id": "routes/app", "parentId": "root", "path": "app", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": true, "module": "/assets/app--bd_F85Q.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app._index": { "id": "routes/app._index", "parentId": "routes/app", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app._index-BoDF1DO_.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.admin": { "id": "routes/app.admin", "parentId": "routes/app", "path": "admin", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.admin-CW6O1zQ4.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.additional": { "id": "routes/app.additional", "parentId": "routes/app", "path": "additional", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.additional-CCXuFT6z.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.custom-quote": { "id": "routes/app.custom-quote", "parentId": "routes/app", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.custom-quote-eC0hOSjc.js", "imports": ["/assets/custom-quote-DiOlRPJA.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.quote-review": { "id": "routes/app.quote-review", "parentId": "routes/app", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.quote-review-su2sDfLQ.js", "imports": ["/assets/quote-review-BYEZif_z.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch": { "id": "routes/app.dispatch", "parentId": "routes/app", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-B8Qfy7XM.js", "imports": ["/assets/dispatch-CT44PxDW.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.classic": { "id": "routes/app.classic", "parentId": "routes/app", "path": "classic", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.classic-LWE7yeJe.js", "imports": ["/assets/classic-Bca7XlC9.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-DSXwe04k.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.monitor": { "id": "routes/app.monitor", "parentId": "routes/app", "path": "monitor", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.monitor-CCjPg_Q9.js", "imports": ["/assets/monitor-D-6D68Te.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.loader": { "id": "routes/app.loader", "parentId": "routes/app", "path": "loader", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.loader-COzAh49r.js", "imports": ["/assets/loader-CLFwaSvZ.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.calendar": { "id": "routes/app.calendar", "parentId": "routes/app", "path": "calendar", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.calendar-CoNgeiv8.js", "imports": ["/assets/calendar-D2HhWQqX.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.allotment": { "id": "routes/app.allotment", "parentId": "routes/app", "path": "allotment", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.allotment-sQBbhOPn.js", "imports": ["/assets/allotment-RU0rdK1w.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch-driver": { "id": "routes/app.dispatch-driver", "parentId": "routes/app", "path": "dispatch/driver", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-driver-BMLjcSx6.js", "imports": ["/assets/dispatch-driver-CIDh0JOn.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch-driver-detail": { "id": "routes/app.dispatch-driver-detail", "parentId": "routes/app", "path": "dispatch/driver/detail", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-driver-detail-CcJGmFUW.js", "imports": ["/assets/dispatch-driver-detail-DVs_f_11.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.mobile": { "id": "routes/app.mobile", "parentId": "routes/app", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.mobile-B7VYsfmU.js", "imports": ["/assets/mobile-dashboard-Bu62B7DL.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.shipping-estimate": { "id": "routes/api.shipping-estimate", "parentId": "root", "path": "api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.carrier-service": { "id": "routes/api.carrier-service", "parentId": "root", "path": "api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.sync-products": { "id": "routes/api.sync-products", "parentId": "root", "path": "api/sync-products", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.sync-products-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.create-draft-order": { "id": "routes/api.create-draft-order", "parentId": "root", "path": "api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.delete-quote": { "id": "routes/api.delete-quote", "parentId": "root", "path": "api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.update-quote": { "id": "routes/api.update-quote", "parentId": "root", "path": "api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.dispatch-poll-mailbox": { "id": "routes/api.dispatch-poll-mailbox", "parentId": "root", "path": "api/dispatch-poll-mailbox", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.dispatch-poll-mailbox-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.dispatch-driver-location": { "id": "routes/api.dispatch-driver-location", "parentId": "root", "path": "api/dispatch-driver-location", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.dispatch-driver-location-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.loader-notifications": { "id": "routes/api.loader-notifications", "parentId": "root", "path": "api/loader-notifications", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.loader-notifications-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.loader-push-subscription": { "id": "routes/api.loader-push-subscription", "parentId": "root", "path": "api/loader-push-subscription", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.loader-push-subscription-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.shipping-estimate": { "id": "routes/app.api.shipping-estimate", "parentId": "root", "path": "app/api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.carrier-service": { "id": "routes/app.api.carrier-service", "parentId": "root", "path": "app/api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.create-draft-order": { "id": "routes/app.api.create-draft-order", "parentId": "root", "path": "app/api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.delete-quote": { "id": "routes/app.api.delete-quote", "parentId": "root", "path": "app/api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.update-quote": { "id": "routes/app.api.update-quote", "parentId": "root", "path": "app/api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.products.update": { "id": "routes/webhooks.products.update", "parentId": "root", "path": "webhooks/products/update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.products.update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.scopes_update": { "id": "routes/webhooks.app.scopes_update", "parentId": "root", "path": "webhooks/app/scopes_update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.scopes_update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.uninstalled": { "id": "routes/webhooks.app.uninstalled", "parentId": "root", "path": "webhooks/app/uninstalled", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.uninstalled-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-236e0f16.js", "version": "236e0f16", "sri": void 0 };
 const assetsBuildDirectory = "build/client";
 const basename = "/";
 const future = { "unstable_optimizeDeps": false, "unstable_passThroughRequests": false, "unstable_subResourceIntegrity": false, "unstable_trailingSlashAwareDataRequests": false, "unstable_previewServerPrerendering": false, "v8_middleware": false, "v8_splitRouteModules": false, "v8_viteEnvironmentApi": false };
@@ -24318,13 +24542,21 @@ const routes = {
     caseSensitive: void 0,
     module: route44
   },
+  "routes/api.loader-push-subscription": {
+    id: "routes/api.loader-push-subscription",
+    parentId: "root",
+    path: "api/loader-push-subscription",
+    index: void 0,
+    caseSensitive: void 0,
+    module: route45
+  },
   "routes/app.api.shipping-estimate": {
     id: "routes/app.api.shipping-estimate",
     parentId: "root",
     path: "app/api/shipping-estimate",
     index: void 0,
     caseSensitive: void 0,
-    module: route45
+    module: route46
   },
   "routes/app.api.carrier-service": {
     id: "routes/app.api.carrier-service",
@@ -24332,7 +24564,7 @@ const routes = {
     path: "app/api/carrier-service",
     index: void 0,
     caseSensitive: void 0,
-    module: route46
+    module: route47
   },
   "routes/app.api.create-draft-order": {
     id: "routes/app.api.create-draft-order",
@@ -24340,7 +24572,7 @@ const routes = {
     path: "app/api/create-draft-order",
     index: void 0,
     caseSensitive: void 0,
-    module: route47
+    module: route48
   },
   "routes/app.api.delete-quote": {
     id: "routes/app.api.delete-quote",
@@ -24348,7 +24580,7 @@ const routes = {
     path: "app/api/delete-quote",
     index: void 0,
     caseSensitive: void 0,
-    module: route48
+    module: route49
   },
   "routes/app.api.update-quote": {
     id: "routes/app.api.update-quote",
@@ -24356,7 +24588,7 @@ const routes = {
     path: "app/api/update-quote",
     index: void 0,
     caseSensitive: void 0,
-    module: route49
+    module: route50
   },
   "routes/webhooks.products.update": {
     id: "routes/webhooks.products.update",
@@ -24364,7 +24596,7 @@ const routes = {
     path: "webhooks/products/update",
     index: void 0,
     caseSensitive: void 0,
-    module: route50
+    module: route51
   },
   "routes/webhooks.app.scopes_update": {
     id: "routes/webhooks.app.scopes_update",
@@ -24372,7 +24604,7 @@ const routes = {
     path: "webhooks/app/scopes_update",
     index: void 0,
     caseSensitive: void 0,
-    module: route51
+    module: route52
   },
   "routes/webhooks.app.uninstalled": {
     id: "routes/webhooks.app.uninstalled",
@@ -24380,7 +24612,7 @@ const routes = {
     path: "webhooks/app/uninstalled",
     index: void 0,
     caseSensitive: void 0,
-    module: route52
+    module: route53
   }
 };
 const allowedActionOrigins = false;

@@ -50,6 +50,7 @@ export default [
   route("api/dispatch-poll-mailbox", "routes/api.dispatch-poll-mailbox.ts"),
   route("api/dispatch-driver-location", "routes/api.dispatch-driver-location.ts"),
   route("api/loader-notifications", "routes/api.loader-notifications.ts"),
+  route("api/loader-push-subscription", "routes/api.loader-push-subscription.ts"),
 
   route("app/api/shipping-estimate", "routes/app.api.shipping-estimate.ts"),
   route("app/api/carrier-service", "routes/app.api.carrier-service.ts"),

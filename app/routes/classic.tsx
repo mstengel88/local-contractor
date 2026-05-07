@@ -1662,9 +1662,16 @@ export default function ClassicDispatchPage() {
                             </button>
                           </Form>
                           <Form method="post">
-                          <input type="hidden" name="intent" value="unassign-order" />
-                          <input type="hidden" name="orderId" value={order.id} />
-                          <button style={styles.linkButton}>Unassign</button>
+                            <input type="hidden" name="intent" value="notify-loader" />
+                            <input type="hidden" name="orderId" value={order.id} />
+                            <button style={styles.linkButton} title="Tell the loader this is the next load">
+                              Load Next
+                            </button>
+                          </Form>
+                          <Form method="post">
+                            <input type="hidden" name="intent" value="unassign-order" />
+                            <input type="hidden" name="orderId" value={order.id} />
+                            <button style={styles.linkButton}>Unassign</button>
                           </Form>
                         </div>
                       </td>

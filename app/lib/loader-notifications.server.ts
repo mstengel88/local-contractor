@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "./supabase.server";
+import { sendPushToTarget } from "./push.server";
 import type { AppUserProfile } from "./user-auth.server";
 import type { DispatchOrder, DispatchRoute } from "./dispatch.server";
 
@@ -72,7 +73,18 @@ export async function createLoaderNotification(input: {
     throw new Error("Loader notification storage is not ready. Run dispatch_loader_notifications.sql in Supabase.");
   }
   if (error) throw new Error(error.message);
-  return normalizeNotification(data);
+  const notification = normalizeNotification(data);
+  await sendPushToTarget({
+    targetUserId: notification.targetUserId,
+    targetRole: notification.targetRole,
+    title: "New loader assignment",
+    message: "Open Loader View to see the next load.",
+    url: "/loader",
+    tag: `loader-${notification.orderId || notification.id}`,
+  }).catch((error) => {
+    console.warn("[LOADER PUSH NOTIFICATION ERROR]", error);
+  });
+  return notification;
 }
 
 export async function listLoaderNotifications(user: AppUserProfile, limit = 30) {
