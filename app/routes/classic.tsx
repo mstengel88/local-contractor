@@ -1,4 +1,4 @@
-import { type DragEvent, type MouseEvent as ReactMouseEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type DragEvent, type FormEvent, type MouseEvent as ReactMouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Form, Link, useActionData, useLoaderData, useLocation, useSubmit } from "react-router";
 import {
   action as dispatchAction,
@@ -55,6 +55,18 @@ function getStatusTone(order: DispatchOrder) {
   if (order.status === "hold") return "hold";
   if (order.assignedRouteId || order.status === "scheduled") return "scheduled";
   return "unscheduled";
+}
+
+function isCancelledOrder(order: DispatchOrder) {
+  return order.status === "cancelled";
+}
+
+function isDeliveredOrder(order: DispatchOrder) {
+  return order.status === "delivered" || order.deliveryStatus === "delivered";
+}
+
+function isActiveBoardOrder(order: DispatchOrder) {
+  return !isDeliveredOrder(order) && !isCancelledOrder(order);
 }
 
 async function playDispatchChime() {
@@ -892,8 +904,7 @@ export default function ClassicDispatchPage() {
           .filter(
             (order) =>
               order.assignedRouteId === route.id &&
-              order.status !== "delivered" &&
-              order.deliveryStatus !== "delivered",
+              isActiveBoardOrder(order),
           )
           .sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999));
         return {
@@ -971,15 +982,13 @@ export default function ClassicDispatchPage() {
   const unscheduledOrders = visibleOrders.filter(
     (order) =>
       !order.assignedRouteId &&
-      order.status !== "delivered" &&
-      order.deliveryStatus !== "delivered" &&
+      isActiveBoardOrder(order) &&
       order.status !== "scheduled",
   );
   const scheduledOrders = visibleOrders.filter(
     (order) =>
       order.assignedRouteId &&
-      order.status !== "delivered" &&
-      order.deliveryStatus !== "delivered",
+      isActiveBoardOrder(order),
   );
   const deliveredCount = orders.filter(
     (order) => order.status === "delivered" || order.deliveryStatus === "delivered",
@@ -1300,15 +1309,80 @@ export default function ClassicDispatchPage() {
   function dropOrderOnCurrentRoute(event: DragEvent<HTMLElement>) {
     event.preventDefault();
     if (!selectedRoute || !draggedOrderId) return;
+    const order = orders.find((entry) => entry.id === draggedOrderId);
+    const splitCount = getAssignmentSplitCount(order, selectedRoute);
+    if (splitCount === null) {
+      setDraggedOrderId("");
+      return;
+    }
     submit(
       {
         intent: "assign-order",
         orderId: draggedOrderId,
         routeId: selectedRoute.id,
+        splitCount,
       },
       { method: "post" },
     );
     setDraggedOrderId("");
+  }
+
+  function getRouteTruck(route: DispatchRoute | null | undefined) {
+    if (!route) return null;
+    return (
+      trucks.find((truck) => truck.id === route.truckId) ||
+      trucks.find((truck) => truck.label === route.truck) ||
+      null
+    );
+  }
+
+  function getAssignmentSplitCount(order: DispatchOrder | null | undefined, route: DispatchRoute | null | undefined) {
+    if (!order || !route || !/yards?/i.test(order.unit)) return "";
+
+    const truck = getRouteTruck(route);
+    const capacity = Number(truck?.yards || 30);
+    const quantity = Number(order.quantity || 0);
+    if (!quantity || !capacity || quantity <= capacity) return "";
+
+    const minimumSplits = Math.ceil(quantity / capacity);
+    const routeLabel = `${route.code}${truck?.label ? ` / ${truck.label}` : ""}`;
+    const answer = window.prompt(
+      `${getOrderNumber(order)} is ${quantity} yards, which is over the ${capacity} yard truck limit for ${routeLabel}.\n\nHow many tickets should I split it into?`,
+      String(minimumSplits),
+    );
+
+    if (answer === null) return null;
+
+    const splitCount = Math.floor(Number(answer));
+    if (!Number.isFinite(splitCount) || splitCount < minimumSplits) {
+      window.alert(`Use at least ${minimumSplits} split tickets so each load fits the truck.`);
+      return null;
+    }
+
+    return String(splitCount);
+  }
+
+  function prepareAssignmentSubmit(
+    order: DispatchOrder,
+    routeId: string,
+    form: HTMLFormElement,
+    event: FormEvent<HTMLFormElement>,
+  ) {
+    const route = routes.find((entry) => entry.id === routeId);
+    const splitCount = getAssignmentSplitCount(order, route);
+    if (splitCount === null) {
+      event.preventDefault();
+      return;
+    }
+
+    let input = form.querySelector<HTMLInputElement>('input[name="splitCount"]');
+    if (!input) {
+      input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "splitCount";
+      form.appendChild(input);
+    }
+    input.value = splitCount;
   }
 
   if (!allowed) {
@@ -1698,7 +1772,19 @@ export default function ClassicDispatchPage() {
                         <td key={key}>{orderColumnValue(order, key)}</td>
                       ))}
                       <td>
-                        <Form method="post" style={styles.assignForm}>
+                        <Form
+                          method="post"
+                          style={styles.assignForm}
+                          onSubmit={(event) => {
+                            const routeId = new FormData(event.currentTarget).get("routeId");
+                            prepareAssignmentSubmit(
+                              order,
+                              String(routeId || ""),
+                              event.currentTarget,
+                              event,
+                            );
+                          }}
+                        >
                           <input type="hidden" name="intent" value="assign-order" />
                           <input type="hidden" name="orderId" value={order.id} />
                           <select name="routeId" style={styles.smallSelect} required>

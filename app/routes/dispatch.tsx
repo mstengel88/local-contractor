@@ -1,4 +1,4 @@
-import { type DragEvent, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { type DragEvent, type FormEvent, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Form, useActionData, useFetcher, useLoaderData, useLocation } from "react-router";
 import { data, redirect } from "react-router";
 import {
@@ -333,6 +333,150 @@ function getCapacityError(order: DispatchOrder, truck?: DispatchTruck | null) {
   if (quantity <= capacity) return "";
 
   return `${order.customer} needs ${quantity} ${capacityLabel}, but ${truck.label} is set to ${capacity} ${capacityLabel}.`;
+}
+
+function isYardOrder(order: DispatchOrder) {
+  return /yards?/i.test(order.unit);
+}
+
+function getSplitCountFromForm(form: FormData) {
+  const count = Number(String(form.get("splitCount") || "").trim());
+  return Number.isFinite(count) ? Math.floor(count) : 0;
+}
+
+function getSplitSuffix(index: number) {
+  let value = index;
+  let suffix = "";
+  do {
+    suffix = String.fromCharCode(97 + (value % 26)) + suffix;
+    value = Math.floor(value / 26) - 1;
+  } while (value >= 0);
+  return suffix;
+}
+
+function getSplitBaseOrderNumber(order: DispatchOrder) {
+  const base = String(order.orderNumber || order.id.replace(/^D-/, "")).trim();
+  return base.replace(/[a-z]$/i, "");
+}
+
+function formatSplitQuantity(value: number) {
+  if (!Number.isFinite(value)) return "";
+  return Number.isInteger(value)
+    ? String(value)
+    : value.toFixed(2).replace(/\.?0+$/, "");
+}
+
+function getSplitCapacityError(
+  order: DispatchOrder,
+  truck: DispatchTruck | null | undefined,
+  splitCount: number,
+) {
+  if (!truck) return "This route does not have a truck assigned yet.";
+  if (!isYardOrder(order)) return getCapacityError(order, truck);
+
+  const quantity = Number(order.quantity || 0);
+  const capacity = Number(truck.yards || 30);
+  if (!quantity || !capacity || quantity <= capacity) return "";
+  if (splitCount < 2) {
+    return `${order.customer} needs ${quantity} yards, which is over ${truck.label}'s ${capacity} yard capacity. Split the order before assigning it.`;
+  }
+
+  const perLoad = quantity / splitCount;
+  if (perLoad > capacity) {
+    return `${splitCount} split tickets would still be ${formatSplitQuantity(perLoad)} yards each. Use at least ${Math.ceil(
+      quantity / capacity,
+    )} splits for ${truck.label}.`;
+  }
+
+  return "";
+}
+
+async function assignOrderToRoute({
+  order,
+  routeId,
+  truck,
+  splitCount,
+  eta,
+}: {
+  order: DispatchOrder;
+  routeId: string;
+  truck?: DispatchTruck | null;
+  splitCount: number;
+  eta?: string | null;
+}) {
+  const previousRouteId = order.assignedRouteId || null;
+  const capacityError = getSplitCapacityError(order, truck, splitCount);
+  if (capacityError) return { ok: false, message: capacityError, createdCount: 0 };
+
+  const quantity = Number(order.quantity || 0);
+  const truckYards = Number(truck?.yards || 30);
+  const shouldSplit = isYardOrder(order) && quantity > truckYards && splitCount > 1;
+  const firstStopSequence =
+    previousRouteId === routeId && order.stopSequence
+      ? order.stopSequence
+      : await getNextRouteStopSequence(routeId);
+
+  if (!shouldSplit) {
+    await updateDispatchOrder(order.id, {
+      status: "scheduled",
+      assignedRouteId: routeId,
+      stopSequence: firstStopSequence,
+      deliveryStatus: "not_started",
+      eta: eta || null,
+    });
+    await resequenceChangedRoutes([previousRouteId, routeId]);
+    return { ok: true, message: "Order assigned to route.", createdCount: 1 };
+  }
+
+  const splitQuantity = formatSplitQuantity(quantity / splitCount);
+  const baseOrderNumber = getSplitBaseOrderNumber(order);
+  const splitNote = `Split from #${baseOrderNumber} into ${splitCount} loads.`;
+
+  await updateDispatchOrder(order.id, {
+    orderNumber: `${baseOrderNumber}${getSplitSuffix(0)}`,
+    quantity: splitQuantity,
+    status: "scheduled",
+    assignedRouteId: routeId,
+    stopSequence: firstStopSequence,
+    deliveryStatus: "not_started",
+    eta: eta || null,
+    notes: [order.notes, splitNote].filter(Boolean).join("\n"),
+  });
+
+  for (let index = 1; index < splitCount; index += 1) {
+    const created = await createDispatchOrder({
+      source: order.source,
+      orderNumber: `${baseOrderNumber}${getSplitSuffix(index)}`,
+      customer: order.customer,
+      contact: order.contact,
+      address: order.address,
+      city: order.city,
+      material: order.material,
+      quantity: splitQuantity,
+      unit: order.unit,
+      requestedWindow: order.requestedWindow,
+      timePreference: order.timePreference || "",
+      truckPreference: order.truckPreference || "",
+      notes: [order.notes, splitNote].filter(Boolean).join("\n"),
+      emailSubject: order.emailSubject || undefined,
+      rawEmail: order.rawEmail || undefined,
+    });
+
+    await updateDispatchOrder(created.id, {
+      status: "scheduled",
+      assignedRouteId: routeId,
+      stopSequence: firstStopSequence + index,
+      deliveryStatus: "not_started",
+      eta: eta || null,
+    });
+  }
+
+  await resequenceChangedRoutes([previousRouteId, routeId]);
+  return {
+    ok: true,
+    message: `Split #${baseOrderNumber} into ${splitCount} route tickets.`,
+    createdCount: splitCount,
+  };
 }
 
 function buildChecklistJson(form: FormData) {
@@ -1205,17 +1349,18 @@ export async function action({ request }: any) {
           const selectedTruck = allTrucks.find(
             (truck) => truck.id === selectedRoute?.truckId,
           );
-          const capacityError = getCapacityError(updated, selectedTruck);
+          const splitCount = getSplitCountFromForm(form);
+          const capacityError = !selectedRoute
+            ? "Select a valid route before assigning this order."
+            : getSplitCapacityError(updated, selectedTruck, splitCount);
 
-          if (!selectedRoute || capacityError) {
+          if (capacityError) {
             const dispatchState = await loadDispatchState();
             return data(
               {
                 allowed: true,
                 ok: false,
-                message: !selectedRoute
-                  ? "Select a valid route before assigning this order."
-                  : capacityError,
+                message: capacityError,
                 selectedOrderId: orderId,
                 ...dispatchState,
               },
@@ -1223,20 +1368,27 @@ export async function action({ request }: any) {
             );
           }
 
-          const stopSequence =
-            updated.assignedRouteId === routeId && updated.stopSequence
-              ? updated.stopSequence
-              : await getNextRouteStopSequence(routeId);
-
-          finalOrder = await updateDispatchOrder(orderId, {
-            status: status === "delivered" ? "delivered" : "scheduled",
-            assignedRouteId: routeId,
-            stopSequence,
-            deliveryStatus:
-              status === "delivered" ? "delivered" : updated.deliveryStatus || "not_started",
+          const assignment = await assignOrderToRoute({
+            order: updated,
+            routeId,
+            truck: selectedTruck,
+            splitCount,
             eta,
           });
-          await resequenceChangedRoutes([previousRouteId, routeId]);
+          if (!assignment.ok) {
+            const dispatchState = await loadDispatchState();
+            return data(
+              {
+                allowed: true,
+                ok: false,
+                message: assignment.message,
+                selectedOrderId: orderId,
+                ...dispatchState,
+              },
+              { status: 400 },
+            );
+          }
+          finalOrder = updated;
         } else {
           finalOrder = await updateDispatchOrder(orderId, {
             status:
@@ -1655,9 +1807,12 @@ export async function action({ request }: any) {
       const selectedOrder = allOrders.find((order) => order.id === orderId);
       const selectedRoute = allRoutes.find((route) => route.id === routeId);
       const selectedTruck = allTrucks.find((truck) => truck.id === selectedRoute?.truckId);
-      const capacityError = selectedOrder
-        ? getCapacityError(selectedOrder, selectedTruck)
-        : "Order was not found.";
+      const splitCount = getSplitCountFromForm(form);
+      const capacityError = !selectedOrder
+        ? "Order was not found."
+        : !selectedRoute
+          ? "Select a valid route before assigning this order."
+          : getSplitCapacityError(selectedOrder, selectedTruck, splitCount);
 
       if (capacityError) {
         const dispatchState = await loadDispatchState({ skipSetup: true });
@@ -1673,27 +1828,20 @@ export async function action({ request }: any) {
         );
       }
 
-      const previousRouteId = selectedOrder?.assignedRouteId || null;
-      const stopSequence =
-        previousRouteId === routeId && selectedOrder?.stopSequence
-          ? selectedOrder.stopSequence
-          : await getNextRouteStopSequence(routeId);
-
-      await updateDispatchOrder(orderId, {
-        status: "scheduled",
-        assignedRouteId: routeId,
-        stopSequence,
-        deliveryStatus: "not_started",
+      const assignment = await assignOrderToRoute({
+        order: selectedOrder,
+        routeId,
+        truck: selectedTruck,
+        splitCount,
         eta: String(form.get("eta") || "").trim() || null,
       });
-      await resequenceChangedRoutes([previousRouteId, routeId]);
 
       const dispatchState = await loadDispatchState({ skipSetup: true });
 
       return data({
         allowed: true,
         ok: true,
-        message: "Order assigned to route.",
+        message: assignment.message,
         selectedOrderId: orderId,
         ...dispatchState,
       });
@@ -2128,6 +2276,64 @@ export default function DispatchPage() {
   const normalizedOrderSearch = deferredOrderSearch.trim().toLowerCase();
   const isAssigningByDrag = assignmentFetcher.state === "submitting";
 
+  function getRouteTruck(route: DispatchRoute | null | undefined) {
+    if (!route) return null;
+    return (
+      trucks.find((truck) => truck.id === route.truckId) ||
+      trucks.find((truck) => truck.label === route.truck) ||
+      null
+    );
+  }
+
+  function getAssignmentSplitCount(order: DispatchOrder | null | undefined, route: DispatchRoute | null | undefined) {
+    if (!order || !route || !/yards?/i.test(order.unit)) return "";
+
+    const truck = getRouteTruck(route);
+    const capacity = Number(truck?.yards || 30);
+    const quantity = Number(order.quantity || 0);
+    if (!quantity || !capacity || quantity <= capacity) return "";
+
+    const minimumSplits = Math.ceil(quantity / capacity);
+    const routeLabel = `${route.code}${truck?.label ? ` / ${truck.label}` : ""}`;
+    const answer = window.prompt(
+      `${getOrderDisplayNumber(order)} is ${quantity} yards, which is over the ${capacity} yard truck limit for ${routeLabel}.\n\nHow many tickets should I split it into?`,
+      String(minimumSplits),
+    );
+
+    if (answer === null) return null;
+
+    const splitCount = Math.floor(Number(answer));
+    if (!Number.isFinite(splitCount) || splitCount < minimumSplits) {
+      window.alert(`Use at least ${minimumSplits} split tickets so each load fits the truck.`);
+      return null;
+    }
+
+    return String(splitCount);
+  }
+
+  function prepareAssignmentSubmit(
+    order: DispatchOrder,
+    routeId: string,
+    form: HTMLFormElement,
+    event: FormEvent<HTMLFormElement>,
+  ) {
+    const route = routes.find((entry) => entry.id === routeId);
+    const splitCount = getAssignmentSplitCount(order, route);
+    if (splitCount === null) {
+      event.preventDefault();
+      return;
+    }
+
+    let input = form.querySelector<HTMLInputElement>('input[name="splitCount"]');
+    if (!input) {
+      input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "splitCount";
+      form.appendChild(input);
+    }
+    input.value = splitCount;
+  }
+
   function toggleNavCollapsed() {
     setNavCollapsed((current) => {
       const next = !current;
@@ -2241,6 +2447,10 @@ export default function DispatchPage() {
     clearDragState();
 
     if (!orderId || !routeId || !canManageDispatch) return;
+    const order = orders.find((entry) => entry.id === orderId);
+    const route = routes.find((entry) => entry.id === routeId);
+    const splitCount = getAssignmentSplitCount(order, route);
+    if (splitCount === null) return;
 
     assignmentFetcher.submit(
       {
@@ -2248,6 +2458,7 @@ export default function DispatchPage() {
         orderId,
         routeId,
         eta: "",
+        splitCount,
       },
       { method: "post", action: `${dispatchHref}${location.search || ""}` },
     );
@@ -2272,6 +2483,10 @@ export default function DispatchPage() {
 
   function moveOrderWithSelect(orderId: string, routeId: string) {
     if (!orderId || !canManageDispatch) return;
+    const order = orders.find((entry) => entry.id === orderId);
+    const route = routes.find((entry) => entry.id === routeId);
+    const splitCount = routeId ? getAssignmentSplitCount(order, route) : "";
+    if (splitCount === null) return;
 
     assignmentFetcher.submit(
       routeId
@@ -2280,6 +2495,7 @@ export default function DispatchPage() {
             orderId,
             routeId,
             eta: "",
+            splitCount,
           }
         : {
             intent: "unassign-order",
@@ -3849,7 +4065,18 @@ export default function DispatchPage() {
                       </div>
                       {selectedOrder ? (
                         selectedOrder.assignedRouteId === route.id ? (
-                          <Form method="post" style={styles.assignForm}>
+                          <Form
+                            method="post"
+                            style={styles.assignForm}
+                            onSubmit={(event) =>
+                              prepareAssignmentSubmit(
+                                selectedOrder,
+                                route.id,
+                                event.currentTarget,
+                                event,
+                              )
+                            }
+                          >
                             <input type="hidden" name="intent" value="unassign-order" />
                             <input type="hidden" name="orderId" value={selectedOrder.id} />
                             <button type="submit" style={styles.secondaryButton}>
@@ -4134,7 +4361,19 @@ export default function DispatchPage() {
                       </div>
                     </div>
 
-                    <Form method="post" style={styles.assignmentForm}>
+                    <Form
+                      method="post"
+                      style={styles.assignmentForm}
+                      onSubmit={(event) => {
+                        const routeId = new FormData(event.currentTarget).get("routeId");
+                        prepareAssignmentSubmit(
+                          selectedOrder,
+                          String(routeId || ""),
+                          event.currentTarget,
+                          event,
+                        );
+                      }}
+                    >
                       <input type="hidden" name="intent" value="assign-order" />
                       <input type="hidden" name="orderId" value={selectedOrder.id} />
                       <div style={styles.formGridTwo}>

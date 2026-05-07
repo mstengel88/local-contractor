@@ -1660,7 +1660,10 @@ export async function createDispatchOrder(input: {
   rawEmail?: string;
   mailboxMessageId?: string;
 }) {
-  const id = `D-${Date.now().toString().slice(-6)}`;
+  const id = `D-${Date.now().toString().slice(-6)}${Math.random()
+    .toString(36)
+    .slice(2, 4)
+    .toUpperCase()}`;
   const travelPayload = await buildDispatchTravelPayload(input.address, input.city);
 
   const { data, error } = await supabaseAdmin
@@ -1970,6 +1973,10 @@ export async function deleteDispatchEmployee(id: string) {
 export async function updateDispatchOrder(
   id: string,
   patch: {
+    orderNumber?: string | null;
+    quantity?: string;
+    unit?: string;
+    notes?: string;
     status?: DispatchStatus;
     assignedRouteId?: string | null;
     stopSequence?: number | null;
@@ -1993,6 +2000,10 @@ export async function updateDispatchOrder(
 ) {
   const payload: Record<string, unknown> = {};
 
+  if (patch.orderNumber !== undefined) payload.order_number = patch.orderNumber;
+  if (patch.quantity !== undefined) payload.quantity = patch.quantity;
+  if (patch.unit !== undefined) payload.unit = patch.unit;
+  if (patch.notes !== undefined) payload.notes = patch.notes;
   if (patch.status) payload.status = patch.status;
   if (patch.assignedRouteId !== undefined) {
     payload.assigned_route_id = patch.assignedRouteId;
