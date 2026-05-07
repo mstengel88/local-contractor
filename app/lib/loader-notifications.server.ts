@@ -124,3 +124,16 @@ export async function markLoaderNotificationRead(id: string, user: AppUserProfil
   if (error) throw new Error(error.message);
   return normalizeNotification(data);
 }
+
+export async function clearLoaderNotificationHistory(user: AppUserProfile) {
+  const { error } = await supabaseAdmin
+    .from(TABLE)
+    .delete()
+    .eq("status", "read")
+    .or(`target_user_id.eq.${user.id},target_role.eq.loader`);
+
+  if (error?.code === "42P01") {
+    throw new Error("Loader notification storage is not ready. Run dispatch_loader_notifications.sql in Supabase.");
+  }
+  if (error) throw new Error(error.message);
+}

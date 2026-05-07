@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { Form, Link, useActionData, useLoaderData } from "react-router";
 import { data } from "react-router";
 import {
+  clearLoaderNotificationHistory,
   listLoaderNotifications,
   markLoaderNotificationRead,
   type LoaderNotification,
@@ -31,6 +32,12 @@ export async function action({ request }: any) {
     return data({ ok: true, message: "Marked loaded.", notifications });
   }
 
+  if (intent === "clear-history") {
+    await clearLoaderNotificationHistory(currentUser);
+    const notifications = await listLoaderNotifications(currentUser, 30);
+    return data({ ok: true, message: "Loaded history cleared.", notifications });
+  }
+
   return data({ ok: false, message: "Unknown loader action." }, { status: 400 });
 }
 
@@ -47,9 +54,9 @@ export default function LoaderPage() {
   );
   const lastSeenId = useRef(notifications[0]?.id || "");
   const currentUser = loaderData.currentUser;
-  const newest = notifications[0] || null;
   const unread = notifications.filter((notification) => notification.status === "unread");
   const history = notifications.filter((notification) => notification.status === "read");
+  const currentLoad = unread[0] || null;
   const canUseRealtime = Boolean(loaderData.supabaseUrl && loaderData.supabaseAnonKey);
   const [pushStatus, setPushStatus] = useState("Push alerts not enabled on this device.");
   const [pushBusy, setPushBusy] = useState(false);
@@ -238,16 +245,16 @@ export default function LoaderPage() {
         <section style={styles.hero}>
           <div>
             <p style={styles.heroLabel}>Current Load</p>
-            <h2 style={styles.heroTitle}>{newest?.title || "Waiting for dispatch"}</h2>
+            <h2 style={styles.heroTitle}>{currentLoad?.title || "Waiting for dispatch"}</h2>
             <p style={styles.heroMessage}>
-              {newest?.message || "When dispatch sends the next load, it will show up here."}
+              {currentLoad?.message || "When dispatch sends the next load, it will show up here."}
             </p>
-            {newest ? <p style={styles.heroTime}>Sent {formatTime(newest.createdAt)}</p> : null}
+            {currentLoad ? <p style={styles.heroTime}>Sent {formatTime(currentLoad.createdAt)}</p> : null}
           </div>
-          {newest && newest.status === "unread" ? (
+          {currentLoad ? (
             <Form method="post" style={styles.heroAction}>
               <input type="hidden" name="intent" value="mark-read" />
-              <input type="hidden" name="id" value={newest.id} />
+              <input type="hidden" name="id" value={currentLoad.id} />
               <button type="submit" style={styles.primaryButton}>Mark Loaded</button>
             </Form>
           ) : null}
@@ -265,7 +272,17 @@ export default function LoaderPage() {
           </section>
 
           <section style={styles.panel}>
-            <h2 style={styles.panelTitle}>Loaded History</h2>
+            <div style={styles.panelHeader}>
+              <h2 style={styles.panelTitle}>Loaded History</h2>
+              {history.length ? (
+                <Form method="post">
+                  <input type="hidden" name="intent" value="clear-history" />
+                  <button type="submit" style={styles.clearButton}>
+                    Clear History
+                  </button>
+                </Form>
+              ) : null}
+            </div>
             <div style={styles.list}>
               {history.slice(0, 10).map((notification) => (
                 <NotificationCard key={notification.id} notification={notification} />
@@ -369,7 +386,22 @@ const styles: Record<string, CSSProperties> = {
   },
   grid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 },
   panel: { background: "#0f172a", border: "1px solid #1e293b", borderRadius: 22, padding: 20 },
+  panelHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 12,
+    alignItems: "center",
+    marginBottom: 14,
+  },
   panelTitle: { marginTop: 0 },
+  clearButton: {
+    border: "1px solid #7f1d1d",
+    borderRadius: 999,
+    padding: "9px 12px",
+    fontWeight: 900,
+    background: "#450a0a",
+    color: "#fecaca",
+  },
   list: { display: "grid", gap: 12 },
   card: {
     display: "flex",

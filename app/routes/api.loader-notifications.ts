@@ -1,5 +1,6 @@
 import { data } from "react-router";
 import {
+  clearLoaderNotificationHistory,
   listLoaderNotifications,
   markLoaderNotificationRead,
 } from "../lib/loader-notifications.server";
@@ -21,6 +22,12 @@ export async function action({ request }: { request: Request }) {
     if (!id) return data({ ok: false, message: "Notification is required." }, { status: 400 });
     const notification = await markLoaderNotificationRead(id, currentUser);
     return data({ ok: true, notification });
+  }
+
+  if (intent === "clear-history") {
+    await clearLoaderNotificationHistory(currentUser);
+    const notifications = await listLoaderNotifications(currentUser, 30);
+    return data({ ok: true, message: "Loaded history cleared.", notifications });
   }
 
   return data({ ok: false, message: "Unknown notification action." }, { status: 400 });
