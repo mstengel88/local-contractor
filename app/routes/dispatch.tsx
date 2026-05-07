@@ -1150,7 +1150,10 @@ export async function action({ request }: any) {
         "Unit";
       const rawStatus = String(form.get("status") || "new").trim();
       const status =
-        rawStatus === "scheduled" || rawStatus === "hold" || rawStatus === "delivered"
+        rawStatus === "scheduled" ||
+        rawStatus === "hold" ||
+        rawStatus === "delivered" ||
+        rawStatus === "cancelled"
           ? rawStatus
           : "new";
       const routeId = String(form.get("routeId") || "").trim();
@@ -1236,7 +1239,10 @@ export async function action({ request }: any) {
           await resequenceChangedRoutes([previousRouteId, routeId]);
         } else {
           finalOrder = await updateDispatchOrder(orderId, {
-            status: status === "delivered" || status === "hold" ? status : "new",
+            status:
+              status === "delivered" || status === "hold" || status === "cancelled"
+                ? status
+                : "new",
             assignedRouteId: null,
             stopSequence: null,
             deliveryStatus: status === "delivered" ? "delivered" : "not_started",
@@ -2628,6 +2634,7 @@ export default function DispatchPage() {
                           <option value="new">New</option>
                           <option value="scheduled">Scheduled</option>
                           <option value="hold">Hold</option>
+                          <option value="cancelled">Cancelled</option>
                           <option value="delivered">Delivered</option>
                         </select>
                       </div>
@@ -2913,6 +2920,7 @@ export default function DispatchPage() {
                         <option value="new">New</option>
                         <option value="scheduled">Scheduled</option>
                         <option value="hold">Hold</option>
+                        <option value="cancelled">Cancelled</option>
                         <option value="delivered">Delivered</option>
                       </select>
                     </div>
@@ -5360,6 +5368,12 @@ const styles = {
             color: "#bae6fd",
             border: "rgba(56, 189, 248, 0.35)",
             bg: "rgba(56, 189, 248, 0.12)",
+          }
+        : status === "cancelled"
+        ? {
+            color: "#fecaca",
+            border: "rgba(248, 113, 113, 0.38)",
+            bg: "rgba(127, 29, 29, 0.22)",
           }
         : status === "hold"
         ? {

@@ -129,9 +129,15 @@ function getOrderAddress(order: DispatchOrder) {
 
 function getOrderStatus(order: DispatchOrder) {
   if (order.status === "delivered" || order.deliveryStatus === "delivered") return "Delivered";
+  if (order.status === "cancelled") return "Cancelled";
   if (order.assignedRouteId || order.status === "scheduled") return "Scheduled";
   if (order.status === "hold") return "On hold";
   return "New";
+}
+
+function shouldShowOnCalendar(order: DispatchOrder) {
+  const status = getOrderStatus(order);
+  return status !== "Delivered" && status !== "Cancelled";
 }
 
 function buildSearchText(order: DispatchOrder) {
@@ -205,7 +211,7 @@ export default function DispatchCalendarPage() {
   const calendarOrders = useMemo<CalendarOrder[]>(() => {
     const search = query.trim().toLowerCase();
     return orders
-      .filter((order) => getOrderStatus(order) !== "Delivered")
+      .filter(shouldShowOnCalendar)
       .filter((order) => !search || buildSearchText(order).includes(search))
       .map((order) => {
         const date = parseRequestedDate(order.requestedWindow);

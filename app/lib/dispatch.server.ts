@@ -8,7 +8,7 @@ import {
 import { supabaseAdmin } from "./supabase.server";
 
 export type DispatchSource = "email" | "manual";
-export type DispatchStatus = "new" | "scheduled" | "hold" | "delivered";
+export type DispatchStatus = "new" | "scheduled" | "hold" | "delivered" | "cancelled";
 export type DispatchDeliveryStatus =
   | "not_started"
   | "en_route"
@@ -1046,7 +1046,10 @@ function normalizeOrder(row: any): DispatchOrder {
     truckPreference: row.truck_preference || null,
     notes,
     status:
-      row.status === "scheduled" || row.status === "hold" || row.status === "delivered"
+      row.status === "scheduled" ||
+      row.status === "hold" ||
+      row.status === "delivered" ||
+      row.status === "cancelled"
         ? row.status
         : "new",
     assignedRouteId: row.assigned_route_id || null,

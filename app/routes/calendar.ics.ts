@@ -117,9 +117,15 @@ function formatTravelMinutes(minutes: number) {
 
 function getOrderStatus(order: DispatchOrder) {
   if (order.status === "delivered" || order.deliveryStatus === "delivered") return "Delivered";
+  if (order.status === "cancelled") return "Cancelled";
   if (order.assignedRouteId || order.status === "scheduled") return "Scheduled";
   if (order.status === "hold") return "On hold";
   return "New";
+}
+
+function shouldIncludeInCalendarFeed(order: DispatchOrder) {
+  const status = getOrderStatus(order);
+  return status !== "Delivered" && status !== "Cancelled";
 }
 
 export async function loader({
@@ -137,7 +143,7 @@ export async function loader({
   const grouped = new Map<string, { date: Date; orders: DispatchOrder[] }>();
 
   for (const order of orders) {
-    if (getOrderStatus(order) === "Delivered") continue;
+    if (!shouldIncludeInCalendarFeed(order)) continue;
     const date = parseRequestedDate(order.requestedWindow);
     if (!date) continue;
     const key = dateKey(date);

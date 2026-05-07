@@ -43,6 +43,7 @@ function formatTime(minutes: number) {
 
 function statusLabel(order: DispatchOrder) {
   if (order.status === "delivered" || order.deliveryStatus === "delivered") return "Delivered";
+  if (order.status === "cancelled") return "Cancelled";
   if (order.assignedRouteId || order.status === "scheduled") return "Scheduled";
   if (order.status === "hold") return "On hold";
   return "Unscheduled";
@@ -50,6 +51,7 @@ function statusLabel(order: DispatchOrder) {
 
 function getStatusTone(order: DispatchOrder) {
   if (order.status === "delivered" || order.deliveryStatus === "delivered") return "delivered";
+  if (order.status === "cancelled") return "cancelled";
   if (order.status === "hold") return "hold";
   if (order.assignedRouteId || order.status === "scheduled") return "scheduled";
   return "unscheduled";
@@ -2116,6 +2118,11 @@ const styles: Record<string, any> = {
         background: "rgba(245, 158, 11, 0.2)",
         border: "rgba(245, 158, 11, 0.58)",
         color: "#fcd34d",
+      },
+      cancelled: {
+        background: "rgba(127, 29, 29, 0.24)",
+        border: "rgba(248, 113, 113, 0.55)",
+        color: "#fecaca",
       },
       unscheduled: {
         background: "rgba(249, 115, 22, 0.18)",

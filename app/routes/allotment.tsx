@@ -109,9 +109,15 @@ function getOrderNumber(order: DispatchOrder) {
 
 function getOrderStatus(order: DispatchOrder) {
   if (order.status === "delivered" || order.deliveryStatus === "delivered") return "Delivered";
+  if (order.status === "cancelled") return "Cancelled";
   if (order.assignedRouteId || order.status === "scheduled") return "Scheduled";
   if (order.status === "hold") return "On hold";
   return "New";
+}
+
+function shouldShowOnAllotment(order: DispatchOrder) {
+  const status = getOrderStatus(order);
+  return status !== "Delivered" && status !== "Cancelled";
 }
 
 function normalizeQuantity(value?: string | null) {
@@ -190,7 +196,7 @@ export default function AllotmentPage() {
   const allotmentOrders = useMemo<AllotmentOrder[]>(() => {
     const search = query.trim().toLowerCase();
     return orders
-      .filter((order) => getOrderStatus(order) !== "Delivered")
+      .filter(shouldShowOnAllotment)
       .filter((order) => !search || buildSearchText(order).includes(search))
       .map((order) => {
         const date = parseRequestedDate(order.requestedWindow);
