@@ -1,4 +1,4 @@
-import{w as a,M as e,L as r,O as h,S as o,a as l}from"./chunk-UVKPFVEO-BzvOWzz9.js";import{j as t}from"./jsx-runtime-DJxbfBsx.js";const s=()=>[],n=a(function(){return t.jsxs("html",{lang:"en",children:[t.jsxs("head",{children:[t.jsx("meta",{charSet:"utf-8"}),t.jsx("meta",{name:"viewport",content:"width=device-width, initial-scale=1"}),t.jsx("script",{dangerouslySetInnerHTML:{__html:"try{localStorage.setItem('ghs-theme','dark');document.documentElement.dataset.ghsTheme='dark';}catch(e){document.documentElement.dataset.ghsTheme='dark';}"}}),t.jsx("style",{children:`
+import{w as a,M as e,L as r,O as h,S as o,a as l}from"./chunk-UVKPFVEO-BzvOWzz9.js";import{j as t}from"./jsx-runtime-DJxbfBsx.js";const g=()=>[{rel:"manifest",href:"/manifest.webmanifest"},{rel:"apple-touch-icon",href:"/green-hills-logo.png"}],n=a(function(){return t.jsxs("html",{lang:"en",children:[t.jsxs("head",{children:[t.jsx("meta",{charSet:"utf-8"}),t.jsx("meta",{name:"viewport",content:"width=device-width, initial-scale=1"}),t.jsx("meta",{name:"theme-color",content:"#020617"}),t.jsx("meta",{name:"apple-mobile-web-app-capable",content:"yes"}),t.jsx("meta",{name:"apple-mobile-web-app-title",content:"GHS Loader"}),t.jsx("meta",{name:"apple-mobile-web-app-status-bar-style",content:"black-translucent"}),t.jsx("script",{dangerouslySetInnerHTML:{__html:"try{localStorage.setItem('ghs-theme','dark');document.documentElement.dataset.ghsTheme='dark';}catch(e){document.documentElement.dataset.ghsTheme='dark';}"}}),t.jsx("style",{children:`
             :root {
               color-scheme: dark;
               --ghs-theme-toggle-bg: #020617;
@@ -457,4 +457,4 @@ import{w as a,M as e,L as r,O as h,S as o,a as l}from"./chunk-UVKPFVEO-BzvOWzz9.
                 font-size: 12px !important;
               }
             }
-          `}),t.jsx(e,{}),t.jsx(r,{})]}),t.jsxs("body",{children:[t.jsx(h,{}),t.jsx(o,{}),t.jsx(l,{})]})]})});export{n as default,s as links};
+          `}),t.jsx(e,{}),t.jsx(r,{})]}),t.jsxs("body",{children:[t.jsx(h,{}),t.jsx(o,{}),t.jsx(l,{})]})]})});export{n as default,g as links};

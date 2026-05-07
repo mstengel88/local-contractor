@@ -2,7 +2,9 @@ import { data } from "react-router";
 import {
   deletePushSubscription,
   getVapidPublicKey,
+  isPushConfigured,
   savePushSubscription,
+  sendPushToTarget,
 } from "../lib/push.server";
 import { requireUserPermission } from "../lib/user-auth.server";
 
@@ -10,7 +12,7 @@ export async function loader() {
   return data({
     ok: true,
     publicKey: getVapidPublicKey(),
-    configured: Boolean(getVapidPublicKey()),
+    configured: isPushConfigured(),
   });
 }
 
@@ -34,6 +36,23 @@ export async function action({ request }: { request: Request }) {
   if (intent === "unsubscribe") {
     await deletePushSubscription(String(body.endpoint || ""), currentUser);
     return data({ ok: true, message: "Push alerts disabled." });
+  }
+
+  if (intent === "test-push") {
+    const result = await sendPushToTarget({
+      targetUserId: currentUser.id,
+      title: "Loader push test",
+      message: "If you see this while locked, push is working.",
+      url: "/loader",
+      tag: "loader-test-push",
+    });
+    return data({
+      ok: !result.skipped,
+      message: result.skipped
+        ? result.reason || "Push is not configured."
+        : `Test push sent to ${result.sent} device${result.sent === 1 ? "" : "s"}.`,
+      result,
+    });
   }
 
   return data({ ok: false, message: "Unknown push action." }, { status: 400 });

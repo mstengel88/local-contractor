@@ -1,4 +1,4 @@
-import * as webpush from "web-push";
+import webpush from "web-push";
 import { supabaseAdmin } from "./supabase.server";
 import type { AppUserProfile } from "./user-auth.server";
 
@@ -15,6 +15,10 @@ type PushSubscriptionJson = {
 
 export function getVapidPublicKey() {
   return process.env.VAPID_PUBLIC_KEY || "";
+}
+
+export function isPushConfigured() {
+  return Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
 }
 
 function configureWebPush() {

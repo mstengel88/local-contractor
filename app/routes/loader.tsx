@@ -53,6 +53,7 @@ export default function LoaderPage() {
   const canUseRealtime = Boolean(loaderData.supabaseUrl && loaderData.supabaseAnonKey);
   const [pushStatus, setPushStatus] = useState("Push alerts not enabled on this device.");
   const [pushBusy, setPushBusy] = useState(false);
+  const [testPushBusy, setTestPushBusy] = useState(false);
   const pushSupported =
     typeof window !== "undefined" &&
     "serviceWorker" in navigator &&
@@ -141,8 +142,8 @@ export default function LoaderPage() {
     try {
       const keyResponse = await fetch("/api/loader-push-subscription");
       const keyResult = await keyResponse.json();
-      if (!keyResult?.publicKey) {
-        setPushStatus("Push is not configured yet. Add VAPID keys to the server environment.");
+      if (!keyResult?.configured || !keyResult?.publicKey) {
+        setPushStatus("Push is not configured yet. Add VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY to the server environment.");
         return;
       }
 
@@ -178,6 +179,23 @@ export default function LoaderPage() {
     }
   }
 
+  async function sendTestPush() {
+    setTestPushBusy(true);
+    try {
+      const response = await fetch("/api/loader-push-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ intent: "test-push" }),
+      });
+      const result = await response.json();
+      setPushStatus(result?.message || "Test push requested.");
+    } catch (error) {
+      setPushStatus(error instanceof Error ? error.message : "Unable to send test push.");
+    } finally {
+      setTestPushBusy(false);
+    }
+  }
+
   return (
     <main style={styles.page}>
       <section style={styles.shell}>
@@ -197,6 +215,14 @@ export default function LoaderPage() {
               disabled={pushBusy}
             >
               {pushBusy ? "Enabling..." : "Enable Push Alerts"}
+            </button>
+            <button
+              type="button"
+              onClick={sendTestPush}
+              style={styles.navButton}
+              disabled={testPushBusy}
+            >
+              {testPushBusy ? "Sending..." : "Test Push"}
             </button>
             <Link to="/classic" style={styles.navButton}>Dispatch</Link>
             <Link to="/login?logout=1" style={styles.navButton}>Log Out</Link>

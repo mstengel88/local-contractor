@@ -8,7 +8,10 @@ import {
 } from "react-router";
 
 export const links: LinksFunction = () => {
-  return [];
+  return [
+    { rel: "manifest", href: "/manifest.webmanifest" },
+    { rel: "apple-touch-icon", href: "/green-hills-logo.png" },
+  ];
 };
 
 export default function App() {
@@ -17,6 +20,10 @@ export default function App() {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" content="#020617" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="GHS Loader" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <script
           dangerouslySetInnerHTML={{
             __html:

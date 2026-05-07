@@ -39,4 +39,9 @@ create index if not exists dispatch_push_subscriptions_user_idx
 create index if not exists dispatch_push_subscriptions_role_idx
   on public.dispatch_push_subscriptions (target_role, updated_at desc);
 
-alter publication supabase_realtime add table public.dispatch_notifications;
+do $$
+begin
+  alter publication supabase_realtime add table public.dispatch_notifications;
+exception
+  when duplicate_object then null;
+end $$;

@@ -41,15 +41,21 @@ function getLoadLabel(order: DispatchOrder) {
   return [order.quantity, order.unit, order.material].filter(Boolean).join(" ");
 }
 
+function getRouteLabel(route: DispatchRoute | null | undefined) {
+  if (!route) return "Unassigned route";
+  const parts = [`Route ${route.code}`];
+  if (route.truck) parts.push(`Truck ${route.truck}`);
+  if (route.driver) parts.push(route.driver);
+  return parts.join(" / ");
+}
+
 export async function createLoaderNotification(input: {
   order: DispatchOrder;
   route?: DispatchRoute | null;
   actor?: AppUserProfile | null;
   targetUserId?: string | null;
 }) {
-  const routeLabel = input.route
-    ? `${input.route.code}${input.route.truck ? ` / ${input.route.truck}` : ""}`
-    : "Unassigned route";
+  const routeLabel = getRouteLabel(input.route);
   const title = `Load next: ${formatOrderNumber(input.order)}`;
   const message = `${getLoadLabel(input.order)} for ${routeLabel} - ${input.order.customer}`;
 

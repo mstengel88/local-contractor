@@ -1,0 +1,24 @@
+{
+  "name": "Green Hills Contractor",
+  "short_name": "GHS Loader",
+  "description": "Green Hills loader and dispatch tools.",
+  "start_url": "/loader",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "icons": [
+    {
+      "src": "/green-hills-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/green-hills-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
