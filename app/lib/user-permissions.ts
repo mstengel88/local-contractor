@@ -3,6 +3,7 @@ export const permissionLabels = {
   reviewQuotes: "Review Quotes",
   dispatch: "Dispatch",
   driver: "Driver View",
+  loader: "Loader View",
   settings: "Settings",
   sendToShopify: "Send To Shopify",
   manageDispatch: "Manage Dispatch",

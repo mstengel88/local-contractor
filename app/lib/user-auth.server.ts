@@ -58,6 +58,7 @@ function getDefaultPermissions(role: string): UserPermission[] {
     return ["quoteTool", "reviewQuotes", "dispatch", "driver", "manageDispatch"];
   }
   if (role === "driver") return ["driver"];
+  if (role === "loader") return ["loader"];
   return ["quoteTool"];
 }
 

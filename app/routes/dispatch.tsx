@@ -8,6 +8,7 @@ import {
 } from "../lib/admin-quote-auth.server";
 import { userAuthCookie } from "../lib/user-auth.server";
 import { sendDeliveryConfirmationEmail } from "../lib/delivery-confirmation-email.server";
+import { createLoaderNotification } from "../lib/loader-notifications.server";
 import {
   createDispatchEmployee,
   createDispatchRoute,
@@ -54,7 +55,7 @@ import {
   pollDispatchMailbox,
 } from "../lib/dispatch-mailbox.server";
 import { attachAddressAutocomplete, loadGooglePlaces } from "../lib/google-places";
-import { getCurrentUser } from "../lib/user-auth.server";
+import { getCurrentUser, logAuditEvent } from "../lib/user-auth.server";
 
 const DISPATCH_NAV_COLLAPSED_KEY = "dispatchNavCollapsed";
 
@@ -1132,6 +1133,7 @@ export async function action({ request }: any) {
     );
   }
 
+  const currentUser = await getCurrentUser(request);
   const canManageDispatch = await hasAdminQuotePermissionAccess(request, "manageDispatch");
   const driverOnlyIntents = new Set(["update-stop-status"]);
   if (!canManageDispatch && !driverOnlyIntents.has(intent)) {
@@ -1847,6 +1849,45 @@ export async function action({ request }: any) {
       });
     }
 
+    if (intent === "notify-loader") {
+      const orderId = String(form.get("orderId") || "").trim();
+      if (!orderId) throw new Error("Missing order selection");
+
+      const [allOrders, allRoutes] = await Promise.all([
+        getDispatchOrders(),
+        getDispatchRoutes(),
+      ]);
+      const order = allOrders.find((entry) => entry.id === orderId);
+      if (!order) throw new Error("Order was not found.");
+      const route = allRoutes.find((entry) => entry.id === order.assignedRouteId) || null;
+      const notification = await createLoaderNotification({
+        order,
+        route,
+        actor: currentUser,
+      });
+      await logAuditEvent({
+        actor: currentUser,
+        action: "notify_loader",
+        targetType: "dispatch_order",
+        targetId: order.id,
+        targetLabel: order.orderNumber || order.id,
+        details: {
+          notificationId: notification.id,
+          message: notification.message,
+          route: route?.code || null,
+        },
+      });
+
+      const dispatchState = await loadDispatchState({ skipSetup: true });
+      return data({
+        allowed: true,
+        ok: true,
+        message: `Sent loader alert for ${getOrderDisplayNumber(order)}.`,
+        selectedOrderId: order.id,
+        ...dispatchState,
+      });
+    }
+
     if (intent === "sequence-route") {
       const routeId = String(form.get("routeId") || "").trim();
       const mode = String(form.get("sequenceMode") || "city").trim();
@@ -2108,6 +2149,7 @@ export default function DispatchPage() {
   const monitorHref = isEmbeddedRoute ? "/app/monitor" : "/monitor";
   const calendarHref = isEmbeddedRoute ? "/app/calendar" : "/calendar";
   const allotmentHref = isEmbeddedRoute ? "/app/allotment" : "/allotment";
+  const loaderHref = isEmbeddedRoute ? "/app/loader" : "/loader";
   const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
   const logoutHref = `${dispatchHref}?logout=1`;
   const canAccess = (permission: string) =>
@@ -2584,6 +2626,9 @@ export default function DispatchPage() {
             <a href={monitorHref} style={styles.sideNavLink(false)}>Monitor</a>
             <a href={calendarHref} style={styles.sideNavLink(false)}>Calendar</a>
             <a href={allotmentHref} style={styles.sideNavLink(false)}>Allotment</a>
+            {canAccess("loader") ? (
+              <a href={loaderHref} style={styles.sideNavLink(false)}>Loader</a>
+            ) : null}
             {canAccess("manageDispatch") ? (
               <a href={dispatchViewHref("orders")} style={styles.sideNavLink(activeView === "orders")}>Orders</a>
             ) : null}
@@ -2603,6 +2648,9 @@ export default function DispatchPage() {
           <div style={navCollapsed ? styles.collapsedOnlyHidden : styles.sidebarFooter}>
             {canAccess("driver") ? (
               <a href={driverHref} style={styles.sideUtility}>Driver Route</a>
+            ) : null}
+            {canAccess("loader") ? (
+              <a href={loaderHref} style={styles.sideUtility}>Loader View</a>
             ) : null}
             {canAccess("quoteTool") ? (
               <a href={quoteHref} style={styles.sideUtility}>Quote Tool</a>
@@ -4084,7 +4132,18 @@ export default function DispatchPage() {
                             </button>
                           </Form>
                         ) : (
-                          <Form method="post" style={styles.assignForm}>
+                          <Form
+                            method="post"
+                            style={styles.assignForm}
+                            onSubmit={(event) =>
+                              prepareAssignmentSubmit(
+                                selectedOrder,
+                                route.id,
+                                event.currentTarget,
+                                event,
+                              )
+                            }
+                          >
                             <input type="hidden" name="intent" value="assign-order" />
                             <input type="hidden" name="orderId" value={selectedOrder.id} />
                             <input type="hidden" name="routeId" value={route.id} />
@@ -4189,6 +4248,19 @@ export default function DispatchPage() {
                                     title="Move stop down"
                                   >
                                     Down
+                                  </button>
+                                </Form>
+                              ) : null}
+                              {canManageDispatch ? (
+                                <Form method="post" style={styles.routeReorderForm}>
+                                  <input type="hidden" name="intent" value="notify-loader" />
+                                  <input type="hidden" name="orderId" value={order.id} />
+                                  <button
+                                    type="submit"
+                                    style={styles.stopDetailButton}
+                                    title="Tell the loader this is the next load"
+                                  >
+                                    Load Next
                                   </button>
                                 </Form>
                               ) : null}

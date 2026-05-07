@@ -765,7 +765,7 @@ const route0 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProper
   default: root,
   links
 }, Symbol.toStringTag, { value: "Module" }));
-async function loader$m({
+async function loader$o({
   request
 }) {
   const url = new URL(request.url);
@@ -778,7 +778,7 @@ const route$1 = UNSAFE_withComponentProps(function Index() {
 const route1 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: route$1,
-  loader: loader$m
+  loader: loader$o
 }, Symbol.toStringTag, { value: "Module" }));
 function getCreatorPayload(input) {
   return {
@@ -886,6 +886,7 @@ const permissionLabels = {
   reviewQuotes: "Review Quotes",
   dispatch: "Dispatch",
   driver: "Driver View",
+  loader: "Loader View",
   settings: "Settings",
   sendToShopify: "Send To Shopify",
   manageDispatch: "Manage Dispatch",
@@ -910,6 +911,7 @@ function getDefaultPermissions(role) {
     return ["quoteTool", "reviewQuotes", "dispatch", "driver", "manageDispatch"];
   }
   if (role === "driver") return ["driver"];
+  if (role === "loader") return ["loader"];
   return ["quoteTool"];
 }
 function normalizePermissions(value, role) {
@@ -1290,7 +1292,7 @@ function attachAddressAutocomplete(options) {
     const place = autocomplete.getPlace();
     const components = (place == null ? void 0 : place.address_components) || [];
     let streetNumber = "";
-    let route50 = "";
+    let route53 = "";
     let locality = "";
     let administrativeArea = "";
     let zip = "";
@@ -1298,7 +1300,7 @@ function attachAddressAutocomplete(options) {
     for (const component of components) {
       const types = component.types || [];
       if (types.includes("street_number")) streetNumber = component.long_name || "";
-      if (types.includes("route")) route50 = component.long_name || "";
+      if (types.includes("route")) route53 = component.long_name || "";
       if (types.includes("locality")) locality = component.long_name || "";
       if (types.includes("administrative_area_level_1")) {
         administrativeArea = component.short_name || component.long_name || "";
@@ -1308,7 +1310,7 @@ function attachAddressAutocomplete(options) {
         countryCode = component.short_name || component.long_name || "US";
       }
     }
-    address1.value = [streetNumber, route50].filter(Boolean).join(" ").trim();
+    address1.value = [streetNumber, route53].filter(Boolean).join(" ").trim();
     city.value = options.cityFormat === "cityStateZip" ? [locality, [administrativeArea, zip].filter(Boolean).join(" ")].filter(Boolean).join(", ") : locality;
     province.value = administrativeArea;
     postalCode.value = zip;
@@ -1831,7 +1833,7 @@ function formatQuantityWithUnit(quantity, unitLabel) {
 function getBrowserGoogleMapsApiKey$1() {
   return process.env.GOOGLE_MAPS_BROWSER_API_KEY || process.env.GOOGLE_MAPS_API_KEY || "";
 }
-async function loader$l({
+async function loader$n({
   request
 }) {
   const url = new URL(request.url);
@@ -1854,7 +1856,7 @@ async function loader$l({
     googleMapsApiKey: getBrowserGoogleMapsApiKey$1()
   });
 }
-async function action$o({
+async function action$q({
   request
 }) {
   const form = await request.formData();
@@ -2138,7 +2140,7 @@ async function action$o({
     customNotes
   });
 }
-const styles$c = {
+const styles$d = {
   page: {
     minHeight: "100vh",
     background: "radial-gradient(circle at top, #1f2937 0%, #111827 45%, #030712 100%)",
@@ -2378,7 +2380,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
   }, [actionData]);
   const selectedHistoryQuote = useMemo(() => recentQuotes.find((quote) => quote.id === selectedHistoryQuoteId) || null, [recentQuotes, selectedHistoryQuoteId]);
   const mobileActionButtonStyle = {
-    ...styles$c.buttonGhost,
+    ...styles$d.buttonGhost,
     minHeight: isMobile ? 48 : void 0,
     width: isMobile ? "100%" : void 0,
     justifyContent: "center"
@@ -2477,19 +2479,19 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
   }
   if (!allowed) {
     return /* @__PURE__ */ jsx("div", {
-      style: styles$c.page,
+      style: styles$d.page,
       children: /* @__PURE__ */ jsx("div", {
         style: {
-          ...styles$c.shell,
+          ...styles$d.shell,
           maxWidth: "520px"
         },
         children: /* @__PURE__ */ jsxs("div", {
-          style: styles$c.card,
+          style: styles$d.card,
           children: [/* @__PURE__ */ jsx("h1", {
-            style: styles$c.title,
+            style: styles$d.title,
             children: "Custom Quote Portal"
           }), /* @__PURE__ */ jsx("p", {
-            style: styles$c.subtitle,
+            style: styles$d.subtitle,
             children: "Enter the admin password to access the quote tool."
           }), /* @__PURE__ */ jsxs(Form, {
             method: "post",
@@ -2502,20 +2504,20 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
               name: "intent",
               value: "login"
             }), /* @__PURE__ */ jsx("label", {
-              style: styles$c.label,
+              style: styles$d.label,
               children: "Admin Password"
             }), /* @__PURE__ */ jsx("input", {
               type: "password",
               name: "password",
               autoComplete: "current-password",
-              style: styles$c.input
+              style: styles$d.input
             }), (actionData == null ? void 0 : actionData.loginError) ? /* @__PURE__ */ jsx("div", {
-              style: styles$c.statusErr,
+              style: styles$d.statusErr,
               children: actionData.loginError
             }) : null, /* @__PURE__ */ jsx("button", {
               type: "submit",
               style: {
-                ...styles$c.buttonPrimary,
+                ...styles$d.buttonPrimary,
                 marginTop: "18px",
                 width: "100%"
               },
@@ -2528,24 +2530,24 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
   }
   return /* @__PURE__ */ jsxs("div", {
     style: {
-      ...styles$c.page,
-      padding: isMobile ? "20px 14px 120px" : styles$c.page.padding,
+      ...styles$d.page,
+      padding: isMobile ? "20px 14px 120px" : styles$d.page.padding,
       overflowX: "clip"
     },
     children: [/* @__PURE__ */ jsxs("div", {
-      style: styles$c.shell,
+      style: styles$d.shell,
       children: [isMobile ? /* @__PURE__ */ jsxs("div", {
         style: {
           marginBottom: 18
         },
         children: [/* @__PURE__ */ jsx("h1", {
           style: {
-            ...styles$c.title,
+            ...styles$d.title,
             fontSize: "28px"
           },
           children: "Custom Quote Tool"
         }), /* @__PURE__ */ jsx("div", {
-          style: styles$c.subtitle,
+          style: styles$d.subtitle,
           children: "Full quote builder with products, delivery, tax, images, and saved history."
         }), /* @__PURE__ */ jsxs("div", {
           style: {
@@ -2556,13 +2558,13 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
           children: ["Loaded products: ", products.length, " · Google Places: ", googleStatus]
         })]
       }) : /* @__PURE__ */ jsxs("div", {
-        style: styles$c.hero,
+        style: styles$d.hero,
         children: [/* @__PURE__ */ jsxs("div", {
           children: [/* @__PURE__ */ jsx("h1", {
-            style: styles$c.title,
+            style: styles$d.title,
             children: "Custom Quote Tool"
           }), /* @__PURE__ */ jsx("div", {
-            style: styles$c.subtitle,
+            style: styles$d.subtitle,
             children: "Full quote builder with products, delivery, tax, images, and saved history."
           }), /* @__PURE__ */ jsxs("div", {
             style: {
@@ -2580,27 +2582,27 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
           },
           children: [canAccess("quoteTool") ? /* @__PURE__ */ jsx("a", {
             href: mobileDashboardHref,
-            style: styles$c.logout,
+            style: styles$d.logout,
             children: "Dashboard"
           }) : null, canAccess("dispatch") ? /* @__PURE__ */ jsx("a", {
             href: dispatchHref,
-            style: styles$c.logout,
+            style: styles$d.logout,
             children: "Dispatch"
           }) : null, canAccess("reviewQuotes") ? /* @__PURE__ */ jsx("a", {
             href: quoteReviewHref,
-            style: styles$c.logout,
+            style: styles$d.logout,
             children: "Review Quotes"
           }) : null, canAccess("manageUsers") ? /* @__PURE__ */ jsx("a", {
             href: "/settings",
-            style: styles$c.logout,
+            style: styles$d.logout,
             children: "Settings"
           }) : null, currentUser ? /* @__PURE__ */ jsx("a", {
             href: "/change-password",
-            style: styles$c.logout,
+            style: styles$d.logout,
             children: "Change Password"
           }) : null, /* @__PURE__ */ jsx("a", {
             href: currentUser ? "/login?logout=1" : logoutHref,
-            style: styles$c.logout,
+            style: styles$d.logout,
             children: "Log out"
           })]
         })]
@@ -2624,48 +2626,48 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
           value: JSON.stringify(lines)
         }), /* @__PURE__ */ jsxs("div", {
           style: {
-            ...styles$c.card,
-            padding: isMobile ? "18px" : styles$c.card.padding
+            ...styles$d.card,
+            padding: isMobile ? "18px" : styles$d.card.padding
           },
           children: [/* @__PURE__ */ jsx("h2", {
-            style: styles$c.sectionTitle,
+            style: styles$d.sectionTitle,
             children: "Quote Type"
           }), /* @__PURE__ */ jsx("p", {
-            style: styles$c.sectionSub,
+            style: styles$d.sectionSub,
             children: "Switch between standard customer pricing and contractor tier pricing."
           }), /* @__PURE__ */ jsxs("div", {
-            style: styles$c.tabRow,
+            style: styles$d.tabRow,
             children: [/* @__PURE__ */ jsx("button", {
               type: "button",
               onClick: () => setQuoteAudience("customer"),
               style: {
-                ...styles$c.tabButton,
+                ...styles$d.tabButton,
                 minHeight: isMobile ? 46 : void 0,
                 flex: isMobile ? "1 1 110px" : void 0,
                 textAlign: "center",
-                ...quoteAudience === "customer" ? styles$c.tabButtonActive : {}
+                ...quoteAudience === "customer" ? styles$d.tabButtonActive : {}
               },
               children: "Customer"
             }), /* @__PURE__ */ jsx("button", {
               type: "button",
               onClick: () => setQuoteAudience("contractor"),
               style: {
-                ...styles$c.tabButton,
+                ...styles$d.tabButton,
                 minHeight: isMobile ? 46 : void 0,
                 flex: isMobile ? "1 1 110px" : void 0,
                 textAlign: "center",
-                ...quoteAudience === "contractor" ? styles$c.tabButtonActive : {}
+                ...quoteAudience === "contractor" ? styles$d.tabButtonActive : {}
               },
               children: "Contractor"
             }), /* @__PURE__ */ jsx("button", {
               type: "button",
               onClick: () => setQuoteAudience("custom"),
               style: {
-                ...styles$c.tabButton,
+                ...styles$d.tabButton,
                 minHeight: isMobile ? 46 : void 0,
                 flex: isMobile ? "1 1 110px" : void 0,
                 textAlign: "center",
-                ...quoteAudience === "custom" ? styles$c.tabButtonActive : {}
+                ...quoteAudience === "custom" ? styles$d.tabButtonActive : {}
               },
               children: "Custom"
             })]
@@ -2674,13 +2676,13 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
               maxWidth: 280
             },
             children: [/* @__PURE__ */ jsx("label", {
-              style: styles$c.label,
+              style: styles$d.label,
               children: "Contractor Tier"
             }), /* @__PURE__ */ jsxs("select", {
               name: "contractorTierUi",
               value: contractorTier,
               onChange: (e) => setContractorTier(normalizeContractorTier(e.target.value)),
-              style: styles$c.input,
+              style: styles$d.input,
               children: [/* @__PURE__ */ jsx("option", {
                 value: "tier1",
                 children: "Tier 1"
@@ -2698,14 +2700,14 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
           }) : null]
         }), /* @__PURE__ */ jsxs("div", {
           style: {
-            ...styles$c.card,
-            padding: isMobile ? "18px" : styles$c.card.padding
+            ...styles$d.card,
+            padding: isMobile ? "18px" : styles$d.card.padding
           },
           children: [/* @__PURE__ */ jsx("h2", {
-            style: styles$c.sectionTitle,
+            style: styles$d.sectionTitle,
             children: "Customer & Delivery Address"
           }), /* @__PURE__ */ jsx("p", {
-            style: styles$c.sectionSub,
+            style: styles$d.sectionSub,
             children: "Start typing the street address and choose a suggestion."
           }), /* @__PURE__ */ jsxs("div", {
             style: {
@@ -2714,40 +2716,40 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
             },
             children: [/* @__PURE__ */ jsxs("div", {
               children: [/* @__PURE__ */ jsx("label", {
-                style: styles$c.label,
+                style: styles$d.label,
                 children: "Customer Name"
               }), /* @__PURE__ */ jsx("input", {
                 type: "text",
                 name: "customerName",
                 autoComplete: "name",
                 defaultValue: (actionData == null ? void 0 : actionData.customerName) || "",
-                style: styles$c.input
+                style: styles$d.input
               })]
             }), /* @__PURE__ */ jsxs("div", {
               children: [/* @__PURE__ */ jsx("label", {
-                style: styles$c.label,
+                style: styles$d.label,
                 children: "Email Address"
               }), /* @__PURE__ */ jsx("input", {
                 type: "email",
                 name: "customerEmail",
                 autoComplete: "email",
                 defaultValue: (actionData == null ? void 0 : actionData.customerEmail) || "",
-                style: styles$c.input
+                style: styles$d.input
               })]
             }), /* @__PURE__ */ jsxs("div", {
               children: [/* @__PURE__ */ jsx("label", {
-                style: styles$c.label,
+                style: styles$d.label,
                 children: "Phone Number"
               }), /* @__PURE__ */ jsx("input", {
                 type: "tel",
                 name: "customerPhone",
                 autoComplete: "tel",
                 defaultValue: (actionData == null ? void 0 : actionData.customerPhone) || "",
-                style: styles$c.input
+                style: styles$d.input
               })]
             }), /* @__PURE__ */ jsxs("div", {
               children: [/* @__PURE__ */ jsx("label", {
-                style: styles$c.label,
+                style: styles$d.label,
                 children: "Address 1"
               }), /* @__PURE__ */ jsx("input", {
                 id: "quote-address1",
@@ -2755,18 +2757,18 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                 name: "address1",
                 autoComplete: "street-address",
                 defaultValue: ((_a2 = actionData == null ? void 0 : actionData.address) == null ? void 0 : _a2.address1) || "",
-                style: styles$c.input
+                style: styles$d.input
               })]
             }), /* @__PURE__ */ jsxs("div", {
               children: [/* @__PURE__ */ jsx("label", {
-                style: styles$c.label,
+                style: styles$d.label,
                 children: "Address 2"
               }), /* @__PURE__ */ jsx("input", {
                 type: "text",
                 name: "address2",
                 autoComplete: "address-line2",
                 defaultValue: ((_b = actionData == null ? void 0 : actionData.address) == null ? void 0 : _b.address2) || "",
-                style: styles$c.input
+                style: styles$d.input
               })]
             }), /* @__PURE__ */ jsxs("div", {
               style: {
@@ -2776,7 +2778,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
               },
               children: [/* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$c.label,
+                  style: styles$d.label,
                   children: "City"
                 }), /* @__PURE__ */ jsx("input", {
                   id: "quote-city",
@@ -2784,11 +2786,11 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   name: "city",
                   autoComplete: "address-level2",
                   defaultValue: ((_c = actionData == null ? void 0 : actionData.address) == null ? void 0 : _c.city) || "",
-                  style: styles$c.input
+                  style: styles$d.input
                 })]
               }), /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$c.label,
+                  style: styles$d.label,
                   children: "State"
                 }), /* @__PURE__ */ jsx("input", {
                   id: "quote-province",
@@ -2796,11 +2798,11 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   name: "province",
                   autoComplete: "address-level1",
                   defaultValue: ((_d = actionData == null ? void 0 : actionData.address) == null ? void 0 : _d.province) || "WI",
-                  style: styles$c.input
+                  style: styles$d.input
                 })]
               }), /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$c.label,
+                  style: styles$d.label,
                   children: "ZIP"
                 }), /* @__PURE__ */ jsx("input", {
                   id: "quote-postalCode",
@@ -2808,11 +2810,11 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   name: "postalCode",
                   autoComplete: "postal-code",
                   defaultValue: ((_e = actionData == null ? void 0 : actionData.address) == null ? void 0 : _e.postalCode) || "",
-                  style: styles$c.input
+                  style: styles$d.input
                 })]
               }), /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$c.label,
+                  style: styles$d.label,
                   children: "Country"
                 }), /* @__PURE__ */ jsx("input", {
                   id: "quote-country",
@@ -2820,15 +2822,15 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   name: "country",
                   autoComplete: "country-name",
                   defaultValue: ((_f = actionData == null ? void 0 : actionData.address) == null ? void 0 : _f.country) || "US",
-                  style: styles$c.input
+                  style: styles$d.input
                 })]
               })]
             })]
           })]
         }), /* @__PURE__ */ jsxs("div", {
           style: {
-            ...styles$c.card,
-            padding: isMobile ? "18px" : styles$c.card.padding
+            ...styles$d.card,
+            padding: isMobile ? "18px" : styles$d.card.padding
           },
           children: [/* @__PURE__ */ jsxs("div", {
             style: {
@@ -2841,16 +2843,16 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
             },
             children: [/* @__PURE__ */ jsxs("div", {
               children: [/* @__PURE__ */ jsx("h2", {
-                style: styles$c.sectionTitle,
+                style: styles$d.sectionTitle,
                 children: "Quote Lines"
               }), /* @__PURE__ */ jsx("p", {
-                style: styles$c.sectionSub,
+                style: styles$d.sectionSub,
                 children: "Search by product, SKU, or vendor. Click a result to select it."
               })]
             }), /* @__PURE__ */ jsx("button", {
               type: "button",
               onClick: addLine,
-              style: styles$c.buttonGhost,
+              style: styles$d.buttonGhost,
               children: "Add Line"
             })]
           }), /* @__PURE__ */ jsx("div", {
@@ -2880,7 +2882,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   },
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$c.label,
+                      style: styles$d.label,
                       children: "Search Product"
                     }), /* @__PURE__ */ jsx("input", {
                       type: "text",
@@ -2890,11 +2892,11 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                         sku: ""
                       }),
                       placeholder: "Type product name, SKU, or vendor",
-                      style: styles$c.input
+                      style: styles$d.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$c.label,
+                      style: styles$d.label,
                       children: "Quantity"
                     }), /* @__PURE__ */ jsx("input", {
                       type: "number",
@@ -2904,14 +2906,14 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                       onChange: (e) => updateLine(index, {
                         quantity: e.target.value
                       }),
-                      style: styles$c.input
+                      style: styles$d.input
                     })]
                   }), /* @__PURE__ */ jsx("button", {
                     type: "button",
                     onClick: () => removeLine(index),
                     disabled: lines.length === 1,
                     style: {
-                      ...styles$c.buttonGhost,
+                      ...styles$d.buttonGhost,
                       minHeight: isMobile ? 46 : void 0,
                       width: isMobile ? "100%" : void 0
                     },
@@ -2983,7 +2985,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   },
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$c.label,
+                      style: styles$d.label,
                       children: "Custom Line Title"
                     }), /* @__PURE__ */ jsx("input", {
                       type: "text",
@@ -2992,11 +2994,11 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                         customTitle: e.target.value
                       }),
                       placeholder: selectedProduct.title,
-                      style: styles$c.input
+                      style: styles$d.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$c.label,
+                      style: styles$d.label,
                       children: "Custom Unit Price"
                     }), /* @__PURE__ */ jsx("input", {
                       type: "number",
@@ -3007,7 +3009,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                         customPrice: e.target.value
                       }),
                       placeholder: String(getUnitPriceForProduct(selectedProduct, quoteAudience, contractorTier)),
-                      style: styles$c.input
+                      style: styles$d.input
                     })]
                   })]
                 }) : null, !selectedProduct && line.search.trim() ? /* @__PURE__ */ jsx("div", {
@@ -3094,14 +3096,14 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
           })]
         }), quoteAudience === "custom" ? /* @__PURE__ */ jsxs("div", {
           style: {
-            ...styles$c.card,
-            padding: isMobile ? "18px" : styles$c.card.padding
+            ...styles$d.card,
+            padding: isMobile ? "18px" : styles$d.card.padding
           },
           children: [/* @__PURE__ */ jsx("h2", {
-            style: styles$c.sectionTitle,
+            style: styles$d.sectionTitle,
             children: "Custom Adjustments"
           }), /* @__PURE__ */ jsx("p", {
-            style: styles$c.sectionSub,
+            style: styles$d.sectionSub,
             children: "Override delivery, minute charge, tax, and the customer-facing quote details before calculating or saving."
           }), /* @__PURE__ */ jsxs("div", {
             style: {
@@ -3116,7 +3118,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
               },
               children: [/* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$c.label,
+                  style: styles$d.label,
                   children: "Delivery Amount"
                 }), /* @__PURE__ */ jsx("input", {
                   type: "number",
@@ -3125,11 +3127,11 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   step: "0.01",
                   defaultValue: (actionData == null ? void 0 : actionData.customDeliveryAmount) || "",
                   placeholder: "Use calculated delivery",
-                  style: styles$c.input
+                  style: styles$d.input
                 })]
               }), /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$c.label,
+                  style: styles$d.label,
                   children: "Minute Charge"
                 }), /* @__PURE__ */ jsx("input", {
                   type: "number",
@@ -3138,11 +3140,11 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   step: "0.01",
                   defaultValue: (actionData == null ? void 0 : actionData.customRatePerMinute) || "",
                   placeholder: "Default 2.08",
-                  style: styles$c.input
+                  style: styles$d.input
                 })]
               }), /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$c.label,
+                  style: styles$d.label,
                   children: "Tax Rate"
                 }), /* @__PURE__ */ jsx("input", {
                   type: "number",
@@ -3151,7 +3153,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   step: "0.0001",
                   defaultValue: (actionData == null ? void 0 : actionData.customTaxRate) || "",
                   placeholder: "Example: 0.055",
-                  style: styles$c.input
+                  style: styles$d.input
                 })]
               })]
             }), /* @__PURE__ */ jsxs("div", {
@@ -3162,7 +3164,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
               },
               children: [/* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$c.label,
+                  style: styles$d.label,
                   children: "Shipping Qty"
                 }), /* @__PURE__ */ jsx("input", {
                   type: "number",
@@ -3171,16 +3173,16 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   step: "0.01",
                   defaultValue: (actionData == null ? void 0 : actionData.customShippingQuantity) || "",
                   placeholder: "Miles or hours",
-                  style: styles$c.input
+                  style: styles$d.input
                 })]
               }), /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$c.label,
+                  style: styles$d.label,
                   children: "Shipping Unit"
                 }), /* @__PURE__ */ jsxs("select", {
                   name: "customShippingUnit",
                   defaultValue: (actionData == null ? void 0 : actionData.customShippingUnit) || "miles",
-                  style: styles$c.input,
+                  style: styles$d.input,
                   children: [/* @__PURE__ */ jsx("option", {
                     value: "miles",
                     children: "Miles"
@@ -3191,7 +3193,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                 })]
               }), /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$c.label,
+                  style: styles$d.label,
                   children: "Price Per Unit"
                 }), /* @__PURE__ */ jsx("input", {
                   type: "number",
@@ -3200,7 +3202,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
                   step: "0.01",
                   defaultValue: (actionData == null ? void 0 : actionData.customShippingRate) || "",
                   placeholder: "Rate per mile/hour",
-                  style: styles$c.input
+                  style: styles$d.input
                 })]
               })]
             }), /* @__PURE__ */ jsx("div", {
@@ -3211,14 +3213,14 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
               children: "If shipping quantity and price per unit are both filled in, the delivery amount will use `quantity x rate` and override the manual delivery amount above."
             }), /* @__PURE__ */ jsxs("div", {
               children: [/* @__PURE__ */ jsx("label", {
-                style: styles$c.label,
+                style: styles$d.label,
                 children: "Notes"
               }), /* @__PURE__ */ jsx("textarea", {
                 name: "customNotes",
                 defaultValue: (actionData == null ? void 0 : actionData.customNotes) || "",
                 placeholder: "Use calculated notes",
                 style: {
-                  ...styles$c.input,
+                  ...styles$d.input,
                   minHeight: 110,
                   resize: "vertical"
                 }
@@ -3246,7 +3248,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
             name: "intent",
             value: "quote",
             style: {
-              ...styles$c.buttonPrimary,
+              ...styles$d.buttonPrimary,
               width: isMobile ? "100%" : void 0,
               minHeight: isMobile ? 50 : void 0
             },
@@ -3256,7 +3258,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
             name: "intent",
             value: "save",
             style: {
-              ...styles$c.buttonSecondary,
+              ...styles$d.buttonSecondary,
               width: isMobile ? "100%" : void 0,
               minHeight: isMobile ? 50 : void 0
             },
@@ -3265,14 +3267,14 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
         })]
       }), (actionData == null ? void 0 : actionData.message) ? /* @__PURE__ */ jsx("div", {
         style: {
-          ...actionData.ok ? styles$c.statusOk : styles$c.statusErr,
+          ...actionData.ok ? styles$d.statusOk : styles$d.statusErr,
           fontSize: isMobile ? 16 : void 0,
           fontWeight: isMobile ? 700 : void 0
         },
         children: actionData.message
       }) : null, (actionData == null ? void 0 : actionData.savedQuoteId) ? /* @__PURE__ */ jsxs("div", {
         style: {
-          ...styles$c.statusOk,
+          ...styles$d.statusOk,
           fontSize: isMobile ? 16 : void 0,
           fontWeight: isMobile ? 700 : void 0
         },
@@ -3286,8 +3288,8 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
         },
         children: [/* @__PURE__ */ jsxs("div", {
           style: {
-            ...styles$c.card,
-            padding: isMobile ? "18px" : styles$c.card.padding
+            ...styles$d.card,
+            padding: isMobile ? "18px" : styles$d.card.padding
           },
           children: [/* @__PURE__ */ jsxs("div", {
             style: {
@@ -3300,14 +3302,14 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
             },
             children: [/* @__PURE__ */ jsx("h2", {
               style: {
-                ...styles$c.sectionTitle,
+                ...styles$d.sectionTitle,
                 margin: 0
               },
               children: "Full Quote Result"
             }), /* @__PURE__ */ jsx("button", {
               type: "button",
               onClick: copyQuote,
-              style: styles$c.buttonGhost,
+              style: styles$d.buttonGhost,
               children: "Copy Quote"
             })]
           }), /* @__PURE__ */ jsxs("div", {
@@ -3388,11 +3390,11 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
           })]
         }), /* @__PURE__ */ jsxs("div", {
           style: {
-            ...styles$c.card,
-            padding: isMobile ? "18px" : styles$c.card.padding
+            ...styles$d.card,
+            padding: isMobile ? "18px" : styles$d.card.padding
           },
           children: [/* @__PURE__ */ jsx("h2", {
-            style: styles$c.sectionTitle,
+            style: styles$d.sectionTitle,
             children: "Source Breakdown"
           }), /* @__PURE__ */ jsx("div", {
             style: {
@@ -3431,12 +3433,12 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
         })]
       }) : null, recentQuotes.length ? /* @__PURE__ */ jsxs("div", {
         style: {
-          ...styles$c.card,
+          ...styles$d.card,
           marginTop: 24,
-          padding: isMobile ? "18px" : styles$c.card.padding
+          padding: isMobile ? "18px" : styles$d.card.padding
         },
         children: [/* @__PURE__ */ jsx("h2", {
-          style: styles$c.sectionTitle,
+          style: styles$d.sectionTitle,
           children: "Recent Quotes"
         }), /* @__PURE__ */ jsx("div", {
           style: {
@@ -3488,9 +3490,9 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
         })]
       }) : null, selectedHistoryQuote ? /* @__PURE__ */ jsxs("div", {
         style: {
-          ...styles$c.card,
+          ...styles$d.card,
           marginTop: 24,
-          padding: isMobile ? "18px" : styles$c.card.padding
+          padding: isMobile ? "18px" : styles$d.card.padding
         },
         children: [/* @__PURE__ */ jsxs("div", {
           style: {
@@ -3504,7 +3506,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
           children: [/* @__PURE__ */ jsxs("div", {
             children: [/* @__PURE__ */ jsx("h2", {
               style: {
-                ...styles$c.sectionTitle,
+                ...styles$d.sectionTitle,
                 margin: 0
               },
               children: "Saved Quote Detail"
@@ -3568,7 +3570,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
             value: selectedHistoryQuote.id
           }), /* @__PURE__ */ jsx("button", {
             type: "submit",
-            style: styles$c.buttonPrimary,
+            style: styles$d.buttonPrimary,
             children: draftOrderFetcher.state === "submitting" ? "Creating Draft Order..." : "Send To Shopify"
           }), ((_h = draftOrderFetcher.data) == null ? void 0 : _h.draftOrderAdminUrl) ? /* @__PURE__ */ jsx("a", {
             href: draftOrderFetcher.data.draftOrderAdminUrl,
@@ -3585,14 +3587,14 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
           }) : null]
         }) : null, ((_j = draftOrderFetcher.data) == null ? void 0 : _j.message) ? /* @__PURE__ */ jsx("div", {
           style: {
-            ...draftOrderFetcher.data.ok ? styles$c.statusOk : styles$c.statusErr,
+            ...draftOrderFetcher.data.ok ? styles$d.statusOk : styles$d.statusErr,
             fontSize: isMobile ? 16 : void 0,
             fontWeight: isMobile ? 700 : void 0
           },
           children: draftOrderFetcher.data.message
         }) : null, ((_k = deleteQuoteFetcher.data) == null ? void 0 : _k.message) ? /* @__PURE__ */ jsx("div", {
           style: {
-            ...deleteQuoteFetcher.data.ok ? styles$c.statusOk : styles$c.statusErr,
+            ...deleteQuoteFetcher.data.ok ? styles$d.statusOk : styles$d.statusErr,
             fontSize: isMobile ? 16 : void 0,
             fontWeight: isMobile ? 700 : void 0
           },
@@ -3828,9 +3830,9 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
 });
 const route2 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$o,
+  action: action$q,
   default: customQuote,
-  loader: loader$l
+  loader: loader$n
 }, Symbol.toStringTag, { value: "Module" }));
 function formatMoney$1(cents) {
   return `$${(Number(cents || 0) / 100).toFixed(2)}`;
@@ -3840,7 +3842,7 @@ function buildQuoteSearchText(quote) {
   const sourceText = Array.isArray(quote.source_breakdown) ? quote.source_breakdown.map((entry2) => [entry2 == null ? void 0 : entry2.vendor, ...Array.isArray(entry2 == null ? void 0 : entry2.items) ? entry2.items : []].filter(Boolean).join(" ")).join(" ") : "";
   return [quote.id, quote.customer_name, quote.customer_email, quote.customer_phone, quote.address1, quote.address2, quote.city, quote.province, quote.postal_code, quote.country, quote.service_name, quote.shipping_details, quote.description, quote.summary, quote.eta, quote.created_by_name, quote.created_by_email, lineText, sourceText].filter(Boolean).join(" ").toLowerCase();
 }
-const styles$b = {
+const styles$c = {
   page: {
     minHeight: "100vh",
     background: "radial-gradient(circle at top left, rgba(30, 64, 175, 0.24), transparent 35%), linear-gradient(180deg, #020617 0%, #0f172a 55%, #111827 100%)",
@@ -3931,7 +3933,7 @@ const styles$b = {
     color: "#fee2e2"
   }
 };
-async function loader$k({
+async function loader$m({
   request
 }) {
   const url = new URL(request.url);
@@ -3954,7 +3956,7 @@ async function loader$k({
     quotes
   });
 }
-async function action$n({
+async function action$p({
   request
 }) {
   const form = await request.formData();
@@ -4036,7 +4038,7 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
   }, [deferredQuery, indexedQuotes]);
   const selectedQuote = filteredQuotes.find((quote) => quote.id === selectedQuoteId) || filteredQuotes[0] || null;
   const mobileActionButtonStyle = {
-    ...styles$b.buttonGhost,
+    ...styles$c.buttonGhost,
     minHeight: isMobile ? 48 : void 0,
     width: isMobile ? "100%" : void 0
   };
@@ -4123,21 +4125,21 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
   if (!allowed) {
     return /* @__PURE__ */ jsx("div", {
       style: {
-        ...styles$b.page,
-        padding: isMobile ? "20px 14px 40px" : styles$b.page.padding
+        ...styles$c.page,
+        padding: isMobile ? "20px 14px 40px" : styles$c.page.padding
       },
       children: /* @__PURE__ */ jsx("div", {
         style: {
-          ...styles$b.shell,
+          ...styles$c.shell,
           maxWidth: 520
         },
         children: /* @__PURE__ */ jsxs("div", {
-          style: styles$b.card,
+          style: styles$c.card,
           children: [/* @__PURE__ */ jsx("h1", {
-            style: styles$b.title,
+            style: styles$c.title,
             children: "Quote Review"
           }), /* @__PURE__ */ jsx("p", {
-            style: styles$b.subtitle,
+            style: styles$c.subtitle,
             children: "Enter the admin password to search saved quotes and send them to Shopify."
           }), /* @__PURE__ */ jsxs(Form, {
             method: "post",
@@ -4150,20 +4152,20 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
               name: "intent",
               value: "login"
             }), /* @__PURE__ */ jsx("label", {
-              style: styles$b.label,
+              style: styles$c.label,
               children: "Admin Password"
             }), /* @__PURE__ */ jsx("input", {
               type: "password",
               name: "password",
               autoComplete: "current-password",
-              style: styles$b.input
+              style: styles$c.input
             }), (actionData == null ? void 0 : actionData.loginError) ? /* @__PURE__ */ jsx("div", {
-              style: styles$b.statusErr,
+              style: styles$c.statusErr,
               children: actionData.loginError
             }) : null, /* @__PURE__ */ jsx("button", {
               type: "submit",
               style: {
-                ...styles$b.buttonPrimary,
+                ...styles$c.buttonPrimary,
                 marginTop: 16
               },
               children: "Open Quote Review"
@@ -4175,28 +4177,28 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
   }
   return /* @__PURE__ */ jsxs("div", {
     style: {
-      ...styles$b.page,
-      padding: isMobile ? "20px 14px 120px" : styles$b.page.padding,
+      ...styles$c.page,
+      padding: isMobile ? "20px 14px 120px" : styles$c.page.padding,
       overflowX: "clip"
     },
     children: [/* @__PURE__ */ jsxs("div", {
-      style: styles$b.shell,
+      style: styles$c.shell,
       children: [isMobile ? /* @__PURE__ */ jsxs("div", {
         style: {
           marginBottom: 18
         },
         children: [/* @__PURE__ */ jsx("h1", {
           style: {
-            ...styles$b.title,
+            ...styles$c.title,
             fontSize: "2.2rem"
           },
           children: "Quote Review"
         }), /* @__PURE__ */ jsx("p", {
-          style: styles$b.subtitle,
+          style: styles$c.subtitle,
           children: "Search across customer info, address, notes, SKU, product titles, vendors, and saved quote details."
         })]
       }) : /* @__PURE__ */ jsx("div", {
-        style: styles$b.card,
+        style: styles$c.card,
         children: /* @__PURE__ */ jsxs("div", {
           style: {
             display: "flex",
@@ -4207,10 +4209,10 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
           },
           children: [/* @__PURE__ */ jsxs("div", {
             children: [/* @__PURE__ */ jsx("h1", {
-              style: styles$b.title,
+              style: styles$c.title,
               children: "Quote Review"
             }), /* @__PURE__ */ jsx("p", {
-              style: styles$b.subtitle,
+              style: styles$c.subtitle,
               children: "Search across customer info, address, notes, SKU, product titles, vendors, and saved quote details."
             })]
           }), /* @__PURE__ */ jsxs("div", {
@@ -4221,48 +4223,48 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
             },
             children: [canAccess("quoteTool") ? /* @__PURE__ */ jsx("a", {
               href: mobileDashboardHref,
-              style: styles$b.buttonGhost,
+              style: styles$c.buttonGhost,
               children: "Dashboard"
             }) : null, canAccess("quoteTool") ? /* @__PURE__ */ jsx("a", {
               href: quoteToolHref,
-              style: styles$b.buttonGhost,
+              style: styles$c.buttonGhost,
               children: "Open Quote Tool"
             }) : null, canAccess("dispatch") ? /* @__PURE__ */ jsx("a", {
               href: dispatchHref,
-              style: styles$b.buttonGhost,
+              style: styles$c.buttonGhost,
               children: "Dispatch"
             }) : null, canAccess("manageUsers") ? /* @__PURE__ */ jsx("a", {
               href: "/settings",
-              style: styles$b.buttonGhost,
+              style: styles$c.buttonGhost,
               children: "Settings"
             }) : null, currentUser ? /* @__PURE__ */ jsx("a", {
               href: "/change-password",
-              style: styles$b.buttonGhost,
+              style: styles$c.buttonGhost,
               children: "Change Password"
             }) : null, /* @__PURE__ */ jsx("a", {
               href: logoutHref,
-              style: styles$b.buttonGhost,
+              style: styles$c.buttonGhost,
               children: "Log Out"
             })]
           })]
         })
       }), /* @__PURE__ */ jsxs("div", {
         style: {
-          ...styles$b.card,
+          ...styles$c.card,
           display: "grid",
           gap: 14,
-          padding: isMobile ? "18px" : styles$b.card.padding
+          padding: isMobile ? "18px" : styles$c.card.padding
         },
         children: [/* @__PURE__ */ jsxs("div", {
           children: [/* @__PURE__ */ jsx("label", {
-            style: styles$b.label,
+            style: styles$c.label,
             children: "Search Saved Quotes"
           }), /* @__PURE__ */ jsx("input", {
             type: "search",
             value: query,
             onChange: (event) => setQuery(event.target.value),
             placeholder: "Search by customer, email, city, ZIP, summary, SKU, vendor, quote ID...",
-            style: styles$b.input
+            style: styles$c.input
           })]
         }), /* @__PURE__ */ jsxs("div", {
           style: {
@@ -4280,10 +4282,10 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
         },
         children: [/* @__PURE__ */ jsx("div", {
           style: {
-            ...styles$b.card,
+            ...styles$c.card,
             maxHeight: isMobile ? "none" : "70vh",
             overflowY: isMobile ? "visible" : "auto",
-            padding: isMobile ? "18px" : styles$b.card.padding
+            padding: isMobile ? "18px" : styles$c.card.padding
           },
           children: /* @__PURE__ */ jsx("div", {
             style: {
@@ -4354,8 +4356,8 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
           })
         }), /* @__PURE__ */ jsx("div", {
           style: {
-            ...styles$b.card,
-            padding: isMobile ? "18px" : styles$b.card.padding
+            ...styles$c.card,
+            padding: isMobile ? "18px" : styles$c.card.padding
           },
           children: selectedQuote ? /* @__PURE__ */ jsxs(Fragment, {
             children: [/* @__PURE__ */ jsxs("div", {
@@ -4418,7 +4420,7 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
                   }), /* @__PURE__ */ jsx("button", {
                     type: "submit",
                     style: {
-                      ...styles$b.buttonPrimary,
+                      ...styles$c.buttonPrimary,
                       width: isMobile ? "100%" : void 0
                     },
                     children: draftOrderFetcher.state === "submitting" ? "Creating Draft Order..." : "Send To Shopify"
@@ -4461,21 +4463,21 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
               })]
             }), ((_d = draftOrderFetcher.data) == null ? void 0 : _d.message) ? /* @__PURE__ */ jsx("div", {
               style: {
-                ...draftOrderFetcher.data.ok ? styles$b.statusOk : styles$b.statusErr,
+                ...draftOrderFetcher.data.ok ? styles$c.statusOk : styles$c.statusErr,
                 fontSize: isMobile ? 16 : void 0,
                 fontWeight: isMobile ? 700 : void 0
               },
               children: draftOrderFetcher.data.message
             }) : null, ((_e = deleteQuoteFetcher.data) == null ? void 0 : _e.message) ? /* @__PURE__ */ jsx("div", {
               style: {
-                ...deleteQuoteFetcher.data.ok ? styles$b.statusOk : styles$b.statusErr,
+                ...deleteQuoteFetcher.data.ok ? styles$c.statusOk : styles$c.statusErr,
                 fontSize: isMobile ? 16 : void 0,
                 fontWeight: isMobile ? 700 : void 0
               },
               children: deleteQuoteFetcher.data.message
             }) : null, ((_f = updateQuoteFetcher.data) == null ? void 0 : _f.message) ? /* @__PURE__ */ jsx("div", {
               style: {
-                ...updateQuoteFetcher.data.ok ? styles$b.statusOk : styles$b.statusErr,
+                ...updateQuoteFetcher.data.ok ? styles$c.statusOk : styles$c.statusErr,
                 fontSize: isMobile ? 16 : void 0,
                 fontWeight: isMobile ? 700 : void 0
               },
@@ -4516,30 +4518,30 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
                 },
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$b.label,
+                    style: styles$c.label,
                     children: "Customer Name"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "customerName",
                     defaultValue: selectedQuote.customer_name || "",
-                    style: styles$b.input
+                    style: styles$c.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$b.label,
+                    style: styles$c.label,
                     children: "Email"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "customerEmail",
                     defaultValue: selectedQuote.customer_email || "",
-                    style: styles$b.input
+                    style: styles$c.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$b.label,
+                    style: styles$c.label,
                     children: "Phone"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "customerPhone",
                     defaultValue: selectedQuote.customer_phone || "",
-                    style: styles$b.input
+                    style: styles$c.input
                   })]
                 })]
               }), /* @__PURE__ */ jsxs("div", {
@@ -4550,58 +4552,58 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
                 },
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$b.label,
+                    style: styles$c.label,
                     children: "Address 1"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "address1",
                     defaultValue: selectedQuote.address1 || "",
-                    style: styles$b.input
+                    style: styles$c.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$b.label,
+                    style: styles$c.label,
                     children: "City"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "city",
                     defaultValue: selectedQuote.city || "",
-                    style: styles$b.input
+                    style: styles$c.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$b.label,
+                    style: styles$c.label,
                     children: "State"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "province",
                     defaultValue: selectedQuote.province || "",
-                    style: styles$b.input
+                    style: styles$c.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$b.label,
+                    style: styles$c.label,
                     children: "ZIP"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "postalCode",
                     defaultValue: selectedQuote.postal_code || "",
-                    style: styles$b.input
+                    style: styles$c.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$b.label,
+                    style: styles$c.label,
                     children: "Country"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "country",
                     defaultValue: selectedQuote.country || "US",
-                    style: styles$b.input
+                    style: styles$c.input
                   })]
                 })]
               }), /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("label", {
-                  style: styles$b.label,
+                  style: styles$c.label,
                   children: "Address 2"
                 }), /* @__PURE__ */ jsx("input", {
                   name: "address2",
                   defaultValue: selectedQuote.address2 || "",
-                  style: styles$b.input
+                  style: styles$c.input
                 })]
               }), /* @__PURE__ */ jsxs("div", {
                 style: {
@@ -4643,7 +4645,7 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$b.label,
+                      style: styles$c.label,
                       children: "Quantity"
                     }), /* @__PURE__ */ jsx("input", {
                       type: "number",
@@ -4651,7 +4653,7 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
                       step: "0.01",
                       name: `lineQuantity::${index}`,
                       defaultValue: line.quantity,
-                      style: styles$b.input
+                      style: styles$c.input
                     })]
                   })]
                 }, `${line.sku}-${index}`))]
@@ -4663,12 +4665,12 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
                 },
                 children: [/* @__PURE__ */ jsx("button", {
                   type: "submit",
-                  style: styles$b.buttonPrimary,
+                  style: styles$c.buttonPrimary,
                   children: updateQuoteFetcher.state === "submitting" ? "Regenerating..." : "Regenerate Quote"
                 }), /* @__PURE__ */ jsx("button", {
                   type: "button",
                   onClick: () => setEditingQuoteId(null),
-                  style: styles$b.buttonGhost,
+                  style: styles$c.buttonGhost,
                   children: "Cancel"
                 })]
               })]
@@ -4849,9 +4851,9 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
 });
 const route3 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$n,
+  action: action$p,
   default: quoteReview,
-  loader: loader$k
+  loader: loader$m
 }, Symbol.toStringTag, { value: "Module" }));
 function escapeHtml(value) {
   return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -4878,12 +4880,12 @@ function getQuantityColumns(order) {
 }
 function buildDeliveryConfirmationEmail({
   order,
-  route: route50
+  route: route53
 }) {
   const quantity = getQuantityColumns(order);
   const orderNumber = getOrderDisplayNumber$3(order);
   const deliveredAt = formatDeliveredAt(order);
-  const driverName = order.signatureName || (route50 == null ? void 0 : route50.driver) || order.proofName || "";
+  const driverName = order.signatureName || (route53 == null ? void 0 : route53.driver) || order.proofName || "";
   const photoProof = order.photoUrls || "Not captured";
   const gpsProof = order.signatureData || "Not captured";
   const subject = `Green Hills Supply delivery confirmation ${orderNumber}`;
@@ -4894,9 +4896,9 @@ function buildDeliveryConfirmationEmail({
     `Delivered: ${deliveredAt}`,
     ``,
     `Driver and Truck Information`,
-    `Truck: ${(route50 == null ? void 0 : route50.truck) || ""}`,
+    `Truck: ${(route53 == null ? void 0 : route53.truck) || ""}`,
     `Driver: ${driverName}`,
-    `Route: ${(route50 == null ? void 0 : route50.code) || ""}`,
+    `Route: ${(route53 == null ? void 0 : route53.code) || ""}`,
     ``,
     `Customer Information`,
     `Customer: ${order.customer}`,
@@ -4932,7 +4934,7 @@ function buildDeliveryConfirmationEmail({
       ${sectionTitle("Driver and Truck Information")}
       <table role="presentation" width="100%" cellspacing="12" cellpadding="0" style="border-collapse:separate;margin-top:10px;">
         <tr>
-          ${fieldCell("Truck Number", (route50 == null ? void 0 : route50.truck) || "")}
+          ${fieldCell("Truck Number", (route53 == null ? void 0 : route53.truck) || "")}
           ${fieldCell("Driver Name", driverName)}
         </tr>
         <tr>
@@ -5009,7 +5011,7 @@ function tableCell(value) {
 }
 async function sendDeliveryConfirmationEmail({
   order,
-  route: route50
+  route: route53
 }) {
   const to = getCustomerEmail(order);
   if (!to) return { sent: false, skipped: true, reason: "No customer email found." };
@@ -5022,7 +5024,7 @@ async function sendDeliveryConfirmationEmail({
       reason: "Delivery email is not configured. Set RESEND_API_KEY and DELIVERY_CONFIRMATION_FROM."
     };
   }
-  const email = buildDeliveryConfirmationEmail({ order, route: route50 });
+  const email = buildDeliveryConfirmationEmail({ order, route: route53 });
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -5042,6 +5044,66 @@ async function sendDeliveryConfirmationEmail({
     throw new Error(`Delivery confirmation email failed: ${body}`);
   }
   return { sent: true };
+}
+const TABLE = "dispatch_notifications";
+function normalizeNotification(row) {
+  return {
+    id: String((row == null ? void 0 : row.id) || ""),
+    targetUserId: (row == null ? void 0 : row.target_user_id) || null,
+    targetRole: String((row == null ? void 0 : row.target_role) || "loader"),
+    orderId: (row == null ? void 0 : row.order_id) || null,
+    routeId: (row == null ? void 0 : row.route_id) || null,
+    title: String((row == null ? void 0 : row.title) || ""),
+    message: String((row == null ? void 0 : row.message) || ""),
+    status: (row == null ? void 0 : row.status) === "read" ? "read" : "unread",
+    createdAt: String((row == null ? void 0 : row.created_at) || ""),
+    readAt: (row == null ? void 0 : row.read_at) || null
+  };
+}
+function formatOrderNumber(order) {
+  return order.orderNumber ? `#${order.orderNumber}` : order.id;
+}
+function getLoadLabel$4(order) {
+  return [order.quantity, order.unit, order.material].filter(Boolean).join(" ");
+}
+async function createLoaderNotification(input) {
+  var _a2, _b, _c, _d;
+  const routeLabel = input.route ? `${input.route.code}${input.route.truck ? ` / ${input.route.truck}` : ""}` : "Unassigned route";
+  const title = `Load next: ${formatOrderNumber(input.order)}`;
+  const message = `${getLoadLabel$4(input.order)} for ${routeLabel} - ${input.order.customer}`;
+  const { data: data2, error } = await supabaseAdmin.from(TABLE).insert({
+    target_user_id: input.targetUserId || null,
+    target_role: "loader",
+    order_id: input.order.id,
+    route_id: ((_a2 = input.route) == null ? void 0 : _a2.id) || input.order.assignedRouteId || null,
+    title,
+    message,
+    status: "unread",
+    created_by_user_id: ((_b = input.actor) == null ? void 0 : _b.id) || null,
+    created_by_name: ((_c = input.actor) == null ? void 0 : _c.name) || ((_d = input.actor) == null ? void 0 : _d.email) || "System"
+  }).select("*").single();
+  if ((error == null ? void 0 : error.code) === "42P01") {
+    throw new Error("Loader notification storage is not ready. Run dispatch_loader_notifications.sql in Supabase.");
+  }
+  if (error) throw new Error(error.message);
+  return normalizeNotification(data2);
+}
+async function listLoaderNotifications(user, limit = 30) {
+  const { data: data2, error } = await supabaseAdmin.from(TABLE).select("*").or(`target_user_id.eq.${user.id},target_role.eq.loader`).order("created_at", { ascending: false }).limit(limit);
+  if ((error == null ? void 0 : error.code) === "42P01") return [];
+  if (error) throw new Error(error.message);
+  return (data2 || []).map(normalizeNotification);
+}
+async function markLoaderNotificationRead(id, user) {
+  const { data: data2, error } = await supabaseAdmin.from(TABLE).update({
+    status: "read",
+    read_at: (/* @__PURE__ */ new Date()).toISOString()
+  }).eq("id", id).or(`target_user_id.eq.${user.id},target_role.eq.loader`).select("*").single();
+  if ((error == null ? void 0 : error.code) === "42P01") {
+    throw new Error("Loader notification storage is not ready. Run dispatch_loader_notifications.sql in Supabase.");
+  }
+  if (error) throw new Error(error.message);
+  return normalizeNotification(data2);
 }
 const classicColumnOptions = {
   routes: [
@@ -5968,19 +6030,19 @@ async function ensureSeedDispatchRoutes() {
     return;
   }
   const { error: insertError } = await supabaseAdmin.from(ROUTES_TABLE).insert(
-    seedDispatchRoutes.map((route50) => ({
-      id: route50.id,
-      code: route50.code,
-      truck_id: route50.truckId || null,
-      truck: route50.truck,
-      driver_id: route50.driverId || null,
-      driver: route50.driver,
-      helper_id: route50.helperId || null,
-      helper: route50.helper,
-      color: route50.color,
-      shift: route50.shift,
-      region: route50.region,
-      is_active: route50.isActive !== false
+    seedDispatchRoutes.map((route53) => ({
+      id: route53.id,
+      code: route53.code,
+      truck_id: route53.truckId || null,
+      truck: route53.truck,
+      driver_id: route53.driverId || null,
+      driver: route53.driver,
+      helper_id: route53.helperId || null,
+      helper: route53.helper,
+      color: route53.color,
+      shift: route53.shift,
+      region: route53.region,
+      is_active: route53.isActive !== false
     }))
   );
   if (insertError) {
@@ -6865,21 +6927,21 @@ function formatTravelMinutes$3(minutes) {
   return remainder ? `${hours} hr ${remainder} min` : `${hours} hr`;
 }
 function buildDispatchOrderSearchText(order, routes2) {
-  const route50 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
-  return [order.id, order.orderNumber, order.source, order.customer, order.contact, order.address, order.city, order.material, order.quantity, order.unit, order.requestedWindow, order.timePreference, order.truckPreference, order.notes, order.status, order.deliveryStatus, order.eta, order.travelMinutes, order.travelMiles, order.travelSummary, order.emailSubject, order.rawEmail, order.proofName, order.proofNotes, order.signatureName, order.inspectionStatus, route50 == null ? void 0 : route50.code, route50 == null ? void 0 : route50.truck, route50 == null ? void 0 : route50.driver, route50 == null ? void 0 : route50.helper, route50 == null ? void 0 : route50.region].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
+  const route53 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
+  return [order.id, order.orderNumber, order.source, order.customer, order.contact, order.address, order.city, order.material, order.quantity, order.unit, order.requestedWindow, order.timePreference, order.truckPreference, order.notes, order.status, order.deliveryStatus, order.eta, order.travelMinutes, order.travelMiles, order.travelSummary, order.emailSubject, order.rawEmail, order.proofName, order.proofNotes, order.signatureName, order.inspectionStatus, route53 == null ? void 0 : route53.code, route53 == null ? void 0 : route53.truck, route53 == null ? void 0 : route53.driver, route53 == null ? void 0 : route53.helper, route53 == null ? void 0 : route53.region].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
 }
-function buildRouteSearchText(route50, orders) {
+function buildRouteSearchText(route53, orders) {
   var _a2;
-  const routeOrders = ((_a2 = route50.orders) == null ? void 0 : _a2.length) ? route50.orders : orders.filter((order) => order.assignedRouteId === route50.id);
-  return [route50.id, route50.code, route50.truckId, route50.truck, route50.driverId, route50.driver, route50.helperId, route50.helper, route50.color, route50.shift, route50.region, route50.stops, route50.totalTravelMinutes, route50.loadSummary, route50.created_at, route50.updated_at, ...routeOrders.map((order) => buildDispatchOrderSearchText(order, [route50]))].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
+  const routeOrders = ((_a2 = route53.orders) == null ? void 0 : _a2.length) ? route53.orders : orders.filter((order) => order.assignedRouteId === route53.id);
+  return [route53.id, route53.code, route53.truckId, route53.truck, route53.driverId, route53.driver, route53.helperId, route53.helper, route53.color, route53.shift, route53.region, route53.stops, route53.totalTravelMinutes, route53.loadSummary, route53.created_at, route53.updated_at, ...routeOrders.map((order) => buildDispatchOrderSearchText(order, [route53]))].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
 }
 function buildTruckSearchText(truck, routes2, orders) {
-  const truckRoutes = routes2.filter((route50) => route50.truckId === truck.id || route50.truck === truck.label);
-  return [truck.id, truck.label, truck.truckType, truck.tons, truck.yards, truck.capacity, truck.licensePlate, truck.created_at, truck.updated_at, ...truckRoutes.map((route50) => buildRouteSearchText(route50, orders))].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
+  const truckRoutes = routes2.filter((route53) => route53.truckId === truck.id || route53.truck === truck.label);
+  return [truck.id, truck.label, truck.truckType, truck.tons, truck.yards, truck.capacity, truck.licensePlate, truck.created_at, truck.updated_at, ...truckRoutes.map((route53) => buildRouteSearchText(route53, orders))].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
 }
 function buildEmployeeSearchText(employee, routes2, orders) {
-  const employeeRoutes = routes2.filter((route50) => route50.driverId === employee.id || route50.helperId === employee.id || route50.driver === employee.name || route50.helper === employee.name);
-  return [employee.id, employee.name, employee.role, employee.phone, employee.email, employee.created_at, employee.updated_at, ...employeeRoutes.map((route50) => buildRouteSearchText(route50, orders))].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
+  const employeeRoutes = routes2.filter((route53) => route53.driverId === employee.id || route53.helperId === employee.id || route53.driver === employee.name || route53.helper === employee.name);
+  return [employee.id, employee.name, employee.role, employee.phone, employee.email, employee.created_at, employee.updated_at, ...employeeRoutes.map((route53) => buildRouteSearchText(route53, orders))].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
 }
 function getTruckCapacityForOrderUnit(truck, unit) {
   if (/tons?/i.test(unit)) return Number(truck.tons || 0);
@@ -7096,16 +7158,16 @@ function RouteMapPreview({
     if (order.travelMinutes) return `${order.travelMinutes} min RT`;
     return order.travelSummary || "RT not calculated";
   };
-  const routePlan = useMemo(() => routes2.map((route50) => ({
-    id: route50.id,
-    color: route50.color || "#38bdf8",
-    label: `${route50.code} · ${route50.truck}`,
-    stops: route50.orders.map((order) => ({
+  const routePlan = useMemo(() => routes2.map((route53) => ({
+    id: route53.id,
+    color: route53.color || "#38bdf8",
+    label: `${route53.code} · ${route53.truck}`,
+    stops: route53.orders.map((order) => ({
       address: [order.address, order.city].map((part) => String(part || "").trim()).filter(Boolean).join(", "),
       customer: order.customer,
       travelLabel: getTravelLabel(order)
     })).filter((stop) => stop.address)
-  })).filter((route50) => route50.stops.length > 0), [routes2]);
+  })).filter((route53) => route53.stops.length > 0), [routes2]);
   useEffect(() => {
     let cancelled = false;
     async function drawMap() {
@@ -7176,7 +7238,7 @@ function RouteMapPreview({
           overlay.setMap(map);
           mapObjectsRef.current.push(overlay);
         };
-        const addStopMarker = (position, route50, stop, stopIndex) => {
+        const addStopMarker = (position, route53, stop, stopIndex) => {
           const marker = new google.maps.Marker({
             map,
             position,
@@ -7184,7 +7246,7 @@ function RouteMapPreview({
             title: `${stop.customer} · ${stop.travelLabel}`
           });
           mapObjectsRef.current.push(marker);
-          addTimeBadge(position, stop.travelLabel, route50.color);
+          addTimeBadge(position, stop.travelLabel, route53.color);
           bounds.extend(position);
         };
         const geocodeAddress = (address) => new Promise((resolve) => {
@@ -7200,13 +7262,13 @@ function RouteMapPreview({
             resolve(null);
           });
         });
-        const drawFallbackRoute = async (route50) => {
-          const points = (await Promise.all([originAddress, ...route50.stops.map((stop) => stop.address), originAddress].map((address) => geocodeAddress(address)))).filter(Boolean);
+        const drawFallbackRoute = async (route53) => {
+          const points = (await Promise.all([originAddress, ...route53.stops.map((stop) => stop.address), originAddress].map((address) => geocodeAddress(address)))).filter(Boolean);
           if (points.length < 2) return false;
           const polyline = new google.maps.Polyline({
             map,
             path: points,
-            strokeColor: route50.color,
+            strokeColor: route53.color,
             strokeOpacity: 0.82,
             strokeWeight: 5
           });
@@ -7217,23 +7279,23 @@ function RouteMapPreview({
               map,
               position: point,
               label: isYard ? "Y" : String(index),
-              title: isYard ? "Yard" : `${route50.stops[index - 1].customer} · ${route50.stops[index - 1].travelLabel}`
+              title: isYard ? "Yard" : `${route53.stops[index - 1].customer} · ${route53.stops[index - 1].travelLabel}`
             });
             mapObjectsRef.current.push(marker);
             if (!isYard) {
-              addTimeBadge(point, route50.stops[index - 1].travelLabel, route50.color);
+              addTimeBadge(point, route53.stops[index - 1].travelLabel, route53.color);
             }
             bounds.extend(point);
           });
           return true;
         };
-        await Promise.all(routePlan.map((route50) => new Promise((resolve) => {
+        await Promise.all(routePlan.map((route53) => new Promise((resolve) => {
           const renderer = new google.maps.DirectionsRenderer({
             map,
             preserveViewport: true,
             suppressMarkers: true,
             polylineOptions: {
-              strokeColor: route50.color,
+              strokeColor: route53.color,
               strokeOpacity: 0.9,
               strokeWeight: 6
             }
@@ -7242,7 +7304,7 @@ function RouteMapPreview({
           directionsService.route({
             origin: originAddress,
             destination: originAddress,
-            waypoints: route50.stops.map((stop) => ({
+            waypoints: route53.stops.map((stop) => ({
               location: stop.address,
               stopover: true
             })),
@@ -7266,18 +7328,18 @@ function RouteMapPreview({
                 });
                 mapObjectsRef.current.push(yardMarker);
               }
-              route50.stops.forEach((stop, stopIndex) => {
+              route53.stops.forEach((stop, stopIndex) => {
                 var _a3, _b2, _c2;
                 const leg = (_c2 = (_b2 = (_a3 = result.routes) == null ? void 0 : _a3[0]) == null ? void 0 : _b2.legs) == null ? void 0 : _c2[stopIndex];
                 if (leg == null ? void 0 : leg.end_location) {
-                  addStopMarker(leg.end_location, route50, stop, stopIndex);
+                  addStopMarker(leg.end_location, route53, stop, stopIndex);
                 }
               });
             } else {
-              console.warn("[DISPATCH MAP ROUTE ERROR]", route50.label, routeStatus);
+              console.warn("[DISPATCH MAP ROUTE ERROR]", route53.label, routeStatus);
               renderer.setMap(null);
-              const drewFallback = await drawFallbackRoute(route50);
-              warnings.push(drewFallback ? `${route50.label}: showing fallback stop-to-stop lines because Google Directions returned ${routeStatus}.` : `${route50.label}: Google Directions returned ${routeStatus}, and the stop addresses could not be geocoded.`);
+              const drewFallback = await drawFallbackRoute(route53);
+              warnings.push(drewFallback ? `${route53.label}: showing fallback stop-to-stop lines because Google Directions returned ${routeStatus}.` : `${route53.label}: Google Directions returned ${routeStatus}, and the stop addresses could not be geocoded.`);
             }
             resolve();
           });
@@ -7299,32 +7361,32 @@ function RouteMapPreview({
     };
   }, [googleMapsApiKey, originAddress, routePlan]);
   return /* @__PURE__ */ jsxs("div", {
-    style: styles$a.mapStage,
+    style: styles$b.mapStage,
     children: [/* @__PURE__ */ jsx("div", {
       ref: mapRef,
-      style: styles$a.googleMapCanvas
+      style: styles$b.googleMapCanvas
     }), status ? /* @__PURE__ */ jsx("div", {
-      style: styles$a.mapStatus,
+      style: styles$b.mapStatus,
       children: status
     }) : null, routeWarnings.length ? /* @__PURE__ */ jsx("div", {
-      style: styles$a.mapNotice,
+      style: styles$b.mapNotice,
       children: routeWarnings.slice(0, 2).map((warning) => /* @__PURE__ */ jsx("div", {
         children: warning
       }, warning))
     }) : null, routePlan.length ? /* @__PURE__ */ jsx("div", {
-      style: styles$a.mapLegend,
-      children: routePlan.map((route50) => /* @__PURE__ */ jsxs("div", {
+      style: styles$b.mapLegend,
+      children: routePlan.map((route53) => /* @__PURE__ */ jsxs("div", {
         style: {
           display: "flex",
           alignItems: "center",
           gap: 8
         },
         children: [/* @__PURE__ */ jsx("div", {
-          style: styles$a.routeColor(route50.color)
+          style: styles$b.routeColor(route53.color)
         }), /* @__PURE__ */ jsx("span", {
-          children: route50.label
+          children: route53.label
         })]
-      }, route50.id))
+      }, route53.id))
     }) : null]
   });
 }
@@ -7405,7 +7467,7 @@ async function resequenceChangedRoutes(routeIds) {
   const uniqueRouteIds = Array.from(new Set(routeIds.filter((routeId) => Boolean(routeId))));
   await Promise.all(uniqueRouteIds.map((routeId) => resequenceRouteStops(routeId)));
 }
-async function loader$j({
+async function loader$l({
   request
 }) {
   const url = new URL(request.url);
@@ -7464,7 +7526,7 @@ async function loader$j({
     ...dispatchState
   });
 }
-async function action$m({
+async function action$o({
   request
 }) {
   var _a2, _b, _c;
@@ -7519,6 +7581,7 @@ async function action$m({
       status: 401
     });
   }
+  const currentUser = await getCurrentUser(request);
   const canManageDispatch = await hasAdminQuotePermissionAccess(request, "manageDispatch");
   const driverOnlyIntents = /* @__PURE__ */ new Set(["update-stop-status"]);
   if (!canManageDispatch && !driverOnlyIntents.has(intent)) {
@@ -7692,7 +7755,7 @@ async function action$m({
         const previousRouteId = updated.assignedRouteId || null;
         if (routeId) {
           const [allRoutes, allTrucks] = await Promise.all([getDispatchRoutes(), getDispatchTrucks()]);
-          const selectedRoute = allRoutes.find((route50) => route50.id === routeId);
+          const selectedRoute = allRoutes.find((route53) => route53.id === routeId);
           const selectedTruck = allTrucks.find((truck) => truck.id === (selectedRoute == null ? void 0 : selectedRoute.truckId));
           const splitCount = getSplitCountFromForm(form);
           const capacityError = !selectedRoute ? "Select a valid route before assigning this order." : getSplitCapacityError(updated, selectedTruck, splitCount);
@@ -8065,7 +8128,7 @@ async function action$m({
       }
       const [allOrders, allRoutes, allTrucks] = await Promise.all([getDispatchOrders(), getDispatchRoutes(), getDispatchTrucks()]);
       const selectedOrder = allOrders.find((order) => order.id === orderId);
-      const selectedRoute = allRoutes.find((route50) => route50.id === routeId);
+      const selectedRoute = allRoutes.find((route53) => route53.id === routeId);
       const selectedTruck = allTrucks.find((truck) => truck.id === (selectedRoute == null ? void 0 : selectedRoute.truckId));
       const splitCount = getSplitCountFromForm(form);
       const capacityError = !selectedOrder ? "Order was not found." : !selectedRoute ? "Select a valid route before assigning this order." : getSplitCapacityError(selectedOrder, selectedTruck, splitCount);
@@ -8098,6 +8161,41 @@ async function action$m({
         ok: true,
         message: assignment.message,
         selectedOrderId: orderId,
+        ...dispatchState
+      });
+    }
+    if (intent === "notify-loader") {
+      const orderId = String(form.get("orderId") || "").trim();
+      if (!orderId) throw new Error("Missing order selection");
+      const [allOrders, allRoutes] = await Promise.all([getDispatchOrders(), getDispatchRoutes()]);
+      const order = allOrders.find((entry2) => entry2.id === orderId);
+      if (!order) throw new Error("Order was not found.");
+      const route53 = allRoutes.find((entry2) => entry2.id === order.assignedRouteId) || null;
+      const notification = await createLoaderNotification({
+        order,
+        route: route53,
+        actor: currentUser
+      });
+      await logAuditEvent({
+        actor: currentUser,
+        action: "notify_loader",
+        targetType: "dispatch_order",
+        targetId: order.id,
+        targetLabel: order.orderNumber || order.id,
+        details: {
+          notificationId: notification.id,
+          message: notification.message,
+          route: (route53 == null ? void 0 : route53.code) || null
+        }
+      });
+      const dispatchState = await loadDispatchState({
+        skipSetup: true
+      });
+      return data({
+        allowed: true,
+        ok: true,
+        message: `Sent loader alert for ${getOrderDisplayNumber$2(order)}.`,
+        selectedOrderId: order.id,
         ...dispatchState
       });
     }
@@ -8246,13 +8344,13 @@ async function action$m({
         patch.deliveredAt = now;
       }
       const updatedOrder = await updateDispatchOrder(orderId, patch);
-      const route50 = updatedOrder.assignedRouteId ? (await getDispatchRoutes()).find((entry2) => entry2.id === updatedOrder.assignedRouteId) || null : null;
+      const route53 = updatedOrder.assignedRouteId ? (await getDispatchRoutes()).find((entry2) => entry2.id === updatedOrder.assignedRouteId) || null : null;
       let emailNote = "";
       if (deliveryStatus === "delivered") {
         try {
           const emailResult = await sendDeliveryConfirmationEmail({
             order: updatedOrder,
-            route: route50
+            route: route53
           });
           emailNote = emailResult.sent ? " Delivery confirmation email sent." : ` Delivery confirmation email skipped: ${emailResult.reason}`;
         } catch (error) {
@@ -8306,6 +8404,7 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
   const monitorHref = isEmbeddedRoute ? "/app/monitor" : "/monitor";
   const calendarHref = isEmbeddedRoute ? "/app/calendar" : "/calendar";
   const allotmentHref = isEmbeddedRoute ? "/app/allotment" : "/allotment";
+  const loaderHref = isEmbeddedRoute ? "/app/loader" : "/loader";
   const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
   const logoutHref = `${dispatchHref}?logout=1`;
   const canAccess = (permission) => {
@@ -8345,17 +8444,17 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
   const queryDashboardSelectedOrderId = searchParams.get("selected");
   const selectedOrderId = (actionData == null ? void 0 : actionData.selectedOrderId) || queryDashboardSelectedOrderId || querySelectedOrderId || ((_a2 = orders[0]) == null ? void 0 : _a2.id);
   const selectedOrder = useMemo(() => orders.find((order) => order.id === selectedOrderId) || orders[0] || null, [orders, selectedOrderId]);
-  const routes2 = useMemo(() => dispatchRoutes.map((route50) => {
-    const routeOrders = orders.filter((order) => order.assignedRouteId === route50.id && order.status !== "delivered" && order.deliveryStatus !== "delivered").sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999));
+  const routes2 = useMemo(() => dispatchRoutes.map((route53) => {
+    const routeOrders = orders.filter((order) => order.assignedRouteId === route53.id && order.status !== "delivered" && order.deliveryStatus !== "delivered").sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999));
     return {
-      ...route50,
+      ...route53,
       stops: routeOrders.length,
       totalTravelMinutes: routeOrders.reduce((sum, order) => sum + getOrderTravelMinutes(order), 0),
       loadSummary: routeOrders.map((order) => `${order.quantity} ${order.unit} ${order.material}`).slice(0, 2).join(" • "),
       orders: routeOrders
     };
   }), [dispatchRoutes, orders]);
-  const selectedOrderRoute = (selectedOrder == null ? void 0 : selectedOrder.assignedRouteId) ? routes2.find((route50) => route50.id === selectedOrder.assignedRouteId) || null : null;
+  const selectedOrderRoute = (selectedOrder == null ? void 0 : selectedOrder.assignedRouteId) ? routes2.find((route53) => route53.id === selectedOrder.assignedRouteId) || null : null;
   const activeOrders = useMemo(() => orders.filter((order) => !order.assignedRouteId && order.status !== "scheduled" && order.status !== "delivered" && order.deliveryStatus !== "delivered").sort((a, b) => {
     const dateDiff = getRequestedDeliverySortValue(a) - getRequestedDeliverySortValue(b);
     if (dateDiff !== 0) return dateDiff;
@@ -8390,18 +8489,18 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
   const deferredOrderSearch = useDeferredValue(orderSearch);
   const normalizedOrderSearch = deferredOrderSearch.trim().toLowerCase();
   assignmentFetcher.state === "submitting";
-  function getRouteTruck(route50) {
-    if (!route50) return null;
-    return trucks.find((truck) => truck.id === route50.truckId) || trucks.find((truck) => truck.label === route50.truck) || null;
+  function getRouteTruck(route53) {
+    if (!route53) return null;
+    return trucks.find((truck) => truck.id === route53.truckId) || trucks.find((truck) => truck.label === route53.truck) || null;
   }
-  function getAssignmentSplitCount(order, route50) {
-    if (!order || !route50 || !/yards?/i.test(order.unit)) return "";
-    const truck = getRouteTruck(route50);
+  function getAssignmentSplitCount(order, route53) {
+    if (!order || !route53 || !/yards?/i.test(order.unit)) return "";
+    const truck = getRouteTruck(route53);
     const capacity = Number((truck == null ? void 0 : truck.yards) || 30);
     const quantity = Number(order.quantity || 0);
     if (!quantity || !capacity || quantity <= capacity) return "";
     const minimumSplits = Math.ceil(quantity / capacity);
-    const routeLabel = `${route50.code}${(truck == null ? void 0 : truck.label) ? ` / ${truck.label}` : ""}`;
+    const routeLabel = `${route53.code}${(truck == null ? void 0 : truck.label) ? ` / ${truck.label}` : ""}`;
     const answer = window.prompt(`${getOrderDisplayNumber$2(order)} is ${quantity} yards, which is over the ${capacity} yard truck limit for ${routeLabel}.
 
 How many tickets should I split it into?`, String(minimumSplits));
@@ -8414,8 +8513,8 @@ How many tickets should I split it into?`, String(minimumSplits));
     return String(splitCount);
   }
   function prepareAssignmentSubmit(order, routeId, form, event) {
-    const route50 = routes2.find((entry2) => entry2.id === routeId);
-    const splitCount = getAssignmentSplitCount(order, route50);
+    const route53 = routes2.find((entry2) => entry2.id === routeId);
+    const splitCount = getAssignmentSplitCount(order, route53);
     if (splitCount === null) {
       event.preventDefault();
       return;
@@ -8451,7 +8550,7 @@ How many tickets should I split it into?`, String(minimumSplits));
   const searchedDeliveredOrders = useMemo(() => searchOrders(deliveredOrders), [deliveredOrders, normalizedOrderSearch, routes2]);
   const searchedRoutes = useMemo(() => {
     if (!normalizedOrderSearch) return routes2;
-    return routes2.filter((route50) => buildRouteSearchText(route50, orders).includes(normalizedOrderSearch));
+    return routes2.filter((route53) => buildRouteSearchText(route53, orders).includes(normalizedOrderSearch));
   }, [normalizedOrderSearch, orders, routes2]);
   const searchedTrucks = useMemo(() => {
     if (!normalizedOrderSearch) return trucks;
@@ -8462,17 +8561,17 @@ How many tickets should I split it into?`, String(minimumSplits));
     return employees.filter((employee) => buildEmployeeSearchText(employee, routes2, orders).includes(normalizedOrderSearch));
   }, [employees, normalizedOrderSearch, orders, routes2]);
   const renderSearchBar = (placeholder) => /* @__PURE__ */ jsxs("div", {
-    style: styles$a.searchBar,
+    style: styles$b.searchBar,
     children: [/* @__PURE__ */ jsx("input", {
       type: "search",
       value: orderSearch,
       onChange: (event) => setOrderSearch(event.currentTarget.value),
       placeholder,
-      style: styles$a.searchInput
+      style: styles$b.searchInput
     }), orderSearch ? /* @__PURE__ */ jsx("button", {
       type: "button",
       onClick: () => setOrderSearch(""),
-      style: styles$a.clearSearchButton,
+      style: styles$b.clearSearchButton,
       children: "Clear"
     }) : null]
   });
@@ -8497,8 +8596,8 @@ How many tickets should I split it into?`, String(minimumSplits));
     clearDragState();
     if (!orderId || !routeId || !canManageDispatch) return;
     const order = orders.find((entry2) => entry2.id === orderId);
-    const route50 = routes2.find((entry2) => entry2.id === routeId);
-    const splitCount = getAssignmentSplitCount(order, route50);
+    const route53 = routes2.find((entry2) => entry2.id === routeId);
+    const splitCount = getAssignmentSplitCount(order, route53);
     if (splitCount === null) return;
     assignmentFetcher.submit({
       intent: "assign-order",
@@ -8527,8 +8626,8 @@ How many tickets should I split it into?`, String(minimumSplits));
   function moveOrderWithSelect(orderId, routeId) {
     if (!orderId || !canManageDispatch) return;
     const order = orders.find((entry2) => entry2.id === orderId);
-    const route50 = routes2.find((entry2) => entry2.id === routeId);
-    const splitCount = routeId ? getAssignmentSplitCount(order, route50) : "";
+    const route53 = routes2.find((entry2) => entry2.id === routeId);
+    const splitCount = routeId ? getAssignmentSplitCount(order, route53) : "";
     if (splitCount === null) return;
     assignmentFetcher.submit(routeId ? {
       intent: "assign-order",
@@ -8551,19 +8650,19 @@ How many tickets should I split it into?`, String(minimumSplits));
   }, [assignmentFetcher.state]);
   if (!allowed) {
     return /* @__PURE__ */ jsx("div", {
-      style: styles$a.page,
+      style: styles$b.page,
       children: /* @__PURE__ */ jsx("div", {
         style: {
-          ...styles$a.shell,
+          ...styles$b.shell,
           maxWidth: 520
         },
         children: /* @__PURE__ */ jsxs("div", {
-          style: styles$a.loginCard,
+          style: styles$b.loginCard,
           children: [/* @__PURE__ */ jsx("h1", {
-            style: styles$a.title,
+            style: styles$b.title,
             children: "Dispatch"
           }), /* @__PURE__ */ jsx("p", {
-            style: styles$a.subtitle,
+            style: styles$b.subtitle,
             children: "Enter the admin password to open the contractor dispatch workspace."
           }), /* @__PURE__ */ jsxs(Form, {
             method: "post",
@@ -8576,20 +8675,20 @@ How many tickets should I split it into?`, String(minimumSplits));
               name: "intent",
               value: "login"
             }), /* @__PURE__ */ jsx("label", {
-              style: styles$a.label,
+              style: styles$b.label,
               children: "Admin Password"
             }), /* @__PURE__ */ jsx("input", {
               type: "password",
               name: "password",
               autoComplete: "current-password",
-              style: styles$a.input
+              style: styles$b.input
             }), (actionData == null ? void 0 : actionData.loginError) ? /* @__PURE__ */ jsx("div", {
-              style: styles$a.statusErr,
+              style: styles$b.statusErr,
               children: actionData.loginError
             }) : null, /* @__PURE__ */ jsx("button", {
               type: "submit",
               style: {
-                ...styles$a.primaryButton,
+                ...styles$b.primaryButton,
                 width: "100%",
                 marginTop: 16
               },
@@ -8601,162 +8700,170 @@ How many tickets should I split it into?`, String(minimumSplits));
     });
   }
   return /* @__PURE__ */ jsx("div", {
-    style: styles$a.page,
+    style: styles$b.page,
     children: /* @__PURE__ */ jsxs("div", {
       style: {
-        ...styles$a.appFrame,
+        ...styles$b.appFrame,
         gridTemplateColumns: navCollapsed ? "56px minmax(0, 1fr)" : "230px minmax(0, 1fr)"
       },
       children: [/* @__PURE__ */ jsxs("aside", {
         style: {
-          ...styles$a.sidebar,
+          ...styles$b.sidebar,
           padding: navCollapsed ? "12px 8px" : "16px 14px"
         },
         children: [/* @__PURE__ */ jsx("button", {
           type: "button",
           onClick: toggleNavCollapsed,
-          style: styles$a.navToggle,
+          style: styles$b.navToggle,
           title: navCollapsed ? "Open navigation" : "Close navigation",
           children: navCollapsed ? ">" : "<"
         }), /* @__PURE__ */ jsxs("div", {
-          style: styles$a.brandBlock,
+          style: styles$b.brandBlock,
           children: [/* @__PURE__ */ jsx("div", {
-            style: styles$a.brandMark,
+            style: styles$b.brandMark,
             children: /* @__PURE__ */ jsx("img", {
               src: "/green-hills-logo.png",
               alt: "Green Hills Supply",
-              style: styles$a.brandLogo
+              style: styles$b.brandLogo
             })
           }), /* @__PURE__ */ jsxs("div", {
-            style: navCollapsed ? styles$a.collapsedOnlyHidden : void 0,
+            style: navCollapsed ? styles$b.collapsedOnlyHidden : void 0,
             children: [/* @__PURE__ */ jsx("div", {
-              style: styles$a.brandTitle,
+              style: styles$b.brandTitle,
               children: "Contractor"
             }), /* @__PURE__ */ jsx("div", {
-              style: styles$a.brandSub,
+              style: styles$b.brandSub,
               children: "Dispatch v2.0"
             })]
           })]
         }), /* @__PURE__ */ jsxs("nav", {
-          style: navCollapsed ? styles$a.collapsedOnlyHidden : styles$a.sideNav,
+          style: navCollapsed ? styles$b.collapsedOnlyHidden : styles$b.sideNav,
           children: [/* @__PURE__ */ jsx("a", {
             href: classicHref,
-            style: styles$a.sideNavLink(false),
+            style: styles$b.sideNavLink(false),
             children: "Classic"
           }), /* @__PURE__ */ jsx("a", {
             href: monitorHref,
-            style: styles$a.sideNavLink(false),
+            style: styles$b.sideNavLink(false),
             children: "Monitor"
           }), /* @__PURE__ */ jsx("a", {
             href: calendarHref,
-            style: styles$a.sideNavLink(false),
+            style: styles$b.sideNavLink(false),
             children: "Calendar"
           }), /* @__PURE__ */ jsx("a", {
             href: allotmentHref,
-            style: styles$a.sideNavLink(false),
+            style: styles$b.sideNavLink(false),
             children: "Allotment"
-          }), canAccess("manageDispatch") ? /* @__PURE__ */ jsx("a", {
+          }), canAccess("loader") ? /* @__PURE__ */ jsx("a", {
+            href: loaderHref,
+            style: styles$b.sideNavLink(false),
+            children: "Loader"
+          }) : null, canAccess("manageDispatch") ? /* @__PURE__ */ jsx("a", {
             href: dispatchViewHref("orders"),
-            style: styles$a.sideNavLink(activeView === "orders"),
+            style: styles$b.sideNavLink(activeView === "orders"),
             children: "Orders"
           }) : null, /* @__PURE__ */ jsx("a", {
             href: dispatchViewHref("scheduled"),
-            style: styles$a.sideNavLink(activeView === "scheduled"),
+            style: styles$b.sideNavLink(activeView === "scheduled"),
             children: "Scheduled"
           }), canAccess("manageDispatch") ? /* @__PURE__ */ jsx("a", {
             href: dispatchViewHref("routes"),
-            style: styles$a.sideNavLink(activeView === "routes"),
+            style: styles$b.sideNavLink(activeView === "routes"),
             children: "Routes"
           }) : null, canAccess("manageDispatch") ? /* @__PURE__ */ jsx("a", {
             href: dispatchViewHref("trucks"),
-            style: styles$a.sideNavLink(activeView === "trucks"),
+            style: styles$b.sideNavLink(activeView === "trucks"),
             children: "Trucks"
           }) : null, canAccess("manageDispatch") ? /* @__PURE__ */ jsx("a", {
             href: dispatchViewHref("employees"),
-            style: styles$a.sideNavLink(activeView === "employees"),
+            style: styles$b.sideNavLink(activeView === "employees"),
             children: "Employees"
           }) : null, /* @__PURE__ */ jsx("a", {
             href: dispatchViewHref("delivered"),
-            style: styles$a.sideNavLink(activeView === "delivered"),
+            style: styles$b.sideNavLink(activeView === "delivered"),
             children: "Delivered"
           })]
         }), /* @__PURE__ */ jsxs("div", {
-          style: navCollapsed ? styles$a.collapsedOnlyHidden : styles$a.sidebarFooter,
+          style: navCollapsed ? styles$b.collapsedOnlyHidden : styles$b.sidebarFooter,
           children: [canAccess("driver") ? /* @__PURE__ */ jsx("a", {
             href: driverHref,
-            style: styles$a.sideUtility,
+            style: styles$b.sideUtility,
             children: "Driver Route"
+          }) : null, canAccess("loader") ? /* @__PURE__ */ jsx("a", {
+            href: loaderHref,
+            style: styles$b.sideUtility,
+            children: "Loader View"
           }) : null, canAccess("quoteTool") ? /* @__PURE__ */ jsx("a", {
             href: quoteHref,
-            style: styles$a.sideUtility,
+            style: styles$b.sideUtility,
             children: "Quote Tool"
           }) : null, canAccess("manageUsers") ? /* @__PURE__ */ jsx("a", {
             href: "/settings",
-            style: styles$a.sideUtility,
+            style: styles$b.sideUtility,
             children: "Settings"
           }) : null, currentUser ? /* @__PURE__ */ jsx("a", {
             href: "/change-password",
-            style: styles$a.sideUtility,
+            style: styles$b.sideUtility,
             children: "Change Password"
           }) : null, /* @__PURE__ */ jsx("a", {
             href: currentUser ? "/login?logout=1" : logoutHref,
-            style: styles$a.sideUtility,
+            style: styles$b.sideUtility,
             children: "Log Out"
           })]
         })]
       }), /* @__PURE__ */ jsxs("main", {
-        style: styles$a.shell,
+        style: styles$b.shell,
         children: [/* @__PURE__ */ jsxs("div", {
           id: "dashboard",
-          style: styles$a.hero,
+          style: styles$b.hero,
           children: [/* @__PURE__ */ jsxs("div", {
             children: [/* @__PURE__ */ jsx("div", {
-              style: styles$a.kicker,
+              style: styles$b.kicker,
               children: "Dispatch Workspace"
             }), /* @__PURE__ */ jsx("h1", {
-              style: styles$a.title,
+              style: styles$b.title,
               children: "Plan, intake, and assign deliveries"
             }), /* @__PURE__ */ jsx("p", {
-              style: styles$a.subtitle,
+              style: styles$b.subtitle,
               children: "Live contractor operations board for mailbox intake, routing, trucks, crews, and field proof."
             })]
           }), /* @__PURE__ */ jsxs("div", {
-            style: styles$a.heroActions,
+            style: styles$b.heroActions,
             children: [/* @__PURE__ */ jsx("a", {
               href: mobileHref,
-              style: styles$a.ghostButton,
+              style: styles$b.ghostButton,
               children: "Dashboard"
             }), /* @__PURE__ */ jsx("a", {
               href: reviewHref,
-              style: styles$a.ghostButton,
+              style: styles$b.ghostButton,
               children: "Review Quotes"
             }), /* @__PURE__ */ jsx("a", {
               href: driverHref,
-              style: styles$a.ghostButton,
+              style: styles$b.ghostButton,
               children: "Driver View"
             })]
           })]
         }), !storageReady ? /* @__PURE__ */ jsxs("div", {
-          style: styles$a.statusWarn,
+          style: styles$b.statusWarn,
           children: ["Dispatch storage is not ready yet. Run", " ", /* @__PURE__ */ jsx("strong", {
             children: "`dispatch_schema.sql`"
           }), " ", "in Supabase SQL Editor, then refresh. Until then, you are seeing seed data.", storageError ? ` Storage error: ${storageError}` : ""]
         }) : null, (actionData == null ? void 0 : actionData.message) ? /* @__PURE__ */ jsx("div", {
-          style: actionData.ok ? styles$a.statusOk : styles$a.statusErr,
+          style: actionData.ok ? styles$b.statusOk : styles$b.statusErr,
           children: actionData.message
         }) : null, mailboxStatus ? /* @__PURE__ */ jsxs("div", {
-          style: mailboxStatus.configured ? styles$a.statusOk : styles$a.statusWarn,
+          style: mailboxStatus.configured ? styles$b.statusOk : styles$b.statusWarn,
           children: [mailboxStatus.message, ((_b = mailboxStatus.skipReasons) == null ? void 0 : _b.length) ? /* @__PURE__ */ jsxs("div", {
-            style: styles$a.skipReasonList,
+            style: styles$b.skipReasonList,
             children: [mailboxStatus.skipReasons.slice(0, 5).map((item) => /* @__PURE__ */ jsxs("div", {
-              style: styles$a.skipReasonItem,
+              style: styles$b.skipReasonItem,
               children: [/* @__PURE__ */ jsx("strong", {
                 children: item.subject
               }), /* @__PURE__ */ jsx("span", {
                 children: item.reason
               })]
             }, `${item.uid}-${item.reason}`)), mailboxStatus.skipReasons.length > 5 ? /* @__PURE__ */ jsxs("div", {
-              style: styles$a.skipReasonItem,
+              style: styles$b.skipReasonItem,
               children: [/* @__PURE__ */ jsx("strong", {
                 children: "More skipped emails"
               }), /* @__PURE__ */ jsxs("span", {
@@ -8765,10 +8872,10 @@ How many tickets should I split it into?`, String(minimumSplits));
             }) : null]
           }) : null]
         }) : null, /* @__PURE__ */ jsxs("div", {
-          style: styles$a.metricsGrid,
+          style: styles$b.metricsGrid,
           children: [metricCard("Inbox", String(inboxOrders.length), "#f97316"), metricCard("Scheduled", String(scheduledOrders.length), "#22c55e"), metricCard("On Hold", String(holdOrders.length), "#eab308"), metricCard("Delivered", String(deliveredOrders.length), "#38bdf8")]
         }), activeView === "orders" ? /* @__PURE__ */ jsxs("div", {
-          style: styles$a.focusGrid,
+          style: styles$b.focusGrid,
           children: [/* @__PURE__ */ jsxs("div", {
             id: "orders",
             onDragOver: (event) => {
@@ -8780,21 +8887,21 @@ How many tickets should I split it into?`, String(minimumSplits));
             onDragLeave: () => setDragOverQueue(false),
             onDrop: unassignDraggedOrder,
             style: {
-              ...styles$a.panel,
-              ...dragOverQueue ? styles$a.queueDropActive : {}
+              ...styles$b.panel,
+              ...dragOverQueue ? styles$b.queueDropActive : {}
             },
             children: [/* @__PURE__ */ jsxs("div", {
-              style: styles$a.panelHeader,
+              style: styles$b.panelHeader,
               children: [/* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("h2", {
-                  style: styles$a.panelTitle,
+                  style: styles$b.panelTitle,
                   children: "Orders"
                 }), /* @__PURE__ */ jsx("p", {
-                  style: styles$a.panelSub,
+                  style: styles$b.panelSub,
                   children: "View imported, manual, and held dispatch orders that still need scheduling."
                 })]
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$a.headerPill,
+                style: styles$b.headerPill,
                 children: [searchedActiveOrders.length, " orders"]
               })]
             }), renderSearchBar("Search orders by any field: customer, address, material, notes, date, route, status..."), /* @__PURE__ */ jsxs("div", {
@@ -8803,11 +8910,11 @@ How many tickets should I split it into?`, String(minimumSplits));
                 gap: 10
               },
               children: [searchedActiveOrders.map((order) => {
-                const route50 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
+                const route53 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
                 return /* @__PURE__ */ jsxs("a", {
                   href: `${dispatchHref}?view=orders&order=${encodeURIComponent(order.id)}`,
                   style: {
-                    ...styles$a.queueCard,
+                    ...styles$b.queueCard,
                     textDecoration: "none"
                   },
                   children: [/* @__PURE__ */ jsxs("div", {
@@ -8818,18 +8925,18 @@ How many tickets should I split it into?`, String(minimumSplits));
                     },
                     children: [/* @__PURE__ */ jsxs("div", {
                       children: [/* @__PURE__ */ jsx("div", {
-                        style: styles$a.queueTitle,
+                        style: styles$b.queueTitle,
                         children: order.customer
                       }), /* @__PURE__ */ jsxs("div", {
-                        style: styles$a.queueMeta,
+                        style: styles$b.queueMeta,
                         children: [order.address, ", ", order.city]
                       })]
                     }), /* @__PURE__ */ jsx("div", {
-                      style: styles$a.badge(order.status),
+                      style: styles$b.badge(order.status),
                       children: order.status
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
-                    style: styles$a.queueDetails,
+                    style: styles$b.queueDetails,
                     children: [/* @__PURE__ */ jsx("span", {
                       children: getOrderDisplayNumber$2(order)
                     }), /* @__PURE__ */ jsxs("span", {
@@ -8839,47 +8946,47 @@ How many tickets should I split it into?`, String(minimumSplits));
                     }), order.travelMinutes ? /* @__PURE__ */ jsxs("span", {
                       children: [order.travelMinutes, " min RT"]
                     }) : null, /* @__PURE__ */ jsx("span", {
-                      children: route50 ? route50.truck : "Unassigned"
+                      children: route53 ? route53.truck : "Unassigned"
                     })]
                   })]
                 }, order.id);
               }), searchedActiveOrders.length === 0 ? /* @__PURE__ */ jsx("div", {
-                style: styles$a.emptySearch,
+                style: styles$b.emptySearch,
                 children: "No orders matched that search."
               }) : null]
             })]
           }), /* @__PURE__ */ jsx("div", {
-            style: styles$a.panel,
+            style: styles$b.panel,
             children: orderEditorOpen && selectedOrder ? /* @__PURE__ */ jsxs("div", {
               style: {
                 display: "grid",
                 gap: 14
               },
               children: [/* @__PURE__ */ jsxs("div", {
-                style: styles$a.modalHeader,
+                style: styles$b.modalHeader,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("h2", {
-                    style: styles$a.panelTitle,
+                    style: styles$b.panelTitle,
                     children: "Edit Selected Order"
                   }), /* @__PURE__ */ jsx("p", {
-                    style: styles$a.panelSub,
+                    style: styles$b.panelSub,
                     children: "Update this dispatch card."
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.editorNavActions,
+                  style: styles$b.editorNavActions,
                   children: [/* @__PURE__ */ jsx("a", {
                     href: previousOrderHref || "#",
                     "aria-disabled": !previousOrderHref,
-                    style: previousOrderHref ? styles$a.modalCloseButton : styles$a.disabledNavButton,
+                    style: previousOrderHref ? styles$b.modalCloseButton : styles$b.disabledNavButton,
                     children: "←"
                   }), /* @__PURE__ */ jsx("a", {
                     href: nextOrderHref || "#",
                     "aria-disabled": !nextOrderHref,
-                    style: nextOrderHref ? styles$a.modalCloseButton : styles$a.disabledNavButton,
+                    style: nextOrderHref ? styles$b.modalCloseButton : styles$b.disabledNavButton,
                     children: "→"
                   }), /* @__PURE__ */ jsx("a", {
                     href: modalReturnHref,
-                    style: styles$a.modalCloseButton,
+                    style: styles$b.modalCloseButton,
                     children: "Close"
                   })]
                 })]
@@ -8903,121 +9010,121 @@ How many tickets should I split it into?`, String(minimumSplits));
                   name: "returnTo",
                   value: rawReturnTo
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.formGridTwo,
+                  style: styles$b.formGridTwo,
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Order Number"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "orderNumber",
                       defaultValue: selectedOrder.orderNumber || "",
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Internal Dispatch ID"
                     }), /* @__PURE__ */ jsx("input", {
                       value: selectedOrder.id,
                       readOnly: true,
                       style: {
-                        ...styles$a.input,
+                        ...styles$b.input,
                         opacity: 0.75
                       }
                     })]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.formGridTwo,
+                  style: styles$b.formGridTwo,
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Customer"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "customer",
                       defaultValue: selectedOrder.customer,
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Contact / Email"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "contact",
                       defaultValue: selectedOrder.contact,
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.formGridTwo,
+                  style: styles$b.formGridTwo,
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Address"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "address",
                       defaultValue: selectedOrder.address,
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "City"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "city",
                       defaultValue: selectedOrder.city,
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.formGridThree,
+                  style: styles$b.formGridThree,
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Material"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "material",
                       defaultValue: selectedOrder.material,
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Quantity"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "quantity",
                       defaultValue: selectedOrder.quantity,
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Unit"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "unit",
                       defaultValue: selectedOrder.unit,
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.formGridTwo,
+                  style: styles$b.formGridTwo,
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Requested Window"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "requestedWindow",
                       type: "date",
                       defaultValue: getRequestedWindowDateInputValue(selectedOrder.requestedWindow),
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Time Preference"
                     }), /* @__PURE__ */ jsxs("select", {
                       name: "timePreference",
                       defaultValue: selectedOrder.timePreference || "",
-                      style: styles$a.input,
+                      style: styles$b.input,
                       children: [/* @__PURE__ */ jsx("option", {
                         value: "",
                         children: "Infer from notes"
@@ -9034,15 +9141,15 @@ How many tickets should I split it into?`, String(minimumSplits));
                     })]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.formGridTwo,
+                  style: styles$b.formGridTwo,
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Status"
                     }), /* @__PURE__ */ jsxs("select", {
                       name: "status",
                       defaultValue: selectedOrder.status,
-                      style: styles$a.input,
+                      style: styles$b.input,
                       children: [/* @__PURE__ */ jsx("option", {
                         value: "new",
                         children: "New"
@@ -9062,59 +9169,59 @@ How many tickets should I split it into?`, String(minimumSplits));
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Truck Preference"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "truckPreference",
                       defaultValue: selectedOrder.truckPreference || "",
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.formGridTwo,
+                  style: styles$b.formGridTwo,
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Assigned Route / Driver"
                     }), /* @__PURE__ */ jsxs("select", {
                       name: "routeId",
                       defaultValue: selectedOrder.assignedRouteId || "",
-                      style: styles$a.input,
+                      style: styles$b.input,
                       children: [/* @__PURE__ */ jsx("option", {
                         value: "",
                         children: "Unassigned"
-                      }), routes2.map((route50) => /* @__PURE__ */ jsxs("option", {
-                        value: route50.id,
-                        children: [route50.code, " - ", route50.truck, " - ", route50.driver]
-                      }, route50.id))]
+                      }), routes2.map((route53) => /* @__PURE__ */ jsxs("option", {
+                        value: route53.id,
+                        children: [route53.code, " - ", route53.truck, " - ", route53.driver]
+                      }, route53.id))]
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "ETA"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "eta",
                       defaultValue: selectedOrder.eta || "",
                       placeholder: "Optional",
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$a.label,
+                    style: styles$b.label,
                     children: "Notes"
                   }), /* @__PURE__ */ jsx("textarea", {
                     name: "notes",
                     rows: 4,
                     defaultValue: selectedOrder.notes,
                     style: {
-                      ...styles$a.input,
+                      ...styles$b.input,
                       resize: "vertical"
                     }
                   })]
                 }), /* @__PURE__ */ jsx("button", {
                   type: "submit",
-                  style: styles$a.primaryButton,
+                  style: styles$b.primaryButton,
                   children: "Save Order Changes"
                 })]
               }), /* @__PURE__ */ jsxs(Form, {
@@ -9135,19 +9242,19 @@ How many tickets should I split it into?`, String(minimumSplits));
                   value: selectedOrder.id
                 }), /* @__PURE__ */ jsx("button", {
                   type: "submit",
-                  style: styles$a.dangerButton,
+                  style: styles$b.dangerButton,
                   children: "Delete Order"
                 })]
               })]
             }) : /* @__PURE__ */ jsxs(Fragment, {
               children: [/* @__PURE__ */ jsx("div", {
-                style: styles$a.panelHeader,
+                style: styles$b.panelHeader,
                 children: /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("h2", {
-                    style: styles$a.panelTitle,
+                    style: styles$b.panelTitle,
                     children: "Add / Import Order"
                   }), /* @__PURE__ */ jsx("p", {
-                    style: styles$a.panelSub,
+                    style: styles$b.panelSub,
                     children: "Create a dispatch card manually or poll the mailbox."
                   })]
                 })
@@ -9164,7 +9271,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                   value: "poll-mailbox"
                 }), /* @__PURE__ */ jsx("button", {
                   type: "submit",
-                  style: styles$a.primaryButton,
+                  style: styles$b.primaryButton,
                   children: "Poll Mailbox Now"
                 })]
               }), /* @__PURE__ */ jsxs(Form, {
@@ -9179,53 +9286,53 @@ How many tickets should I split it into?`, String(minimumSplits));
                   value: "create-order"
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$a.label,
+                    style: styles$b.label,
                     children: "Order Number"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "orderNumber",
                     placeholder: "8789",
-                    style: styles$a.input
+                    style: styles$b.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.formGridTwo,
+                  style: styles$b.formGridTwo,
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Customer"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "customer",
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Contact / Email"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "contact",
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.formGridTwo,
+                  style: styles$b.formGridTwo,
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Jobsite Address"
                     }), /* @__PURE__ */ jsx("input", {
                       id: "dispatch-address",
                       name: "address",
                       placeholder: "Start typing the street address",
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "City"
                     }), /* @__PURE__ */ jsx("input", {
                       id: "dispatch-city",
                       name: "city",
                       placeholder: "City, ST ZIP",
-                      style: styles$a.input
+                      style: styles$b.input
                     }), /* @__PURE__ */ jsx("input", {
                       id: "dispatch-province",
                       name: "province",
@@ -9242,16 +9349,16 @@ How many tickets should I split it into?`, String(minimumSplits));
                     })]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.formGridThree,
+                  style: styles$b.formGridThree,
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Material"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "material",
                       list: "dispatch-material-options",
                       placeholder: "Start typing a synced material",
-                      style: styles$a.input
+                      style: styles$b.input
                     }), /* @__PURE__ */ jsx("datalist", {
                       id: "dispatch-material-options",
                       children: materialOptions.map((material) => /* @__PURE__ */ jsx("option", {
@@ -9260,19 +9367,19 @@ How many tickets should I split it into?`, String(minimumSplits));
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Quantity"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "quantity",
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Unit"
                     }), /* @__PURE__ */ jsxs("select", {
                       name: "unit",
-                      style: styles$a.input,
+                      style: styles$b.input,
                       children: [/* @__PURE__ */ jsx("option", {
                         children: "Ton"
                       }), /* @__PURE__ */ jsx("option", {
@@ -9287,23 +9394,23 @@ How many tickets should I split it into?`, String(minimumSplits));
                     })]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.formGridTwo,
+                  style: styles$b.formGridTwo,
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Requested Window"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "requestedWindow",
                       type: "date",
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Time Preference"
                     }), /* @__PURE__ */ jsxs("select", {
                       name: "timePreference",
-                      style: styles$a.input,
+                      style: styles$b.input,
                       children: [/* @__PURE__ */ jsx("option", {
                         value: "",
                         children: "Infer from notes"
@@ -9321,19 +9428,19 @@ How many tickets should I split it into?`, String(minimumSplits));
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$a.label,
+                    style: styles$b.label,
                     children: "Notes"
                   }), /* @__PURE__ */ jsx("textarea", {
                     name: "notes",
                     rows: 3,
                     style: {
-                      ...styles$a.input,
+                      ...styles$b.input,
                       resize: "vertical"
                     }
                   })]
                 }), /* @__PURE__ */ jsx("button", {
                   type: "submit",
-                  style: styles$a.primaryButton,
+                  style: styles$b.primaryButton,
                   children: "Add Order"
                 })]
               }), /* @__PURE__ */ jsxs(Form, {
@@ -9348,42 +9455,42 @@ How many tickets should I split it into?`, String(minimumSplits));
                   name: "intent",
                   value: "parse-email-order"
                 }), /* @__PURE__ */ jsx("label", {
-                  style: styles$a.label,
+                  style: styles$b.label,
                   children: "Paste Order Email"
                 }), /* @__PURE__ */ jsx("textarea", {
                   name: "rawEmail",
                   rows: 9,
                   placeholder: "Subject: You've Got A New Order: #1234\nCustomer: Green Hills Supply\nAddress: 2543 W Applebrook Lane\nCity: Oak Creek, WI\nMaterial: Coarse Torpedo Sand\nQuantity: 12\nUnit: Ton\nRequested Window: Tomorrow 9a - 11a",
                   style: {
-                    ...styles$a.input,
+                    ...styles$b.input,
                     resize: "vertical",
                     minHeight: 180
                   }
                 }), /* @__PURE__ */ jsx("button", {
                   type: "submit",
-                  style: styles$a.secondaryButton,
+                  style: styles$b.secondaryButton,
                   children: "Parse Email Into Dispatch Card"
                 })]
               })]
             })
           })]
         }) : null, null, activeView === "scheduled" ? /* @__PURE__ */ jsx("div", {
-          style: styles$a.focusGrid,
+          style: styles$b.focusGrid,
           children: /* @__PURE__ */ jsxs("div", {
             id: "scheduled",
-            style: styles$a.panel,
+            style: styles$b.panel,
             children: [/* @__PURE__ */ jsxs("div", {
-              style: styles$a.panelHeader,
+              style: styles$b.panelHeader,
               children: [/* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("h2", {
-                  style: styles$a.panelTitle,
+                  style: styles$b.panelTitle,
                   children: "Scheduled"
                 }), /* @__PURE__ */ jsx("p", {
-                  style: styles$a.panelSub,
+                  style: styles$b.panelSub,
                   children: "Orders assigned to a route and waiting for delivery."
                 })]
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$a.headerPill,
+                style: styles$b.headerPill,
                 children: [searchedScheduledOrders.length, " of ", scheduledOrders.length, " scheduled"]
               })]
             }), renderSearchBar("Search scheduled loads by any field: customer, route, driver, address, material, notes..."), /* @__PURE__ */ jsx("div", {
@@ -9397,9 +9504,9 @@ How many tickets should I split it into?`, String(minimumSplits));
                 },
                 children: scheduledOrders.length ? "No scheduled orders matched that search." : "No scheduled orders yet."
               }) : searchedScheduledOrders.map((order) => {
-                const route50 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
+                const route53 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
                 return /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.queueCard,
+                  style: styles$b.queueCard,
                   children: [/* @__PURE__ */ jsxs("div", {
                     style: {
                       display: "flex",
@@ -9408,18 +9515,18 @@ How many tickets should I split it into?`, String(minimumSplits));
                     },
                     children: [/* @__PURE__ */ jsxs("div", {
                       children: [/* @__PURE__ */ jsx("div", {
-                        style: styles$a.queueTitle,
+                        style: styles$b.queueTitle,
                         children: order.customer
                       }), /* @__PURE__ */ jsxs("div", {
-                        style: styles$a.queueMeta,
+                        style: styles$b.queueMeta,
                         children: [order.address, ", ", order.city]
                       })]
                     }), /* @__PURE__ */ jsx("div", {
-                      style: styles$a.badge("scheduled"),
+                      style: styles$b.badge("scheduled"),
                       children: "scheduled"
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
-                    style: styles$a.queueDetails,
+                    style: styles$b.queueDetails,
                     children: [/* @__PURE__ */ jsx("span", {
                       children: getOrderDisplayNumber$2(order)
                     }), /* @__PURE__ */ jsxs("span", {
@@ -9433,22 +9540,22 @@ How many tickets should I split it into?`, String(minimumSplits));
                     }) : null, order.stopSequence ? /* @__PURE__ */ jsxs("span", {
                       children: ["Stop ", order.stopSequence]
                     }) : null, /* @__PURE__ */ jsx("span", {
-                      children: route50 ? `${route50.truck || route50.code} / ${route50.driver || "No driver"}` : "No route"
+                      children: route53 ? `${route53.truck || route53.code} / ${route53.driver || "No driver"}` : "No route"
                     })]
                   }), order.notes ? /* @__PURE__ */ jsxs("div", {
-                    style: styles$a.queueNotes,
+                    style: styles$b.queueNotes,
                     children: [/* @__PURE__ */ jsx("strong", {
                       children: "Notes:"
                     }), " ", order.notes]
                   }) : null, /* @__PURE__ */ jsxs("div", {
-                    style: styles$a.deliveredActions,
+                    style: styles$b.deliveredActions,
                     children: [/* @__PURE__ */ jsx("a", {
                       href: `${dispatchHref}?view=orders&order=${encodeURIComponent(order.id)}`,
-                      style: styles$a.detailButton,
+                      style: styles$b.detailButton,
                       children: "Edit"
                     }), /* @__PURE__ */ jsx("a", {
                       href: `${driverHref}?route=${encodeURIComponent(order.assignedRouteId || "")}`,
-                      style: styles$a.assignButton,
+                      style: styles$b.assignButton,
                       children: "Driver View"
                     })]
                   })]
@@ -9457,22 +9564,22 @@ How many tickets should I split it into?`, String(minimumSplits));
             })]
           })
         }) : null, activeView === "delivered" ? /* @__PURE__ */ jsx("div", {
-          style: styles$a.focusGrid,
+          style: styles$b.focusGrid,
           children: /* @__PURE__ */ jsxs("div", {
             id: "delivered",
-            style: styles$a.panel,
+            style: styles$b.panel,
             children: [/* @__PURE__ */ jsxs("div", {
-              style: styles$a.panelHeader,
+              style: styles$b.panelHeader,
               children: [/* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("h2", {
-                  style: styles$a.panelTitle,
+                  style: styles$b.panelTitle,
                   children: "Delivered"
                 }), /* @__PURE__ */ jsx("p", {
-                  style: styles$a.panelSub,
+                  style: styles$b.panelSub,
                   children: "Completed orders that drivers marked delivered."
                 })]
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$a.headerPill,
+                style: styles$b.headerPill,
                 children: [searchedDeliveredOrders.length, " of ", deliveredOrders.length, " delivered"]
               })]
             }), renderSearchBar("Search delivered loads by any field: customer, address, material, proof, notes, route..."), /* @__PURE__ */ jsx("div", {
@@ -9486,9 +9593,9 @@ How many tickets should I split it into?`, String(minimumSplits));
                 },
                 children: deliveredOrders.length ? "No delivered orders matched that search." : "No delivered orders yet."
               }) : searchedDeliveredOrders.map((order) => {
-                const route50 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
+                const route53 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
                 return /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.queueCard,
+                  style: styles$b.queueCard,
                   children: [/* @__PURE__ */ jsxs("div", {
                     style: {
                       display: "flex",
@@ -9497,18 +9604,18 @@ How many tickets should I split it into?`, String(minimumSplits));
                     },
                     children: [/* @__PURE__ */ jsxs("div", {
                       children: [/* @__PURE__ */ jsx("div", {
-                        style: styles$a.queueTitle,
+                        style: styles$b.queueTitle,
                         children: order.customer
                       }), /* @__PURE__ */ jsxs("div", {
-                        style: styles$a.queueMeta,
+                        style: styles$b.queueMeta,
                         children: [order.address, ", ", order.city]
                       })]
                     }), /* @__PURE__ */ jsx("div", {
-                      style: styles$a.badge("delivered"),
+                      style: styles$b.badge("delivered"),
                       children: "delivered"
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
-                    style: styles$a.queueDetails,
+                    style: styles$b.queueDetails,
                     children: [/* @__PURE__ */ jsx("span", {
                       children: getOrderDisplayNumber$2(order)
                     }), /* @__PURE__ */ jsxs("span", {
@@ -9518,13 +9625,13 @@ How many tickets should I split it into?`, String(minimumSplits));
                     }), order.deliveredAt ? /* @__PURE__ */ jsx("span", {
                       children: new Date(order.deliveredAt).toLocaleString()
                     }) : null, /* @__PURE__ */ jsx("span", {
-                      children: route50 ? route50.truck || route50.code : "No route"
+                      children: route53 ? route53.truck || route53.code : "No route"
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
-                    style: styles$a.deliveredActions,
+                    style: styles$b.deliveredActions,
                     children: [/* @__PURE__ */ jsx("a", {
                       href: `${dispatchHref}?view=delivered&order=${encodeURIComponent(order.id)}&detail=1`,
-                      style: styles$a.detailButton,
+                      style: styles$b.detailButton,
                       children: "Open"
                     }), /* @__PURE__ */ jsxs(Form, {
                       method: "post",
@@ -9543,7 +9650,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                         value: order.id
                       }), /* @__PURE__ */ jsx("button", {
                         type: "submit",
-                        style: styles$a.smallWarningButton,
+                        style: styles$b.smallWarningButton,
                         children: "Mark Undelivered"
                       })]
                     }), /* @__PURE__ */ jsxs(Form, {
@@ -9563,7 +9670,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                         value: order.id
                       }), /* @__PURE__ */ jsx("button", {
                         type: "submit",
-                        style: styles$a.smallDangerButton,
+                        style: styles$b.smallDangerButton,
                         children: "Delete"
                       })]
                     })]
@@ -9573,22 +9680,22 @@ How many tickets should I split it into?`, String(minimumSplits));
             })]
           })
         }) : null, deliveredDetailOpen && selectedOrder ? /* @__PURE__ */ jsx("div", {
-          style: styles$a.modalOverlay,
+          style: styles$b.modalOverlay,
           children: /* @__PURE__ */ jsxs("div", {
-            style: styles$a.dispatchModal,
+            style: styles$b.dispatchModal,
             children: [/* @__PURE__ */ jsxs("div", {
-              style: styles$a.panelHeader,
+              style: styles$b.panelHeader,
               children: [/* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("h2", {
-                  style: styles$a.panelTitle,
+                  style: styles$b.panelTitle,
                   children: "Delivered Order"
                 }), /* @__PURE__ */ jsx("p", {
-                  style: styles$a.panelSub,
+                  style: styles$b.panelSub,
                   children: "Review the completed delivery details and proof notes."
                 })]
               }), /* @__PURE__ */ jsx("a", {
                 href: dispatchViewHref("delivered"),
-                style: styles$a.modalCloseButton,
+                style: styles$b.modalCloseButton,
                 children: "Close"
               })]
             }), /* @__PURE__ */ jsxs("div", {
@@ -9598,13 +9705,13 @@ How many tickets should I split it into?`, String(minimumSplits));
               },
               children: [/* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("div", {
-                  style: styles$a.detailId,
+                  style: styles$b.detailId,
                   children: getOrderDisplayNumber$2(selectedOrder)
                 }), /* @__PURE__ */ jsx("div", {
-                  style: styles$a.detailTitle,
+                  style: styles$b.detailTitle,
                   children: selectedOrder.customer
                 }), /* @__PURE__ */ jsx("div", {
-                  style: styles$a.detailMeta,
+                  style: styles$b.detailMeta,
                   children: selectedOrder.contact
                 })]
               }), /* @__PURE__ */ jsxs(Form, {
@@ -9624,80 +9731,80 @@ How many tickets should I split it into?`, String(minimumSplits));
                   value: selectedOrder.id
                 }), /* @__PURE__ */ jsx("button", {
                   type: "submit",
-                  style: styles$a.warningButton,
+                  style: styles$b.warningButton,
                   children: "Mark Load Undelivered"
                 })]
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$a.detailGrid,
+                style: styles$b.detailGrid,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("div", {
-                    style: styles$a.detailLabel,
+                    style: styles$b.detailLabel,
                     children: "Address"
                   }), /* @__PURE__ */ jsxs("div", {
-                    style: styles$a.detailValue,
+                    style: styles$b.detailValue,
                     children: [selectedOrder.address, ", ", selectedOrder.city]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("div", {
-                    style: styles$a.detailLabel,
+                    style: styles$b.detailLabel,
                     children: "Load"
                   }), /* @__PURE__ */ jsxs("div", {
-                    style: styles$a.detailValue,
+                    style: styles$b.detailValue,
                     children: [selectedOrder.quantity, " ", selectedOrder.unit, " ", selectedOrder.material]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("div", {
-                    style: styles$a.detailLabel,
+                    style: styles$b.detailLabel,
                     children: "Requested"
                   }), /* @__PURE__ */ jsx("div", {
-                    style: styles$a.detailValue,
+                    style: styles$b.detailValue,
                     children: selectedOrder.requestedWindow
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("div", {
-                    style: styles$a.detailLabel,
+                    style: styles$b.detailLabel,
                     children: "Time Preference"
                   }), /* @__PURE__ */ jsx("div", {
-                    style: styles$a.detailValue,
+                    style: styles$b.detailValue,
                     children: selectedOrder.timePreference || "No preference"
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("div", {
-                    style: styles$a.detailLabel,
+                    style: styles$b.detailLabel,
                     children: "Travel Time"
                   }), /* @__PURE__ */ jsx("div", {
-                    style: styles$a.detailValue,
+                    style: styles$b.detailValue,
                     children: selectedOrder.travelSummary || "Not calculated yet"
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("div", {
-                    style: styles$a.detailLabel,
+                    style: styles$b.detailLabel,
                     children: "Delivered"
                   }), /* @__PURE__ */ jsx("div", {
-                    style: styles$a.detailValue,
+                    style: styles$b.detailValue,
                     children: selectedOrder.deliveredAt ? new Date(selectedOrder.deliveredAt).toLocaleString() : "Delivered"
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("div", {
-                    style: styles$a.detailLabel,
+                    style: styles$b.detailLabel,
                     children: "Proof Name"
                   }), /* @__PURE__ */ jsx("div", {
-                    style: styles$a.detailValue,
+                    style: styles$b.detailValue,
                     children: selectedOrder.proofName || selectedOrder.signatureName || "Not captured"
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("div", {
-                    style: styles$a.detailLabel,
+                    style: styles$b.detailLabel,
                     children: "Inspection"
                   }), /* @__PURE__ */ jsx("div", {
-                    style: styles$a.detailValue,
+                    style: styles$b.detailValue,
                     children: selectedOrder.inspectionStatus || "Not completed"
                   })]
                 })]
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$a.notesBlock,
+                style: styles$b.notesBlock,
                 children: [/* @__PURE__ */ jsx("div", {
-                  style: styles$a.detailLabel,
+                  style: styles$b.detailLabel,
                   children: "Notes"
                 }), /* @__PURE__ */ jsx("div", {
                   style: {
@@ -9707,9 +9814,9 @@ How many tickets should I split it into?`, String(minimumSplits));
                   children: selectedOrder.notes || "No dispatch notes."
                 })]
               }), selectedOrder.proofNotes ? /* @__PURE__ */ jsxs("div", {
-                style: styles$a.notesBlock,
+                style: styles$b.notesBlock,
                 children: [/* @__PURE__ */ jsx("div", {
-                  style: styles$a.detailLabel,
+                  style: styles$b.detailLabel,
                   children: "Proof Notes"
                 }), /* @__PURE__ */ jsx("div", {
                   style: {
@@ -9719,14 +9826,14 @@ How many tickets should I split it into?`, String(minimumSplits));
                   children: selectedOrder.proofNotes
                 })]
               }) : null, selectedOrder.photoUrls ? /* @__PURE__ */ jsxs("div", {
-                style: styles$a.notesBlock,
+                style: styles$b.notesBlock,
                 children: [/* @__PURE__ */ jsx("div", {
-                  style: styles$a.detailLabel,
+                  style: styles$b.detailLabel,
                   children: "Photo Proof"
                 }), isImageProof$2(selectedOrder.photoUrls) ? /* @__PURE__ */ jsx("img", {
                   src: selectedOrder.photoUrls,
                   alt: "Delivered material proof",
-                  style: styles$a.deliveredPhoto
+                  style: styles$b.deliveredPhoto
                 }) : /* @__PURE__ */ jsx("div", {
                   style: {
                     color: "#e2e8f0",
@@ -9739,30 +9846,30 @@ How many tickets should I split it into?`, String(minimumSplits));
             })]
           })
         }) : null, activeView === "trucks" ? /* @__PURE__ */ jsxs("div", {
-          style: styles$a.focusGrid,
+          style: styles$b.focusGrid,
           children: [/* @__PURE__ */ jsxs("div", {
             id: "trucks",
-            style: styles$a.panel,
+            style: styles$b.panel,
             children: [/* @__PURE__ */ jsxs("div", {
-              style: styles$a.panelHeader,
+              style: styles$b.panelHeader,
               children: [/* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("h2", {
-                  style: styles$a.panelTitle,
+                  style: styles$b.panelTitle,
                   children: "Fleet"
                 }), /* @__PURE__ */ jsx("p", {
-                  style: styles$a.panelSub,
+                  style: styles$b.panelSub,
                   children: "View and edit active trucks, ton limits, and yard limits."
                 })]
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$a.headerPill,
+                style: styles$b.headerPill,
                 children: [searchedTrucks.length, " of ", trucks.length, " trucks"]
               })]
             }), renderSearchBar("Search fleet by any field: truck, type, plate, tons, yards, route, assigned loads..."), /* @__PURE__ */ jsxs("div", {
-              style: styles$a.resourceList,
+              style: styles$b.resourceList,
               children: [searchedTrucks.map((truck) => /* @__PURE__ */ jsxs(Form, {
                 method: "post",
                 style: {
-                  ...styles$a.resourceCard,
+                  ...styles$b.resourceCard,
                   gap: 12
                 },
                 onSubmit: (event) => {
@@ -9776,54 +9883,54 @@ How many tickets should I split it into?`, String(minimumSplits));
                   name: "truckId",
                   value: truck.id
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.formGridThree,
+                  style: styles$b.formGridThree,
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Truck Name"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "label",
                       defaultValue: truck.label,
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Type"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "truckType",
                       defaultValue: truck.truckType,
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Plate"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "licensePlate",
                       defaultValue: truck.licensePlate || "",
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.formGridThree,
+                  style: styles$b.formGridThree,
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Tons"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "tons",
                       defaultValue: truck.tons || "",
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Yards"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "yards",
                       defaultValue: truck.yards || "",
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     style: {
@@ -9836,7 +9943,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       name: "intent",
                       value: "update-truck",
                       style: {
-                        ...styles$a.secondaryButton,
+                        ...styles$b.secondaryButton,
                         width: "100%"
                       },
                       children: "Save Truck"
@@ -9845,7 +9952,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       name: "intent",
                       value: "delete-truck",
                       style: {
-                        ...styles$a.dangerButton,
+                        ...styles$b.dangerButton,
                         width: "100%"
                       },
                       children: "Delete"
@@ -9853,20 +9960,20 @@ How many tickets should I split it into?`, String(minimumSplits));
                   })]
                 })]
               }, truck.id)), searchedTrucks.length === 0 ? /* @__PURE__ */ jsx("div", {
-                style: styles$a.emptySearch,
+                style: styles$b.emptySearch,
                 children: "No trucks matched that search."
               }) : null]
             })]
           }), /* @__PURE__ */ jsxs("div", {
-            style: styles$a.panel,
+            style: styles$b.panel,
             children: [/* @__PURE__ */ jsx("div", {
-              style: styles$a.panelHeader,
+              style: styles$b.panelHeader,
               children: /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("h2", {
-                  style: styles$a.panelTitle,
+                  style: styles$b.panelTitle,
                   children: "Add Truck"
                 }), /* @__PURE__ */ jsx("p", {
-                  style: styles$a.panelSub,
+                  style: styles$b.panelSub,
                   children: "Add trucks before assigning routes."
                 })]
               })
@@ -9881,59 +9988,59 @@ How many tickets should I split it into?`, String(minimumSplits));
                 name: "intent",
                 value: "create-truck"
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$a.formGridTwo,
+                style: styles$b.formGridTwo,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$a.label,
+                    style: styles$b.label,
                     children: "Truck Name"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "label",
                     placeholder: "Truck 22",
-                    style: styles$a.input
+                    style: styles$b.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$a.label,
+                    style: styles$b.label,
                     children: "Type"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "truckType",
                     placeholder: "Tri-axle",
-                    style: styles$a.input
+                    style: styles$b.input
                   })]
                 })]
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$a.formGridThree,
+                style: styles$b.formGridThree,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$a.label,
+                    style: styles$b.label,
                     children: "Tons"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "tons",
                     placeholder: "22",
-                    style: styles$a.input
+                    style: styles$b.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$a.label,
+                    style: styles$b.label,
                     children: "Yards"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "yards",
                     placeholder: "18",
-                    style: styles$a.input
+                    style: styles$b.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$a.label,
+                    style: styles$b.label,
                     children: "Plate"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "licensePlate",
-                    style: styles$a.input
+                    style: styles$b.input
                   })]
                 })]
               }), /* @__PURE__ */ jsx("button", {
                 type: "submit",
                 style: {
-                  ...styles$a.primaryButton,
+                  ...styles$b.primaryButton,
                   width: "100%"
                 },
                 children: "Add Truck"
@@ -9941,30 +10048,30 @@ How many tickets should I split it into?`, String(minimumSplits));
             })]
           })]
         }) : null, activeView === "employees" ? /* @__PURE__ */ jsxs("div", {
-          style: styles$a.focusGrid,
+          style: styles$b.focusGrid,
           children: [/* @__PURE__ */ jsxs("div", {
             id: "employees",
-            style: styles$a.panel,
+            style: styles$b.panel,
             children: [/* @__PURE__ */ jsxs("div", {
-              style: styles$a.panelHeader,
+              style: styles$b.panelHeader,
               children: [/* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("h2", {
-                  style: styles$a.panelTitle,
+                  style: styles$b.panelTitle,
                   children: "Employees"
                 }), /* @__PURE__ */ jsx("p", {
-                  style: styles$a.panelSub,
+                  style: styles$b.panelSub,
                   children: "View drivers, helpers, and dispatchers."
                 })]
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$a.headerPill,
+                style: styles$b.headerPill,
                 children: [searchedEmployees.length, " of ", employees.length, " people"]
               })]
             }), renderSearchBar("Search employees by any field: name, role, phone, email, route, truck, assigned loads..."), /* @__PURE__ */ jsxs("div", {
-              style: styles$a.resourceList,
+              style: styles$b.resourceList,
               children: [searchedEmployees.map((employee) => /* @__PURE__ */ jsxs(Form, {
                 method: "post",
                 style: {
-                  ...styles$a.resourceCard,
+                  ...styles$b.resourceCard,
                   gap: 12
                 },
                 onSubmit: (event) => {
@@ -9978,24 +10085,24 @@ How many tickets should I split it into?`, String(minimumSplits));
                   name: "employeeId",
                   value: employee.id
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.formGridThree,
+                  style: styles$b.formGridThree,
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Name"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "name",
                       defaultValue: employee.name,
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Role"
                     }), /* @__PURE__ */ jsxs("select", {
                       name: "role",
                       defaultValue: employee.role,
-                      style: styles$a.input,
+                      style: styles$b.input,
                       children: [/* @__PURE__ */ jsx("option", {
                         value: "driver",
                         children: "Driver"
@@ -10009,25 +10116,25 @@ How many tickets should I split it into?`, String(minimumSplits));
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Phone"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "phone",
                       defaultValue: employee.phone || "",
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.formGridTwo,
+                  style: styles$b.formGridTwo,
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Email"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "email",
                       type: "email",
                       defaultValue: employee.email || "",
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     style: {
@@ -10040,7 +10147,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       name: "intent",
                       value: "update-employee",
                       style: {
-                        ...styles$a.secondaryButton,
+                        ...styles$b.secondaryButton,
                         width: "100%"
                       },
                       children: "Save Employee"
@@ -10049,7 +10156,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       name: "intent",
                       value: "delete-employee",
                       style: {
-                        ...styles$a.dangerButton,
+                        ...styles$b.dangerButton,
                         width: "100%"
                       },
                       children: "Delete"
@@ -10057,20 +10164,20 @@ How many tickets should I split it into?`, String(minimumSplits));
                   })]
                 })]
               }, employee.id)), searchedEmployees.length === 0 ? /* @__PURE__ */ jsx("div", {
-                style: styles$a.emptySearch,
+                style: styles$b.emptySearch,
                 children: "No employees matched that search."
               }) : null]
             })]
           }), /* @__PURE__ */ jsxs("div", {
-            style: styles$a.panel,
+            style: styles$b.panel,
             children: [/* @__PURE__ */ jsx("div", {
-              style: styles$a.panelHeader,
+              style: styles$b.panelHeader,
               children: /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("h2", {
-                  style: styles$a.panelTitle,
+                  style: styles$b.panelTitle,
                   children: "Add Employee"
                 }), /* @__PURE__ */ jsx("p", {
-                  style: styles$a.panelSub,
+                  style: styles$b.panelSub,
                   children: "Add drivers, helpers, or dispatch users."
                 })]
               })
@@ -10085,22 +10192,22 @@ How many tickets should I split it into?`, String(minimumSplits));
                 name: "intent",
                 value: "create-employee"
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$a.formGridThree,
+                style: styles$b.formGridThree,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$a.label,
+                    style: styles$b.label,
                     children: "Name"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "name",
-                    style: styles$a.input
+                    style: styles$b.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$a.label,
+                    style: styles$b.label,
                     children: "Role"
                   }), /* @__PURE__ */ jsxs("select", {
                     name: "role",
-                    style: styles$a.input,
+                    style: styles$b.input,
                     children: [/* @__PURE__ */ jsx("option", {
                       value: "driver",
                       children: "Driver"
@@ -10114,23 +10221,23 @@ How many tickets should I split it into?`, String(minimumSplits));
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$a.label,
+                    style: styles$b.label,
                     children: "Phone"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "phone",
-                    style: styles$a.input
+                    style: styles$b.input
                   })]
                 })]
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$a.formGridTwo,
+                style: styles$b.formGridTwo,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$a.label,
+                    style: styles$b.label,
                     children: "Email"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "email",
                     type: "email",
-                    style: styles$a.input
+                    style: styles$b.input
                   })]
                 }), /* @__PURE__ */ jsx("div", {
                   style: {
@@ -10140,7 +10247,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                   children: /* @__PURE__ */ jsx("button", {
                     type: "submit",
                     style: {
-                      ...styles$a.primaryButton,
+                      ...styles$b.primaryButton,
                       width: "100%"
                     },
                     children: "Add Employee"
@@ -10150,22 +10257,22 @@ How many tickets should I split it into?`, String(minimumSplits));
             })]
           })]
         }) : null, activeView === "routes" ? /* @__PURE__ */ jsxs("div", {
-          style: styles$a.focusGrid,
+          style: styles$b.focusGrid,
           children: [/* @__PURE__ */ jsxs("div", {
             id: "routes",
-            style: styles$a.panel,
+            style: styles$b.panel,
             children: [/* @__PURE__ */ jsxs("div", {
-              style: styles$a.panelHeader,
+              style: styles$b.panelHeader,
               children: [/* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("h2", {
-                  style: styles$a.panelTitle,
+                  style: styles$b.panelTitle,
                   children: "Routes"
                 }), /* @__PURE__ */ jsx("p", {
-                  style: styles$a.panelSub,
+                  style: styles$b.panelSub,
                   children: "View route assignments, open driver view, and sequence stops."
                 })]
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$a.headerPill,
+                style: styles$b.headerPill,
                 children: [searchedRoutes.length, " of ", routes2.length, " routes"]
               })]
             }), renderSearchBar("Search routes by any field: route, truck, driver, helper, region, shift, assigned loads..."), /* @__PURE__ */ jsxs("div", {
@@ -10173,9 +10280,9 @@ How many tickets should I split it into?`, String(minimumSplits));
                 display: "grid",
                 gap: 12
               },
-              children: [searchedRoutes.map((route50) => /* @__PURE__ */ jsxs(Form, {
+              children: [searchedRoutes.map((route53) => /* @__PURE__ */ jsxs(Form, {
                 method: "post",
-                style: styles$a.routeCard(route50.color),
+                style: styles$b.routeCard(route53.color),
                 onSubmit: (event) => {
                   const submitter = event.nativeEvent.submitter;
                   if ((submitter == null ? void 0 : submitter.value) === "delete-route" && !window.confirm("Delete this route from the active board? Move or unassign active orders first. This cannot be undone.")) {
@@ -10185,7 +10292,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                 children: [/* @__PURE__ */ jsx("input", {
                   type: "hidden",
                   name: "routeId",
-                  value: route50.id
+                  value: route53.id
                 }), /* @__PURE__ */ jsxs("div", {
                   style: {
                     display: "flex",
@@ -10200,13 +10307,13 @@ How many tickets should I split it into?`, String(minimumSplits));
                         gap: 10
                       },
                       children: [/* @__PURE__ */ jsx("div", {
-                        style: styles$a.routeColor(route50.color)
+                        style: styles$b.routeColor(route53.color)
                       }), /* @__PURE__ */ jsx("div", {
-                        style: styles$a.routeCode,
-                        children: route50.code
+                        style: styles$b.routeCode,
+                        children: route53.code
                       }), /* @__PURE__ */ jsx("div", {
-                        style: styles$a.routeRegion,
-                        children: route50.region
+                        style: styles$b.routeRegion,
+                        children: route53.region
                       })]
                     }), /* @__PURE__ */ jsxs("div", {
                       style: {
@@ -10214,35 +10321,35 @@ How many tickets should I split it into?`, String(minimumSplits));
                         color: "#e2e8f0",
                         fontWeight: 700
                       },
-                      children: [route50.truck || "No truck", " · ", route50.driver || "No driver", " / ", route50.helper || "No helper"]
+                      children: [route53.truck || "No truck", " · ", route53.driver || "No driver", " / ", route53.helper || "No helper"]
                     })]
                   }), /* @__PURE__ */ jsx("a", {
-                    href: `${driverHref}?route=${encodeURIComponent(route50.id)}`,
-                    style: styles$a.assignButton,
+                    href: `${driverHref}?route=${encodeURIComponent(route53.id)}`,
+                    style: styles$b.assignButton,
                     children: "Driver View"
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   style: {
-                    ...styles$a.formGridThree,
+                    ...styles$b.formGridThree,
                     marginTop: 14
                   },
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Route Code"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "code",
-                      defaultValue: route50.code,
-                      style: styles$a.input
+                      defaultValue: route53.code,
+                      style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Truck"
                     }), /* @__PURE__ */ jsxs("select", {
                       name: "truckId",
-                      defaultValue: route50.truckId || "",
-                      style: styles$a.input,
+                      defaultValue: route53.truckId || "",
+                      style: styles$b.input,
                       children: [/* @__PURE__ */ jsx("option", {
                         value: "",
                         children: "Unassigned"
@@ -10253,28 +10360,28 @@ How many tickets should I split it into?`, String(minimumSplits));
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Color"
                     }), /* @__PURE__ */ jsx("input", {
                       type: "color",
                       name: "color",
-                      defaultValue: route50.color,
-                      style: styles$a.colorInput
+                      defaultValue: route53.color,
+                      style: styles$b.colorInput
                     })]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   style: {
-                    ...styles$a.formGridThree,
+                    ...styles$b.formGridThree,
                     marginTop: 12
                   },
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Driver"
                     }), /* @__PURE__ */ jsxs("select", {
                       name: "driverId",
-                      defaultValue: route50.driverId || "",
-                      style: styles$a.input,
+                      defaultValue: route53.driverId || "",
+                      style: styles$b.input,
                       children: [/* @__PURE__ */ jsx("option", {
                         value: "",
                         children: "Unassigned"
@@ -10285,12 +10392,12 @@ How many tickets should I split it into?`, String(minimumSplits));
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Helper"
                     }), /* @__PURE__ */ jsxs("select", {
                       name: "helperId",
-                      defaultValue: route50.helperId || "",
-                      style: styles$a.input,
+                      defaultValue: route53.helperId || "",
+                      style: styles$b.input,
                       children: [/* @__PURE__ */ jsx("option", {
                         value: "",
                         children: "Unassigned"
@@ -10301,27 +10408,27 @@ How many tickets should I split it into?`, String(minimumSplits));
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Shift"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "shift",
-                      defaultValue: route50.shift,
-                      style: styles$a.input
+                      defaultValue: route53.shift,
+                      style: styles$b.input
                     })]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   style: {
-                    ...styles$a.formGridTwo,
+                    ...styles$b.formGridTwo,
                     marginTop: 12
                   },
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Region"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "region",
-                      defaultValue: route50.region,
-                      style: styles$a.input
+                      defaultValue: route53.region,
+                      style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     style: {
@@ -10334,7 +10441,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       name: "intent",
                       value: "update-route",
                       style: {
-                        ...styles$a.secondaryButton,
+                        ...styles$b.secondaryButton,
                         width: "100%"
                       },
                       children: "Save Route Assignments"
@@ -10343,37 +10450,37 @@ How many tickets should I split it into?`, String(minimumSplits));
                       name: "intent",
                       value: "delete-route",
                       style: {
-                        ...styles$a.dangerButton,
+                        ...styles$b.dangerButton,
                         width: "100%"
                       },
                       children: "Delete Route"
                     })]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.routeStats,
+                  style: styles$b.routeStats,
                   children: [/* @__PURE__ */ jsx("span", {
-                    children: route50.shift
+                    children: route53.shift
                   }), /* @__PURE__ */ jsxs("span", {
-                    children: [route50.stops, " stops"]
+                    children: [route53.stops, " stops"]
                   }), /* @__PURE__ */ jsx("span", {
-                    children: route50.loadSummary || "No assigned loads yet"
+                    children: route53.loadSummary || "No assigned loads yet"
                   })]
                 })]
-              }, route50.id)), searchedRoutes.length === 0 ? /* @__PURE__ */ jsx("div", {
-                style: styles$a.emptySearch,
+              }, route53.id)), searchedRoutes.length === 0 ? /* @__PURE__ */ jsx("div", {
+                style: styles$b.emptySearch,
                 children: "No routes matched that search."
               }) : null]
             })]
           }), /* @__PURE__ */ jsxs("div", {
-            style: styles$a.panel,
+            style: styles$b.panel,
             children: [/* @__PURE__ */ jsx("div", {
-              style: styles$a.panelHeader,
+              style: styles$b.panelHeader,
               children: /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsx("h2", {
-                  style: styles$a.panelTitle,
+                  style: styles$b.panelTitle,
                   children: "Add Route"
                 }), /* @__PURE__ */ jsx("p", {
-                  style: styles$a.panelSub,
+                  style: styles$b.panelSub,
                   children: "Create a route using an active truck and driver."
                 })]
               })
@@ -10388,23 +10495,23 @@ How many tickets should I split it into?`, String(minimumSplits));
                 name: "intent",
                 value: "create-route"
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$a.formGridThree,
+                style: styles$b.formGridThree,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$a.label,
+                    style: styles$b.label,
                     children: "Route Code"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "code",
                     placeholder: "R-22",
-                    style: styles$a.input
+                    style: styles$b.input
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$a.label,
+                    style: styles$b.label,
                     children: "Truck"
                   }), /* @__PURE__ */ jsxs("select", {
                     name: "truckId",
-                    style: styles$a.input,
+                    style: styles$b.input,
                     children: [/* @__PURE__ */ jsx("option", {
                       value: "",
                       children: "Select truck"
@@ -10415,24 +10522,24 @@ How many tickets should I split it into?`, String(minimumSplits));
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$a.label,
+                    style: styles$b.label,
                     children: "Color"
                   }), /* @__PURE__ */ jsx("input", {
                     type: "color",
                     name: "color",
                     defaultValue: "#38bdf8",
-                    style: styles$a.colorInput
+                    style: styles$b.colorInput
                   })]
                 })]
               }), /* @__PURE__ */ jsxs("div", {
-                style: styles$a.formGridThree,
+                style: styles$b.formGridThree,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$a.label,
+                    style: styles$b.label,
                     children: "Driver"
                   }), /* @__PURE__ */ jsxs("select", {
                     name: "driverId",
-                    style: styles$a.input,
+                    style: styles$b.input,
                     children: [/* @__PURE__ */ jsx("option", {
                       value: "",
                       children: "Select driver"
@@ -10443,11 +10550,11 @@ How many tickets should I split it into?`, String(minimumSplits));
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$a.label,
+                    style: styles$b.label,
                     children: "Helper"
                   }), /* @__PURE__ */ jsxs("select", {
                     name: "helperId",
-                    style: styles$a.input,
+                    style: styles$b.input,
                     children: [/* @__PURE__ */ jsx("option", {
                       value: "",
                       children: "No helper"
@@ -10458,25 +10565,25 @@ How many tickets should I split it into?`, String(minimumSplits));
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("label", {
-                    style: styles$a.label,
+                    style: styles$b.label,
                     children: "Shift"
                   }), /* @__PURE__ */ jsx("input", {
                     name: "shift",
                     placeholder: "7:00a - 4:00p",
-                    style: styles$a.input
+                    style: styles$b.input
                   })]
                 })]
               }), /* @__PURE__ */ jsx("button", {
                 type: "submit",
-                style: styles$a.primaryButton,
+                style: styles$b.primaryButton,
                 children: "Add Route"
               })]
             })]
           })]
         }) : null, activeView === "dashboard" ? /* @__PURE__ */ jsxs("div", {
-          style: styles$a.workspaceGrid,
+          style: styles$b.workspaceGrid,
           children: [/* @__PURE__ */ jsx("div", {
-            style: styles$a.leftColumn,
+            style: styles$b.leftColumn,
             children: /* @__PURE__ */ jsxs("div", {
               id: "orders",
               onDragEnter: (event) => {
@@ -10492,21 +10599,21 @@ How many tickets should I split it into?`, String(minimumSplits));
               },
               onDrop: unassignDraggedOrder,
               style: {
-                ...styles$a.panel,
-                ...dragOverQueue ? styles$a.queueDropActive : {}
+                ...styles$b.panel,
+                ...dragOverQueue ? styles$b.queueDropActive : {}
               },
               children: [/* @__PURE__ */ jsxs("div", {
-                style: styles$a.panelHeader,
+                style: styles$b.panelHeader,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("h2", {
-                    style: styles$a.panelTitle,
+                    style: styles$b.panelTitle,
                     children: "Email Intake Queue"
                   }), /* @__PURE__ */ jsxs("p", {
-                    style: styles$a.panelSub,
+                    style: styles$b.panelSub,
                     children: ["Orders that came in by email or were typed in manually can be reviewed and routed here.", canManageDispatch ? " Drag cards between the queue and routes to assign or unassign." : ""]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.headerPill,
+                  style: styles$b.headerPill,
                   children: [searchedActiveOrders.length, " in queue"]
                 })]
               }), renderSearchBar("Search dispatch by any field: order, customer, route, truck, driver, address, material, notes..."), /* @__PURE__ */ jsxs("div", {
@@ -10516,24 +10623,24 @@ How many tickets should I split it into?`, String(minimumSplits));
                 },
                 children: [searchedActiveOrders.map((order) => {
                   const active = order.id === (selectedOrder == null ? void 0 : selectedOrder.id);
-                  const route50 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
+                  const route53 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
                   return /* @__PURE__ */ jsx("div", {
                     draggable: canManageDispatch,
                     onDragStart: (event) => startOrderDrag(order.id, event),
                     onDragEnd: clearDragState,
                     style: {
-                      ...styles$a.queueCard,
+                      ...styles$b.queueCard,
                       borderColor: active ? "#38bdf8" : "rgba(51, 65, 85, 0.92)",
                       boxShadow: active ? "0 0 0 1px rgba(56, 189, 248, 0.45)" : "none",
                       cursor: canManageDispatch ? "grab" : "pointer",
                       opacity: draggedOrderId === order.id ? 0.58 : 1
                     },
                     children: /* @__PURE__ */ jsxs("div", {
-                      style: styles$a.cardActionRow,
+                      style: styles$b.cardActionRow,
                       children: [/* @__PURE__ */ jsxs("a", {
                         href: dashboardSelectHref(order.id),
                         draggable: false,
-                        style: styles$a.cardSelectArea,
+                        style: styles$b.cardSelectArea,
                         children: [/* @__PURE__ */ jsxs("div", {
                           style: {
                             display: "flex",
@@ -10542,18 +10649,18 @@ How many tickets should I split it into?`, String(minimumSplits));
                           },
                           children: [/* @__PURE__ */ jsxs("div", {
                             children: [/* @__PURE__ */ jsx("div", {
-                              style: styles$a.queueTitle,
+                              style: styles$b.queueTitle,
                               children: order.customer
                             }), /* @__PURE__ */ jsxs("div", {
-                              style: styles$a.queueMeta,
+                              style: styles$b.queueMeta,
                               children: [order.address, ", ", order.city]
                             })]
                           }), /* @__PURE__ */ jsx("div", {
-                            style: styles$a.badge(order.status),
+                            style: styles$b.badge(order.status),
                             children: order.status
                           })]
                         }), /* @__PURE__ */ jsxs("div", {
-                          style: styles$a.queueDetails,
+                          style: styles$b.queueDetails,
                           children: [/* @__PURE__ */ jsx("span", {
                             children: getOrderDisplayNumber$2(order)
                           }), /* @__PURE__ */ jsxs("span", {
@@ -10568,52 +10675,52 @@ How many tickets should I split it into?`, String(minimumSplits));
                             children: ["Stop ", order.stopSequence]
                           }) : null]
                         }), order.notes ? /* @__PURE__ */ jsxs("div", {
-                          style: styles$a.queueNotes,
+                          style: styles$b.queueNotes,
                           children: [/* @__PURE__ */ jsx("strong", {
                             children: "Notes:"
                           }), " ", order.notes]
                         }) : null, /* @__PURE__ */ jsxs("div", {
-                          style: styles$a.queueFooter,
+                          style: styles$b.queueFooter,
                           children: [/* @__PURE__ */ jsx("span", {
                             children: order.requestedWindow
                           }), /* @__PURE__ */ jsx("span", {
-                            children: route50 ? `${route50.truck} / ${getDeliveryStatusLabel(order.deliveryStatus)}` : "Unassigned"
+                            children: route53 ? `${route53.truck} / ${getDeliveryStatusLabel(order.deliveryStatus)}` : "Unassigned"
                           })]
                         })]
                       }), /* @__PURE__ */ jsx("a", {
                         href: dashboardDetailHref(order.id),
                         draggable: false,
-                        style: styles$a.detailButton,
+                        style: styles$b.detailButton,
                         children: "Open"
                       })]
                     })
                   }, order.id);
                 }), searchedActiveOrders.length === 0 ? /* @__PURE__ */ jsx("div", {
-                  style: styles$a.emptySearch,
+                  style: styles$b.emptySearch,
                   children: "No queue orders matched that search."
                 }) : null]
               }), draggedOrderId && canManageDispatch ? /* @__PURE__ */ jsx("div", {
-                style: dragOverQueue ? styles$a.dropHintActive : styles$a.dropHint,
+                style: dragOverQueue ? styles$b.dropHintActive : styles$b.dropHint,
                 children: "Drop here to move back to queue"
               }) : null]
             })
           }), /* @__PURE__ */ jsxs("div", {
-            style: styles$a.centerColumn,
+            style: styles$b.centerColumn,
             children: [/* @__PURE__ */ jsxs("div", {
               id: "routes",
-              style: styles$a.panel,
+              style: styles$b.panel,
               children: [/* @__PURE__ */ jsxs("div", {
-                style: styles$a.panelHeader,
+                style: styles$b.panelHeader,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("h2", {
-                    style: styles$a.panelTitle,
+                    style: styles$b.panelTitle,
                     children: "Routes & Fleet"
                   }), /* @__PURE__ */ jsx("p", {
-                    style: styles$a.panelSub,
+                    style: styles$b.panelSub,
                     children: "Active trucks, crew assignments, and current stop counts."
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.headerPill,
+                  style: styles$b.headerPill,
                   children: [searchedRoutes.length, " of ", routes2.length, " routes"]
                 })]
               }), /* @__PURE__ */ jsxs("div", {
@@ -10621,24 +10728,24 @@ How many tickets should I split it into?`, String(minimumSplits));
                   display: "grid",
                   gap: 12
                 },
-                children: [searchedRoutes.map((route50) => /* @__PURE__ */ jsxs("div", {
+                children: [searchedRoutes.map((route53) => /* @__PURE__ */ jsxs("div", {
                   onDragEnter: (event) => {
                     if (!draggedOrderId || !canManageDispatch) return;
                     event.preventDefault();
                     setDragOverQueue(false);
-                    setDragOverRouteId(route50.id);
+                    setDragOverRouteId(route53.id);
                   },
                   onDragOver: (event) => {
                     if (!draggedOrderId || !canManageDispatch) return;
                     event.preventDefault();
                     event.dataTransfer.dropEffect = "move";
                     setDragOverQueue(false);
-                    setDragOverRouteId(route50.id);
+                    setDragOverRouteId(route53.id);
                   },
-                  onDrop: (event) => assignDraggedOrder(route50.id, event),
+                  onDrop: (event) => assignDraggedOrder(route53.id, event),
                   style: {
-                    ...styles$a.routeCard(route50.color),
-                    ...dragOverRouteId === route50.id ? styles$a.routeDropActive : {}
+                    ...styles$b.routeCard(route53.color),
+                    ...dragOverRouteId === route53.id ? styles$b.routeDropActive : {}
                   },
                   children: [/* @__PURE__ */ jsxs("div", {
                     style: {
@@ -10655,13 +10762,13 @@ How many tickets should I split it into?`, String(minimumSplits));
                           gap: 10
                         },
                         children: [/* @__PURE__ */ jsx("div", {
-                          style: styles$a.routeColor(route50.color)
+                          style: styles$b.routeColor(route53.color)
                         }), /* @__PURE__ */ jsx("div", {
-                          style: styles$a.routeCode,
-                          children: route50.code
+                          style: styles$b.routeCode,
+                          children: route53.code
                         }), /* @__PURE__ */ jsx("div", {
-                          style: styles$a.routeRegion,
-                          children: route50.region
+                          style: styles$b.routeRegion,
+                          children: route53.region
                         })]
                       }), /* @__PURE__ */ jsxs("div", {
                         style: {
@@ -10669,20 +10776,20 @@ How many tickets should I split it into?`, String(minimumSplits));
                           color: "#e2e8f0",
                           fontWeight: 700
                         },
-                        children: [route50.truck, " · ", route50.driver, " / ", route50.helper]
+                        children: [route53.truck, " · ", route53.driver, " / ", route53.helper]
                       })]
                     }), /* @__PURE__ */ jsx("a", {
-                      href: `${driverHref}?route=${encodeURIComponent(route50.id)}`,
+                      href: `${driverHref}?route=${encodeURIComponent(route53.id)}`,
                       draggable: false,
-                      style: styles$a.assignButton,
+                      style: styles$b.assignButton,
                       children: "Driver View"
                     }), /* @__PURE__ */ jsxs("div", {
-                      style: styles$a.routeTimePill,
-                      children: ["Total Time: ", formatTravelMinutes$3(route50.totalTravelMinutes)]
-                    }), selectedOrder ? selectedOrder.assignedRouteId === route50.id ? /* @__PURE__ */ jsxs(Form, {
+                      style: styles$b.routeTimePill,
+                      children: ["Total Time: ", formatTravelMinutes$3(route53.totalTravelMinutes)]
+                    }), selectedOrder ? selectedOrder.assignedRouteId === route53.id ? /* @__PURE__ */ jsxs(Form, {
                       method: "post",
-                      style: styles$a.assignForm,
-                      onSubmit: (event) => prepareAssignmentSubmit(selectedOrder, route50.id, event.currentTarget, event),
+                      style: styles$b.assignForm,
+                      onSubmit: (event) => prepareAssignmentSubmit(selectedOrder, route53.id, event.currentTarget, event),
                       children: [/* @__PURE__ */ jsx("input", {
                         type: "hidden",
                         name: "intent",
@@ -10693,12 +10800,13 @@ How many tickets should I split it into?`, String(minimumSplits));
                         value: selectedOrder.id
                       }), /* @__PURE__ */ jsx("button", {
                         type: "submit",
-                        style: styles$a.secondaryButton,
+                        style: styles$b.secondaryButton,
                         children: "Unassign Selected"
                       })]
                     }) : /* @__PURE__ */ jsxs(Form, {
                       method: "post",
-                      style: styles$a.assignForm,
+                      style: styles$b.assignForm,
+                      onSubmit: (event) => prepareAssignmentSubmit(selectedOrder, route53.id, event.currentTarget, event),
                       children: [/* @__PURE__ */ jsx("input", {
                         type: "hidden",
                         name: "intent",
@@ -10710,68 +10818,68 @@ How many tickets should I split it into?`, String(minimumSplits));
                       }), /* @__PURE__ */ jsx("input", {
                         type: "hidden",
                         name: "routeId",
-                        value: route50.id
+                        value: route53.id
                       }), /* @__PURE__ */ jsx("input", {
                         name: "eta",
                         placeholder: "ETA",
                         defaultValue: selectedOrder.eta || "",
-                        style: styles$a.compactInput
+                        style: styles$b.compactInput
                       }), /* @__PURE__ */ jsx("button", {
                         type: "submit",
-                        style: styles$a.assignButton,
+                        style: styles$b.assignButton,
                         children: "Assign Selected"
                       })]
                     }) : null]
                   }), draggedOrderId && canManageDispatch ? /* @__PURE__ */ jsxs("div", {
-                    style: dragOverRouteId === route50.id ? styles$a.dropHintActive : styles$a.dropHint,
-                    children: ["Drop here to assign to ", route50.code]
+                    style: dragOverRouteId === route53.id ? styles$b.dropHintActive : styles$b.dropHint,
+                    children: ["Drop here to assign to ", route53.code]
                   }) : null, /* @__PURE__ */ jsxs("div", {
-                    style: styles$a.routeStats,
+                    style: styles$b.routeStats,
                     children: [/* @__PURE__ */ jsx("span", {
-                      children: route50.shift
+                      children: route53.shift
                     }), /* @__PURE__ */ jsxs("span", {
-                      children: [route50.stops, " stops"]
+                      children: [route53.stops, " stops"]
                     }), /* @__PURE__ */ jsxs("span", {
-                      children: ["Total route: ", formatTravelMinutes$3(route50.totalTravelMinutes)]
+                      children: ["Total route: ", formatTravelMinutes$3(route53.totalTravelMinutes)]
                     }), /* @__PURE__ */ jsx("span", {
-                      children: route50.loadSummary || "No assigned loads yet"
+                      children: route53.loadSummary || "No assigned loads yet"
                     })]
-                  }), route50.orders.length ? /* @__PURE__ */ jsx("div", {
-                    style: styles$a.stopList,
-                    children: route50.orders.map((order, index) => /* @__PURE__ */ jsxs("div", {
+                  }), route53.orders.length ? /* @__PURE__ */ jsx("div", {
+                    style: styles$b.stopList,
+                    children: route53.orders.map((order, index) => /* @__PURE__ */ jsxs("div", {
                       draggable: canManageDispatch,
                       onDragStart: (event) => startOrderDrag(order.id, event),
                       onDragEnd: clearDragState,
                       style: {
-                        ...styles$a.stopRow,
+                        ...styles$b.stopRow,
                         cursor: canManageDispatch ? "grab" : "default",
                         opacity: draggedOrderId === order.id ? 0.58 : 1
                       },
                       children: [/* @__PURE__ */ jsx("span", {
                         title: "Drag to another route or back to queue",
-                        style: styles$a.dragHandle,
+                        style: styles$b.dragHandle,
                         children: "::"
                       }), /* @__PURE__ */ jsxs("div", {
-                        style: styles$a.stopSelectArea,
+                        style: styles$b.stopSelectArea,
                         children: [/* @__PURE__ */ jsx("span", {
-                          style: styles$a.stopNumber,
+                          style: styles$b.stopNumber,
                           children: order.stopSequence || "-"
                         }), /* @__PURE__ */ jsxs("span", {
-                          style: styles$a.stopMain,
+                          style: styles$b.stopMain,
                           children: [/* @__PURE__ */ jsx("strong", {
                             children: order.customer
                           }), /* @__PURE__ */ jsxs("small", {
                             children: [order.city, " · ", order.material, " ·", " ", order.travelSummary || `${formatTravelMinutes$3(getOrderTravelMinutes(order))} RT`]
                           })]
                         }), /* @__PURE__ */ jsx("span", {
-                          style: styles$a.stopStatus(getDeliveryStatusColor(order.deliveryStatus)),
+                          style: styles$b.stopStatus(getDeliveryStatusColor(order.deliveryStatus)),
                           children: getDeliveryStatusLabel(order.deliveryStatus)
                         })]
                       }), /* @__PURE__ */ jsxs("div", {
-                        style: styles$a.stopActions,
+                        style: styles$b.stopActions,
                         children: [canManageDispatch ? /* @__PURE__ */ jsxs(Form, {
                           method: "post",
-                          style: styles$a.routeReorderForm,
+                          style: styles$b.routeReorderForm,
                           children: [/* @__PURE__ */ jsx("input", {
                             type: "hidden",
                             name: "intent",
@@ -10779,7 +10887,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                           }), /* @__PURE__ */ jsx("input", {
                             type: "hidden",
                             name: "routeId",
-                            value: route50.id
+                            value: route53.id
                           }), /* @__PURE__ */ jsx("input", {
                             type: "hidden",
                             name: "orderId",
@@ -10788,8 +10896,8 @@ How many tickets should I split it into?`, String(minimumSplits));
                             name: "direction",
                             value: "up",
                             style: {
-                              ...styles$a.stopDetailButton,
-                              ...index === 0 ? styles$a.disabledStopButton : null
+                              ...styles$b.stopDetailButton,
+                              ...index === 0 ? styles$b.disabledStopButton : null
                             },
                             disabled: index === 0,
                             title: "Move stop up",
@@ -10798,12 +10906,29 @@ How many tickets should I split it into?`, String(minimumSplits));
                             name: "direction",
                             value: "down",
                             style: {
-                              ...styles$a.stopDetailButton,
-                              ...index === route50.orders.length - 1 ? styles$a.disabledStopButton : null
+                              ...styles$b.stopDetailButton,
+                              ...index === route53.orders.length - 1 ? styles$b.disabledStopButton : null
                             },
-                            disabled: index === route50.orders.length - 1,
+                            disabled: index === route53.orders.length - 1,
                             title: "Move stop down",
                             children: "Down"
+                          })]
+                        }) : null, canManageDispatch ? /* @__PURE__ */ jsxs(Form, {
+                          method: "post",
+                          style: styles$b.routeReorderForm,
+                          children: [/* @__PURE__ */ jsx("input", {
+                            type: "hidden",
+                            name: "intent",
+                            value: "notify-loader"
+                          }), /* @__PURE__ */ jsx("input", {
+                            type: "hidden",
+                            name: "orderId",
+                            value: order.id
+                          }), /* @__PURE__ */ jsx("button", {
+                            type: "submit",
+                            style: styles$b.stopDetailButton,
+                            title: "Tell the loader this is the next load",
+                            children: "Load Next"
                           })]
                         }) : null, /* @__PURE__ */ jsxs("select", {
                           defaultValue: order.assignedRouteId || "",
@@ -10811,7 +10936,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                             moveOrderWithSelect(order.id, event.currentTarget.value);
                           },
                           onClick: (event) => event.stopPropagation(),
-                          style: styles$a.stopMoveSelect,
+                          style: styles$b.stopMoveSelect,
                           title: "Move order",
                           children: [/* @__PURE__ */ jsx("option", {
                             value: "",
@@ -10823,32 +10948,32 @@ How many tickets should I split it into?`, String(minimumSplits));
                         }), /* @__PURE__ */ jsx("a", {
                           href: dashboardSelectHref(order.id),
                           draggable: false,
-                          style: styles$a.stopDetailButton,
+                          style: styles$b.stopDetailButton,
                           children: "Select"
                         }), /* @__PURE__ */ jsx("a", {
                           href: dashboardDetailHref(order.id),
                           draggable: false,
-                          style: styles$a.stopDetailButton,
+                          style: styles$b.stopDetailButton,
                           children: "Open"
                         })]
                       })]
                     }, order.id))
                   }) : null]
-                }, route50.id)), searchedRoutes.length === 0 ? /* @__PURE__ */ jsx("div", {
-                  style: styles$a.emptySearch,
+                }, route53.id)), searchedRoutes.length === 0 ? /* @__PURE__ */ jsx("div", {
+                  style: styles$b.emptySearch,
                   children: "No routes matched that search."
                 }) : null]
               })]
             }), /* @__PURE__ */ jsxs("div", {
-              style: styles$a.panel,
+              style: styles$b.panel,
               children: [/* @__PURE__ */ jsx("div", {
-                style: styles$a.panelHeader,
+                style: styles$b.panelHeader,
                 children: /* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("h2", {
-                    style: styles$a.panelTitle,
+                    style: styles$b.panelTitle,
                     children: "Route Map Preview"
                   }), /* @__PURE__ */ jsx("p", {
-                    style: styles$a.panelSub,
+                    style: styles$b.panelSub,
                     children: "Live Google route preview from the shop to each assigned stop and back."
                   })]
                 })
@@ -10859,22 +10984,22 @@ How many tickets should I split it into?`, String(minimumSplits));
               })]
             })]
           }), dispatchDetailOpen ? /* @__PURE__ */ jsx("div", {
-            style: styles$a.modalOverlay,
+            style: styles$b.modalOverlay,
             children: /* @__PURE__ */ jsxs("div", {
-              style: styles$a.dispatchModal,
+              style: styles$b.dispatchModal,
               children: [/* @__PURE__ */ jsxs("div", {
-                style: styles$a.panelHeader,
+                style: styles$b.panelHeader,
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("h2", {
-                    style: styles$a.panelTitle,
+                    style: styles$b.panelTitle,
                     children: "Dispatch Detail"
                   }), /* @__PURE__ */ jsx("p", {
-                    style: styles$a.panelSub,
+                    style: styles$b.panelSub,
                     children: "Review the selected order, then assign it to a truck and crew or place it on hold."
                   })]
                 }), /* @__PURE__ */ jsx("a", {
                   href: selectedOrder ? dashboardSelectHref(selectedOrder.id) : dispatchViewHref("dashboard"),
-                  style: styles$a.modalCloseButton,
+                  style: styles$b.modalCloseButton,
                   children: "Close"
                 })]
               }), selectedOrder ? /* @__PURE__ */ jsxs("div", {
@@ -10884,97 +11009,97 @@ How many tickets should I split it into?`, String(minimumSplits));
                 },
                 children: [/* @__PURE__ */ jsxs("div", {
                   children: [/* @__PURE__ */ jsx("div", {
-                    style: styles$a.detailId,
+                    style: styles$b.detailId,
                     children: getOrderDisplayNumber$2(selectedOrder)
                   }), /* @__PURE__ */ jsx("div", {
-                    style: styles$a.detailTitle,
+                    style: styles$b.detailTitle,
                     children: selectedOrder.customer
                   }), /* @__PURE__ */ jsx("div", {
-                    style: styles$a.detailMeta,
+                    style: styles$b.detailMeta,
                     children: selectedOrder.contact
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.detailGrid,
+                  style: styles$b.detailGrid,
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("div", {
-                      style: styles$a.detailLabel,
+                      style: styles$b.detailLabel,
                       children: "Address"
                     }), /* @__PURE__ */ jsxs("div", {
-                      style: styles$a.detailValue,
+                      style: styles$b.detailValue,
                       children: [selectedOrder.address, ", ", selectedOrder.city]
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("div", {
-                      style: styles$a.detailLabel,
+                      style: styles$b.detailLabel,
                       children: "Load"
                     }), /* @__PURE__ */ jsxs("div", {
-                      style: styles$a.detailValue,
+                      style: styles$b.detailValue,
                       children: [selectedOrder.quantity, " ", selectedOrder.unit, " ", selectedOrder.material]
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("div", {
-                      style: styles$a.detailLabel,
+                      style: styles$b.detailLabel,
                       children: "Requested"
                     }), /* @__PURE__ */ jsx("div", {
-                      style: styles$a.detailValue,
+                      style: styles$b.detailValue,
                       children: selectedOrder.requestedWindow
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("div", {
-                      style: styles$a.detailLabel,
+                      style: styles$b.detailLabel,
                       children: "Time Preference"
                     }), /* @__PURE__ */ jsx("div", {
-                      style: styles$a.detailValue,
+                      style: styles$b.detailValue,
                       children: selectedOrder.timePreference || "No preference"
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("div", {
-                      style: styles$a.detailLabel,
+                      style: styles$b.detailLabel,
                       children: "Travel Time"
                     }), /* @__PURE__ */ jsx("div", {
-                      style: styles$a.detailValue,
+                      style: styles$b.detailValue,
                       children: selectedOrder.travelSummary || "Not calculated yet"
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("div", {
-                      style: styles$a.detailLabel,
+                      style: styles$b.detailLabel,
                       children: "Truck Preference"
                     }), /* @__PURE__ */ jsx("div", {
-                      style: styles$a.detailValue,
+                      style: styles$b.detailValue,
                       children: selectedOrder.truckPreference || "No preference"
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("div", {
-                      style: styles$a.detailLabel,
+                      style: styles$b.detailLabel,
                       children: "Route Stop"
                     }), /* @__PURE__ */ jsx("div", {
-                      style: styles$a.detailValue,
+                      style: styles$b.detailValue,
                       children: selectedOrder.assignedRouteId ? `Stop ${selectedOrder.stopSequence || "-"}` : "Unassigned"
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("div", {
-                      style: styles$a.detailLabel,
+                      style: styles$b.detailLabel,
                       children: "Delivery Status"
                     }), /* @__PURE__ */ jsxs("div", {
                       style: {
-                        ...styles$a.detailValue,
+                        ...styles$b.detailValue,
                         color: getDeliveryStatusColor(selectedOrder.deliveryStatus)
                       },
                       children: [getDeliveryStatusLabel(selectedOrder.deliveryStatus), selectedOrder.eta ? ` · ETA ${selectedOrder.eta}` : ""]
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("div", {
-                      style: styles$a.detailLabel,
+                      style: styles$b.detailLabel,
                       children: "Inspection"
                     }), /* @__PURE__ */ jsx("div", {
-                      style: styles$a.detailValue,
+                      style: styles$b.detailValue,
                       children: selectedOrder.inspectionStatus || "Not completed"
                     })]
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.notesBlock,
+                  style: styles$b.notesBlock,
                   children: [/* @__PURE__ */ jsx("div", {
-                    style: styles$a.detailLabel,
+                    style: styles$b.detailLabel,
                     children: "Notes"
                   }), /* @__PURE__ */ jsx("div", {
                     style: {
@@ -10984,18 +11109,18 @@ How many tickets should I split it into?`, String(minimumSplits));
                     children: selectedOrder.notes || "No dispatch notes yet."
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: styles$a.assignmentPanel,
+                  style: styles$b.assignmentPanel,
                   children: [/* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("div", {
-                      style: styles$a.detailLabel,
+                      style: styles$b.detailLabel,
                       children: "Assigned Route"
                     }), /* @__PURE__ */ jsx("div", {
-                      style: styles$a.detailValue,
+                      style: styles$b.detailValue,
                       children: selectedOrderRoute ? `${selectedOrderRoute.code} · ${selectedOrderRoute.truck} · ${selectedOrderRoute.driver}` : "Unassigned"
                     })]
                   }), /* @__PURE__ */ jsxs(Form, {
                     method: "post",
-                    style: styles$a.assignmentForm,
+                    style: styles$b.assignmentForm,
                     onSubmit: (event) => {
                       const routeId = new FormData(event.currentTarget).get("routeId");
                       prepareAssignmentSubmit(selectedOrder, String(routeId || ""), event.currentTarget, event);
@@ -11009,45 +11134,45 @@ How many tickets should I split it into?`, String(minimumSplits));
                       name: "orderId",
                       value: selectedOrder.id
                     }), /* @__PURE__ */ jsxs("div", {
-                      style: styles$a.formGridTwo,
+                      style: styles$b.formGridTwo,
                       children: [/* @__PURE__ */ jsxs("div", {
                         children: [/* @__PURE__ */ jsx("label", {
-                          style: styles$a.label,
+                          style: styles$b.label,
                           children: "Assign To Route / Driver"
                         }), /* @__PURE__ */ jsxs("select", {
                           name: "routeId",
                           defaultValue: selectedOrder.assignedRouteId || "",
-                          style: styles$a.input,
+                          style: styles$b.input,
                           required: true,
                           children: [/* @__PURE__ */ jsx("option", {
                             value: "",
                             disabled: true,
                             children: "Select route"
-                          }), routes2.map((route50) => /* @__PURE__ */ jsxs("option", {
-                            value: route50.id,
-                            children: [route50.code, " - ", route50.truck, " - ", route50.driver]
-                          }, route50.id))]
+                          }), routes2.map((route53) => /* @__PURE__ */ jsxs("option", {
+                            value: route53.id,
+                            children: [route53.code, " - ", route53.truck, " - ", route53.driver]
+                          }, route53.id))]
                         })]
                       }), /* @__PURE__ */ jsxs("div", {
                         children: [/* @__PURE__ */ jsx("label", {
-                          style: styles$a.label,
+                          style: styles$b.label,
                           children: "ETA"
                         }), /* @__PURE__ */ jsx("input", {
                           name: "eta",
                           defaultValue: selectedOrder.eta || "",
                           placeholder: "Optional",
-                          style: styles$a.input
+                          style: styles$b.input
                         })]
                       })]
                     }), /* @__PURE__ */ jsx("button", {
                       type: "submit",
-                      style: styles$a.primaryButton,
+                      style: styles$b.primaryButton,
                       children: selectedOrder.assignedRouteId ? "Reassign Order" : "Assign Order"
                     })]
                   })]
                 }), /* @__PURE__ */ jsxs(Form, {
                   method: "post",
-                  style: styles$a.stopStatusForm,
+                  style: styles$b.stopStatusForm,
                   children: [/* @__PURE__ */ jsx("input", {
                     type: "hidden",
                     name: "intent",
@@ -11058,12 +11183,12 @@ How many tickets should I split it into?`, String(minimumSplits));
                     value: selectedOrder.id
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Stop Status"
                     }), /* @__PURE__ */ jsxs("select", {
                       name: "deliveryStatus",
                       defaultValue: selectedOrder.deliveryStatus || "not_started",
-                      style: styles$a.input,
+                      style: styles$b.input,
                       children: [/* @__PURE__ */ jsx("option", {
                         value: "not_started",
                         children: "Dispatched"
@@ -11077,25 +11202,25 @@ How many tickets should I split it into?`, String(minimumSplits));
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Proof Name"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "proofName",
                       defaultValue: selectedOrder.proofName || "",
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Signature / Authorized Name"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "signatureName",
                       defaultValue: selectedOrder.signatureName || (selectedOrderRoute == null ? void 0 : selectedOrderRoute.driver) || "",
-                      style: styles$a.input
+                      style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Photo Links"
                     }), /* @__PURE__ */ jsx("textarea", {
                       name: "photoUrls",
@@ -11103,18 +11228,18 @@ How many tickets should I split it into?`, String(minimumSplits));
                       rows: 3,
                       placeholder: "Paste photo URLs or file references, one per line",
                       style: {
-                        ...styles$a.input,
+                        ...styles$b.input,
                         resize: "vertical"
                       }
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Inspection Status"
                     }), /* @__PURE__ */ jsxs("select", {
                       name: "inspectionStatus",
                       defaultValue: selectedOrder.inspectionStatus || "",
-                      style: styles$a.input,
+                      style: styles$b.input,
                       children: [/* @__PURE__ */ jsx("option", {
                         value: "",
                         children: "Not completed"
@@ -11130,27 +11255,27 @@ How many tickets should I split it into?`, String(minimumSplits));
                       })]
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
-                    style: styles$a.checklistGrid,
+                    style: styles$b.checklistGrid,
                     children: [/* @__PURE__ */ jsxs("label", {
-                      style: styles$a.checkboxLabel,
+                      style: styles$b.checkboxLabel,
                       children: [/* @__PURE__ */ jsx("input", {
                         type: "checkbox",
                         name: "siteSafe"
                       }), " Site safe"]
                     }), /* @__PURE__ */ jsxs("label", {
-                      style: styles$a.checkboxLabel,
+                      style: styles$b.checkboxLabel,
                       children: [/* @__PURE__ */ jsx("input", {
                         type: "checkbox",
                         name: "loadMatchesTicket"
                       }), " Load matches ticket"]
                     }), /* @__PURE__ */ jsxs("label", {
-                      style: styles$a.checkboxLabel,
+                      style: styles$b.checkboxLabel,
                       children: [/* @__PURE__ */ jsx("input", {
                         type: "checkbox",
                         name: "customerConfirmedPlacement"
                       }), " Placement confirmed"]
                     }), /* @__PURE__ */ jsxs("label", {
-                      style: styles$a.checkboxLabel,
+                      style: styles$b.checkboxLabel,
                       children: [/* @__PURE__ */ jsx("input", {
                         type: "checkbox",
                         name: "photosTaken"
@@ -11158,33 +11283,33 @@ How many tickets should I split it into?`, String(minimumSplits));
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Custom Checklist Notes"
                     }), /* @__PURE__ */ jsx("textarea", {
                       name: "customChecklist",
                       rows: 3,
                       defaultValue: selectedOrder.checklistJson || "",
                       style: {
-                        ...styles$a.input,
+                        ...styles$b.input,
                         resize: "vertical"
                       }
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
-                      style: styles$a.label,
+                      style: styles$b.label,
                       children: "Proof Notes"
                     }), /* @__PURE__ */ jsx("textarea", {
                       name: "proofNotes",
                       defaultValue: selectedOrder.proofNotes || "",
                       rows: 3,
                       style: {
-                        ...styles$a.input,
+                        ...styles$b.input,
                         resize: "vertical"
                       }
                     })]
                   }), /* @__PURE__ */ jsx("button", {
                     type: "submit",
-                    style: styles$a.primaryButton,
+                    style: styles$b.primaryButton,
                     children: "Update Stop"
                   })]
                 }), /* @__PURE__ */ jsxs("div", {
@@ -11204,7 +11329,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       value: selectedOrder.id
                     }), /* @__PURE__ */ jsx("button", {
                       type: "submit",
-                      style: styles$a.secondaryButton,
+                      style: styles$b.secondaryButton,
                       children: "Move Back To Inbox"
                     })]
                   }), /* @__PURE__ */ jsxs(Form, {
@@ -11219,7 +11344,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       value: selectedOrder.id
                     }), /* @__PURE__ */ jsx("button", {
                       type: "submit",
-                      style: styles$a.secondaryButton,
+                      style: styles$b.secondaryButton,
                       children: "Put On Hold"
                     })]
                   }), /* @__PURE__ */ jsxs(Form, {
@@ -11239,7 +11364,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       value: selectedOrder.id
                     }), /* @__PURE__ */ jsx("button", {
                       type: "submit",
-                      style: styles$a.dangerButton,
+                      style: styles$b.dangerButton,
                       children: "Delete Order"
                     })]
                   })]
@@ -11257,7 +11382,7 @@ How many tickets should I split it into?`, String(minimumSplits));
     })
   });
 });
-const styles$a = {
+const styles$b = {
   page: {
     minHeight: "100vh",
     background: "#020617",
@@ -12322,12 +12447,12 @@ const styles$a = {
 };
 const route4 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$m,
+  action: action$o,
   default: dispatch,
-  loader: loader$j
+  loader: loader$l
 }, Symbol.toStringTag, { value: "Module" }));
-const loader$i = loader$j;
-const action$l = action$m;
+const loader$k = loader$l;
+const action$n = action$o;
 function getOrderNumber$5(order) {
   return order.orderNumber ? `#${order.orderNumber}` : order.id;
 }
@@ -12338,7 +12463,7 @@ function getTravelMinutes$4(order) {
   const minutes = Number(order.travelMinutes || 0);
   return Number.isFinite(minutes) && minutes > 0 ? minutes : 0;
 }
-function formatTime(minutes) {
+function formatTime$1(minutes) {
   if (!minutes) return "-";
   if (minutes < 60) return `${Math.round(minutes)} min`;
   const hours = Math.floor(minutes / 60);
@@ -12569,22 +12694,22 @@ function ClassicMapFallback({
   routes: routes2
 }) {
   const colors = ["#d93025", "#f97316", "#2563eb", "#0f9f9a", "#9333ea"];
-  const activeRoutes = useMemo(() => routes2.filter((route50) => route50.orders.length), [routes2]);
+  const activeRoutes = useMemo(() => routes2.filter((route53) => route53.orders.length), [routes2]);
   return /* @__PURE__ */ jsxs("div", {
-    style: styles$9.mapCanvas,
+    style: styles$a.mapCanvas,
     children: [/* @__PURE__ */ jsxs("div", {
-      style: styles$9.mapToolbar,
+      style: styles$a.mapToolbar,
       children: [/* @__PURE__ */ jsx("button", {
-        style: styles$9.mapToggle,
+        style: styles$a.mapToggle,
         children: "Map"
       }), /* @__PURE__ */ jsx("button", {
-        style: styles$9.mapToggleMuted,
+        style: styles$a.mapToggleMuted,
         children: "Hybrid"
       })]
     }), /* @__PURE__ */ jsxs("svg", {
       viewBox: "0 0 720 430",
       preserveAspectRatio: "none",
-      style: styles$9.routeSvg,
+      style: styles$a.routeSvg,
       children: [/* @__PURE__ */ jsx("defs", {
         children: /* @__PURE__ */ jsx("pattern", {
           id: "classic-grid",
@@ -12629,8 +12754,8 @@ function ClassicMapFallback({
         strokeWidth: "10",
         fill: "none",
         opacity: "0.75"
-      }), activeRoutes.slice(0, 5).map((route50, routeIndex) => {
-        const color = route50.color || colors[routeIndex % colors.length];
+      }), activeRoutes.slice(0, 5).map((route53, routeIndex) => {
+        const color = route53.color || colors[routeIndex % colors.length];
         const startY = 88 + routeIndex * 60;
         const path = `M ${78 + routeIndex * 12} ${startY} C ${180 + routeIndex * 22} ${45 + routeIndex * 52}, ${260 + routeIndex * 18} ${220 - routeIndex * 20}, ${370 + routeIndex * 28} ${160 + routeIndex * 44} S ${570 - routeIndex * 25} ${280 - routeIndex * 18}, ${650 - routeIndex * 18} ${120 + routeIndex * 56}`;
         return /* @__PURE__ */ jsxs("g", {
@@ -12641,7 +12766,7 @@ function ClassicMapFallback({
             fill: "none",
             strokeLinecap: "round",
             strokeLinejoin: "round"
-          }), route50.orders.slice(0, 8).map((order, stopIndex) => {
+          }), route53.orders.slice(0, 8).map((order, stopIndex) => {
             const x = 90 + stopIndex * 72 + routeIndex * 10;
             const y = startY + Math.sin(stopIndex + routeIndex) * 54 + stopIndex * 18;
             return /* @__PURE__ */ jsxs("g", {
@@ -12663,19 +12788,19 @@ function ClassicMapFallback({
               })]
             }, order.id);
           })]
-        }, route50.id);
+        }, route53.id);
       })]
     }), /* @__PURE__ */ jsx("div", {
-      style: styles$9.mapLegend,
-      children: activeRoutes.slice(0, 5).map((route50) => /* @__PURE__ */ jsxs("span", {
-        style: styles$9.legendItem,
+      style: styles$a.mapLegend,
+      children: activeRoutes.slice(0, 5).map((route53) => /* @__PURE__ */ jsxs("span", {
+        style: styles$a.legendItem,
         children: [/* @__PURE__ */ jsx("span", {
           style: {
-            ...styles$9.legendDot,
-            background: route50.color
+            ...styles$a.legendDot,
+            background: route53.color
           }
-        }), route50.code, " ", route50.truck || "Unassigned"]
-      }, route50.id))
+        }), route53.code, " ", route53.truck || "Unassigned"]
+      }, route53.id))
     })]
   });
 }
@@ -12692,25 +12817,25 @@ function ClassicMap({
   const [status, setStatus] = useState("");
   const [useFallback, setUseFallback] = useState(false);
   const [hiddenRouteIds, setHiddenRouteIds] = useState([]);
-  const activeRoutes = useMemo(() => routes2.filter((route50) => route50.orders.length), [routes2]);
-  const visibleRouteIds = useMemo(() => new Set(activeRoutes.map((route50) => route50.id).filter((id) => !hiddenRouteIds.includes(id))), [activeRoutes, hiddenRouteIds]);
-  const routeColorById = useMemo(() => new Map(routes2.map((route50) => [route50.id, route50.color || "#f97316"])), [routes2]);
-  const routePlan = useMemo(() => routes2.filter((route50) => route50.orders.length && visibleRouteIds.has(route50.id)).map((route50) => ({
-    id: route50.id,
-    code: route50.code,
-    truck: route50.truck,
-    color: route50.color || "#f97316",
-    stops: route50.orders.map((order) => ({
+  const activeRoutes = useMemo(() => routes2.filter((route53) => route53.orders.length), [routes2]);
+  const visibleRouteIds = useMemo(() => new Set(activeRoutes.map((route53) => route53.id).filter((id) => !hiddenRouteIds.includes(id))), [activeRoutes, hiddenRouteIds]);
+  const routeColorById = useMemo(() => new Map(routes2.map((route53) => [route53.id, route53.color || "#f97316"])), [routes2]);
+  const routePlan = useMemo(() => routes2.filter((route53) => route53.orders.length && visibleRouteIds.has(route53.id)).map((route53) => ({
+    id: route53.id,
+    code: route53.code,
+    truck: route53.truck,
+    color: route53.color || "#f97316",
+    stops: route53.orders.map((order) => ({
       address: getOrderAddress$4(order),
       customer: order.customer,
       label: getOrderNumber$5(order)
     })).filter((stop) => stop.address)
-  })).filter((route50) => route50.stops.length), [routes2, visibleRouteIds]);
-  const routePlanKey = useMemo(() => JSON.stringify(routePlan.map((route50) => ({
-    id: route50.id,
-    color: route50.color,
-    stops: route50.stops.map((stop) => stop.address),
-    hidden: hiddenRouteIds.includes(route50.id)
+  })).filter((route53) => route53.stops.length), [routes2, visibleRouteIds]);
+  const routePlanKey = useMemo(() => JSON.stringify(routePlan.map((route53) => ({
+    id: route53.id,
+    color: route53.color,
+    stops: route53.stops.map((stop) => stop.address),
+    hidden: hiddenRouteIds.includes(route53.id)
   }))), [routePlan, hiddenRouteIds]);
   function toggleRoute(routeId) {
     setHiddenRouteIds((current) => current.includes(routeId) ? current.filter((id) => id !== routeId) : [...current, routeId]);
@@ -12748,15 +12873,15 @@ function ClassicMap({
         const bounds = new google.maps.LatLngBounds();
         const directionsService = new google.maps.DirectionsService();
         let yardMarkerAdded = false;
-        for (const route50 of routePlan.slice(0, 6)) {
-          for (const [stopIndex, stop] of route50.stops.entries()) {
+        for (const route53 of routePlan.slice(0, 6)) {
+          for (const [stopIndex, stop] of route53.stops.entries()) {
             await new Promise((resolve) => {
               const renderer = new google.maps.DirectionsRenderer({
                 map,
                 preserveViewport: true,
                 suppressMarkers: true,
                 polylineOptions: {
-                  strokeColor: route50.color,
+                  strokeColor: route53.color,
                   strokeOpacity: 0.78,
                   strokeWeight: 5
                 }
@@ -12807,7 +12932,7 @@ function ClassicMap({
                   }
                   if (returnLeg == null ? void 0 : returnLeg.end_location) bounds.extend(returnLeg.end_location);
                 } else {
-                  console.warn("[CLASSIC MAP ROUND TRIP ERROR]", route50.code, stop.address, routeStatus);
+                  console.warn("[CLASSIC MAP ROUND TRIP ERROR]", route53.code, stop.address, routeStatus);
                 }
                 resolve();
               });
@@ -12892,41 +13017,41 @@ function ClassicMap({
   }, [driverLocations, googleMapsApiKey, routeColorById, visibleRouteIds]);
   if (useFallback) {
     return /* @__PURE__ */ jsxs("div", {
-      style: styles$9.mapCanvas,
+      style: styles$a.mapCanvas,
       children: [/* @__PURE__ */ jsx(ClassicMapFallback, {
-        routes: routes2.filter((route50) => !hiddenRouteIds.includes(route50.id))
+        routes: routes2.filter((route53) => !hiddenRouteIds.includes(route53.id))
       }), status ? /* @__PURE__ */ jsx("div", {
-        style: styles$9.classicMapStatus,
+        style: styles$a.classicMapStatus,
         children: status
       }) : null]
     });
   }
   return /* @__PURE__ */ jsxs("div", {
-    style: styles$9.mapCanvas,
+    style: styles$a.mapCanvas,
     children: [/* @__PURE__ */ jsx("div", {
       ref: mapRef,
-      style: styles$9.realMapCanvas
+      style: styles$a.realMapCanvas
     }), status ? /* @__PURE__ */ jsx("div", {
-      style: styles$9.classicMapStatus,
+      style: styles$a.classicMapStatus,
       children: status
     }) : null, /* @__PURE__ */ jsxs("div", {
-      style: styles$9.mapLegend,
-      children: [activeRoutes.slice(0, 6).map((route50) => /* @__PURE__ */ jsxs("button", {
+      style: styles$a.mapLegend,
+      children: [activeRoutes.slice(0, 6).map((route53) => /* @__PURE__ */ jsxs("button", {
         type: "button",
-        style: hiddenRouteIds.includes(route50.id) ? styles$9.legendItemOff : styles$9.legendItem,
-        onClick: () => toggleRoute(route50.id),
-        title: `${hiddenRouteIds.includes(route50.id) ? "Show" : "Hide"} ${route50.code}`,
+        style: hiddenRouteIds.includes(route53.id) ? styles$a.legendItemOff : styles$a.legendItem,
+        onClick: () => toggleRoute(route53.id),
+        title: `${hiddenRouteIds.includes(route53.id) ? "Show" : "Hide"} ${route53.code}`,
         children: [/* @__PURE__ */ jsx("span", {
           style: {
-            ...styles$9.legendDot,
-            background: route50.color
+            ...styles$a.legendDot,
+            background: route53.color
           }
-        }), route50.code, " ", route50.truck || "Unassigned"]
-      }, route50.id)), driverLocations.length ? /* @__PURE__ */ jsxs("span", {
-        style: styles$9.driverLegendItem,
+        }), route53.code, " ", route53.truck || "Unassigned"]
+      }, route53.id)), driverLocations.length ? /* @__PURE__ */ jsxs("span", {
+        style: styles$a.driverLegendItem,
         children: [driverLocations.slice(0, 4).map((location) => /* @__PURE__ */ jsx("span", {
           style: {
-            ...styles$9.driverLegendDot,
+            ...styles$a.driverLegendDot,
             borderBottomColor: routeColorById.get(location.routeId || "") || "#22c55e"
           }
         }, `${location.id}-${location.routeId || "route"}`)), driverLocations.length, " live driver", driverLocations.length === 1 ? "" : "s"]
@@ -13014,6 +13139,7 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
   const monitorHref = isEmbeddedRoute ? "/app/monitor" : "/monitor";
   const calendarHref = isEmbeddedRoute ? "/app/calendar" : "/calendar";
   const allotmentHref = isEmbeddedRoute ? "/app/allotment" : "/allotment";
+  const loaderHref = isEmbeddedRoute ? "/app/loader" : "/loader";
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
   const quoteHref = isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote";
   const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
@@ -13089,31 +13215,31 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
       window.clearInterval(timer);
     };
   }, []);
-  const routes2 = useMemo(() => baseRoutes.map((route50) => {
-    const routeOrders = orders.filter((order) => order.assignedRouteId === route50.id && isActiveBoardOrder(order)).sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999));
+  const routes2 = useMemo(() => baseRoutes.map((route53) => {
+    const routeOrders = orders.filter((order) => order.assignedRouteId === route53.id && isActiveBoardOrder(order)).sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999));
     return {
-      ...route50,
+      ...route53,
       orders: routeOrders,
       weight: routeOrders.length,
       totalMinutes: routeOrders.reduce((sum, order) => sum + getTravelMinutes$4(order), 0)
     };
   }), [baseRoutes, orders]);
-  const sortedRoutes = useMemo(() => sortItems(routes2, tableSorts.routes, (route50, key) => {
+  const sortedRoutes = useMemo(() => sortItems(routes2, tableSorts.routes, (route53, key) => {
     var _a3, _b2, _c, _d;
-    if (key === "code") return route50.code;
-    if (key === "driver") return `${route50.truck || ""} ${route50.driver || ""}`;
-    if (key === "status") return route50.orders.length ? "Active" : "Open";
-    if (key === "weight") return route50.weight;
-    if (key === "start") return ((_b2 = (_a3 = route50.shift) == null ? void 0 : _a3.split("-")[0]) == null ? void 0 : _b2.trim()) || "6:00 am";
-    if (key === "finish") return ((_d = (_c = route50.shift) == null ? void 0 : _c.split("-")[1]) == null ? void 0 : _d.trim()) || formatTime(route50.totalMinutes);
-    if (key === "distance") return route50.totalMinutes;
+    if (key === "code") return route53.code;
+    if (key === "driver") return `${route53.truck || ""} ${route53.driver || ""}`;
+    if (key === "status") return route53.orders.length ? "Active" : "Open";
+    if (key === "weight") return route53.weight;
+    if (key === "start") return ((_b2 = (_a3 = route53.shift) == null ? void 0 : _a3.split("-")[0]) == null ? void 0 : _b2.trim()) || "6:00 am";
+    if (key === "finish") return ((_d = (_c = route53.shift) == null ? void 0 : _c.split("-")[1]) == null ? void 0 : _d.trim()) || formatTime$1(route53.totalMinutes);
+    if (key === "distance") return route53.totalMinutes;
     return "";
   }), [routes2, tableSorts.routes]);
-  const selectedRoute = sortedRoutes.find((route50) => route50.id === selectedRouteId) || sortedRoutes[0] || null;
+  const selectedRoute = sortedRoutes.find((route53) => route53.id === selectedRouteId) || sortedRoutes[0] || null;
   const selectedOrder = orders.find((order) => order.id === selectedOrderId) || null;
   useEffect(() => {
     if (!sortedRoutes.length) return;
-    if (selectedRouteId && sortedRoutes.some((route50) => route50.id === selectedRouteId)) return;
+    if (selectedRouteId && sortedRoutes.some((route53) => route53.id === selectedRouteId)) return;
     setSelectedRouteId(sortedRoutes[0].id);
   }, [selectedRouteId, sortedRoutes]);
   useEffect(() => {
@@ -13308,18 +13434,18 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
     const active = tableSorts[table].key === key;
     const direction = tableSorts[table].direction === "asc" ? "↑" : "↓";
     return /* @__PURE__ */ jsxs("div", {
-      style: styles$9.resizableHeader,
+      style: styles$a.resizableHeader,
       children: [/* @__PURE__ */ jsxs("button", {
         type: "button",
         onClick: () => updateTableSort(table, key),
-        style: active ? styles$9.sortHeaderActive : styles$9.sortHeader,
+        style: active ? styles$a.sortHeaderActive : styles$a.sortHeader,
         title: `Sort ${label}`,
         children: [label, " ", active ? direction : ""]
       }), /* @__PURE__ */ jsx("span", {
         role: "separator",
         "aria-orientation": "vertical",
         title: "Drag to resize column",
-        style: styles$9.columnResizeHandle,
+        style: styles$a.columnResizeHandle,
         onMouseDown: (event) => beginColumnResize(table, key, event)
       })]
     });
@@ -13328,26 +13454,26 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
     var _a3;
     return ((_a3 = classicColumnOptions[table].find((option) => option.key === key)) == null ? void 0 : _a3.label) || key;
   }
-  function routeColumnValue(route50, key) {
+  function routeColumnValue(route53, key) {
     var _a3, _b2, _c, _d;
     if (key === "code") {
       return /* @__PURE__ */ jsx("button", {
         type: "button",
-        style: styles$9.rowRouteButton((selectedRoute == null ? void 0 : selectedRoute.id) === route50.id),
+        style: styles$a.rowRouteButton((selectedRoute == null ? void 0 : selectedRoute.id) === route53.id),
         onClick: () => {
-          setSelectedRouteId(route50.id);
+          setSelectedRouteId(route53.id);
           setRouteDrawerOpen(false);
           setOrderDrawerOpen(false);
         },
-        children: route50.code
+        children: route53.code
       });
     }
-    if (key === "driver") return `${route50.truck || "No truck"} (${route50.driver || "No driver"})`;
-    if (key === "status") return route50.orders.length ? "Active" : "Open";
-    if (key === "weight") return route50.orders.length || "-";
-    if (key === "start") return ((_b2 = (_a3 = route50.shift) == null ? void 0 : _a3.split("-")[0]) == null ? void 0 : _b2.trim()) || "6:00 am";
-    if (key === "finish") return ((_d = (_c = route50.shift) == null ? void 0 : _c.split("-")[1]) == null ? void 0 : _d.trim()) || formatTime(route50.totalMinutes);
-    if (key === "distance") return formatTime(route50.totalMinutes);
+    if (key === "driver") return `${route53.truck || "No truck"} (${route53.driver || "No driver"})`;
+    if (key === "status") return route53.orders.length ? "Active" : "Open";
+    if (key === "weight") return route53.orders.length || "-";
+    if (key === "start") return ((_b2 = (_a3 = route53.shift) == null ? void 0 : _a3.split("-")[0]) == null ? void 0 : _b2.trim()) || "6:00 am";
+    if (key === "finish") return ((_d = (_c = route53.shift) == null ? void 0 : _c.split("-")[1]) == null ? void 0 : _d.trim()) || formatTime$1(route53.totalMinutes);
+    if (key === "distance") return formatTime$1(route53.totalMinutes);
     return "-";
   }
   function orderColumnValue(order, key, index = 0) {
@@ -13356,7 +13482,7 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
     if (key === "orderNo") {
       return /* @__PURE__ */ jsx("button", {
         type: "button",
-        style: styles$9.rowOrderButton,
+        style: styles$a.rowOrderButton,
         onClick: () => {
           setSelectedOrderId(order.id);
           setOrderDrawerOpen(true);
@@ -13388,7 +13514,7 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
     if (key === "miles") return order.travelMiles || "-";
     if (key === "status") {
       return /* @__PURE__ */ jsx("span", {
-        style: styles$9.statusPill(getStatusTone(order)),
+        style: styles$a.statusPill(getStatusTone(order)),
         children: statusLabel(order)
       });
     }
@@ -13422,18 +13548,18 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
     });
     setDraggedOrderId("");
   }
-  function getRouteTruck(route50) {
-    if (!route50) return null;
-    return trucks.find((truck) => truck.id === route50.truckId) || trucks.find((truck) => truck.label === route50.truck) || null;
+  function getRouteTruck(route53) {
+    if (!route53) return null;
+    return trucks.find((truck) => truck.id === route53.truckId) || trucks.find((truck) => truck.label === route53.truck) || null;
   }
-  function getAssignmentSplitCount(order, route50) {
-    if (!order || !route50 || !/yards?/i.test(order.unit)) return "";
-    const truck = getRouteTruck(route50);
+  function getAssignmentSplitCount(order, route53) {
+    if (!order || !route53 || !/yards?/i.test(order.unit)) return "";
+    const truck = getRouteTruck(route53);
     const capacity = Number((truck == null ? void 0 : truck.yards) || 30);
     const quantity = Number(order.quantity || 0);
     if (!quantity || !capacity || quantity <= capacity) return "";
     const minimumSplits = Math.ceil(quantity / capacity);
-    const routeLabel = `${route50.code}${(truck == null ? void 0 : truck.label) ? ` / ${truck.label}` : ""}`;
+    const routeLabel = `${route53.code}${(truck == null ? void 0 : truck.label) ? ` / ${truck.label}` : ""}`;
     const answer = window.prompt(`${getOrderNumber$5(order)} is ${quantity} yards, which is over the ${capacity} yard truck limit for ${routeLabel}.
 
 How many tickets should I split it into?`, String(minimumSplits));
@@ -13446,8 +13572,8 @@ How many tickets should I split it into?`, String(minimumSplits));
     return String(splitCount);
   }
   function prepareAssignmentSubmit(order, routeId, form, event) {
-    const route50 = routes2.find((entry2) => entry2.id === routeId);
-    const splitCount = getAssignmentSplitCount(order, route50);
+    const route53 = routes2.find((entry2) => entry2.id === routeId);
+    const splitCount = getAssignmentSplitCount(order, route53);
     if (splitCount === null) {
       event.preventDefault();
       return;
@@ -13463,15 +13589,15 @@ How many tickets should I split it into?`, String(minimumSplits));
   }
   if (!allowed) {
     return /* @__PURE__ */ jsx("main", {
-      style: styles$9.loginPage,
+      style: styles$a.loginPage,
       children: /* @__PURE__ */ jsxs(Form, {
         method: "post",
-        style: styles$9.loginBox,
+        style: styles$a.loginBox,
         children: [/* @__PURE__ */ jsx("h1", {
-          style: styles$9.loginTitle,
+          style: styles$a.loginTitle,
           children: "Classic Dispatch"
         }), /* @__PURE__ */ jsx("p", {
-          style: styles$9.muted,
+          style: styles$a.muted,
           children: "Log in to open the light plan-and-track board."
         }), /* @__PURE__ */ jsx("input", {
           type: "hidden",
@@ -13481,10 +13607,10 @@ How many tickets should I split it into?`, String(minimumSplits));
           name: "password",
           type: "password",
           placeholder: "Password",
-          style: styles$9.input
+          style: styles$a.input
         }), /* @__PURE__ */ jsx("button", {
           type: "submit",
-          style: styles$9.orangeButton,
+          style: styles$a.orangeButton,
           children: "Log In"
         })]
       })
@@ -13493,7 +13619,7 @@ How many tickets should I split it into?`, String(minimumSplits));
   return /* @__PURE__ */ jsxs("main", {
     className: "classic-shell",
     style: {
-      ...styles$9.page,
+      ...styles$a.page,
       gridTemplateColumns: navCollapsed ? "56px minmax(1420px, 1fr)" : "230px minmax(1420px, 1fr)"
     },
     children: [/* @__PURE__ */ jsx("style", {
@@ -13543,71 +13669,75 @@ How many tickets should I split it into?`, String(minimumSplits));
         `
     }), /* @__PURE__ */ jsxs("aside", {
       style: {
-        ...styles$9.sideRail,
+        ...styles$a.sideRail,
         padding: navCollapsed ? "12px 8px" : "16px 14px"
       },
       children: [/* @__PURE__ */ jsx("button", {
         type: "button",
         onClick: toggleNavCollapsed,
-        style: styles$9.navToggle,
+        style: styles$a.navToggle,
         title: navCollapsed ? "Open navigation" : "Close navigation",
         children: navCollapsed ? ">" : "<"
       }), /* @__PURE__ */ jsxs("div", {
-        style: styles$9.classicBrand,
+        style: styles$a.classicBrand,
         children: [/* @__PURE__ */ jsx("div", {
-          style: styles$9.railLogo,
+          style: styles$a.railLogo,
           children: "GH"
         }), /* @__PURE__ */ jsxs("div", {
-          style: navCollapsed ? styles$9.collapsedOnlyHidden : void 0,
+          style: navCollapsed ? styles$a.collapsedOnlyHidden : void 0,
           children: [/* @__PURE__ */ jsx("div", {
-            style: styles$9.classicBrandTitle,
+            style: styles$a.classicBrandTitle,
             children: "Contractor"
           }), /* @__PURE__ */ jsx("div", {
-            style: styles$9.classicBrandSub,
+            style: styles$a.classicBrandSub,
             children: "Classic"
           })]
         })]
       }), /* @__PURE__ */ jsxs("nav", {
-        style: navCollapsed ? styles$9.collapsedOnlyHidden : styles$9.classicNav,
+        style: navCollapsed ? styles$a.collapsedOnlyHidden : styles$a.classicNav,
         children: [/* @__PURE__ */ jsx(Link, {
           to: classicHref,
-          style: styles$9.classicNavLinkActive,
+          style: styles$a.classicNavLinkActive,
           children: "Classic"
         }), /* @__PURE__ */ jsx(Link, {
           to: monitorHref,
-          style: styles$9.classicNavLink,
+          style: styles$a.classicNavLink,
           children: "Monitor"
         }), /* @__PURE__ */ jsx(Link, {
           to: calendarHref,
-          style: styles$9.classicNavLink,
+          style: styles$a.classicNavLink,
           children: "Calendar"
         }), /* @__PURE__ */ jsx(Link, {
           to: allotmentHref,
-          style: styles$9.classicNavLink,
+          style: styles$a.classicNavLink,
           children: "Allotment"
-        }), canAccess("manageDispatch") ? /* @__PURE__ */ jsx(Link, {
+        }), canAccess("loader") ? /* @__PURE__ */ jsx(Link, {
+          to: loaderHref,
+          style: styles$a.classicNavLink,
+          children: "Loader"
+        }) : null, canAccess("manageDispatch") ? /* @__PURE__ */ jsx(Link, {
           to: dispatchViewHref("orders"),
-          style: styles$9.classicNavLink,
+          style: styles$a.classicNavLink,
           children: "Orders"
         }) : null, /* @__PURE__ */ jsx(Link, {
           to: dispatchViewHref("scheduled"),
-          style: styles$9.classicNavLink,
+          style: styles$a.classicNavLink,
           children: "Scheduled"
         }), canAccess("manageDispatch") ? /* @__PURE__ */ jsx(Link, {
           to: dispatchViewHref("routes"),
-          style: styles$9.classicNavLink,
+          style: styles$a.classicNavLink,
           children: "Routes"
         }) : null, canAccess("manageDispatch") ? /* @__PURE__ */ jsx(Link, {
           to: dispatchViewHref("trucks"),
-          style: styles$9.classicNavLink,
+          style: styles$a.classicNavLink,
           children: "Trucks"
         }) : null, canAccess("manageDispatch") ? /* @__PURE__ */ jsx(Link, {
           to: dispatchViewHref("employees"),
-          style: styles$9.classicNavLink,
+          style: styles$a.classicNavLink,
           children: "Employees"
         }) : null, /* @__PURE__ */ jsx(Link, {
           to: dispatchViewHref("delivered"),
-          style: styles$9.classicNavLink,
+          style: styles$a.classicNavLink,
           children: "Delivered"
         })]
       }), /* @__PURE__ */ jsx("div", {
@@ -13615,97 +13745,101 @@ How many tickets should I split it into?`, String(minimumSplits));
           flex: 1
         }
       }), /* @__PURE__ */ jsxs("div", {
-        style: navCollapsed ? styles$9.collapsedOnlyHidden : styles$9.classicFooterNav,
+        style: navCollapsed ? styles$a.collapsedOnlyHidden : styles$a.classicFooterNav,
         children: [canAccess("driver") ? /* @__PURE__ */ jsx(Link, {
           to: driverHref,
-          style: styles$9.classicUtility,
+          style: styles$a.classicUtility,
           children: "Driver Route"
+        }) : null, canAccess("loader") ? /* @__PURE__ */ jsx(Link, {
+          to: loaderHref,
+          style: styles$a.classicUtility,
+          children: "Loader View"
         }) : null, canAccess("quoteTool") ? /* @__PURE__ */ jsx(Link, {
           to: quoteHref,
-          style: styles$9.classicUtility,
+          style: styles$a.classicUtility,
           children: "Quote Tool"
         }) : null, /* @__PURE__ */ jsx(Link, {
           to: mobileHref,
-          style: styles$9.classicUtility,
+          style: styles$a.classicUtility,
           children: "Mobile"
         }), canAccess("manageUsers") ? /* @__PURE__ */ jsx(Link, {
           to: "/settings",
-          style: styles$9.classicUtility,
+          style: styles$a.classicUtility,
           children: "Settings"
         }) : null, currentUser ? /* @__PURE__ */ jsx(Link, {
           to: "/change-password",
-          style: styles$9.classicUtility,
+          style: styles$a.classicUtility,
           children: "Change Password"
         }) : null, /* @__PURE__ */ jsx(Link, {
           to: logoutHref,
-          style: styles$9.classicUtility,
+          style: styles$a.classicUtility,
           children: "Log Out"
         })]
       })]
     }), /* @__PURE__ */ jsxs("section", {
-      style: styles$9.workspace,
+      style: styles$a.workspace,
       children: [/* @__PURE__ */ jsxs("header", {
-        style: styles$9.topBar,
+        style: styles$a.topBar,
         children: [/* @__PURE__ */ jsx("div", {
-          style: styles$9.brandMark,
+          style: styles$a.brandMark,
           children: "✓"
         }), /* @__PURE__ */ jsx("strong", {
-          style: styles$9.brandText,
+          style: styles$a.brandText,
           children: "Plan & Track"
         }), /* @__PURE__ */ jsx("input", {
           value: query,
           onChange: (event) => setQuery(event.target.value),
           placeholder: "Search by Order Number",
-          style: styles$9.search
+          style: styles$a.search
         }), /* @__PURE__ */ jsxs(Form, {
           method: "post",
-          style: styles$9.topForm,
+          style: styles$a.topForm,
           children: [/* @__PURE__ */ jsx("input", {
             type: "hidden",
             name: "intent",
             value: "poll-mailbox"
           }), /* @__PURE__ */ jsx("button", {
             type: "submit",
-            style: styles$9.outlineButton,
+            style: styles$a.outlineButton,
             children: "Import Mail"
           })]
         }), /* @__PURE__ */ jsx("button", {
           type: "button",
-          style: styles$9.outlineButton,
+          style: styles$a.outlineButton,
           onClick: testChime,
           children: "Test Chime"
         }), chimeStatus ? /* @__PURE__ */ jsx("span", {
-          style: styles$9.chimeStatus,
+          style: styles$a.chimeStatus,
           children: chimeStatus
         }) : null, /* @__PURE__ */ jsx("a", {
           href: "#add-route",
-          style: styles$9.outlineButton,
+          style: styles$a.outlineButton,
           children: "Add Route"
         }), /* @__PURE__ */ jsx("a", {
           href: "#add-order",
-          style: styles$9.orangeButton,
+          style: styles$a.orangeButton,
           children: "Add Order"
         }), /* @__PURE__ */ jsx("div", {
-          style: styles$9.company,
+          style: styles$a.company,
           children: "Green Hills Dispatch"
         })]
       }), message ? /* @__PURE__ */ jsx("div", {
-        style: (actionData == null ? void 0 : actionData.ok) === false ? styles$9.errorBanner : styles$9.messageBanner,
+        style: (actionData == null ? void 0 : actionData.ok) === false ? styles$a.errorBanner : styles$a.messageBanner,
         children: message
       }) : null, /* @__PURE__ */ jsxs("div", {
         style: {
-          ...styles$9.mainGrid,
+          ...styles$a.mainGrid,
           gridTemplateColumns: `${panelLayout.mainLeft}fr 8px ${100 - panelLayout.mainLeft}fr`
         },
         children: [/* @__PURE__ */ jsxs("section", {
           style: {
-            ...styles$9.leftStack,
+            ...styles$a.leftStack,
             gridTemplateRows: `${panelLayout.leftRows[0]}fr 8px ${panelLayout.leftRows[1]}fr 8px ${panelLayout.leftRows[2]}fr`
           },
           children: [/* @__PURE__ */ jsxs("div", {
-            style: styles$9.panel,
+            style: styles$a.panel,
             children: [/* @__PURE__ */ jsxs("div", {
-              style: styles$9.panelHeader,
+              style: styles$a.panelHeader,
               children: [/* @__PURE__ */ jsxs("strong", {
                 children: ["Routes ", routes2.length]
               }), /* @__PURE__ */ jsx("span", {
@@ -13714,7 +13848,7 @@ How many tickets should I split it into?`, String(minimumSplits));
             }), /* @__PURE__ */ jsxs("table", {
               className: "classic-table",
               style: {
-                ...styles$9.table,
+                ...styles$a.table,
                 minWidth: getTableMinWidth("routes", routeColumnKeys, 104)
               },
               children: [columnGroup("routes", routeColumnKeys, [24], [80]), /* @__PURE__ */ jsx("thead", {
@@ -13724,31 +13858,31 @@ How many tickets should I split it into?`, String(minimumSplits));
                   }, key)), /* @__PURE__ */ jsx("th", {})]
                 })
               }), /* @__PURE__ */ jsxs("tbody", {
-                children: [sortedRoutes.map((route50) => /* @__PURE__ */ jsxs("tr", {
+                children: [sortedRoutes.map((route53) => /* @__PURE__ */ jsxs("tr", {
                   children: [/* @__PURE__ */ jsx("td", {
                     children: /* @__PURE__ */ jsx("span", {
                       style: {
-                        ...styles$9.colorBar,
-                        background: route50.color || "#f97316"
+                        ...styles$a.colorBar,
+                        background: route53.color || "#f97316"
                       }
                     })
                   }), routeColumnKeys.map((key) => /* @__PURE__ */ jsx("td", {
-                    children: routeColumnValue(route50, key)
+                    children: routeColumnValue(route53, key)
                   }, key)), /* @__PURE__ */ jsx("td", {
                     children: /* @__PURE__ */ jsxs(Form, {
                       method: "post",
-                      style: styles$9.inlineActions,
+                      style: styles$a.inlineActions,
                       children: [/* @__PURE__ */ jsx("input", {
                         type: "hidden",
                         name: "routeId",
-                        value: route50.id
+                        value: route53.id
                       }), /* @__PURE__ */ jsx("button", {
                         name: "intent",
                         value: "delete-route",
-                        style: styles$9.iconButton,
+                        style: styles$a.iconButton,
                         title: "Delete route",
                         onClick: (event) => {
-                          if (!window.confirm(`Delete route ${route50.code}? Active orders must be moved first.`)) {
+                          if (!window.confirm(`Delete route ${route53.code}? Active orders must be moved first.`)) {
                             event.preventDefault();
                           }
                         },
@@ -13756,37 +13890,37 @@ How many tickets should I split it into?`, String(minimumSplits));
                       })]
                     })
                   })]
-                }, route50.id)), !routes2.length ? /* @__PURE__ */ jsx("tr", {
+                }, route53.id)), !routes2.length ? /* @__PURE__ */ jsx("tr", {
                   children: /* @__PURE__ */ jsx("td", {
                     colSpan: routeColumnKeys.length + 2,
-                    style: styles$9.emptyCell,
+                    style: styles$a.emptyCell,
                     children: "No routes have been set up yet."
                   })
                 }) : null]
               })]
             })]
           }), /* @__PURE__ */ jsx("div", {
-            style: styles$9.rowResizeHandle,
+            style: styles$a.rowResizeHandle,
             onMouseDown: (event) => beginRowResize("leftRows", 0, event),
             title: "Drag to resize Routes and Sites"
           }), /* @__PURE__ */ jsxs("div", {
-            style: styles$9.panel,
+            style: styles$a.panel,
             children: [/* @__PURE__ */ jsxs("div", {
-              style: styles$9.panelHeader,
+              style: styles$a.panelHeader,
               children: [/* @__PURE__ */ jsxs("strong", {
                 children: ["Sites ", (selectedRoute == null ? void 0 : selectedRoute.orders.length) || 0]
               }), /* @__PURE__ */ jsx("span", {
                 children: selectedRoute ? `${selectedRoute.code} · ${selectedRoute.truck || "No truck"}` : "Select a route"
               })]
             }), /* @__PURE__ */ jsx("div", {
-              style: draggedOrderId ? styles$9.dropZoneActive : styles$9.dropZone,
+              style: draggedOrderId ? styles$a.dropZoneActive : styles$a.dropZone,
               onDragOver: allowRouteDrop,
               onDrop: dropOrderOnCurrentRoute,
               children: "Drag and Drop to the Current Route"
             }), /* @__PURE__ */ jsxs("table", {
               className: "classic-table",
               style: {
-                ...styles$9.table,
+                ...styles$a.table,
                 minWidth: getTableMinWidth("sites", siteColumnKeys, 190)
               },
               children: [columnGroup("sites", siteColumnKeys, [], [190]), /* @__PURE__ */ jsx("thead", {
@@ -13801,10 +13935,10 @@ How many tickets should I split it into?`, String(minimumSplits));
                     children: orderColumnValue(order, key, index)
                   }, key)), /* @__PURE__ */ jsx("td", {
                     children: /* @__PURE__ */ jsxs("div", {
-                      style: styles$9.siteActions,
+                      style: styles$a.siteActions,
                       children: [/* @__PURE__ */ jsxs(Form, {
                         method: "post",
-                        style: styles$9.reorderForm,
+                        style: styles$a.reorderForm,
                         children: [/* @__PURE__ */ jsx("input", {
                           type: "hidden",
                           name: "intent",
@@ -13821,8 +13955,8 @@ How many tickets should I split it into?`, String(minimumSplits));
                           name: "direction",
                           value: "up",
                           style: {
-                            ...styles$9.reorderButton,
-                            ...index === 0 ? styles$9.reorderButtonDisabled : null
+                            ...styles$a.reorderButton,
+                            ...index === 0 ? styles$a.reorderButtonDisabled : null
                           },
                           disabled: index === 0,
                           children: "Up"
@@ -13830,8 +13964,8 @@ How many tickets should I split it into?`, String(minimumSplits));
                           name: "direction",
                           value: "down",
                           style: {
-                            ...styles$9.reorderButton,
-                            ...index === sortedSiteOrders.length - 1 ? styles$9.reorderButtonDisabled : null
+                            ...styles$a.reorderButton,
+                            ...index === sortedSiteOrders.length - 1 ? styles$a.reorderButtonDisabled : null
                           },
                           disabled: index === sortedSiteOrders.length - 1,
                           children: "Down"
@@ -13847,7 +13981,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                           name: "orderId",
                           value: order.id
                         }), /* @__PURE__ */ jsx("button", {
-                          style: styles$9.linkButton,
+                          style: styles$a.linkButton,
                           children: "Unassign"
                         })]
                       })]
@@ -13856,20 +13990,20 @@ How many tickets should I split it into?`, String(minimumSplits));
                 }, order.id)), !(selectedRoute == null ? void 0 : selectedRoute.orders.length) ? /* @__PURE__ */ jsx("tr", {
                   children: /* @__PURE__ */ jsx("td", {
                     colSpan: siteColumnKeys.length + 1,
-                    style: styles$9.emptyCell,
+                    style: styles$a.emptyCell,
                     children: "Pick a route, then drag unscheduled orders here."
                   })
                 }) : null]
               })]
             })]
           }), /* @__PURE__ */ jsx("div", {
-            style: styles$9.rowResizeHandle,
+            style: styles$a.rowResizeHandle,
             onMouseDown: (event) => beginRowResize("leftRows", 1, event),
             title: "Drag to resize Sites and Orders"
           }), /* @__PURE__ */ jsxs("div", {
-            style: styles$9.panel,
+            style: styles$a.panel,
             children: [/* @__PURE__ */ jsxs("div", {
-              style: styles$9.panelHeader,
+              style: styles$a.panelHeader,
               children: [/* @__PURE__ */ jsxs("strong", {
                 children: ["Orders ", visibleOrders.length]
               }), /* @__PURE__ */ jsxs("span", {
@@ -13878,7 +14012,7 @@ How many tickets should I split it into?`, String(minimumSplits));
             }), /* @__PURE__ */ jsxs("table", {
               className: "classic-table",
               style: {
-                ...styles$9.table,
+                ...styles$a.table,
                 minWidth: getTableMinWidth("orders", orderColumnKeys)
               },
               children: [columnGroup("orders", orderColumnKeys), /* @__PURE__ */ jsx("thead", {
@@ -13897,12 +14031,12 @@ How many tickets should I split it into?`, String(minimumSplits));
             })]
           })]
         }), /* @__PURE__ */ jsx("div", {
-          style: styles$9.columnResizePanelHandle,
+          style: styles$a.columnResizePanelHandle,
           onMouseDown: beginMainPanelResize,
           title: "Drag to resize left and right work areas"
         }), /* @__PURE__ */ jsxs("section", {
           style: {
-            ...styles$9.rightStack,
+            ...styles$a.rightStack,
             gridTemplateRows: `${panelLayout.rightRows[0]}fr 8px ${panelLayout.rightRows[1]}fr 8px ${panelLayout.rightRows[2]}fr`
           },
           children: [/* @__PURE__ */ jsx(ClassicMap, {
@@ -13911,13 +14045,13 @@ How many tickets should I split it into?`, String(minimumSplits));
             routes: routes2,
             driverLocations
           }), /* @__PURE__ */ jsx("div", {
-            style: styles$9.rowResizeHandle,
+            style: styles$a.rowResizeHandle,
             onMouseDown: (event) => beginRowResize("rightRows", 0, event),
             title: "Drag to resize Map and Unscheduled"
           }), /* @__PURE__ */ jsxs("div", {
-            style: styles$9.panel,
+            style: styles$a.panel,
             children: [/* @__PURE__ */ jsxs("div", {
-              style: styles$9.panelHeader,
+              style: styles$a.panelHeader,
               children: [/* @__PURE__ */ jsxs("strong", {
                 children: ["Unscheduled ", unscheduledOrders.length]
               }), /* @__PURE__ */ jsx("span", {
@@ -13926,7 +14060,7 @@ How many tickets should I split it into?`, String(minimumSplits));
             }), /* @__PURE__ */ jsxs("table", {
               className: "classic-table",
               style: {
-                ...styles$9.table,
+                ...styles$a.table,
                 minWidth: getTableMinWidth("unscheduled", unscheduledColumnKeys, 160)
               },
               children: [columnGroup("unscheduled", unscheduledColumnKeys, [], [160]), /* @__PURE__ */ jsx("thead", {
@@ -13940,13 +14074,13 @@ How many tickets should I split it into?`, String(minimumSplits));
                   draggable: true,
                   onDragStart: () => beginOrderDrag(order.id),
                   onDragEnd: () => setDraggedOrderId(""),
-                  style: styles$9.draggableRow,
+                  style: styles$a.draggableRow,
                   children: [unscheduledColumnKeys.map((key) => /* @__PURE__ */ jsx("td", {
                     children: orderColumnValue(order, key)
                   }, key)), /* @__PURE__ */ jsx("td", {
                     children: /* @__PURE__ */ jsxs(Form, {
                       method: "post",
-                      style: styles$9.assignForm,
+                      style: styles$a.assignForm,
                       onSubmit: (event) => {
                         const routeId = new FormData(event.currentTarget).get("routeId");
                         prepareAssignmentSubmit(order, String(routeId || ""), event.currentTarget, event);
@@ -13961,17 +14095,17 @@ How many tickets should I split it into?`, String(minimumSplits));
                         value: order.id
                       }), /* @__PURE__ */ jsxs("select", {
                         name: "routeId",
-                        style: styles$9.smallSelect,
+                        style: styles$a.smallSelect,
                         required: true,
                         children: [/* @__PURE__ */ jsx("option", {
                           value: "",
                           children: "Route"
-                        }), routes2.map((route50) => /* @__PURE__ */ jsx("option", {
-                          value: route50.id,
-                          children: route50.code
-                        }, route50.id))]
+                        }), routes2.map((route53) => /* @__PURE__ */ jsx("option", {
+                          value: route53.id,
+                          children: route53.code
+                        }, route53.id))]
                       }), /* @__PURE__ */ jsx("button", {
-                        style: styles$9.assignMini,
+                        style: styles$a.assignMini,
                         children: "Assign"
                       })]
                     })
@@ -13979,22 +14113,22 @@ How many tickets should I split it into?`, String(minimumSplits));
                 }, order.id)), !unscheduledOrders.length ? /* @__PURE__ */ jsx("tr", {
                   children: /* @__PURE__ */ jsx("td", {
                     colSpan: unscheduledColumnKeys.length + 1,
-                    style: styles$9.emptyCell,
+                    style: styles$a.emptyCell,
                     children: "No unscheduled orders match this search."
                   })
                 }) : null]
               })]
             })]
           }), /* @__PURE__ */ jsx("div", {
-            style: styles$9.rowResizeHandle,
+            style: styles$a.rowResizeHandle,
             onMouseDown: (event) => beginRowResize("rightRows", 1, event),
             title: "Drag to resize Unscheduled and Add forms"
           }), /* @__PURE__ */ jsxs("div", {
-            style: styles$9.formGrid,
+            style: styles$a.formGrid,
             children: [/* @__PURE__ */ jsxs(Form, {
               id: "add-route",
               method: "post",
-              style: styles$9.compactForm,
+              style: styles$a.compactForm,
               children: [/* @__PURE__ */ jsx("input", {
                 type: "hidden",
                 name: "intent",
@@ -14004,10 +14138,10 @@ How many tickets should I split it into?`, String(minimumSplits));
               }), /* @__PURE__ */ jsx("input", {
                 name: "code",
                 placeholder: "R-22",
-                style: styles$9.input
+                style: styles$a.input
               }), /* @__PURE__ */ jsxs("select", {
                 name: "truckId",
-                style: styles$9.input,
+                style: styles$a.input,
                 children: [/* @__PURE__ */ jsx("option", {
                   value: "",
                   children: "Truck"
@@ -14017,7 +14151,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                 }, truck.id))]
               }), /* @__PURE__ */ jsxs("select", {
                 name: "driverId",
-                style: styles$9.input,
+                style: styles$a.input,
                 children: [/* @__PURE__ */ jsx("option", {
                   value: "",
                   children: "Driver"
@@ -14027,7 +14161,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                 }, driver.id))]
               }), /* @__PURE__ */ jsxs("select", {
                 name: "helperId",
-                style: styles$9.input,
+                style: styles$a.input,
                 children: [/* @__PURE__ */ jsx("option", {
                   value: "",
                   children: "Helper"
@@ -14038,24 +14172,24 @@ How many tickets should I split it into?`, String(minimumSplits));
               }), /* @__PURE__ */ jsx("input", {
                 name: "shift",
                 placeholder: "6:00a - 2:30p",
-                style: styles$9.input
+                style: styles$a.input
               }), /* @__PURE__ */ jsx("input", {
                 name: "region",
                 placeholder: "Region",
-                style: styles$9.input
+                style: styles$a.input
               }), /* @__PURE__ */ jsx("input", {
                 name: "color",
                 type: "color",
                 defaultValue: "#f97316",
-                style: styles$9.colorInput
+                style: styles$a.colorInput
               }), /* @__PURE__ */ jsx("button", {
-                style: styles$9.orangeButton,
+                style: styles$a.orangeButton,
                 children: "Add Route"
               })]
             }), /* @__PURE__ */ jsxs(Form, {
               id: "add-order",
               method: "post",
-              style: styles$9.compactForm,
+              style: styles$a.compactForm,
               children: [/* @__PURE__ */ jsx("input", {
                 type: "hidden",
                 name: "intent",
@@ -14065,28 +14199,28 @@ How many tickets should I split it into?`, String(minimumSplits));
               }), /* @__PURE__ */ jsx("input", {
                 name: "orderNumber",
                 placeholder: "Order number",
-                style: styles$9.input
+                style: styles$a.input
               }), /* @__PURE__ */ jsx("input", {
                 name: "customer",
                 placeholder: "Customer",
-                style: styles$9.input
+                style: styles$a.input
               }), /* @__PURE__ */ jsx("input", {
                 name: "contact",
                 placeholder: "Contact / email",
-                style: styles$9.input
+                style: styles$a.input
               }), /* @__PURE__ */ jsx("input", {
                 name: "address",
                 placeholder: "Address",
-                style: styles$9.input
+                style: styles$a.input
               }), /* @__PURE__ */ jsx("input", {
                 name: "city",
                 placeholder: "City, ST ZIP",
-                style: styles$9.input
+                style: styles$a.input
               }), /* @__PURE__ */ jsx("input", {
                 name: "material",
                 placeholder: "Material",
                 list: "classic-materials",
-                style: styles$9.input
+                style: styles$a.input
               }), /* @__PURE__ */ jsx("datalist", {
                 id: "classic-materials",
                 children: materialOptions.map((material) => /* @__PURE__ */ jsx("option", {
@@ -14095,39 +14229,39 @@ How many tickets should I split it into?`, String(minimumSplits));
               }), /* @__PURE__ */ jsx("input", {
                 name: "quantity",
                 placeholder: "Qty",
-                style: styles$9.input
+                style: styles$a.input
               }), /* @__PURE__ */ jsx("input", {
                 name: "requestedWindow",
                 type: "date",
-                style: styles$9.input
+                style: styles$a.input
               }), /* @__PURE__ */ jsx("button", {
-                style: styles$9.orangeButton,
+                style: styles$a.orangeButton,
                 children: "Add Order"
               })]
             })]
           })]
         })]
       }), routeDrawerOpen && selectedRoute ? /* @__PURE__ */ jsxs("aside", {
-        style: styles$9.routeDrawer,
+        style: styles$a.routeDrawer,
         children: [/* @__PURE__ */ jsx("button", {
           type: "button",
-          style: styles$9.drawerClose,
+          style: styles$a.drawerClose,
           onClick: () => setRouteDrawerOpen(false),
           children: "×"
         }), /* @__PURE__ */ jsx("h2", {
-          style: styles$9.drawerTitle,
+          style: styles$a.drawerTitle,
           children: "Route Attributes"
         }), /* @__PURE__ */ jsxs("div", {
-          style: styles$9.drawerTabs,
+          style: styles$a.drawerTabs,
           children: [/* @__PURE__ */ jsx("span", {
-            style: styles$9.drawerTabActive,
+            style: styles$a.drawerTabActive,
             children: "Info"
           }), /* @__PURE__ */ jsx("span", {
-            style: styles$9.drawerTab,
+            style: styles$a.drawerTab,
             children: "History"
           })]
         }), /* @__PURE__ */ jsxs("dl", {
-          style: styles$9.drawerDetails,
+          style: styles$a.drawerDetails,
           children: [/* @__PURE__ */ jsx("dt", {
             children: "Code"
           }), /* @__PURE__ */ jsx("dd", {
@@ -14155,30 +14289,30 @@ How many tickets should I split it into?`, String(minimumSplits));
           }), /* @__PURE__ */ jsx("dt", {
             children: "Total route time"
           }), /* @__PURE__ */ jsx("dd", {
-            children: formatTime(selectedRoute.totalMinutes)
+            children: formatTime$1(selectedRoute.totalMinutes)
           })]
         })]
       }) : null, orderDrawerOpen && selectedOrder ? /* @__PURE__ */ jsxs("aside", {
-        style: styles$9.routeDrawer,
+        style: styles$a.routeDrawer,
         children: [/* @__PURE__ */ jsx("button", {
           type: "button",
-          style: styles$9.drawerClose,
+          style: styles$a.drawerClose,
           onClick: () => setOrderDrawerOpen(false),
           children: "×"
         }), /* @__PURE__ */ jsx("h2", {
-          style: styles$9.drawerTitle,
+          style: styles$a.drawerTitle,
           children: "Order Attributes"
         }), /* @__PURE__ */ jsxs("div", {
-          style: styles$9.drawerTabs,
+          style: styles$a.drawerTabs,
           children: [/* @__PURE__ */ jsx("span", {
-            style: styles$9.drawerTabActive,
+            style: styles$a.drawerTabActive,
             children: "Info"
           }), /* @__PURE__ */ jsx("span", {
-            style: styles$9.drawerTab,
+            style: styles$a.drawerTab,
             children: "History"
           })]
         }), /* @__PURE__ */ jsxs("dl", {
-          style: styles$9.drawerDetails,
+          style: styles$a.drawerDetails,
           children: [/* @__PURE__ */ jsx("dt", {
             children: "Order"
           }), /* @__PURE__ */ jsx("dd", {
@@ -14210,24 +14344,24 @@ How many tickets should I split it into?`, String(minimumSplits));
           }), /* @__PURE__ */ jsx("dt", {
             children: "Route"
           }), /* @__PURE__ */ jsx("dd", {
-            children: ((_b = routes2.find((route50) => route50.id === selectedOrder.assignedRouteId)) == null ? void 0 : _b.code) || "Unassigned"
+            children: ((_b = routes2.find((route53) => route53.id === selectedOrder.assignedRouteId)) == null ? void 0 : _b.code) || "Unassigned"
           }), /* @__PURE__ */ jsx("dt", {
             children: "Travel"
           }), /* @__PURE__ */ jsx("dd", {
-            children: selectedOrder.travelSummary || formatTime(getTravelMinutes$4(selectedOrder))
+            children: selectedOrder.travelSummary || formatTime$1(getTravelMinutes$4(selectedOrder))
           })]
         }), selectedOrder.notes ? /* @__PURE__ */ jsxs("div", {
-          style: styles$9.drawerNotes,
+          style: styles$a.drawerNotes,
           children: [/* @__PURE__ */ jsx("strong", {
             children: "Notes"
           }), /* @__PURE__ */ jsx("p", {
             children: selectedOrder.notes
           })]
         }) : null, /* @__PURE__ */ jsxs("div", {
-          style: styles$9.drawerButtonGrid,
+          style: styles$a.drawerButtonGrid,
           children: [/* @__PURE__ */ jsx("a", {
             href: editorHref(selectedOrder.id),
-            style: styles$9.drawerLinkButton,
+            style: styles$a.drawerLinkButton,
             children: "Open in editor"
           }), selectedOrder.assignedRouteId ? /* @__PURE__ */ jsxs(Form, {
             method: "post",
@@ -14240,7 +14374,7 @@ How many tickets should I split it into?`, String(minimumSplits));
               name: "orderId",
               value: selectedOrder.id
             }), /* @__PURE__ */ jsx("button", {
-              style: styles$9.drawerButton,
+              style: styles$a.drawerButton,
               children: "Unassign"
             })]
           }) : null]
@@ -14249,7 +14383,7 @@ How many tickets should I split it into?`, String(minimumSplits));
     })]
   });
 });
-const styles$9 = {
+const styles$a = {
   page: {
     minHeight: "100vh",
     display: "grid",
@@ -14967,12 +15101,12 @@ const styles$9 = {
 };
 const route5 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$l,
+  action: action$n,
   default: classic,
-  loader: loader$i
+  loader: loader$k
 }, Symbol.toStringTag, { value: "Module" }));
-const loader$h = loader$j;
-const action$k = action$m;
+const loader$j = loader$l;
+const action$m = action$o;
 const MONITOR_VIEWPORT_KEY = "dispatchMonitorMapViewport";
 const MONITOR_HIDDEN_ROUTES_KEY = "dispatchMonitorHiddenRoutes";
 const MONITOR_SELECTED_DATE_KEY = "dispatchMonitorSelectedDate";
@@ -15090,15 +15224,15 @@ function MonitorMap({
   const routeObjectsRef = useRef([]);
   const driverMarkersRef = useRef([]);
   const [status, setStatus] = useState("");
-  const visibleRouteIds = useMemo(() => new Set(routes2.map((route50) => route50.id).filter((id) => !hiddenRouteIds.includes(id))), [routes2, hiddenRouteIds]);
-  const routeColorById = useMemo(() => new Map(routes2.map((route50) => [route50.id, route50.color || "#f97316"])), [routes2]);
-  const routePlan = useMemo(() => routes2.filter((route50) => route50.orders.length && visibleRouteIds.has(route50.id)).map((route50) => {
-    const orders = filterByDate ? route50.orders.filter((order) => dateKey$4(parseRequestedDate$4(order.requestedWindow)) === selectedDateKey) : route50.orders;
+  const visibleRouteIds = useMemo(() => new Set(routes2.map((route53) => route53.id).filter((id) => !hiddenRouteIds.includes(id))), [routes2, hiddenRouteIds]);
+  const routeColorById = useMemo(() => new Map(routes2.map((route53) => [route53.id, route53.color || "#f97316"])), [routes2]);
+  const routePlan = useMemo(() => routes2.filter((route53) => route53.orders.length && visibleRouteIds.has(route53.id)).map((route53) => {
+    const orders = filterByDate ? route53.orders.filter((order) => dateKey$4(parseRequestedDate$4(order.requestedWindow)) === selectedDateKey) : route53.orders;
     return {
-      id: route50.id,
-      code: route50.code,
-      truck: route50.truck,
-      color: route50.color || "#f97316",
+      id: route53.id,
+      code: route53.code,
+      truck: route53.truck,
+      color: route53.color || "#f97316",
       stops: orders.map((order) => ({
         address: getOrderAddress$3(order),
         customer: order.customer,
@@ -15106,11 +15240,11 @@ function MonitorMap({
         load: getLoadLabel$3(order)
       })).filter((stop) => stop.address)
     };
-  }).filter((route50) => route50.stops.length), [filterByDate, routes2, selectedDateKey, visibleRouteIds]);
-  const routePlanKey = useMemo(() => JSON.stringify(routePlan.map((route50) => ({
-    id: route50.id,
-    color: route50.color,
-    stops: route50.stops.map((stop) => stop.address)
+  }).filter((route53) => route53.stops.length), [filterByDate, routes2, selectedDateKey, visibleRouteIds]);
+  const routePlanKey = useMemo(() => JSON.stringify(routePlan.map((route53) => ({
+    id: route53.id,
+    color: route53.color,
+    stops: route53.stops.map((stop) => stop.address)
   }))), [routePlan]);
   useEffect(() => {
     let cancelled = false;
@@ -15159,15 +15293,15 @@ function MonitorMap({
         const bounds = new google.maps.LatLngBounds();
         const directionsService = new google.maps.DirectionsService();
         let yardMarkerAdded = false;
-        for (const route50 of routePlan.slice(0, 8)) {
-          for (const [stopIndex, stop] of route50.stops.entries()) {
+        for (const route53 of routePlan.slice(0, 8)) {
+          for (const [stopIndex, stop] of route53.stops.entries()) {
             await new Promise((resolve) => {
               const renderer = new google.maps.DirectionsRenderer({
                 map,
                 preserveViewport: true,
                 suppressMarkers: true,
                 polylineOptions: {
-                  strokeColor: route50.color,
+                  strokeColor: route53.color,
                   strokeOpacity: 0.8,
                   strokeWeight: 5
                 }
@@ -15212,13 +15346,13 @@ function MonitorMap({
                       map,
                       position: outboundLeg.end_location,
                       label: String(stopIndex + 1),
-                      title: `${route50.code} ${stop.label} · ${stop.customer} · ${stop.load}`
+                      title: `${route53.code} ${stop.label} · ${stop.customer} · ${stop.load}`
                     });
                     routeObjectsRef.current.push(marker);
                   }
                   if (returnLeg == null ? void 0 : returnLeg.end_location) bounds.extend(returnLeg.end_location);
                 } else {
-                  console.warn("[MONITOR MAP ROUTE ERROR]", route50.code, stop.address, routeStatus);
+                  console.warn("[MONITOR MAP ROUTE ERROR]", route53.code, stop.address, routeStatus);
                 }
                 resolve();
               });
@@ -15294,12 +15428,12 @@ function MonitorMap({
     };
   }, [driverLocations, googleMapsApiKey, routeColorById, visibleRouteIds]);
   return /* @__PURE__ */ jsxs("section", {
-    style: styles$8.mapPanel,
+    style: styles$9.mapPanel,
     children: [/* @__PURE__ */ jsx("div", {
       ref: mapRef,
-      style: styles$8.mapCanvas
+      style: styles$9.mapCanvas
     }), status ? /* @__PURE__ */ jsx("div", {
-      style: styles$8.mapStatus,
+      style: styles$9.mapStatus,
       children: status
     }) : null]
   });
@@ -15370,23 +15504,23 @@ const monitor = UNSAFE_withComponentProps(function DispatchMonitorPage() {
       window.clearInterval(timer);
     };
   }, []);
-  const routes2 = useMemo(() => baseRoutes.map((route50) => {
-    const routeOrders = orders.filter((order) => order.assignedRouteId === route50.id && order.status !== "delivered" && order.deliveryStatus !== "delivered").sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999));
+  const routes2 = useMemo(() => baseRoutes.map((route53) => {
+    const routeOrders = orders.filter((order) => order.assignedRouteId === route53.id && order.status !== "delivered" && order.deliveryStatus !== "delivered").sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999));
     return {
-      ...route50,
+      ...route53,
       orders: routeOrders
     };
   }), [baseRoutes, orders]);
-  const activeRoutes = routes2.filter((route50) => route50.orders.length);
-  const visibleRouteOrders = activeRoutes.map((route50) => {
-    const routeOrders = filterByDate ? route50.orders.filter((order) => dateKey$4(parseRequestedDate$4(order.requestedWindow)) === selectedDateKey) : route50.orders;
+  const activeRoutes = routes2.filter((route53) => route53.orders.length);
+  const visibleRouteOrders = activeRoutes.map((route53) => {
+    const routeOrders = filterByDate ? route53.orders.filter((order) => dateKey$4(parseRequestedDate$4(order.requestedWindow)) === selectedDateKey) : route53.orders;
     return {
-      ...route50,
+      ...route53,
       orders: routeOrders,
       totalTravelMinutes: routeOrders.reduce((sum, order) => sum + getTravelMinutes$3(order), 0)
     };
   });
-  const visibleRouteOrderCount = visibleRouteOrders.reduce((sum, route50) => sum + route50.orders.length, 0);
+  const visibleRouteOrderCount = visibleRouteOrders.reduce((sum, route53) => sum + route53.orders.length, 0);
   function toggleNavCollapsed() {
     setNavCollapsed((current) => {
       const next = !current;
@@ -15421,85 +15555,85 @@ const monitor = UNSAFE_withComponentProps(function DispatchMonitorPage() {
   }
   if (!allowed) {
     return /* @__PURE__ */ jsx("main", {
-      style: styles$8.loginPage,
+      style: styles$9.loginPage,
       children: /* @__PURE__ */ jsxs("section", {
-        style: styles$8.loginCard,
+        style: styles$9.loginCard,
         children: [/* @__PURE__ */ jsx("h1", {
-          style: styles$8.loginTitle,
+          style: styles$9.loginTitle,
           children: "Dispatch Monitor"
         }), /* @__PURE__ */ jsx("p", {
-          style: styles$8.muted,
+          style: styles$9.muted,
           children: "Open Dispatch first, then return to this monitor page."
         }), /* @__PURE__ */ jsx(Link, {
           to: dispatchHref,
-          style: styles$8.primaryLink,
+          style: styles$9.primaryLink,
           children: "Open Dispatch"
         })]
       })
     });
   }
   return /* @__PURE__ */ jsxs("main", {
-    style: styles$8.page,
+    style: styles$9.page,
     children: [/* @__PURE__ */ jsxs("aside", {
       style: {
-        ...styles$8.sideRail,
+        ...styles$9.sideRail,
         width: navCollapsed ? 56 : 250,
         padding: navCollapsed ? "12px 8px" : "16px 14px"
       },
       children: [/* @__PURE__ */ jsx("button", {
         type: "button",
         onClick: toggleNavCollapsed,
-        style: styles$8.navToggle,
+        style: styles$9.navToggle,
         children: navCollapsed ? ">" : "<"
       }), /* @__PURE__ */ jsxs("div", {
-        style: styles$8.brand,
+        style: styles$9.brand,
         children: [/* @__PURE__ */ jsx("img", {
           src: "/green-hills-logo.png",
           alt: "Green Hills Supply",
-          style: styles$8.logo
+          style: styles$9.logo
         }), /* @__PURE__ */ jsxs("div", {
-          style: navCollapsed ? styles$8.hidden : void 0,
+          style: navCollapsed ? styles$9.hidden : void 0,
           children: [/* @__PURE__ */ jsx("div", {
-            style: styles$8.brandTitle,
+            style: styles$9.brandTitle,
             children: "Contractor"
           }), /* @__PURE__ */ jsx("div", {
-            style: styles$8.brandSub,
+            style: styles$9.brandSub,
             children: "Monitor"
           })]
         })]
       }), /* @__PURE__ */ jsxs("nav", {
-        style: navCollapsed ? styles$8.hidden : styles$8.nav,
+        style: navCollapsed ? styles$9.hidden : styles$9.nav,
         children: [/* @__PURE__ */ jsx(Link, {
           to: classicHref,
-          style: styles$8.navLink,
+          style: styles$9.navLink,
           children: "Classic"
         }), /* @__PURE__ */ jsx(Link, {
           to: monitorHref,
-          style: styles$8.navLinkActive,
+          style: styles$9.navLinkActive,
           children: "Monitor"
         }), /* @__PURE__ */ jsx(Link, {
           to: calendarHref,
-          style: styles$8.navLink,
+          style: styles$9.navLink,
           children: "Calendar"
         }), /* @__PURE__ */ jsx(Link, {
           to: allotmentHref,
-          style: styles$8.navLink,
+          style: styles$9.navLink,
           children: "Allotment"
         }), canAccess("manageDispatch") ? /* @__PURE__ */ jsx(Link, {
           to: dispatchViewHref("orders"),
-          style: styles$8.navLink,
+          style: styles$9.navLink,
           children: "Orders"
         }) : null, /* @__PURE__ */ jsx(Link, {
           to: dispatchViewHref("scheduled"),
-          style: styles$8.navLink,
+          style: styles$9.navLink,
           children: "Scheduled"
         }), canAccess("manageDispatch") ? /* @__PURE__ */ jsx(Link, {
           to: dispatchViewHref("routes"),
-          style: styles$8.navLink,
+          style: styles$9.navLink,
           children: "Routes"
         }) : null, /* @__PURE__ */ jsx(Link, {
           to: dispatchViewHref("delivered"),
-          style: styles$8.navLink,
+          style: styles$9.navLink,
           children: "Delivered"
         })]
       }), /* @__PURE__ */ jsx("div", {
@@ -15507,61 +15641,61 @@ const monitor = UNSAFE_withComponentProps(function DispatchMonitorPage() {
           flex: 1
         }
       }), /* @__PURE__ */ jsxs("div", {
-        style: navCollapsed ? styles$8.hidden : styles$8.footerNav,
+        style: navCollapsed ? styles$9.hidden : styles$9.footerNav,
         children: [canAccess("driver") ? /* @__PURE__ */ jsx(Link, {
           to: driverHref,
-          style: styles$8.utility,
+          style: styles$9.utility,
           children: "Driver Route"
         }) : null, canAccess("quoteTool") ? /* @__PURE__ */ jsx(Link, {
           to: quoteHref,
-          style: styles$8.utility,
+          style: styles$9.utility,
           children: "Quote Tool"
         }) : null, /* @__PURE__ */ jsx(Link, {
           to: mobileHref,
-          style: styles$8.utility,
+          style: styles$9.utility,
           children: "Mobile"
         }), /* @__PURE__ */ jsx(Link, {
           to: logoutHref,
-          style: styles$8.utility,
+          style: styles$9.utility,
           children: "Log Out"
         })]
       })]
     }), /* @__PURE__ */ jsxs("section", {
-      style: styles$8.monitorGrid,
+      style: styles$9.monitorGrid,
       children: [/* @__PURE__ */ jsxs("section", {
-        style: styles$8.orderPane,
+        style: styles$9.orderPane,
         children: [/* @__PURE__ */ jsxs("header", {
-          style: styles$8.header,
+          style: styles$9.header,
           children: [/* @__PURE__ */ jsx("p", {
-            style: styles$8.kicker,
+            style: styles$9.kicker,
             children: "Dispatch Monitor"
           }), /* @__PURE__ */ jsx("h1", {
-            style: styles$8.title,
+            style: styles$9.title,
             children: "Orders by Truck"
           }), /* @__PURE__ */ jsx("p", {
-            style: styles$8.muted,
+            style: styles$9.muted,
             children: "Map zoom, position, route visibility, and filters stay saved after refresh."
           })]
         }), /* @__PURE__ */ jsxs("div", {
-          style: styles$8.controls,
+          style: styles$9.controls,
           children: [/* @__PURE__ */ jsx("button", {
             type: "button",
             onClick: toggleDateFilter,
-            style: filterByDate ? styles$8.activeButton : styles$8.ghostButton,
+            style: filterByDate ? styles$9.activeButton : styles$9.ghostButton,
             children: filterByDate ? "Showing selected date" : "Showing all active routes"
           }), /* @__PURE__ */ jsx("button", {
             type: "button",
             onClick: toggleCompactRoutes,
-            style: compactRoutes ? styles$8.activeButton : styles$8.ghostButton,
+            style: compactRoutes ? styles$9.activeButton : styles$9.ghostButton,
             children: compactRoutes ? "Compact on" : "Compact routes"
           }), /* @__PURE__ */ jsx("button", {
             type: "button",
             onClick: resetMapView,
-            style: styles$8.ghostButton,
+            style: styles$9.ghostButton,
             children: "Reset map view"
           })]
         }), /* @__PURE__ */ jsxs("div", {
-          style: styles$8.summaryBar,
+          style: styles$9.summaryBar,
           children: [/* @__PURE__ */ jsxs("strong", {
             children: [visibleRouteOrderCount, " active load", visibleRouteOrderCount === 1 ? "" : "s"]
           }), filterByDate ? /* @__PURE__ */ jsx("span", {
@@ -15570,33 +15704,33 @@ const monitor = UNSAFE_withComponentProps(function DispatchMonitorPage() {
             children: "All scheduled route loads"
           })]
         }), /* @__PURE__ */ jsxs("div", {
-          style: styles$8.truckList,
-          children: [visibleRouteOrders.map((route50) => /* @__PURE__ */ jsxs("section", {
-            style: compactRoutes ? styles$8.truckCardCompact : styles$8.truckCard,
+          style: styles$9.truckList,
+          children: [visibleRouteOrders.map((route53) => /* @__PURE__ */ jsxs("section", {
+            style: compactRoutes ? styles$9.truckCardCompact : styles$9.truckCard,
             children: [/* @__PURE__ */ jsxs("div", {
-              style: compactRoutes ? styles$8.truckHeaderCompact : styles$8.truckHeader,
+              style: compactRoutes ? styles$9.truckHeaderCompact : styles$9.truckHeader,
               children: [/* @__PURE__ */ jsx("span", {
                 style: {
-                  ...styles$8.routeDot,
-                  background: route50.color || "#f97316"
+                  ...styles$9.routeDot,
+                  background: route53.color || "#f97316"
                 }
               }), /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsxs("strong", {
-                  children: [route50.code, " · ", route50.truck || "No truck"]
+                  children: [route53.code, " · ", route53.truck || "No truck"]
                 }), /* @__PURE__ */ jsxs("small", {
-                  children: [route50.driver || "No driver", " · ", route50.orders.length, " stop", route50.orders.length === 1 ? "" : "s", " · ", formatTravel(route50.totalTravelMinutes)]
+                  children: [route53.driver || "No driver", " · ", route53.orders.length, " stop", route53.orders.length === 1 ? "" : "s", " · ", formatTravel(route53.totalTravelMinutes)]
                 })]
               })]
             }), /* @__PURE__ */ jsxs("div", {
-              style: compactRoutes ? styles$8.truckOrdersCompact : styles$8.truckOrders,
-              children: [route50.orders.map((order, index) => /* @__PURE__ */ jsxs(Link, {
+              style: compactRoutes ? styles$9.truckOrdersCompact : styles$9.truckOrders,
+              children: [route53.orders.map((order, index) => /* @__PURE__ */ jsxs(Link, {
                 to: `${dispatchHref}?view=orders&order=${encodeURIComponent(order.id)}&returnTo=${encodeURIComponent(monitorHref)}`,
-                style: compactRoutes ? styles$8.orderCardCompact : styles$8.orderCard,
+                style: compactRoutes ? styles$9.orderCardCompact : styles$9.orderCard,
                 children: [/* @__PURE__ */ jsx("span", {
-                  style: compactRoutes ? styles$8.stopBadgeCompact : styles$8.stopBadge,
+                  style: compactRoutes ? styles$9.stopBadgeCompact : styles$9.stopBadge,
                   children: order.stopSequence || index + 1
                 }), /* @__PURE__ */ jsxs("div", {
-                  style: compactRoutes ? styles$8.orderTextCompact : styles$8.orderText,
+                  style: compactRoutes ? styles$9.orderTextCompact : styles$9.orderText,
                   children: [/* @__PURE__ */ jsxs("strong", {
                     children: [getOrderNumber$4(order), " ", order.customer]
                   }), compactRoutes ? /* @__PURE__ */ jsx("span", {
@@ -15609,33 +15743,33 @@ const monitor = UNSAFE_withComponentProps(function DispatchMonitorPage() {
                     })]
                   })]
                 })]
-              }, order.id)), !route50.orders.length ? /* @__PURE__ */ jsx("div", {
-                style: styles$8.empty,
+              }, order.id)), !route53.orders.length ? /* @__PURE__ */ jsx("div", {
+                style: styles$9.empty,
                 children: "No loads for this filter."
               }) : null]
             })]
-          }, route50.id)), !visibleRouteOrders.length ? /* @__PURE__ */ jsx("div", {
-            style: styles$8.empty,
+          }, route53.id)), !visibleRouteOrders.length ? /* @__PURE__ */ jsx("div", {
+            style: styles$9.empty,
             children: "No active routes yet."
           }) : null]
         })]
       }), /* @__PURE__ */ jsxs("section", {
-        style: styles$8.mapSide,
+        style: styles$9.mapSide,
         children: [/* @__PURE__ */ jsx("div", {
-          style: styles$8.routeLegend,
-          children: activeRoutes.map((route50) => {
-            const hidden = hiddenRouteIds.includes(route50.id);
+          style: styles$9.routeLegend,
+          children: activeRoutes.map((route53) => {
+            const hidden = hiddenRouteIds.includes(route53.id);
             return /* @__PURE__ */ jsxs("button", {
               type: "button",
-              onClick: () => toggleRoute(route50.id),
-              style: hidden ? styles$8.routeButtonHidden : styles$8.routeButton,
+              onClick: () => toggleRoute(route53.id),
+              style: hidden ? styles$9.routeButtonHidden : styles$9.routeButton,
               children: [/* @__PURE__ */ jsx("span", {
                 style: {
-                  ...styles$8.routeDot,
-                  background: route50.color || "#f97316"
+                  ...styles$9.routeDot,
+                  background: route53.color || "#f97316"
                 }
-              }), route50.code, " ", route50.truck || ""]
-            }, route50.id);
+              }), route53.code, " ", route53.truck || ""]
+            }, route53.id);
           })
         }), /* @__PURE__ */ jsx(MonitorMap, {
           googleMapsApiKey,
@@ -15657,7 +15791,7 @@ const navBase$2 = {
   padding: "14px 16px",
   textDecoration: "none"
 };
-const styles$8 = {
+const styles$9 = {
   page: {
     minHeight: "100vh",
     display: "flex",
@@ -16009,12 +16143,405 @@ const styles$8 = {
 };
 const route6 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$k,
+  action: action$m,
   default: monitor,
-  loader: loader$h
+  loader: loader$j
 }, Symbol.toStringTag, { value: "Module" }));
-const loader$g = loader$j;
-const action$j = action$m;
+async function loader$i({
+  request
+}) {
+  const currentUser = await requireUserPermission(request, "loader");
+  const notifications = await listLoaderNotifications(currentUser, 30);
+  return data({
+    currentUser,
+    notifications,
+    supabaseUrl: process.env.SUPABASE_URL || "",
+    supabaseAnonKey: process.env.SUPABASE_ANON_KEY || ""
+  });
+}
+async function action$l({
+  request
+}) {
+  const currentUser = await requireUserPermission(request, "loader");
+  const form = await request.formData();
+  const intent = String(form.get("intent") || "");
+  if (intent === "mark-read") {
+    await markLoaderNotificationRead(String(form.get("id") || ""), currentUser);
+    const notifications = await listLoaderNotifications(currentUser, 30);
+    return data({
+      ok: true,
+      message: "Marked loaded.",
+      notifications
+    });
+  }
+  return data({
+    ok: false,
+    message: "Unknown loader action."
+  }, {
+    status: 400
+  });
+}
+function formatTime(value) {
+  if (!value) return "";
+  return new Date(value).toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
+const loader_default = UNSAFE_withComponentProps(function LoaderPage() {
+  var _a2;
+  const loaderData = useLoaderData();
+  const actionData = useActionData();
+  const [notifications, setNotifications] = useState((actionData == null ? void 0 : actionData.notifications) || loaderData.notifications || []);
+  const lastSeenId = useRef(((_a2 = notifications[0]) == null ? void 0 : _a2.id) || "");
+  const currentUser = loaderData.currentUser;
+  const newest = notifications[0] || null;
+  const unread = notifications.filter((notification) => notification.status === "unread");
+  const history = notifications.filter((notification) => notification.status === "read");
+  const canUseRealtime = Boolean(loaderData.supabaseUrl && loaderData.supabaseAnonKey);
+  useEffect(() => {
+    if (actionData == null ? void 0 : actionData.notifications) setNotifications(actionData.notifications);
+  }, [actionData]);
+  useEffect(() => {
+    async function refreshNotifications() {
+      try {
+        const response = await fetch("/api/loader-notifications");
+        const result = await response.json();
+        if (response.ok && (result == null ? void 0 : result.notifications)) {
+          setNotifications(result.notifications);
+        }
+      } catch {
+      }
+    }
+    const timer = window.setInterval(refreshNotifications, 1e4);
+    return () => window.clearInterval(timer);
+  }, []);
+  useEffect(() => {
+    if (!canUseRealtime) return;
+    const client = createClient(loaderData.supabaseUrl, loaderData.supabaseAnonKey);
+    const channel = client.channel("loader-notifications").on("postgres_changes", {
+      event: "INSERT",
+      schema: "public",
+      table: "dispatch_notifications",
+      filter: "target_role=eq.loader"
+    }, () => {
+      void fetch("/api/loader-notifications").then((response) => response.json()).then((result) => {
+        if (result == null ? void 0 : result.notifications) setNotifications(result.notifications);
+      }).catch(() => null);
+    }).subscribe();
+    return () => {
+      void client.removeChannel(channel);
+    };
+  }, [canUseRealtime, loaderData.supabaseAnonKey, loaderData.supabaseUrl]);
+  useEffect(() => {
+    var _a3;
+    const newestId = ((_a3 = notifications[0]) == null ? void 0 : _a3.id) || "";
+    if (!newestId || newestId === lastSeenId.current) return;
+    lastSeenId.current = newestId;
+    document.title = "New load ready";
+    window.setTimeout(() => {
+      document.title = "Loader";
+    }, 5e3);
+  }, [notifications]);
+  const connectionLabel = useMemo(() => canUseRealtime ? "Live + polling backup" : "Polling every 10 seconds", [canUseRealtime]);
+  return /* @__PURE__ */ jsx("main", {
+    style: styles$8.page,
+    children: /* @__PURE__ */ jsxs("section", {
+      style: styles$8.shell,
+      children: [/* @__PURE__ */ jsxs("header", {
+        style: styles$8.header,
+        children: [/* @__PURE__ */ jsxs("div", {
+          children: [/* @__PURE__ */ jsx("p", {
+            style: styles$8.kicker,
+            children: "Loader Mode"
+          }), /* @__PURE__ */ jsx("h1", {
+            style: styles$8.title,
+            children: "What to Load Next"
+          }), /* @__PURE__ */ jsxs("p", {
+            style: styles$8.subtitle,
+            children: ["Signed in as ", currentUser.name || currentUser.email, ". ", connectionLabel, "."]
+          })]
+        }), /* @__PURE__ */ jsxs("nav", {
+          style: styles$8.nav,
+          children: [/* @__PURE__ */ jsx(Link, {
+            to: "/classic",
+            style: styles$8.navButton,
+            children: "Dispatch"
+          }), /* @__PURE__ */ jsx(Link, {
+            to: "/login?logout=1",
+            style: styles$8.navButton,
+            children: "Log Out"
+          })]
+        })]
+      }), (actionData == null ? void 0 : actionData.message) ? /* @__PURE__ */ jsx("div", {
+        style: actionData.ok ? styles$8.success : styles$8.error,
+        children: actionData.message
+      }) : null, /* @__PURE__ */ jsxs("section", {
+        style: styles$8.hero,
+        children: [/* @__PURE__ */ jsxs("div", {
+          children: [/* @__PURE__ */ jsx("p", {
+            style: styles$8.heroLabel,
+            children: "Current Load"
+          }), /* @__PURE__ */ jsx("h2", {
+            style: styles$8.heroTitle,
+            children: (newest == null ? void 0 : newest.title) || "Waiting for dispatch"
+          }), /* @__PURE__ */ jsx("p", {
+            style: styles$8.heroMessage,
+            children: (newest == null ? void 0 : newest.message) || "When dispatch sends the next load, it will show up here."
+          }), newest ? /* @__PURE__ */ jsxs("p", {
+            style: styles$8.heroTime,
+            children: ["Sent ", formatTime(newest.createdAt)]
+          }) : null]
+        }), newest && newest.status === "unread" ? /* @__PURE__ */ jsxs(Form, {
+          method: "post",
+          style: styles$8.heroAction,
+          children: [/* @__PURE__ */ jsx("input", {
+            type: "hidden",
+            name: "intent",
+            value: "mark-read"
+          }), /* @__PURE__ */ jsx("input", {
+            type: "hidden",
+            name: "id",
+            value: newest.id
+          }), /* @__PURE__ */ jsx("button", {
+            type: "submit",
+            style: styles$8.primaryButton,
+            children: "Mark Loaded"
+          })]
+        }) : null]
+      }), /* @__PURE__ */ jsxs("div", {
+        style: styles$8.grid,
+        children: [/* @__PURE__ */ jsxs("section", {
+          style: styles$8.panel,
+          children: [/* @__PURE__ */ jsx("h2", {
+            style: styles$8.panelTitle,
+            children: "Unread"
+          }), /* @__PURE__ */ jsxs("div", {
+            style: styles$8.list,
+            children: [unread.map((notification) => /* @__PURE__ */ jsx(NotificationCard, {
+              notification
+            }, notification.id)), !unread.length ? /* @__PURE__ */ jsx("p", {
+              style: styles$8.empty,
+              children: "No waiting loads."
+            }) : null]
+          })]
+        }), /* @__PURE__ */ jsxs("section", {
+          style: styles$8.panel,
+          children: [/* @__PURE__ */ jsx("h2", {
+            style: styles$8.panelTitle,
+            children: "Loaded History"
+          }), /* @__PURE__ */ jsxs("div", {
+            style: styles$8.list,
+            children: [history.slice(0, 10).map((notification) => /* @__PURE__ */ jsx(NotificationCard, {
+              notification
+            }, notification.id)), !history.length ? /* @__PURE__ */ jsx("p", {
+              style: styles$8.empty,
+              children: "Loaded confirmations will show here."
+            }) : null]
+          })]
+        })]
+      })]
+    })
+  });
+});
+function NotificationCard({
+  notification
+}) {
+  return /* @__PURE__ */ jsxs("article", {
+    style: styles$8.card,
+    children: [/* @__PURE__ */ jsxs("div", {
+      children: [/* @__PURE__ */ jsx("strong", {
+        children: notification.title
+      }), /* @__PURE__ */ jsx("p", {
+        children: notification.message
+      }), /* @__PURE__ */ jsx("small", {
+        children: formatTime(notification.createdAt)
+      })]
+    }), notification.status === "unread" ? /* @__PURE__ */ jsxs(Form, {
+      method: "post",
+      children: [/* @__PURE__ */ jsx("input", {
+        type: "hidden",
+        name: "intent",
+        value: "mark-read"
+      }), /* @__PURE__ */ jsx("input", {
+        type: "hidden",
+        name: "id",
+        value: notification.id
+      }), /* @__PURE__ */ jsx("button", {
+        type: "submit",
+        style: styles$8.smallButton,
+        children: "Loaded"
+      })]
+    }) : /* @__PURE__ */ jsx("span", {
+      style: styles$8.readPill,
+      children: "Loaded"
+    })]
+  });
+}
+const styles$8 = {
+  page: {
+    minHeight: "100vh",
+    background: "#020617",
+    color: "#e5e7eb",
+    fontFamily: "'Arial Rounded MT Bold', Arial, sans-serif",
+    padding: 20
+  },
+  shell: {
+    maxWidth: 1180,
+    margin: "0 auto",
+    display: "grid",
+    gap: 18
+  },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 20,
+    alignItems: "center",
+    background: "#0f172a",
+    border: "1px solid #1e293b",
+    borderRadius: 22,
+    padding: 24
+  },
+  kicker: {
+    margin: 0,
+    color: "#38bdf8",
+    textTransform: "uppercase",
+    letterSpacing: 3,
+    fontSize: 13
+  },
+  title: {
+    margin: "6px 0",
+    fontSize: 38
+  },
+  subtitle: {
+    margin: 0,
+    color: "#94a3b8"
+  },
+  nav: {
+    display: "flex",
+    gap: 10,
+    flexWrap: "wrap"
+  },
+  navButton: {
+    color: "#e5e7eb",
+    textDecoration: "none",
+    border: "1px solid #334155",
+    borderRadius: 999,
+    padding: "10px 14px"
+  },
+  success: {
+    background: "#052e16",
+    border: "1px solid #16a34a",
+    borderRadius: 14,
+    padding: 12
+  },
+  error: {
+    background: "#450a0a",
+    border: "1px solid #dc2626",
+    borderRadius: 14,
+    padding: 12
+  },
+  hero: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 22,
+    alignItems: "center",
+    background: "linear-gradient(135deg, #0ea5e9, #22c55e)",
+    color: "#00111d",
+    borderRadius: 28,
+    padding: 30,
+    boxShadow: "0 28px 80px rgba(14, 165, 233, 0.18)"
+  },
+  heroLabel: {
+    margin: 0,
+    textTransform: "uppercase",
+    letterSpacing: 3,
+    fontSize: 13,
+    opacity: 0.72
+  },
+  heroTitle: {
+    margin: "8px 0",
+    fontSize: 46
+  },
+  heroMessage: {
+    margin: 0,
+    fontSize: 23,
+    lineHeight: 1.3
+  },
+  heroTime: {
+    marginBottom: 0,
+    opacity: 0.75
+  },
+  heroAction: {
+    minWidth: 220
+  },
+  primaryButton: {
+    width: "100%",
+    border: 0,
+    borderRadius: 18,
+    padding: "18px 22px",
+    fontWeight: 900,
+    fontSize: 18,
+    background: "#020617",
+    color: "#fff"
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 18
+  },
+  panel: {
+    background: "#0f172a",
+    border: "1px solid #1e293b",
+    borderRadius: 22,
+    padding: 20
+  },
+  panelTitle: {
+    marginTop: 0
+  },
+  list: {
+    display: "grid",
+    gap: 12
+  },
+  card: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 12,
+    alignItems: "center",
+    background: "#020617",
+    border: "1px solid #334155",
+    borderRadius: 18,
+    padding: 16
+  },
+  smallButton: {
+    border: 0,
+    borderRadius: 12,
+    padding: "10px 14px",
+    fontWeight: 900,
+    background: "#22c55e",
+    color: "#052e16"
+  },
+  readPill: {
+    borderRadius: 999,
+    padding: "8px 12px",
+    background: "#052e16",
+    color: "#86efac",
+    fontSize: 12,
+    fontWeight: 900,
+    textTransform: "uppercase"
+  },
+  empty: {
+    color: "#94a3b8"
+  }
+};
+const route7 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  action: action$l,
+  default: loader_default,
+  loader: loader$i
+}, Symbol.toStringTag, { value: "Module" }));
+const loader$h = loader$l;
+const action$k = action$o;
 const DISPATCH_NAV_COLLAPSED_KEY$1 = "dispatchNavCollapsed";
 const monthNames$1 = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 function parseRequestedDate$3(value) {
@@ -17044,14 +17571,14 @@ const styles$7 = {
     padding: 12
   }
 };
-const route7 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route8 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$j,
+  action: action$k,
   default: calendar,
-  loader: loader$g
+  loader: loader$h
 }, Symbol.toStringTag, { value: "Module" }));
-const loader$f = loader$j;
-const action$i = action$m;
+const loader$g = loader$l;
+const action$j = action$o;
 const DISPATCH_NAV_COLLAPSED_KEY = "dispatchNavCollapsed";
 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 function parseRequestedDate$2(value) {
@@ -17852,11 +18379,11 @@ const styles$6 = {
     padding: 12
   }
 };
-const route8 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route9 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$i,
+  action: action$j,
   default: allotment,
-  loader: loader$f
+  loader: loader$g
 }, Symbol.toStringTag, { value: "Module" }));
 function isAuthorized$2(request, params) {
   const expected = process.env.DISPATCH_CALENDAR_FEED_SECRET || process.env.DISPATCH_POLL_SECRET || "";
@@ -17944,7 +18471,7 @@ function shouldIncludeInCalendarFeed$1(order) {
   const status = getOrderStatus$1(order);
   return status !== "Delivered" && status !== "Cancelled";
 }
-async function loader$e({
+async function loader$f({
   request,
   params
 }) {
@@ -17985,13 +18512,13 @@ async function loader$e({
     }
   });
 }
-const route9 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-  __proto__: null,
-  loader: loader$e
-}, Symbol.toStringTag, { value: "Module" }));
 const route10 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  loader: loader$e
+  loader: loader$f
+}, Symbol.toStringTag, { value: "Module" }));
+const route11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  loader: loader$f
 }, Symbol.toStringTag, { value: "Module" }));
 function isAuthorized$1(request) {
   const expected = process.env.DISPATCH_CALENDAR_FEED_SECRET || process.env.DISPATCH_POLL_SECRET || "";
@@ -18071,7 +18598,7 @@ function shouldIncludeInCalendarFeed(order) {
   const status = getOrderStatus(order);
   return status !== "Delivered" && status !== "Cancelled";
 }
-async function loader$d({
+async function loader$e({
   request
 }) {
   if (!isAuthorized$1(request)) {
@@ -18125,9 +18652,9 @@ async function loader$d({
     }
   });
 }
-const route11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route12 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  loader: loader$d
+  loader: loader$e
 }, Symbol.toStringTag, { value: "Module" }));
 function getDriverPath(url) {
   return url.pathname.startsWith("/app/") ? "/app/dispatch/driver" : "/dispatch/driver";
@@ -18173,10 +18700,10 @@ function getCustomerEtaText(order) {
 }
 function buildEnrouteSmsPreview({
   order,
-  route: route50
+  route: route53
 }) {
   const to = extractPhone(order.contact);
-  const body = [`Green Hills Supply: your delivery is en route and should arrive in about ${getCustomerEtaText(order)}.`, (route50 == null ? void 0 : route50.truck) ? `Truck: ${route50.truck}.` : "", "Please make sure the drop area is clear."].filter(Boolean).join(" ");
+  const body = [`Green Hills Supply: your delivery is en route and should arrive in about ${getCustomerEtaText(order)}.`, (route53 == null ? void 0 : route53.truck) ? `Truck: ${route53.truck}.` : "", "Please make sure the drop area is clear."].filter(Boolean).join(" ");
   return {
     to,
     body,
@@ -18236,7 +18763,7 @@ async function loadDriverState() {
     };
   }
 }
-async function loader$c({
+async function loader$d({
   request
 }) {
   const url = new URL(request.url);
@@ -18265,7 +18792,7 @@ async function loader$c({
     ...await loadDriverState()
   });
 }
-async function action$h({
+async function action$i({
   request
 }) {
   const form = await request.formData();
@@ -18332,7 +18859,7 @@ async function action$h({
   const now = (/* @__PURE__ */ new Date()).toISOString();
   const currentState = await loadDriverState();
   const currentOrder = currentState.orders.find((order) => order.id === orderId) || null;
-  const currentRoute = currentState.routes.find((route50) => route50.id === (routeId || (currentOrder == null ? void 0 : currentOrder.assignedRouteId))) || null;
+  const currentRoute = currentState.routes.find((route53) => route53.id === (routeId || (currentOrder == null ? void 0 : currentOrder.assignedRouteId))) || null;
   const patch = {
     deliveryStatus,
     proofName: String(form.get("proofName") || "").trim() || null,
@@ -18398,7 +18925,7 @@ const dispatchDriver = UNSAFE_withComponentProps(function DispatchDriverPage() {
   const [nowMs, setNowMs] = useState(() => Date.now());
   const searchParams = new URLSearchParams(location.search);
   const selectedRouteId = (actionData == null ? void 0 : actionData.selectedRouteId) || searchParams.get("route") || ((_a2 = routes2[0]) == null ? void 0 : _a2.id) || "";
-  const selectedRoute = routes2.find((route50) => route50.id === selectedRouteId) || routes2[0] || null;
+  const selectedRoute = routes2.find((route53) => route53.id === selectedRouteId) || routes2[0] || null;
   const routeStops = useMemo(() => selectedRoute ? orders.filter((order) => order.assignedRouteId === selectedRoute.id && order.status !== "delivered" && order.deliveryStatus !== "delivered").sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999)) : [], [orders, selectedRoute]);
   const completedCount = routeStops.filter((stop) => stop.deliveryStatus === "delivered").length;
   const visibleStopCount = routeStops.reduce((count, stop, index) => {
@@ -18501,24 +19028,24 @@ const dispatchDriver = UNSAFE_withComponentProps(function DispatchDriverPage() {
         children: actionData.message
       }) : null, /* @__PURE__ */ jsx("section", {
         style: styles$5.routePicker,
-        children: routes2.map((route50) => /* @__PURE__ */ jsxs("a", {
-          href: `${driverHref}?route=${encodeURIComponent(route50.id)}`,
+        children: routes2.map((route53) => /* @__PURE__ */ jsxs("a", {
+          href: `${driverHref}?route=${encodeURIComponent(route53.id)}`,
           style: {
             ...styles$5.routeChip,
-            borderColor: route50.id === (selectedRoute == null ? void 0 : selectedRoute.id) ? route50.color : "rgba(203, 213, 225, 0.28)",
-            background: route50.id === (selectedRoute == null ? void 0 : selectedRoute.id) ? `${route50.color}22` : "#0f172a"
+            borderColor: route53.id === (selectedRoute == null ? void 0 : selectedRoute.id) ? route53.color : "rgba(203, 213, 225, 0.28)",
+            background: route53.id === (selectedRoute == null ? void 0 : selectedRoute.id) ? `${route53.color}22` : "#0f172a"
           },
           children: [/* @__PURE__ */ jsx("span", {
             style: {
               ...styles$5.routeDot,
-              background: route50.color
+              background: route53.color
             }
           }), /* @__PURE__ */ jsx("span", {
-            children: route50.code
+            children: route53.code
           }), /* @__PURE__ */ jsx("small", {
-            children: route50.truck
+            children: route53.truck
           })]
-        }, route50.id))
+        }, route53.id))
       }), /* @__PURE__ */ jsxs("section", {
         style: styles$5.summaryGrid,
         children: [/* @__PURE__ */ jsxs("div", {
@@ -18664,7 +19191,7 @@ const dispatchDriver = UNSAFE_withComponentProps(function DispatchDriverPage() {
   });
 });
 function DriverLiveTracking({
-  route: route50,
+  route: route53,
   activeStop
 }) {
   const [trackingEnabled, setTrackingEnabled] = useState(() => {
@@ -18700,11 +19227,11 @@ function DriverLiveTracking({
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            routeId: route50.id,
+            routeId: route53.id,
             orderId: (activeStop == null ? void 0 : activeStop.id) || null,
-            driverId: route50.driverId || null,
-            driverName: route50.driver || "",
-            truck: route50.truck || route50.code,
+            driverId: route53.driverId || null,
+            driverName: route53.driver || "",
+            truck: route53.truck || route53.code,
             latitude,
             longitude,
             accuracy,
@@ -18743,7 +19270,7 @@ function DriverLiveTracking({
       cancelled = true;
       navigator.geolocation.clearWatch(watchId);
     };
-  }, [activeStop == null ? void 0 : activeStop.id, route50.code, route50.driver, route50.driverId, route50.id, route50.truck, trackingEnabled]);
+  }, [activeStop == null ? void 0 : activeStop.id, route53.code, route53.driver, route53.driverId, route53.id, route53.truck, trackingEnabled]);
   function enableTracking() {
     if (!navigator.geolocation) {
       setTrackingStatus("Live GPS is not available on this device.");
@@ -19486,11 +20013,11 @@ const styles$5 = {
     textAlign: "center"
   }
 };
-const route12 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route13 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$h,
+  action: action$i,
   default: dispatchDriver,
-  loader: loader$c
+  loader: loader$d
 }, Symbol.toStringTag, { value: "Module" }));
 function getDetailPath(url) {
   return url.pathname.startsWith("/app/") ? "/app/dispatch/driver/detail" : "/dispatch/driver/detail";
@@ -19519,7 +20046,7 @@ async function loadOrder(orderId) {
   const orders = await getDispatchOrders();
   return orders.find((order) => order.id === orderId) || null;
 }
-async function loader$b({
+async function loader$c({
   request
 }) {
   const url = new URL(request.url);
@@ -19784,10 +20311,10 @@ const styles$4 = {
     border: "1px solid #cbd5e1"
   }
 };
-const route13 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route14 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: dispatchDriverDetail,
-  loader: loader$b
+  loader: loader$c
 }, Symbol.toStringTag, { value: "Module" }));
 function formatMoney(cents) {
   return `$${(Number(cents || 0) / 100).toFixed(2)}`;
@@ -19951,7 +20478,7 @@ function navIconStyle(active) {
     lineHeight: 1
   };
 }
-async function loader$a({
+async function loader$b({
   request
 }) {
   const url = new URL(request.url);
@@ -19973,7 +20500,7 @@ async function loader$a({
     recentQuotes
   });
 }
-async function action$g({
+async function action$h({
   request
 }) {
   const form = await request.formData();
@@ -20250,13 +20777,13 @@ const mobileDashboard = UNSAFE_withComponentProps(function MobileDashboardPage()
     })]
   });
 });
-const route14 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route15 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$g,
+  action: action$h,
   default: mobileDashboard,
-  loader: loader$a
+  loader: loader$b
 }, Symbol.toStringTag, { value: "Module" }));
-async function loader$9({
+async function loader$a({
   request
 }) {
   const url = new URL(request.url);
@@ -20276,7 +20803,7 @@ async function loader$9({
     next
   });
 }
-async function action$f({
+async function action$g({
   request
 }) {
   const form = await request.formData();
@@ -20470,13 +20997,13 @@ const styles$2 = {
     textDecoration: "none"
   }
 };
-const route15 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route16 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$f,
+  action: action$g,
   default: login,
-  loader: loader$9
+  loader: loader$a
 }, Symbol.toStringTag, { value: "Module" }));
-async function loader$8({
+async function loader$9({
   request
 }) {
   const url = new URL(request.url);
@@ -20489,7 +21016,7 @@ async function loader$8({
     next: url.searchParams.get("next") || "/custom-quote"
   });
 }
-async function action$e({
+async function action$f({
   request
 }) {
   const form = await request.formData();
@@ -20688,13 +21215,13 @@ const styles$1 = {
     textDecoration: "none"
   }
 };
-const route16 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route17 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$e,
+  action: action$f,
   default: changePassword,
-  loader: loader$8
+  loader: loader$9
 }, Symbol.toStringTag, { value: "Module" }));
-async function loader$7({
+async function loader$8({
   request
 }) {
   const currentUser = await requireUserPermission(request, "manageUsers");
@@ -20709,7 +21236,7 @@ async function loader$7({
     classicColumnOptions
   });
 }
-async function action$d({
+async function action$e({
   request
 }) {
   const currentUser = await requireUserPermission(request, "manageUsers");
@@ -21107,6 +21634,9 @@ function RoleSelect({
         value: "driver",
         children: "Driver"
       }), /* @__PURE__ */ jsx("option", {
+        value: "loader",
+        children: "Loader"
+      }), /* @__PURE__ */ jsx("option", {
         value: "sales",
         children: "Sales"
       }), /* @__PURE__ */ jsx("option", {
@@ -21396,11 +21926,11 @@ const styles = {
     whiteSpace: "pre-wrap"
   }
 };
-const route17 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route18 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$d,
+  action: action$e,
   default: settings,
-  loader: loader$7
+  loader: loader$8
 }, Symbol.toStringTag, { value: "Module" }));
 function loginErrorMessage(loginErrors) {
   if ((loginErrors == null ? void 0 : loginErrors.shop) === LoginErrorType.MissingShop) {
@@ -21410,7 +21940,7 @@ function loginErrorMessage(loginErrors) {
   }
   return {};
 }
-const loader$6 = async ({
+const loader$7 = async ({
   request
 }) => {
   const url = new URL(request.url);
@@ -21421,7 +21951,7 @@ const loader$6 = async ({
     shop
   };
 };
-const action$c = async ({
+const action$d = async ({
   request
 }) => {
   const errors = loginErrorMessage(await login$1(request));
@@ -21460,13 +21990,13 @@ const route = UNSAFE_withComponentProps(function Auth() {
     })
   });
 });
-const route18 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route19 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$c,
+  action: action$d,
   default: route,
-  loader: loader$6
+  loader: loader$7
 }, Symbol.toStringTag, { value: "Module" }));
-async function loader$5({
+async function loader$6({
   request
 }) {
   await authenticate.admin(request);
@@ -21475,12 +22005,12 @@ async function loader$5({
 const auth_$ = UNSAFE_withComponentProps(function AuthCatchAll() {
   return null;
 });
-const route19 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route20 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: auth_$,
-  loader: loader$5
+  loader: loader$6
 }, Symbol.toStringTag, { value: "Module" }));
-async function loader$4({
+async function loader$5({
   request
 }) {
   const {
@@ -21672,12 +22202,12 @@ const app = UNSAFE_withComponentProps(function AppLayout() {
     })]
   });
 });
-const route20 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route21 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   ErrorBoundary,
   default: app,
   headers,
-  loader: loader$4
+  loader: loader$5
 }, Symbol.toStringTag, { value: "Module" }));
 const CARRIER_NAME = "GHS Shipping Calc";
 const LIST_CARRIER_SERVICES = `#graphql
@@ -21824,7 +22354,7 @@ async function registerCarrierService(admin) {
     };
   }
 }
-async function loader$3({
+async function loader$4({
   request
 }) {
   const {
@@ -21837,7 +22367,7 @@ async function loader$3({
     settings: settings2
   });
 }
-async function action$b({
+async function action$c({
   request
 }) {
   const {
@@ -21968,11 +22498,11 @@ const app__index = UNSAFE_withComponentProps(function AppIndex() {
     })]
   });
 });
-const route21 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route22 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$b,
+  action: action$c,
   default: app__index,
-  loader: loader$3
+  loader: loader$4
 }, Symbol.toStringTag, { value: "Module" }));
 async function getOriginAddresses() {
   const { data: data2, error } = await supabaseAdmin.from("origin_addresses").select("id, label, address, is_active").order("label", { ascending: true });
@@ -22021,7 +22551,7 @@ async function saveShippingMaterialRule(row) {
   }
   return data2;
 }
-async function loader$2({
+async function loader$3({
   request
 }) {
   await authenticate.admin(request);
@@ -22031,7 +22561,7 @@ async function loader$2({
     rules
   });
 }
-async function action$a({
+async function action$b({
   request
 }) {
   await authenticate.admin(request);
@@ -22441,11 +22971,11 @@ const app_admin = UNSAFE_withComponentProps(function AdminPage() {
     })]
   });
 });
-const route22 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route23 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$a,
+  action: action$b,
   default: app_admin,
-  loader: loader$2
+  loader: loader$3
 }, Symbol.toStringTag, { value: "Module" }));
 const app_additional = UNSAFE_withComponentProps(function AdditionalPage() {
   return /* @__PURE__ */ jsxs("s-page", {
@@ -22482,70 +23012,76 @@ const app_additional = UNSAFE_withComponentProps(function AdditionalPage() {
     })]
   });
 });
-const route23 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route24 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: app_additional
 }, Symbol.toStringTag, { value: "Module" }));
-const route24 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-  __proto__: null,
-  action: action$o,
-  default: customQuote,
-  loader: loader$l
-}, Symbol.toStringTag, { value: "Module" }));
 const route25 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$n,
-  default: quoteReview,
-  loader: loader$k
+  action: action$q,
+  default: customQuote,
+  loader: loader$n
 }, Symbol.toStringTag, { value: "Module" }));
 const route26 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$m,
-  default: dispatch,
-  loader: loader$j
+  action: action$p,
+  default: quoteReview,
+  loader: loader$m
 }, Symbol.toStringTag, { value: "Module" }));
 const route27 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$l,
-  default: classic,
-  loader: loader$i
+  action: action$o,
+  default: dispatch,
+  loader: loader$l
 }, Symbol.toStringTag, { value: "Module" }));
 const route28 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$k,
-  default: monitor,
-  loader: loader$h
+  action: action$n,
+  default: classic,
+  loader: loader$k
 }, Symbol.toStringTag, { value: "Module" }));
 const route29 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$j,
-  default: calendar,
-  loader: loader$g
+  action: action$m,
+  default: monitor,
+  loader: loader$j
 }, Symbol.toStringTag, { value: "Module" }));
 const route30 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$i,
-  default: allotment,
-  loader: loader$f
+  action: action$l,
+  default: loader_default,
+  loader: loader$i
 }, Symbol.toStringTag, { value: "Module" }));
 const route31 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$h,
-  default: dispatchDriver,
-  loader: loader$c
+  action: action$k,
+  default: calendar,
+  loader: loader$h
 }, Symbol.toStringTag, { value: "Module" }));
 const route32 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  default: dispatchDriverDetail,
-  loader: loader$b
+  action: action$j,
+  default: allotment,
+  loader: loader$g
 }, Symbol.toStringTag, { value: "Module" }));
 const route33 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$g,
-  default: mobileDashboard,
-  loader: loader$a
+  action: action$i,
+  default: dispatchDriver,
+  loader: loader$d
 }, Symbol.toStringTag, { value: "Module" }));
-async function action$9({
+const route34 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  default: dispatchDriverDetail,
+  loader: loader$c
+}, Symbol.toStringTag, { value: "Module" }));
+const route35 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  action: action$h,
+  default: mobileDashboard,
+  loader: loader$b
+}, Symbol.toStringTag, { value: "Module" }));
+async function action$a({
   request
 }) {
   const body = await request.json();
@@ -22585,11 +23121,11 @@ async function action$9({
     outsideDeliveryPhone: quote.outsideDeliveryPhone ?? "(262) 345-4001"
   });
 }
-const route34 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route36 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$9
+  action: action$a
 }, Symbol.toStringTag, { value: "Module" }));
-async function action$8({
+async function action$9({
   request
 }) {
   const url = new URL(request.url);
@@ -22643,11 +23179,11 @@ async function action$8({
     }]
   });
 }
-const route35 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route37 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$8
+  action: action$9
 }, Symbol.toStringTag, { value: "Module" }));
-async function action$7({
+async function action$8({
   request
 }) {
   const {
@@ -22673,9 +23209,9 @@ async function action$7({
     });
   }
 }
-const route36 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route38 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$7
+  action: action$8
 }, Symbol.toStringTag, { value: "Module" }));
 const SHOPIFY_TITLE_LIMIT = 40;
 function getStoreHandle(shop) {
@@ -22761,7 +23297,7 @@ async function findOrCreateCustomerId(admin, input) {
   }
   return ((_i = (_h = (_g = createJson == null ? void 0 : createJson.data) == null ? void 0 : _g.customerCreate) == null ? void 0 : _h.customer) == null ? void 0 : _i.id) || null;
 }
-async function action$6({
+async function action$7({
   request
 }) {
   var _a2;
@@ -22953,15 +23489,15 @@ async function action$6({
     draftOrderAdminUrl: draftOrder.legacyResourceId ? `https://admin.shopify.com/store/${getStoreHandle(shop)}/draft_orders/${draftOrder.legacyResourceId}` : null
   });
 }
-const route44 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route47 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$6
+  action: action$7
 }, Symbol.toStringTag, { value: "Module" }));
-const route37 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route39 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$6
+  action: action$7
 }, Symbol.toStringTag, { value: "Module" }));
-async function action$5({
+async function action$6({
   request
 }) {
   const url = new URL(request.url);
@@ -23005,13 +23541,13 @@ async function action$5({
     deletedQuoteId: quoteId
   });
 }
-const route45 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route48 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$5
+  action: action$6
 }, Symbol.toStringTag, { value: "Module" }));
-const route38 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route40 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$5
+  action: action$6
 }, Symbol.toStringTag, { value: "Module" }));
 function normalizeQuantity(value) {
   const quantity = Number(value || 0);
@@ -23032,7 +23568,7 @@ function buildSourceBreakdown(lineItems) {
   }
   return Array.from(grouped.values());
 }
-async function action$4({
+async function action$5({
   request
 }) {
   const url = new URL(request.url);
@@ -23144,13 +23680,13 @@ async function action$4({
     quote: updatedQuote
   });
 }
-const route46 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route49 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$4
+  action: action$5
 }, Symbol.toStringTag, { value: "Module" }));
-const route39 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route41 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$4
+  action: action$5
 }, Symbol.toStringTag, { value: "Module" }));
 function isAuthorized(request) {
   const expected = process.env.DISPATCH_POLL_SECRET || "";
@@ -23159,7 +23695,7 @@ function isAuthorized(request) {
   const provided = request.headers.get("x-dispatch-poll-secret") || url.searchParams.get("secret") || "";
   return provided === expected;
 }
-async function loader$1({
+async function loader$2({
   request
 }) {
   if (!isAuthorized(request)) {
@@ -23185,11 +23721,11 @@ async function loader$1({
     });
   }
 }
-const route40 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route42 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  loader: loader$1
+  loader: loader$2
 }, Symbol.toStringTag, { value: "Module" }));
-async function loader({
+async function loader$1({
   request
 }) {
   const allowed = await hasAdminQuotePermissionAccess(request, "dispatch") || await hasAdminQuotePermissionAccess(request, "driver");
@@ -23217,7 +23753,7 @@ async function loader({
     });
   }
 }
-async function action$3({
+async function action$4({
   request
 }) {
   const allowed = await hasAdminQuotePermissionAccess(request, "driver");
@@ -23267,18 +23803,60 @@ async function action$3({
     });
   }
 }
-const route41 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route43 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  action: action$4,
+  loader: loader$1
+}, Symbol.toStringTag, { value: "Module" }));
+async function loader({
+  request
+}) {
+  const currentUser = await requireUserPermission(request, "loader");
+  const notifications = await listLoaderNotifications(currentUser, 30);
+  return data({
+    ok: true,
+    notifications
+  });
+}
+async function action$3({
+  request
+}) {
+  const currentUser = await requireUserPermission(request, "loader");
+  const form = await request.formData();
+  const intent = String(form.get("intent") || "");
+  if (intent === "mark-read") {
+    const id = String(form.get("id") || "");
+    if (!id) return data({
+      ok: false,
+      message: "Notification is required."
+    }, {
+      status: 400
+    });
+    const notification = await markLoaderNotificationRead(id, currentUser);
+    return data({
+      ok: true,
+      notification
+    });
+  }
+  return data({
+    ok: false,
+    message: "Unknown notification action."
+  }, {
+    status: 400
+  });
+}
+const route44 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$3,
   loader
 }, Symbol.toStringTag, { value: "Module" }));
-const route42 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route45 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  action: action$a
+}, Symbol.toStringTag, { value: "Module" }));
+const route46 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$9
-}, Symbol.toStringTag, { value: "Module" }));
-const route43 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-  __proto__: null,
-  action: action$8
 }, Symbol.toStringTag, { value: "Module" }));
 function toVariantGid(variant) {
   if (variant == null ? void 0 : variant.admin_graphql_api_id) return String(variant.admin_graphql_api_id);
@@ -23316,7 +23894,7 @@ async function action$2({
   console.log("[WEBHOOK SYNC]", shop, product.title);
   return new Response();
 }
-const route47 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route50 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$2
 }, Symbol.toStringTag, { value: "Module" }));
@@ -23343,7 +23921,7 @@ const action$1 = async ({
   }
   return new Response();
 };
-const route48 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route51 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$1
 }, Symbol.toStringTag, { value: "Module" }));
@@ -23365,11 +23943,11 @@ const action = async ({
   }
   return new Response();
 };
-const route49 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route52 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action
 }, Symbol.toStringTag, { value: "Module" }));
-const serverManifest = { "entry": { "module": "/assets/entry.client-oNGMiw6i.js", "imports": ["/assets/jsx-runtime-DJxbfBsx.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/root-FaUif2c0.js", "imports": ["/assets/jsx-runtime-DJxbfBsx.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/_index/route": { "id": "routes/_index/route", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-Cmf56Jwf.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/custom-quote": { "id": "routes/custom-quote", "parentId": "root", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/custom-quote-DiOlRPJA.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/quote-review": { "id": "routes/quote-review", "parentId": "root", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/quote-review-BYEZif_z.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch": { "id": "routes/dispatch", "parentId": "root", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-C-VolyLf.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/classic": { "id": "routes/classic", "parentId": "root", "path": "classic", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/classic-DliC71YA.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-DSXwe04k.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/monitor": { "id": "routes/monitor", "parentId": "root", "path": "monitor", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/monitor-D-6D68Te.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar": { "id": "routes/calendar", "parentId": "root", "path": "calendar", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/calendar-D2HhWQqX.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/allotment": { "id": "routes/allotment", "parentId": "root", "path": "allotment", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/allotment-RU0rdK1w.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar.ics": { "id": "routes/calendar.ics", "parentId": "root", "path": "calendar.ics", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar.ics-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar-feed.$secret": { "id": "routes/calendar-feed.$secret", "parentId": "root", "path": "calendar-feed/:secret", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar-feed._secret-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar.rss": { "id": "routes/calendar.rss", "parentId": "root", "path": "calendar.rss", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar.rss-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch-driver": { "id": "routes/dispatch-driver", "parentId": "root", "path": "dispatch/driver", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-driver-CIDh0JOn.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch-driver-detail": { "id": "routes/dispatch-driver-detail", "parentId": "root", "path": "dispatch/driver/detail", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-driver-detail-DVs_f_11.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/mobile-dashboard": { "id": "routes/mobile-dashboard", "parentId": "root", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/mobile-dashboard-Bu62B7DL.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/login": { "id": "routes/login", "parentId": "root", "path": "login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/login-BLokXFd3.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/change-password": { "id": "routes/change-password", "parentId": "root", "path": "change-password", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/change-password-DNG9C_4s.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/settings": { "id": "routes/settings", "parentId": "root", "path": "settings", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/settings-BY88IaXo.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-DSXwe04k.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.login/route": { "id": "routes/auth.login/route", "parentId": "root", "path": "auth/login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-CG8tQ2tr.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.$": { "id": "routes/auth.$", "parentId": "root", "path": "auth/*", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/auth._-p3tFrFib.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app": { "id": "routes/app", "parentId": "root", "path": "app", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": true, "module": "/assets/app--bd_F85Q.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app._index": { "id": "routes/app._index", "parentId": "routes/app", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app._index-BoDF1DO_.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.admin": { "id": "routes/app.admin", "parentId": "routes/app", "path": "admin", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.admin-CW6O1zQ4.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.additional": { "id": "routes/app.additional", "parentId": "routes/app", "path": "additional", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.additional-CCXuFT6z.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.custom-quote": { "id": "routes/app.custom-quote", "parentId": "routes/app", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.custom-quote-eC0hOSjc.js", "imports": ["/assets/custom-quote-DiOlRPJA.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.quote-review": { "id": "routes/app.quote-review", "parentId": "routes/app", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.quote-review-su2sDfLQ.js", "imports": ["/assets/quote-review-BYEZif_z.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch": { "id": "routes/app.dispatch", "parentId": "routes/app", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-Bp3hEIgg.js", "imports": ["/assets/dispatch-C-VolyLf.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.classic": { "id": "routes/app.classic", "parentId": "routes/app", "path": "classic", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.classic-Ixa9bCmp.js", "imports": ["/assets/classic-DliC71YA.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-DSXwe04k.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.monitor": { "id": "routes/app.monitor", "parentId": "routes/app", "path": "monitor", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.monitor-CCjPg_Q9.js", "imports": ["/assets/monitor-D-6D68Te.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.calendar": { "id": "routes/app.calendar", "parentId": "routes/app", "path": "calendar", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.calendar-CoNgeiv8.js", "imports": ["/assets/calendar-D2HhWQqX.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.allotment": { "id": "routes/app.allotment", "parentId": "routes/app", "path": "allotment", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.allotment-sQBbhOPn.js", "imports": ["/assets/allotment-RU0rdK1w.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch-driver": { "id": "routes/app.dispatch-driver", "parentId": "routes/app", "path": "dispatch/driver", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-driver-BMLjcSx6.js", "imports": ["/assets/dispatch-driver-CIDh0JOn.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch-driver-detail": { "id": "routes/app.dispatch-driver-detail", "parentId": "routes/app", "path": "dispatch/driver/detail", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-driver-detail-CcJGmFUW.js", "imports": ["/assets/dispatch-driver-detail-DVs_f_11.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.mobile": { "id": "routes/app.mobile", "parentId": "routes/app", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.mobile-B7VYsfmU.js", "imports": ["/assets/mobile-dashboard-Bu62B7DL.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.shipping-estimate": { "id": "routes/api.shipping-estimate", "parentId": "root", "path": "api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.carrier-service": { "id": "routes/api.carrier-service", "parentId": "root", "path": "api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.sync-products": { "id": "routes/api.sync-products", "parentId": "root", "path": "api/sync-products", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.sync-products-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.create-draft-order": { "id": "routes/api.create-draft-order", "parentId": "root", "path": "api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.delete-quote": { "id": "routes/api.delete-quote", "parentId": "root", "path": "api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.update-quote": { "id": "routes/api.update-quote", "parentId": "root", "path": "api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.dispatch-poll-mailbox": { "id": "routes/api.dispatch-poll-mailbox", "parentId": "root", "path": "api/dispatch-poll-mailbox", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.dispatch-poll-mailbox-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.dispatch-driver-location": { "id": "routes/api.dispatch-driver-location", "parentId": "root", "path": "api/dispatch-driver-location", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.dispatch-driver-location-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.shipping-estimate": { "id": "routes/app.api.shipping-estimate", "parentId": "root", "path": "app/api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.carrier-service": { "id": "routes/app.api.carrier-service", "parentId": "root", "path": "app/api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.create-draft-order": { "id": "routes/app.api.create-draft-order", "parentId": "root", "path": "app/api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.delete-quote": { "id": "routes/app.api.delete-quote", "parentId": "root", "path": "app/api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.update-quote": { "id": "routes/app.api.update-quote", "parentId": "root", "path": "app/api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.products.update": { "id": "routes/webhooks.products.update", "parentId": "root", "path": "webhooks/products/update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.products.update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.scopes_update": { "id": "routes/webhooks.app.scopes_update", "parentId": "root", "path": "webhooks/app/scopes_update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.scopes_update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.uninstalled": { "id": "routes/webhooks.app.uninstalled", "parentId": "root", "path": "webhooks/app/uninstalled", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.uninstalled-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-780f3c7e.js", "version": "780f3c7e", "sri": void 0 };
+const serverManifest = { "entry": { "module": "/assets/entry.client-oNGMiw6i.js", "imports": ["/assets/jsx-runtime-DJxbfBsx.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/root-FaUif2c0.js", "imports": ["/assets/jsx-runtime-DJxbfBsx.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/_index/route": { "id": "routes/_index/route", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-Cmf56Jwf.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/custom-quote": { "id": "routes/custom-quote", "parentId": "root", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/custom-quote-DiOlRPJA.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/quote-review": { "id": "routes/quote-review", "parentId": "root", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/quote-review-BYEZif_z.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch": { "id": "routes/dispatch", "parentId": "root", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-CT44PxDW.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/classic": { "id": "routes/classic", "parentId": "root", "path": "classic", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/classic-D7SUNENC.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-DSXwe04k.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/monitor": { "id": "routes/monitor", "parentId": "root", "path": "monitor", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/monitor-D-6D68Te.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/loader": { "id": "routes/loader", "parentId": "root", "path": "loader", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/loader-BIaFamt1.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar": { "id": "routes/calendar", "parentId": "root", "path": "calendar", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/calendar-D2HhWQqX.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/allotment": { "id": "routes/allotment", "parentId": "root", "path": "allotment", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/allotment-RU0rdK1w.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar.ics": { "id": "routes/calendar.ics", "parentId": "root", "path": "calendar.ics", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar.ics-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar-feed.$secret": { "id": "routes/calendar-feed.$secret", "parentId": "root", "path": "calendar-feed/:secret", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar-feed._secret-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar.rss": { "id": "routes/calendar.rss", "parentId": "root", "path": "calendar.rss", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar.rss-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch-driver": { "id": "routes/dispatch-driver", "parentId": "root", "path": "dispatch/driver", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-driver-CIDh0JOn.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch-driver-detail": { "id": "routes/dispatch-driver-detail", "parentId": "root", "path": "dispatch/driver/detail", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-driver-detail-DVs_f_11.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/mobile-dashboard": { "id": "routes/mobile-dashboard", "parentId": "root", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/mobile-dashboard-Bu62B7DL.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/login": { "id": "routes/login", "parentId": "root", "path": "login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/login-BLokXFd3.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/change-password": { "id": "routes/change-password", "parentId": "root", "path": "change-password", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/change-password-DNG9C_4s.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/settings": { "id": "routes/settings", "parentId": "root", "path": "settings", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/settings-C34cRtvl.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-DSXwe04k.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.login/route": { "id": "routes/auth.login/route", "parentId": "root", "path": "auth/login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-CG8tQ2tr.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.$": { "id": "routes/auth.$", "parentId": "root", "path": "auth/*", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/auth._-p3tFrFib.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app": { "id": "routes/app", "parentId": "root", "path": "app", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": true, "module": "/assets/app--bd_F85Q.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app._index": { "id": "routes/app._index", "parentId": "routes/app", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app._index-BoDF1DO_.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.admin": { "id": "routes/app.admin", "parentId": "routes/app", "path": "admin", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.admin-CW6O1zQ4.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.additional": { "id": "routes/app.additional", "parentId": "routes/app", "path": "additional", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.additional-CCXuFT6z.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.custom-quote": { "id": "routes/app.custom-quote", "parentId": "routes/app", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.custom-quote-eC0hOSjc.js", "imports": ["/assets/custom-quote-DiOlRPJA.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.quote-review": { "id": "routes/app.quote-review", "parentId": "routes/app", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.quote-review-su2sDfLQ.js", "imports": ["/assets/quote-review-BYEZif_z.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch": { "id": "routes/app.dispatch", "parentId": "routes/app", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-B8Qfy7XM.js", "imports": ["/assets/dispatch-CT44PxDW.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.classic": { "id": "routes/app.classic", "parentId": "routes/app", "path": "classic", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.classic-c-c1Pkns.js", "imports": ["/assets/classic-D7SUNENC.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-DSXwe04k.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.monitor": { "id": "routes/app.monitor", "parentId": "routes/app", "path": "monitor", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.monitor-CCjPg_Q9.js", "imports": ["/assets/monitor-D-6D68Te.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.loader": { "id": "routes/app.loader", "parentId": "routes/app", "path": "loader", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.loader-DNvcY_tj.js", "imports": ["/assets/loader-BIaFamt1.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.calendar": { "id": "routes/app.calendar", "parentId": "routes/app", "path": "calendar", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.calendar-CoNgeiv8.js", "imports": ["/assets/calendar-D2HhWQqX.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.allotment": { "id": "routes/app.allotment", "parentId": "routes/app", "path": "allotment", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.allotment-sQBbhOPn.js", "imports": ["/assets/allotment-RU0rdK1w.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch-driver": { "id": "routes/app.dispatch-driver", "parentId": "routes/app", "path": "dispatch/driver", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-driver-BMLjcSx6.js", "imports": ["/assets/dispatch-driver-CIDh0JOn.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch-driver-detail": { "id": "routes/app.dispatch-driver-detail", "parentId": "routes/app", "path": "dispatch/driver/detail", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-driver-detail-CcJGmFUW.js", "imports": ["/assets/dispatch-driver-detail-DVs_f_11.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.mobile": { "id": "routes/app.mobile", "parentId": "routes/app", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.mobile-B7VYsfmU.js", "imports": ["/assets/mobile-dashboard-Bu62B7DL.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.shipping-estimate": { "id": "routes/api.shipping-estimate", "parentId": "root", "path": "api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.carrier-service": { "id": "routes/api.carrier-service", "parentId": "root", "path": "api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.sync-products": { "id": "routes/api.sync-products", "parentId": "root", "path": "api/sync-products", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.sync-products-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.create-draft-order": { "id": "routes/api.create-draft-order", "parentId": "root", "path": "api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.delete-quote": { "id": "routes/api.delete-quote", "parentId": "root", "path": "api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.update-quote": { "id": "routes/api.update-quote", "parentId": "root", "path": "api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.dispatch-poll-mailbox": { "id": "routes/api.dispatch-poll-mailbox", "parentId": "root", "path": "api/dispatch-poll-mailbox", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.dispatch-poll-mailbox-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.dispatch-driver-location": { "id": "routes/api.dispatch-driver-location", "parentId": "root", "path": "api/dispatch-driver-location", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.dispatch-driver-location-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.loader-notifications": { "id": "routes/api.loader-notifications", "parentId": "root", "path": "api/loader-notifications", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.loader-notifications-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.shipping-estimate": { "id": "routes/app.api.shipping-estimate", "parentId": "root", "path": "app/api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.carrier-service": { "id": "routes/app.api.carrier-service", "parentId": "root", "path": "app/api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.create-draft-order": { "id": "routes/app.api.create-draft-order", "parentId": "root", "path": "app/api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.delete-quote": { "id": "routes/app.api.delete-quote", "parentId": "root", "path": "app/api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.update-quote": { "id": "routes/app.api.update-quote", "parentId": "root", "path": "app/api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.products.update": { "id": "routes/webhooks.products.update", "parentId": "root", "path": "webhooks/products/update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.products.update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.scopes_update": { "id": "routes/webhooks.app.scopes_update", "parentId": "root", "path": "webhooks/app/scopes_update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.scopes_update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.uninstalled": { "id": "routes/webhooks.app.uninstalled", "parentId": "root", "path": "webhooks/app/uninstalled", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.uninstalled-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-1d018bdf.js", "version": "1d018bdf", "sri": void 0 };
 const assetsBuildDirectory = "build/client";
 const basename = "/";
 const future = { "unstable_optimizeDeps": false, "unstable_passThroughRequests": false, "unstable_subResourceIntegrity": false, "unstable_trailingSlashAwareDataRequests": false, "unstable_previewServerPrerendering": false, "v8_middleware": false, "v8_splitRouteModules": false, "v8_viteEnvironmentApi": false };
@@ -23436,13 +24014,21 @@ const routes = {
     caseSensitive: void 0,
     module: route6
   },
+  "routes/loader": {
+    id: "routes/loader",
+    parentId: "root",
+    path: "loader",
+    index: void 0,
+    caseSensitive: void 0,
+    module: route7
+  },
   "routes/calendar": {
     id: "routes/calendar",
     parentId: "root",
     path: "calendar",
     index: void 0,
     caseSensitive: void 0,
-    module: route7
+    module: route8
   },
   "routes/allotment": {
     id: "routes/allotment",
@@ -23450,7 +24036,7 @@ const routes = {
     path: "allotment",
     index: void 0,
     caseSensitive: void 0,
-    module: route8
+    module: route9
   },
   "routes/calendar.ics": {
     id: "routes/calendar.ics",
@@ -23458,7 +24044,7 @@ const routes = {
     path: "calendar.ics",
     index: void 0,
     caseSensitive: void 0,
-    module: route9
+    module: route10
   },
   "routes/calendar-feed.$secret": {
     id: "routes/calendar-feed.$secret",
@@ -23466,7 +24052,7 @@ const routes = {
     path: "calendar-feed/:secret",
     index: void 0,
     caseSensitive: void 0,
-    module: route10
+    module: route11
   },
   "routes/calendar.rss": {
     id: "routes/calendar.rss",
@@ -23474,7 +24060,7 @@ const routes = {
     path: "calendar.rss",
     index: void 0,
     caseSensitive: void 0,
-    module: route11
+    module: route12
   },
   "routes/dispatch-driver": {
     id: "routes/dispatch-driver",
@@ -23482,7 +24068,7 @@ const routes = {
     path: "dispatch/driver",
     index: void 0,
     caseSensitive: void 0,
-    module: route12
+    module: route13
   },
   "routes/dispatch-driver-detail": {
     id: "routes/dispatch-driver-detail",
@@ -23490,7 +24076,7 @@ const routes = {
     path: "dispatch/driver/detail",
     index: void 0,
     caseSensitive: void 0,
-    module: route13
+    module: route14
   },
   "routes/mobile-dashboard": {
     id: "routes/mobile-dashboard",
@@ -23498,7 +24084,7 @@ const routes = {
     path: "mobile",
     index: void 0,
     caseSensitive: void 0,
-    module: route14
+    module: route15
   },
   "routes/login": {
     id: "routes/login",
@@ -23506,7 +24092,7 @@ const routes = {
     path: "login",
     index: void 0,
     caseSensitive: void 0,
-    module: route15
+    module: route16
   },
   "routes/change-password": {
     id: "routes/change-password",
@@ -23514,7 +24100,7 @@ const routes = {
     path: "change-password",
     index: void 0,
     caseSensitive: void 0,
-    module: route16
+    module: route17
   },
   "routes/settings": {
     id: "routes/settings",
@@ -23522,7 +24108,7 @@ const routes = {
     path: "settings",
     index: void 0,
     caseSensitive: void 0,
-    module: route17
+    module: route18
   },
   "routes/auth.login/route": {
     id: "routes/auth.login/route",
@@ -23530,7 +24116,7 @@ const routes = {
     path: "auth/login",
     index: void 0,
     caseSensitive: void 0,
-    module: route18
+    module: route19
   },
   "routes/auth.$": {
     id: "routes/auth.$",
@@ -23538,7 +24124,7 @@ const routes = {
     path: "auth/*",
     index: void 0,
     caseSensitive: void 0,
-    module: route19
+    module: route20
   },
   "routes/app": {
     id: "routes/app",
@@ -23546,7 +24132,7 @@ const routes = {
     path: "app",
     index: void 0,
     caseSensitive: void 0,
-    module: route20
+    module: route21
   },
   "routes/app._index": {
     id: "routes/app._index",
@@ -23554,7 +24140,7 @@ const routes = {
     path: void 0,
     index: true,
     caseSensitive: void 0,
-    module: route21
+    module: route22
   },
   "routes/app.admin": {
     id: "routes/app.admin",
@@ -23562,7 +24148,7 @@ const routes = {
     path: "admin",
     index: void 0,
     caseSensitive: void 0,
-    module: route22
+    module: route23
   },
   "routes/app.additional": {
     id: "routes/app.additional",
@@ -23570,7 +24156,7 @@ const routes = {
     path: "additional",
     index: void 0,
     caseSensitive: void 0,
-    module: route23
+    module: route24
   },
   "routes/app.custom-quote": {
     id: "routes/app.custom-quote",
@@ -23578,7 +24164,7 @@ const routes = {
     path: "custom-quote",
     index: void 0,
     caseSensitive: void 0,
-    module: route24
+    module: route25
   },
   "routes/app.quote-review": {
     id: "routes/app.quote-review",
@@ -23586,7 +24172,7 @@ const routes = {
     path: "quote-review",
     index: void 0,
     caseSensitive: void 0,
-    module: route25
+    module: route26
   },
   "routes/app.dispatch": {
     id: "routes/app.dispatch",
@@ -23594,7 +24180,7 @@ const routes = {
     path: "dispatch",
     index: void 0,
     caseSensitive: void 0,
-    module: route26
+    module: route27
   },
   "routes/app.classic": {
     id: "routes/app.classic",
@@ -23602,7 +24188,7 @@ const routes = {
     path: "classic",
     index: void 0,
     caseSensitive: void 0,
-    module: route27
+    module: route28
   },
   "routes/app.monitor": {
     id: "routes/app.monitor",
@@ -23610,7 +24196,15 @@ const routes = {
     path: "monitor",
     index: void 0,
     caseSensitive: void 0,
-    module: route28
+    module: route29
+  },
+  "routes/app.loader": {
+    id: "routes/app.loader",
+    parentId: "routes/app",
+    path: "loader",
+    index: void 0,
+    caseSensitive: void 0,
+    module: route30
   },
   "routes/app.calendar": {
     id: "routes/app.calendar",
@@ -23618,7 +24212,7 @@ const routes = {
     path: "calendar",
     index: void 0,
     caseSensitive: void 0,
-    module: route29
+    module: route31
   },
   "routes/app.allotment": {
     id: "routes/app.allotment",
@@ -23626,7 +24220,7 @@ const routes = {
     path: "allotment",
     index: void 0,
     caseSensitive: void 0,
-    module: route30
+    module: route32
   },
   "routes/app.dispatch-driver": {
     id: "routes/app.dispatch-driver",
@@ -23634,7 +24228,7 @@ const routes = {
     path: "dispatch/driver",
     index: void 0,
     caseSensitive: void 0,
-    module: route31
+    module: route33
   },
   "routes/app.dispatch-driver-detail": {
     id: "routes/app.dispatch-driver-detail",
@@ -23642,7 +24236,7 @@ const routes = {
     path: "dispatch/driver/detail",
     index: void 0,
     caseSensitive: void 0,
-    module: route32
+    module: route34
   },
   "routes/app.mobile": {
     id: "routes/app.mobile",
@@ -23650,7 +24244,7 @@ const routes = {
     path: "mobile",
     index: void 0,
     caseSensitive: void 0,
-    module: route33
+    module: route35
   },
   "routes/api.shipping-estimate": {
     id: "routes/api.shipping-estimate",
@@ -23658,7 +24252,7 @@ const routes = {
     path: "api/shipping-estimate",
     index: void 0,
     caseSensitive: void 0,
-    module: route34
+    module: route36
   },
   "routes/api.carrier-service": {
     id: "routes/api.carrier-service",
@@ -23666,7 +24260,7 @@ const routes = {
     path: "api/carrier-service",
     index: void 0,
     caseSensitive: void 0,
-    module: route35
+    module: route37
   },
   "routes/api.sync-products": {
     id: "routes/api.sync-products",
@@ -23674,7 +24268,7 @@ const routes = {
     path: "api/sync-products",
     index: void 0,
     caseSensitive: void 0,
-    module: route36
+    module: route38
   },
   "routes/api.create-draft-order": {
     id: "routes/api.create-draft-order",
@@ -23682,7 +24276,7 @@ const routes = {
     path: "api/create-draft-order",
     index: void 0,
     caseSensitive: void 0,
-    module: route37
+    module: route39
   },
   "routes/api.delete-quote": {
     id: "routes/api.delete-quote",
@@ -23690,7 +24284,7 @@ const routes = {
     path: "api/delete-quote",
     index: void 0,
     caseSensitive: void 0,
-    module: route38
+    module: route40
   },
   "routes/api.update-quote": {
     id: "routes/api.update-quote",
@@ -23698,7 +24292,7 @@ const routes = {
     path: "api/update-quote",
     index: void 0,
     caseSensitive: void 0,
-    module: route39
+    module: route41
   },
   "routes/api.dispatch-poll-mailbox": {
     id: "routes/api.dispatch-poll-mailbox",
@@ -23706,7 +24300,7 @@ const routes = {
     path: "api/dispatch-poll-mailbox",
     index: void 0,
     caseSensitive: void 0,
-    module: route40
+    module: route42
   },
   "routes/api.dispatch-driver-location": {
     id: "routes/api.dispatch-driver-location",
@@ -23714,7 +24308,15 @@ const routes = {
     path: "api/dispatch-driver-location",
     index: void 0,
     caseSensitive: void 0,
-    module: route41
+    module: route43
+  },
+  "routes/api.loader-notifications": {
+    id: "routes/api.loader-notifications",
+    parentId: "root",
+    path: "api/loader-notifications",
+    index: void 0,
+    caseSensitive: void 0,
+    module: route44
   },
   "routes/app.api.shipping-estimate": {
     id: "routes/app.api.shipping-estimate",
@@ -23722,7 +24324,7 @@ const routes = {
     path: "app/api/shipping-estimate",
     index: void 0,
     caseSensitive: void 0,
-    module: route42
+    module: route45
   },
   "routes/app.api.carrier-service": {
     id: "routes/app.api.carrier-service",
@@ -23730,7 +24332,7 @@ const routes = {
     path: "app/api/carrier-service",
     index: void 0,
     caseSensitive: void 0,
-    module: route43
+    module: route46
   },
   "routes/app.api.create-draft-order": {
     id: "routes/app.api.create-draft-order",
@@ -23738,7 +24340,7 @@ const routes = {
     path: "app/api/create-draft-order",
     index: void 0,
     caseSensitive: void 0,
-    module: route44
+    module: route47
   },
   "routes/app.api.delete-quote": {
     id: "routes/app.api.delete-quote",
@@ -23746,7 +24348,7 @@ const routes = {
     path: "app/api/delete-quote",
     index: void 0,
     caseSensitive: void 0,
-    module: route45
+    module: route48
   },
   "routes/app.api.update-quote": {
     id: "routes/app.api.update-quote",
@@ -23754,7 +24356,7 @@ const routes = {
     path: "app/api/update-quote",
     index: void 0,
     caseSensitive: void 0,
-    module: route46
+    module: route49
   },
   "routes/webhooks.products.update": {
     id: "routes/webhooks.products.update",
@@ -23762,7 +24364,7 @@ const routes = {
     path: "webhooks/products/update",
     index: void 0,
     caseSensitive: void 0,
-    module: route47
+    module: route50
   },
   "routes/webhooks.app.scopes_update": {
     id: "routes/webhooks.app.scopes_update",
@@ -23770,7 +24372,7 @@ const routes = {
     path: "webhooks/app/scopes_update",
     index: void 0,
     caseSensitive: void 0,
-    module: route48
+    module: route51
   },
   "routes/webhooks.app.uninstalled": {
     id: "routes/webhooks.app.uninstalled",
@@ -23778,7 +24380,7 @@ const routes = {
     path: "webhooks/app/uninstalled",
     index: void 0,
     caseSensitive: void 0,
-    module: route49
+    module: route52
   }
 };
 const allowedActionOrigins = false;

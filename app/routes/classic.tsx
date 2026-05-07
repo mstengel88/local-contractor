@@ -804,6 +804,7 @@ export default function ClassicDispatchPage() {
   const monitorHref = isEmbeddedRoute ? "/app/monitor" : "/monitor";
   const calendarHref = isEmbeddedRoute ? "/app/calendar" : "/calendar";
   const allotmentHref = isEmbeddedRoute ? "/app/allotment" : "/allotment";
+  const loaderHref = isEmbeddedRoute ? "/app/loader" : "/loader";
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
   const quoteHref = isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote";
   const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
@@ -1474,6 +1475,7 @@ export default function ClassicDispatchPage() {
           <Link to={monitorHref} style={styles.classicNavLink}>Monitor</Link>
           <Link to={calendarHref} style={styles.classicNavLink}>Calendar</Link>
           <Link to={allotmentHref} style={styles.classicNavLink}>Allotment</Link>
+          {canAccess("loader") ? <Link to={loaderHref} style={styles.classicNavLink}>Loader</Link> : null}
           {canAccess("manageDispatch") ? <Link to={dispatchViewHref("orders")} style={styles.classicNavLink}>Orders</Link> : null}
           <Link to={dispatchViewHref("scheduled")} style={styles.classicNavLink}>Scheduled</Link>
           {canAccess("manageDispatch") ? <Link to={dispatchViewHref("routes")} style={styles.classicNavLink}>Routes</Link> : null}
@@ -1484,6 +1486,7 @@ export default function ClassicDispatchPage() {
         <div style={{ flex: 1 }} />
         <div style={navCollapsed ? styles.collapsedOnlyHidden : styles.classicFooterNav}>
           {canAccess("driver") ? <Link to={driverHref} style={styles.classicUtility}>Driver Route</Link> : null}
+          {canAccess("loader") ? <Link to={loaderHref} style={styles.classicUtility}>Loader View</Link> : null}
           {canAccess("quoteTool") ? <Link to={quoteHref} style={styles.classicUtility}>Quote Tool</Link> : null}
           <Link to={mobileHref} style={styles.classicUtility}>Mobile</Link>
           {canAccess("manageUsers") ? <Link to="/settings" style={styles.classicUtility}>Settings</Link> : null}

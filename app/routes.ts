@@ -8,6 +8,7 @@ export default [
   route("dispatch", "routes/dispatch.tsx"),
   route("classic", "routes/classic.tsx"),
   route("monitor", "routes/monitor.tsx"),
+  route("loader", "routes/loader.tsx"),
   route("calendar", "routes/calendar.tsx"),
   route("allotment", "routes/allotment.tsx"),
   route("calendar.ics", "routes/calendar.ics.ts"),
@@ -32,6 +33,7 @@ export default [
     route("dispatch", "routes/app.dispatch.tsx"),
     route("classic", "routes/app.classic.tsx"),
     route("monitor", "routes/app.monitor.tsx"),
+    route("loader", "routes/app.loader.tsx"),
     route("calendar", "routes/app.calendar.tsx"),
     route("allotment", "routes/app.allotment.tsx"),
     route("dispatch/driver", "routes/app.dispatch-driver.tsx"),
@@ -47,6 +49,7 @@ export default [
   route("api/update-quote", "routes/api.update-quote.ts"),
   route("api/dispatch-poll-mailbox", "routes/api.dispatch-poll-mailbox.ts"),
   route("api/dispatch-driver-location", "routes/api.dispatch-driver-location.ts"),
+  route("api/loader-notifications", "routes/api.loader-notifications.ts"),
 
   route("app/api/shipping-estimate", "routes/app.api.shipping-estimate.ts"),
   route("app/api/carrier-service", "routes/app.api.carrier-service.ts"),

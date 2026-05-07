@@ -389,6 +389,7 @@ function RoleSelect({ defaultValue }: { defaultValue: string }) {
         <option value="admin">Admin</option>
         <option value="dispatcher">Dispatcher</option>
         <option value="driver">Driver</option>
+        <option value="loader">Loader</option>
         <option value="sales">Sales</option>
         <option value="user">User</option>
       </select>
