@@ -49,15 +49,25 @@ function getRouteLabel(route: DispatchRoute | null | undefined) {
   return parts.join(" / ");
 }
 
+function cleanLoaderNote(value: string | null | undefined) {
+  const note = String(value || "").replace(/\s+/g, " ").trim();
+  return note.length > 300 ? `${note.slice(0, 297)}...` : note;
+}
+
 export async function createLoaderNotification(input: {
   order: DispatchOrder;
   route?: DispatchRoute | null;
   actor?: AppUserProfile | null;
   targetUserId?: string | null;
+  loaderNote?: string | null;
 }) {
   const routeLabel = getRouteLabel(input.route);
   const title = `Load next: ${formatOrderNumber(input.order)}`;
-  const message = `${getLoadLabel(input.order)} for ${routeLabel} - ${input.order.customer}`;
+  const note = cleanLoaderNote(input.loaderNote);
+  const message = [
+    `${getLoadLabel(input.order)} for ${routeLabel} - ${input.order.customer}`,
+    note ? `Note: ${note}` : "",
+  ].filter(Boolean).join("\n");
 
   const { data, error } = await supabaseAdmin
     .from(TABLE)

@@ -301,7 +301,7 @@ function NotificationCard({ notification }: { notification: LoaderNotification }
     <article style={styles.card}>
       <div>
         <strong>{notification.title}</strong>
-        <p>{notification.message}</p>
+        <p style={styles.cardMessage}>{notification.message}</p>
         <small>{formatTime(notification.createdAt)}</small>
       </div>
       {notification.status === "unread" ? (
@@ -371,7 +371,7 @@ const styles: Record<string, CSSProperties> = {
   },
   heroLabel: { margin: 0, textTransform: "uppercase", letterSpacing: 3, fontSize: 13, opacity: 0.72 },
   heroTitle: { margin: "8px 0", fontSize: 46 },
-  heroMessage: { margin: 0, fontSize: 23, lineHeight: 1.3 },
+  heroMessage: { margin: 0, fontSize: 23, lineHeight: 1.3, whiteSpace: "pre-wrap" },
   heroTime: { marginBottom: 0, opacity: 0.75 },
   heroAction: { minWidth: 220 },
   primaryButton: {
@@ -413,6 +413,7 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: 18,
     padding: 16,
   },
+  cardMessage: { whiteSpace: "pre-wrap", lineHeight: 1.35 },
   smallButton: {
     border: 0,
     borderRadius: 12,

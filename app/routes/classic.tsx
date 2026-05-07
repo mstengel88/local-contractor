@@ -69,6 +69,23 @@ function isActiveBoardOrder(order: DispatchOrder) {
   return !isDeliveredOrder(order) && !isCancelledOrder(order);
 }
 
+function attachLoaderNote(event: FormEvent<HTMLFormElement>) {
+  const note = window.prompt("Add a loader note for this load. Leave blank if no note is needed.");
+  if (note === null) {
+    event.preventDefault();
+    return;
+  }
+
+  let noteInput = event.currentTarget.querySelector<HTMLInputElement>('input[name="loaderNote"]');
+  if (!noteInput) {
+    noteInput = document.createElement("input");
+    noteInput.type = "hidden";
+    noteInput.name = "loaderNote";
+    event.currentTarget.appendChild(noteInput);
+  }
+  noteInput.value = note.trim();
+}
+
 async function playDispatchChime() {
   if (typeof window === "undefined") return;
 
@@ -1661,7 +1678,7 @@ export default function ClassicDispatchPage() {
                               Down
                             </button>
                           </Form>
-                          <Form method="post">
+                          <Form method="post" onSubmit={attachLoaderNote}>
                             <input type="hidden" name="intent" value="notify-loader" />
                             <input type="hidden" name="orderId" value={order.id} />
                             <button style={styles.linkButton} title="Tell the loader this is the next load">

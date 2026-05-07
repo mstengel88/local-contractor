@@ -392,6 +392,23 @@ function getSplitCapacityError(
   return "";
 }
 
+function attachLoaderNote(event: FormEvent<HTMLFormElement>) {
+  const note = window.prompt("Add a loader note for this load. Leave blank if no note is needed.");
+  if (note === null) {
+    event.preventDefault();
+    return;
+  }
+
+  let noteInput = event.currentTarget.querySelector<HTMLInputElement>('input[name="loaderNote"]');
+  if (!noteInput) {
+    noteInput = document.createElement("input");
+    noteInput.type = "hidden";
+    noteInput.name = "loaderNote";
+    event.currentTarget.appendChild(noteInput);
+  }
+  noteInput.value = note.trim();
+}
+
 async function assignOrderToRoute({
   order,
   routeId,
@@ -1851,6 +1868,7 @@ export async function action({ request }: any) {
 
     if (intent === "notify-loader") {
       const orderId = String(form.get("orderId") || "").trim();
+      const loaderNote = String(form.get("loaderNote") || "").trim();
       if (!orderId) throw new Error("Missing order selection");
 
       const [allOrders, allRoutes] = await Promise.all([
@@ -1864,6 +1882,7 @@ export async function action({ request }: any) {
         order,
         route,
         actor: currentUser,
+        loaderNote,
       });
       await logAuditEvent({
         actor: currentUser,
@@ -1875,6 +1894,7 @@ export async function action({ request }: any) {
           notificationId: notification.id,
           message: notification.message,
           route: route?.code || null,
+          loaderNote: loaderNote || null,
         },
       });
 
@@ -4252,7 +4272,7 @@ export default function DispatchPage() {
                                 </Form>
                               ) : null}
                               {canManageDispatch ? (
-                                <Form method="post" style={styles.routeReorderForm}>
+                                <Form method="post" style={styles.routeReorderForm} onSubmit={attachLoaderNote}>
                                   <input type="hidden" name="intent" value="notify-loader" />
                                   <input type="hidden" name="orderId" value={order.id} />
                                   <button
