@@ -30,6 +30,7 @@ export type AppUserProfile = {
   name: string;
   role: string;
   permissions: UserPermission[];
+  driverEmployeeId?: string | null;
   isActive: boolean;
   mustChangePassword: boolean;
 };
@@ -78,6 +79,7 @@ function normalizeProfile(row: any, mustChangePassword = false): AppUserProfile 
     name: String(row?.name || ""),
     role,
     permissions: normalizePermissions(row?.permissions, role),
+    driverEmployeeId: row?.driver_employee_id || null,
     isActive: row?.is_active !== false,
     mustChangePassword,
   };
@@ -259,21 +261,39 @@ export async function updateAppUserProfile(input: {
   name: string;
   role: string;
   permissions: string[];
+  driverEmployeeId?: string | null;
   isActive: boolean;
 }) {
   const permissions = normalizePermissions(input.permissions, input.role);
+  const payload: Record<string, unknown> = {
+    name: input.name,
+    role: input.role,
+    permissions,
+    is_active: input.isActive,
+    updated_at: new Date().toISOString(),
+  };
+  if (input.driverEmployeeId !== undefined) {
+    payload.driver_employee_id = input.driverEmployeeId || null;
+  }
+
   const { data, error } = await supabaseAdmin
     .from("app_user_profiles")
-    .update({
-      name: input.name,
-      role: input.role,
-      permissions,
-      is_active: input.isActive,
-      updated_at: new Date().toISOString(),
-    })
+    .update(payload)
     .eq("id", input.id)
     .select("*")
     .single();
+
+  if (error?.code === "42703" && "driver_employee_id" in payload) {
+    delete payload.driver_employee_id;
+    const retry = await supabaseAdmin
+      .from("app_user_profiles")
+      .update(payload)
+      .eq("id", input.id)
+      .select("*")
+      .single();
+    if (retry.error) throw new Error(retry.error.message);
+    return normalizeProfile(retry.data);
+  }
 
   if (error) throw new Error(error.message);
   return normalizeProfile(data);
@@ -325,6 +345,7 @@ export async function createAppUser(input: {
   name: string;
   role: string;
   permissions: string[];
+  driverEmployeeId?: string | null;
 }) {
   const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
     email: input.email,
@@ -338,19 +359,35 @@ export async function createAppUser(input: {
   }
 
   const permissions = normalizePermissions(input.permissions, input.role);
-  const { data, error: profileError } = await supabaseAdmin
+  const profilePayload: Record<string, unknown> = {
+    id: created.user.id,
+    email: input.email,
+    name: input.name || input.email,
+    role: input.role,
+    permissions,
+    is_active: true,
+    updated_at: new Date().toISOString(),
+  };
+  if (input.driverEmployeeId) {
+    profilePayload.driver_employee_id = input.driverEmployeeId;
+  }
+
+  let { data, error: profileError } = await supabaseAdmin
     .from("app_user_profiles")
-    .upsert({
-      id: created.user.id,
-      email: input.email,
-      name: input.name || input.email,
-      role: input.role,
-      permissions,
-      is_active: true,
-      updated_at: new Date().toISOString(),
-    })
+    .upsert(profilePayload)
     .select("*")
     .single();
+
+  if (profileError?.code === "42703" && "driver_employee_id" in profilePayload) {
+    delete profilePayload.driver_employee_id;
+    const retry = await supabaseAdmin
+      .from("app_user_profiles")
+      .upsert(profilePayload)
+      .select("*")
+      .single();
+    data = retry.data;
+    profileError = retry.error;
+  }
 
   if (profileError) throw new Error(profileError.message);
   return normalizeProfile(data);

@@ -7,8 +7,10 @@ import {
 } from "../lib/classic-columns";
 import {
   getClassicColumnSettings,
+  getDispatchEmployees,
   saveClassicColumnSettings,
 } from "../lib/dispatch.server";
+import type { DispatchEmployee } from "../lib/dispatch.server";
 import {
   createAppUser,
   listAuditEvents,
@@ -25,15 +27,17 @@ import {
 
 export async function loader({ request }: any) {
   const currentUser = await requireUserPermission(request, "manageUsers");
-  const [users, auditEvents, classicColumnSettings] = await Promise.all([
+  const [users, auditEvents, classicColumnSettings, employees] = await Promise.all([
     listAppUsers(),
     currentUser.permissions.includes("auditLog") ? listAuditEvents(150) : [],
     getClassicColumnSettings(),
+    getDispatchEmployees().catch(() => []),
   ]);
   return data({
     currentUser,
     users,
     auditEvents,
+    employees,
     allPermissions,
     permissionLabels,
     classicColumnSettings,
@@ -58,6 +62,9 @@ export async function action({ request }: any) {
           "classicColumnSettings",
           classicColumnSettings,
         ] as const),
+        getDispatchEmployees()
+          .catch(() => [])
+          .then((employees) => ["employees", employees] as const),
       ]),
     ),
   });
@@ -70,6 +77,7 @@ export async function action({ request }: any) {
         name: String(form.get("name") || "").trim(),
         role: String(form.get("role") || "user").trim(),
         permissions,
+        driverEmployeeId: String(form.get("driverEmployeeId") || "").trim() || null,
       });
       await logAuditEvent({
         actor: currentUser,
@@ -82,6 +90,7 @@ export async function action({ request }: any) {
           role: createdUser.role,
           permissions: createdUser.permissions,
           isActive: createdUser.isActive,
+          driverEmployeeId: createdUser.driverEmployeeId || null,
           temporaryPasswordRequired: true,
         },
       });
@@ -98,6 +107,7 @@ export async function action({ request }: any) {
         name: String(form.get("name") || "").trim(),
         role: String(form.get("role") || "user").trim(),
         permissions,
+        driverEmployeeId: String(form.get("driverEmployeeId") || "").trim() || null,
         isActive: form.get("isActive") === "on",
       });
       await logAuditEvent({
@@ -111,6 +121,7 @@ export async function action({ request }: any) {
           role: updatedUser.role,
           permissions: updatedUser.permissions,
           isActive: updatedUser.isActive,
+          driverEmployeeId: updatedUser.driverEmployeeId || null,
         },
       });
       return data({
@@ -171,6 +182,7 @@ export default function SettingsPage() {
   const navigation = useNavigation();
   const users = actionData?.users || loaderData.users;
   const auditEvents = actionData?.auditEvents || loaderData.auditEvents;
+  const employees = ((actionData as any)?.employees || loaderData.employees || []) as DispatchEmployee[];
   const classicColumns =
     actionData?.classicColumnSettings ||
     loaderData.classicColumnSettings ||
@@ -215,6 +227,7 @@ export default function SettingsPage() {
               <Field label="Email" name="email" type="email" />
               <Field label="Temporary Password" name="password" type="password" />
               <RoleSelect defaultValue="user" />
+              <EmployeeSelect employees={employees} defaultValue="" />
             </div>
             <PermissionGrid selected={["quoteTool"]} />
             <button type="submit" style={styles.primaryButton} disabled={isSubmitting}>
@@ -242,6 +255,7 @@ export default function SettingsPage() {
                 <div style={styles.formGrid}>
                   <Field label="Name" name="name" defaultValue={user.name} />
                   <RoleSelect defaultValue={user.role} />
+                  <EmployeeSelect employees={employees} defaultValue={user.driverEmployeeId || ""} />
                 </div>
                 <label style={styles.checkboxLine}>
                   <input type="checkbox" name="isActive" defaultChecked={user.isActive} />
@@ -392,6 +406,32 @@ function RoleSelect({ defaultValue }: { defaultValue: string }) {
         <option value="loader">Loader</option>
         <option value="sales">Sales</option>
         <option value="user">User</option>
+      </select>
+    </div>
+  );
+}
+
+function EmployeeSelect({
+  employees,
+  defaultValue,
+}: {
+  employees: DispatchEmployee[];
+  defaultValue: string;
+}) {
+  const driverEmployees = employees
+    .filter((employee) => employee.isActive !== false && employee.role === "driver")
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  return (
+    <div>
+      <label style={styles.label}>Driver Employee Match</label>
+      <select name="driverEmployeeId" defaultValue={defaultValue} style={styles.input}>
+        <option value="">No driver restriction</option>
+        {driverEmployees.map((employee) => (
+          <option key={employee.id} value={employee.id}>
+            {employee.name}
+          </option>
+        ))}
       </select>
     </div>
   );

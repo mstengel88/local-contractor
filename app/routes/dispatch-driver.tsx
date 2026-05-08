@@ -6,7 +6,11 @@ import {
   getAdminQuotePassword,
   hasAdminQuotePermissionAccess,
 } from "../lib/admin-quote-auth.server";
-import { userAuthCookie } from "../lib/user-auth.server";
+import {
+  getCurrentUser,
+  userAuthCookie,
+  type AppUserProfile,
+} from "../lib/user-auth.server";
 import { sendDeliveryConfirmationEmail } from "../lib/delivery-confirmation-email.server";
 import {
   ensureSeedDispatchEmployees,
@@ -123,13 +127,74 @@ function formatCountdown(ms: number) {
 }
 
 function buildChecklistJson(form: FormData) {
+  const existing = parseChecklistJson(String(form.get("customChecklist") || ""));
   return JSON.stringify({
+    ...existing,
+    loadedQuantity: String(form.get("loadedQuantity") || "").trim(),
     siteSafe: form.get("siteSafe") === "on",
     loadMatchesTicket: form.get("loadMatchesTicket") === "on",
     customerConfirmedPlacement: form.get("customerConfirmedPlacement") === "on",
     photosTaken: form.get("photosTaken") === "on",
     customChecklist: String(form.get("customChecklist") || "").trim(),
   });
+}
+
+function parseChecklistJson(value?: string | null) {
+  try {
+    const parsed = JSON.parse(String(value || "{}"));
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function getLoadedQuantity(order: DispatchOrder) {
+  const checklist = parseChecklistJson(order.checklistJson);
+  return String(checklist.loadedQuantity || "").trim();
+}
+
+function canViewAllDriverRoutes(user: AppUserProfile | null) {
+  if (!user) return true;
+  return user.role === "admin" || user.permissions.includes("manageDispatch");
+}
+
+function filterDriverStateForUser(
+  state: Awaited<ReturnType<typeof loadDriverState>>,
+  user: AppUserProfile | null,
+) {
+  if (canViewAllDriverRoutes(user)) return state;
+
+  const employeeId = user?.driverEmployeeId || "";
+  if (!employeeId) {
+    return {
+      ...state,
+      routes: [],
+      orders: [],
+      driverScopeMessage: "No driver employee is assigned to this login yet. Ask an admin to match this user to an employee in Settings.",
+    };
+  }
+
+  const routes = state.routes.filter((route) => route.driverId === employeeId);
+  const routeIds = new Set(routes.map((route) => route.id));
+  return {
+    ...state,
+    routes,
+    orders: state.orders.filter((order) => order.assignedRouteId && routeIds.has(order.assignedRouteId)),
+    driverScopeMessage: routes.length
+      ? null
+      : "No active routes are assigned to your driver employee yet.",
+  };
+}
+
+async function loadDriverStateForRequest(request: Request) {
+  const currentUser = await getCurrentUser(request);
+  const state = await loadDriverState();
+  return {
+    currentUser,
+    ...filterDriverStateForUser(state, currentUser),
+  };
 }
 
 async function loadDriverState() {
@@ -188,7 +253,7 @@ export async function loader({ request }: any) {
 
   return data({
     allowed: true,
-    ...(await loadDriverState()),
+    ...(await loadDriverStateForRequest(request)),
   });
 }
 
@@ -212,6 +277,7 @@ export async function action({ request }: any) {
         allowed: true,
         loginError: null,
         ...(await loadDriverState()),
+        currentUser: null,
       },
       {
         headers: {
@@ -235,7 +301,7 @@ export async function action({ request }: any) {
         allowed: true,
         ok: false,
         message: "Unknown driver action.",
-        ...(await loadDriverState()),
+        ...(await loadDriverStateForRequest(request)),
       },
       { status: 400 },
     );
@@ -243,6 +309,7 @@ export async function action({ request }: any) {
 
   const orderId = String(form.get("orderId") || "").trim();
   const routeId = String(form.get("routeId") || "").trim();
+  const loadedQuantity = String(form.get("loadedQuantity") || "").trim();
   const rawStatus = String(form.get("deliveryStatus") || "").trim();
   const deliveryStatus: DispatchDeliveryStatus =
     rawStatus === "en_route" ||
@@ -258,7 +325,7 @@ export async function action({ request }: any) {
         ok: false,
         message: "Missing stop selection.",
         selectedRouteId: routeId || null,
-        ...(await loadDriverState()),
+        ...(await loadDriverStateForRequest(request)),
       },
       { status: 400 },
     );
@@ -266,11 +333,41 @@ export async function action({ request }: any) {
 
   const now = new Date().toISOString();
   const currentState = await loadDriverState();
+  const currentUser = await getCurrentUser(request);
+  const scopedState = filterDriverStateForUser(currentState, currentUser);
   const currentOrder =
-    currentState.orders.find((order: DispatchOrder) => order.id === orderId) || null;
+    scopedState.orders.find((order: DispatchOrder) => order.id === orderId) || null;
   const currentRoute =
-    currentState.routes.find((route: DispatchRoute) => route.id === (routeId || currentOrder?.assignedRouteId)) ||
+    scopedState.routes.find((route: DispatchRoute) => route.id === (routeId || currentOrder?.assignedRouteId)) ||
     null;
+
+  if (!currentOrder || !currentRoute) {
+    return data(
+      {
+        allowed: true,
+        ok: false,
+        message: "That stop is not assigned to your driver route.",
+        selectedRouteId: routeId || null,
+        ...(await loadDriverStateForRequest(request)),
+      },
+      { status: 403 },
+    );
+  }
+
+  if (deliveryStatus === "en_route" && !loadedQuantity) {
+    return data(
+      {
+        allowed: true,
+        ok: false,
+        message: "Enter the quantity loaded before marking the stop enroute.",
+        selectedRouteId: routeId || currentRoute.id || null,
+        selectedOrderId: orderId,
+        ...(await loadDriverStateForRequest(request)),
+      },
+      { status: 400 },
+    );
+  }
+
   const patch: Parameters<typeof updateDispatchOrder>[1] = {
     deliveryStatus,
     proofName: String(form.get("proofName") || "").trim() || null,
@@ -324,7 +421,7 @@ export async function action({ request }: any) {
     message: `Stop marked ${getStatusLabel(deliveryStatus).toLowerCase()}.${smsNote}${emailNote}`,
     selectedRouteId: routeId || null,
     selectedOrderId: orderId,
-    ...(await loadDriverState()),
+    ...(await loadDriverStateForRequest(request)),
   });
 }
 
@@ -344,6 +441,7 @@ export default function DispatchDriverPage() {
   const routes = (actionData?.routes ?? loaderData.routes ?? []) as DispatchRoute[];
   const storageReady = actionData?.storageReady ?? loaderData.storageReady ?? false;
   const storageError = actionData?.storageError ?? loaderData.storageError ?? null;
+  const driverScopeMessage = actionData?.driverScopeMessage ?? loaderData.driverScopeMessage ?? null;
   const [nowMs, setNowMs] = useState(() => Date.now());
   const searchParams = new URLSearchParams(location.search);
   const selectedRouteId =
@@ -451,6 +549,10 @@ export default function DispatchDriverPage() {
             Run `dispatch_schema.sql` in Supabase, then refresh.
             {storageError ? ` Storage error: ${storageError}` : ""}
           </div>
+        ) : null}
+
+        {driverScopeMessage ? (
+          <div style={styles.warning}>{driverScopeMessage}</div>
         ) : null}
 
         {actionData?.message ? (
@@ -757,6 +859,7 @@ function StopDeliveryForm({
   );
   const [gpsProof, setGpsProof] = useState(stop.signatureData || "");
   const [gpsStatus, setGpsStatus] = useState("");
+  const [loadedQuantity, setLoadedQuantity] = useState(getLoadedQuantity(stop));
 
   useEffect(() => {
     return () => {
@@ -797,22 +900,32 @@ function StopDeliveryForm({
       <input type="hidden" name="routeId" value={routeId} />
       <input type="hidden" name="orderId" value={stop.id} />
 
-      <div style={styles.statusButtons}>
-        {[
-          ["not_started", "Dispatched"],
-          ["en_route", "Enroute"],
-        ].map(([value, label]) => (
-          <button
-            key={value}
-            type="submit"
-            name="deliveryStatus"
-            value={value}
-            style={styles.statusButton}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <section style={styles.loadedQuantityPanel}>
+        <div>
+          <label style={styles.label}>Qty Loaded On Truck</label>
+          <input
+            name="loadedQuantity"
+            value={loadedQuantity}
+            onChange={(event) => setLoadedQuantity(event.currentTarget.value)}
+            placeholder={`Example: ${stop.quantity || "10"} ${stop.unit || ""}`.trim()}
+            style={styles.input}
+            inputMode="decimal"
+          />
+        </div>
+        <button
+          type="submit"
+          name="deliveryStatus"
+          value="en_route"
+          style={{
+            ...styles.enrouteButton,
+            ...(!loadedQuantity.trim() ? styles.disabledButton : null),
+          }}
+          disabled={!loadedQuantity.trim()}
+          title={!loadedQuantity.trim() ? "Enter qty loaded before going enroute." : "Mark this stop enroute"}
+        >
+          Enroute
+        </button>
+      </section>
 
       <section style={styles.capturePanel}>
         <div>
@@ -1232,6 +1345,16 @@ const styles = {
     gap: 12,
     marginTop: 12,
   } as const,
+  loadedQuantityPanel: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) minmax(150px, 220px)",
+    gap: 10,
+    alignItems: "end",
+    padding: 12,
+    borderRadius: 12,
+    border: "1px solid rgba(249, 115, 22, 0.38)",
+    background: "rgba(249, 115, 22, 0.12)",
+  } as const,
   statusButtons: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(112px, 1fr))",
@@ -1245,6 +1368,20 @@ const styles = {
     color: "#f8fafc",
     fontWeight: 900,
     cursor: "pointer",
+  } as const,
+  enrouteButton: {
+    minHeight: 52,
+    borderRadius: 10,
+    border: "1px solid #ea580c",
+    background: "linear-gradient(135deg, #f97316, #fb923c)",
+    color: "#431407",
+    fontWeight: 950,
+    cursor: "pointer",
+  } as const,
+  disabledButton: {
+    opacity: 0.45,
+    cursor: "not-allowed",
+    filter: "grayscale(0.65)",
   } as const,
   formGrid: {
     display: "grid",

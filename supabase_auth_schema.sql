@@ -7,10 +7,14 @@ create table if not exists public.app_user_profiles (
   name text not null default '',
   role text not null default 'user',
   permissions jsonb not null default '["quoteTool"]'::jsonb,
+  driver_employee_id text,
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.app_user_profiles
+  add column if not exists driver_employee_id text;
 
 create index if not exists app_user_profiles_email_idx
   on public.app_user_profiles (lower(email));
