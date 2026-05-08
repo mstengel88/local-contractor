@@ -1479,6 +1479,10 @@ async function getMaterialRules() {
 function normalizeSku(value) {
   return (value || "").trim();
 }
+function getItemLoadKey(item, materialName) {
+  const sku = normalizeSku(item.sku).toLowerCase();
+  return sku || materialName.trim().toLowerCase() || "material";
+}
 function getMaterialFromSku(sku, rules) {
   const normalizedSku = normalizeSku(sku);
   const match = normalizedSku.match(/^(\d{3})/);
@@ -1703,6 +1707,7 @@ async function getQuote(input) {
   for (const item of shippableItems) {
     const itemQty = item.quantity || 1;
     const { prefix, materialName, truckCapacity, fallbackVendorSource } = getMaterialFromSku(item.sku, materialRules);
+    const itemLoadKey = getItemLoadKey(item, materialName);
     const pickupVendorLabel = item.pickupVendor || fallbackVendorSource || defaultYard.label;
     const pickupOrigin = await getOriginFromVendorLabel(pickupVendorLabel) || defaultYard;
     materialLabels.push(materialName);
@@ -1713,6 +1718,7 @@ async function getQuote(input) {
       pickupOrigin.address,
       pickupOrigin.label,
       materialName,
+      itemLoadKey,
       truckCapacity
     ].join("|");
     if (!groupedItems[groupKey]) {
