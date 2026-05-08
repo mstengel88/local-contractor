@@ -3,7 +3,6 @@ import { Form, useActionData, useFetcher, useLoaderData, useLocation } from "rea
 import { data, redirect } from "react-router";
 import {
   adminQuoteCookie,
-  getAdminQuotePassword,
   hasAdminQuotePermissionAccess,
 } from "../lib/admin-quote-auth.server";
 import { userAuthCookie } from "../lib/user-auth.server";
@@ -28,6 +27,7 @@ import {
   getLatestDispatchDriverLocations,
   getDispatchMaterialOptions,
   getDispatchOriginAddress,
+  getDispatchProductDetailsForMaterials,
   getDispatchUnitForMaterial,
   getNextRouteStopSequence,
   getDispatchOrders,
@@ -58,6 +58,7 @@ import { attachAddressAutocomplete, loadGooglePlaces } from "../lib/google-place
 import { getCurrentUser, logAuditEvent } from "../lib/user-auth.server";
 
 const DISPATCH_NAV_COLLAPSED_KEY = "dispatchNavCollapsed";
+const DISPATCH_MANUAL_ROUTING_KEY = "dispatchManualRoutingMode";
 
 function getDeliveryStatusLabel(status?: DispatchOrder["deliveryStatus"]) {
   if (status === "en_route") return "Enroute";
@@ -323,6 +324,12 @@ function getTruckCapacityLabel(unit: string) {
   return "";
 }
 
+function getOrderCapacityUnit(order: DispatchOrder) {
+  if (/tons?/i.test(order.unit)) return "tons";
+  if (/yards?/i.test(order.unit)) return "yards";
+  return "unitless";
+}
+
 function getCapacityError(order: DispatchOrder, truck?: DispatchTruck | null) {
   if (!truck) return "This route does not have a truck assigned yet.";
 
@@ -334,6 +341,16 @@ function getCapacityError(order: DispatchOrder, truck?: DispatchTruck | null) {
   if (quantity <= capacity) return "";
 
   return `${order.customer} needs ${quantity} ${capacityLabel}, but ${truck.label} is set to ${capacity} ${capacityLabel}.`;
+}
+
+function hasTruckCapacityForOrder(order: DispatchOrder, truck?: DispatchTruck | null, currentQty = 0) {
+  if (!truck) return false;
+  const quantity = Number(order.quantity || 0);
+  const capacity = getTruckCapacityForOrderUnit(truck, order.unit);
+  const capacityLabel = getTruckCapacityLabel(order.unit);
+  if (!quantity || !capacityLabel) return true;
+  if (!capacity) return false;
+  return currentQty + quantity <= capacity;
 }
 
 function isYardOrder(order: DispatchOrder) {
@@ -494,6 +511,195 @@ async function assignOrderToRoute({
     ok: true,
     message: `Split #${baseOrderNumber} into ${splitCount} route tickets.`,
     createdCount: splitCount,
+  };
+}
+
+function getAutoRouteMaterialKey(order: DispatchOrder) {
+  return String(order.material || "")
+    .toLowerCase()
+    .replace(/[#"'.,/()-]+/g, " ")
+    .replace(/\b(?:washed|screened|green|hills|supply|mix|blend)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim() || "material";
+}
+
+function getAutoRouteTimeRank(order: DispatchOrder) {
+  const value = `${order.timePreference || ""} ${order.requestedWindow || ""} ${order.notes || ""}`.toLowerCase();
+  if (value.includes("morning")) return 0;
+  if (value.includes("afternoon")) return 1;
+  if (value.includes("evening")) return 2;
+  return 3;
+}
+
+function getAutoRouteCode(truck: DispatchTruck, index: number, existingCodes: Set<string>) {
+  const truckDigits = String(truck.label || "").match(/\d+/)?.[0] || String(index + 1).padStart(2, "0");
+  const baseCode = `R-${truckDigits}`;
+  let code = baseCode;
+  let suffix = 2;
+  while (existingCodes.has(code)) {
+    code = `${baseCode}-${suffix}`;
+    suffix += 1;
+  }
+  existingCodes.add(code);
+  return code;
+}
+
+function routeCanTakeOrder(
+  order: DispatchOrder,
+  bucket: {
+    truck: DispatchTruck;
+    usedByUnit: Record<string, number>;
+  },
+) {
+  const unit = getOrderCapacityUnit(order);
+  return hasTruckCapacityForOrder(order, bucket.truck, bucket.usedByUnit[unit] || 0);
+}
+
+async function autoRouteOrdersForDispatch() {
+  const [allOrders, existingRoutes, trucks, employees] = await Promise.all([
+    getDispatchOrders(),
+    getDispatchRoutes(),
+    getDispatchTrucks(),
+    getDispatchEmployees(),
+  ]);
+  const activeTrucks = trucks.filter((truck) => truck.isActive !== false);
+  const drivers = employees.filter((employee) => employee.role === "driver" && employee.isActive !== false);
+  const existingCodes = new Set(existingRoutes.map((route) => route.code).filter(Boolean));
+  const routeBuckets: Array<{
+    route: DispatchRoute;
+    truck: DispatchTruck;
+    usedByUnit: Record<string, number>;
+    materialKeys: Set<string>;
+    orderIds: string[];
+    maxSequence: number;
+  }> = existingRoutes
+    .map((route) => {
+      const truck =
+        activeTrucks.find((entry) => entry.id === route.truckId) ||
+        activeTrucks.find((entry) => entry.label === route.truck) ||
+        null;
+      if (!truck) return null;
+      return {
+        route,
+        truck,
+        usedByUnit: {} as Record<string, number>,
+        materialKeys: new Set<string>(),
+        orderIds: [] as string[],
+        maxSequence: 0,
+      };
+    })
+    .filter((bucket): bucket is NonNullable<typeof bucket> => Boolean(bucket));
+
+  for (const order of allOrders) {
+    if (
+      !order.assignedRouteId ||
+      order.status === "delivered" ||
+      order.status === "cancelled" ||
+      order.deliveryStatus === "delivered"
+    ) {
+      continue;
+    }
+
+    const bucket = routeBuckets.find((entry) => entry.route.id === order.assignedRouteId);
+    if (!bucket) continue;
+
+    const unit = getOrderCapacityUnit(order);
+    const quantity = Number(order.quantity || 0);
+    bucket.orderIds.push(order.id);
+    bucket.materialKeys.add(getAutoRouteMaterialKey(order));
+    bucket.maxSequence = Math.max(bucket.maxSequence, Number(order.stopSequence || 0));
+    bucket.usedByUnit[unit] =
+      (bucket.usedByUnit[unit] || 0) + (Number.isFinite(quantity) ? quantity : 0);
+  }
+
+  const routedTruckIds = new Set(routeBuckets.map((bucket) => bucket.truck.id));
+  const unusedTrucks = activeTrucks.filter((truck) => !routedTruckIds.has(truck.id));
+  const usedDriverIds = new Set(existingRoutes.map((route) => route.driverId).filter(Boolean));
+  const unusedDrivers = drivers.filter((driver) => !usedDriverIds.has(driver.id));
+
+  const planningOrders = allOrders
+    .filter(
+      (order) =>
+        order.status !== "delivered" &&
+        order.status !== "cancelled" &&
+        order.deliveryStatus !== "delivered" &&
+        !order.assignedRouteId,
+    )
+    .sort((a, b) => {
+      const dateDiff = getRequestedDeliverySortValue(a) - getRequestedDeliverySortValue(b);
+      if (dateDiff !== 0) return dateDiff;
+      const timeDiff = getAutoRouteTimeRank(a) - getAutoRouteTimeRank(b);
+      if (timeDiff !== 0) return timeDiff;
+      const materialDiff = getAutoRouteMaterialKey(a).localeCompare(getAutoRouteMaterialKey(b));
+      if (materialDiff !== 0) return materialDiff;
+      return getOrderTravelMinutes(a) - getOrderTravelMinutes(b);
+    });
+
+  let createdRoutes = 0;
+  let assignedOrders = 0;
+  const skipped: string[] = [];
+
+  for (const order of planningOrders) {
+    const materialKey = getAutoRouteMaterialKey(order);
+    const quantity = Number(order.quantity || 0);
+    const unit = getOrderCapacityUnit(order);
+    const compatibleBuckets = routeBuckets.filter((bucket) => routeCanTakeOrder(order, bucket));
+    let bucket =
+      compatibleBuckets.find((entry) => entry.materialKeys.has(materialKey)) ||
+      compatibleBuckets.find((entry) => entry.orderIds.length === 0) ||
+      compatibleBuckets[0] ||
+      null;
+
+    if (!bucket && unusedTrucks.length) {
+      const truck = unusedTrucks.shift()!;
+      const driver = unusedDrivers.shift() || drivers[routeBuckets.length % Math.max(drivers.length, 1)] || null;
+      const created = await createDispatchRoute({
+        code: getAutoRouteCode(truck, routeBuckets.length, existingCodes),
+        truckId: truck.id,
+        truck: truck.label,
+        driverId: driver?.id || "",
+        driver: driver?.name || "",
+        helperId: "",
+        helper: "",
+        color: ["#f97316", "#22c55e", "#38bdf8", "#a3e635", "#eab308", "#fb7185"][routeBuckets.length % 6],
+        shift: "Auto routed",
+        region: "Auto",
+      });
+      bucket = {
+        route: created,
+        truck,
+        usedByUnit: {},
+        materialKeys: new Set<string>(),
+        orderIds: [],
+        maxSequence: 0,
+      };
+      routeBuckets.push(bucket);
+      createdRoutes += 1;
+    }
+
+    if (!bucket || !routeCanTakeOrder(order, bucket)) {
+      skipped.push(`${getOrderDisplayNumber(order)} ${order.customer}: no available truck capacity`);
+      continue;
+    }
+
+    const nextSequence = bucket.maxSequence + 1;
+    await updateDispatchOrder(order.id, {
+      assignedRouteId: bucket.route.id,
+      stopSequence: nextSequence,
+      status: "scheduled",
+      deliveryStatus: order.deliveryStatus || "not_started",
+    });
+    bucket.orderIds.push(order.id);
+    bucket.maxSequence = nextSequence;
+    bucket.materialKeys.add(materialKey);
+    bucket.usedByUnit[unit] = (bucket.usedByUnit[unit] || 0) + (Number.isFinite(quantity) ? quantity : 0);
+    assignedOrders += 1;
+  }
+
+  return {
+    assignedOrders,
+    createdRoutes,
+    skipped,
   };
 }
 
@@ -932,6 +1138,9 @@ async function loadDispatchState(
       getClassicColumnSettings(),
       getLatestDispatchDriverLocations(),
     ]);
+    const productDetailsByMaterial = await getDispatchProductDetailsForMaterials(
+      orders.map((order) => order.material),
+    );
 
     const state = {
       orders,
@@ -942,6 +1151,7 @@ async function loadDispatchState(
       mapOriginAddress,
       classicColumnSettings,
       driverLocations,
+      productDetailsByMaterial,
       storageReady: true,
       storageError: null,
     };
@@ -967,6 +1177,7 @@ async function loadDispatchState(
       mapOriginAddress: "W185 N7487 Narrow Ln, Menomonee Falls, WI 53051",
       classicColumnSettings: undefined,
       driverLocations: [],
+      productDetailsByMaterial: {},
       storageReady: false,
       storageError: message,
     };
@@ -1029,20 +1240,7 @@ export async function loader({ request }: any) {
 
   const allowed = await hasAdminQuotePermissionAccess(request, "dispatch");
   if (!allowed) {
-    return data({
-      allowed: false,
-      orders: [],
-      routes: [],
-      trucks: [],
-      employees: [],
-      materialOptions: [],
-      googleMapsApiKey: getBrowserGoogleMapsApiKey(),
-      mapOriginAddress: "",
-      classicColumnSettings: undefined,
-      driverLocations: [],
-      storageReady: false,
-      storageError: null,
-    });
+    return redirect(`/login?next=${encodeURIComponent(url.pathname + url.search)}`);
   }
   const currentUser = await getCurrentUser(request);
   const requestedView = url.searchParams.get("view") || "dashboard";
@@ -1094,60 +1292,9 @@ export async function action({ request }: any) {
   const intent = String(form.get("intent") || "");
   clearDispatchStateCache();
 
-  if (intent === "login") {
-    const password = String(form.get("password") || "");
-    const expected = getAdminQuotePassword();
-
-    if (!expected || password !== expected) {
-      return data(
-        {
-          allowed: false,
-          loginError: "Invalid password",
-          orders: [],
-          routes: [],
-          trucks: [],
-          employees: [],
-          materialOptions: [],
-          googleMapsApiKey: getBrowserGoogleMapsApiKey(),
-          mapOriginAddress: "",
-        },
-        { status: 401 },
-      );
-    }
-
-    const dispatchState = await loadDispatchState();
-
-    return data(
-      {
-        allowed: true,
-        loginError: null,
-        googleMapsApiKey: getBrowserGoogleMapsApiKey(),
-        ...dispatchState,
-      },
-      {
-        headers: {
-          "Set-Cookie": await adminQuoteCookie.serialize("ok"),
-        },
-      },
-    );
-  }
-
   const allowed = await hasAdminQuotePermissionAccess(request, "dispatch");
   if (!allowed) {
-    return data(
-      {
-        allowed: false,
-        loginError: "Please log in",
-        orders: [],
-        routes: [],
-        trucks: [],
-        employees: [],
-        materialOptions: [],
-        googleMapsApiKey: getBrowserGoogleMapsApiKey(),
-        mapOriginAddress: "",
-      },
-      { status: 401 },
-    );
+    return redirect(`/login?next=${encodeURIComponent(url.pathname + url.search)}`);
   }
 
   const currentUser = await getCurrentUser(request);
@@ -1170,6 +1317,40 @@ export async function action({ request }: any) {
   try {
     if (process.env.DISPATCH_AUTO_DAILY_RESET === "true") {
       await resetDispatchRoutesForNewDay();
+    }
+
+    if (intent === "auto-route-orders") {
+      if (form.get("manualRoutingMode") === "on") {
+        const dispatchState = await loadDispatchState({ skipSetup: true });
+        return data({
+          allowed: true,
+          ok: false,
+          message: "Manual routing mode is on. Turn it off before running Auto Route.",
+          ...dispatchState,
+        });
+      }
+
+      const result = await autoRouteOrdersForDispatch();
+      const dispatchState = await loadDispatchState({ skipSetup: true });
+      const skippedText = result.skipped.length
+        ? ` Skipped ${result.skipped.length}: ${result.skipped.slice(0, 3).join("; ")}${result.skipped.length > 3 ? "..." : ""}`
+        : "";
+
+      await logAuditEvent({
+        actor: currentUser,
+        action: "auto_route_orders",
+        targetType: "dispatch",
+        targetId: "auto-route",
+        targetLabel: "Auto Route",
+        details: result,
+      });
+
+      return data({
+        allowed: true,
+        ok: result.assignedOrders > 0,
+        message: `Auto Route assigned ${result.assignedOrders} order${result.assignedOrders === 1 ? "" : "s"} and created ${result.createdRoutes} route${result.createdRoutes === 1 ? "" : "s"}.${skippedText}`,
+        ...dispatchState,
+      });
     }
 
     if (intent === "create-order") {
@@ -2172,6 +2353,7 @@ export default function DispatchPage() {
   const loaderHref = isEmbeddedRoute ? "/app/loader" : "/loader";
   const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
   const logoutHref = `${dispatchHref}?logout=1`;
+  const loginHref = `/login?next=${encodeURIComponent(location.pathname + location.search)}`;
   const canAccess = (permission: string) =>
     !currentUser || currentUser.permissions?.includes(permission);
   const canManageDispatch = canAccess("manageDispatch");
@@ -2334,6 +2516,10 @@ export default function DispatchPage() {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(DISPATCH_NAV_COLLAPSED_KEY) === "1";
   });
+  const [manualRoutingMode, setManualRoutingMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(DISPATCH_MANUAL_ROUTING_KEY) === "1";
+  });
   const deferredOrderSearch = useDeferredValue(orderSearch);
   const normalizedOrderSearch = deferredOrderSearch.trim().toLowerCase();
   const isAssigningByDrag = assignmentFetcher.state === "submitting";
@@ -2401,6 +2587,18 @@ export default function DispatchPage() {
       const next = !current;
       try {
         window.localStorage.setItem(DISPATCH_NAV_COLLAPSED_KEY, next ? "1" : "0");
+      } catch {
+        // Keep the control usable even when localStorage is blocked.
+      }
+      return next;
+    });
+  }
+
+  function toggleManualRoutingMode() {
+    setManualRoutingMode((current) => {
+      const next = !current;
+      try {
+        window.localStorage.setItem(DISPATCH_MANUAL_ROUTING_KEY, next ? "1" : "0");
       } catch {
         // Keep the control usable even when localStorage is blocked.
       }
@@ -2580,30 +2778,23 @@ export default function DispatchPage() {
           <div style={styles.loginCard}>
             <h1 style={styles.title}>Dispatch</h1>
             <p style={styles.subtitle}>
-              Enter the admin password to open the contractor dispatch workspace.
+              Sign in with your contractor user account to open the dispatch workspace.
             </p>
-
-            <Form method="post" autoComplete="off" style={{ marginTop: 22 }}>
-              <input type="hidden" name="intent" value="login" />
-              <label style={styles.label}>Admin Password</label>
-              <input
-                type="password"
-                name="password"
-                autoComplete="current-password"
-                style={styles.input}
-              />
-
-              {actionData?.loginError ? (
-                <div style={styles.statusErr}>{actionData.loginError}</div>
-              ) : null}
-
-              <button
-                type="submit"
-                style={{ ...styles.primaryButton, width: "100%", marginTop: 16 }}
-              >
-                Open Dispatch
-              </button>
-            </Form>
+            <a
+              href={loginHref}
+              style={{
+                ...styles.primaryButton,
+                width: "100%",
+                marginTop: 16,
+                minHeight: 50,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                textDecoration: "none",
+              }}
+            >
+              Sign In
+            </a>
           </div>
         </div>
       </div>
@@ -3974,6 +4165,54 @@ export default function DispatchPage() {
                 <div style={styles.headerPill}>{searchedActiveOrders.length} in queue</div>
               </div>
 
+              {canManageDispatch ? (
+                <div style={styles.autoRouteBar}>
+                  <div>
+                    <div style={styles.autoRouteTitle}>Auto Route Planner</div>
+                    <div style={styles.autoRouteSub}>
+                      Sorts by requested date, time preference, truck capacity, then similar materials.
+                    </div>
+                  </div>
+                  <label style={styles.manualToggle}>
+                    <input
+                      type="checkbox"
+                      checked={manualRoutingMode}
+                      onChange={toggleManualRoutingMode}
+                    />
+                    Manual routing mode
+                  </label>
+                  <Form
+                    method="post"
+                    onSubmit={(event) => {
+                      if (manualRoutingMode) {
+                        event.preventDefault();
+                        return;
+                      }
+
+                      if (
+                        !window.confirm(
+                          "Auto Route will assign current unscheduled orders to available routes/trucks. Existing route stops will be left in place. Continue?",
+                        )
+                      ) {
+                        event.preventDefault();
+                      }
+                    }}
+                  >
+                    <input type="hidden" name="intent" value="auto-route-orders" />
+                    {manualRoutingMode ? (
+                      <input type="hidden" name="manualRoutingMode" value="on" />
+                    ) : null}
+                    <button
+                      type="submit"
+                      disabled={manualRoutingMode}
+                      style={manualRoutingMode ? styles.disabledActionButton : styles.primaryButton}
+                    >
+                      Auto Route
+                    </button>
+                  </Form>
+                </div>
+              ) : null}
+
               {renderSearchBar("Search dispatch by any field: order, customer, route, truck, driver, address, material, notes...")}
 
               <div style={{ display: "grid", gap: 10 }}>
@@ -5010,6 +5249,42 @@ const styles = {
     textTransform: "uppercase" as const,
     letterSpacing: "0.08em",
   },
+  autoRouteBar: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto auto",
+    alignItems: "center",
+    gap: 12,
+    padding: 12,
+    margin: "0 0 16px",
+    borderRadius: 6,
+    border: "1px solid #334155",
+    background: "#020617",
+  } as const,
+  autoRouteTitle: {
+    color: "#f8fafc",
+    fontWeight: 900,
+    fontSize: 13,
+  },
+  autoRouteSub: {
+    marginTop: 4,
+    color: "#94a3b8",
+    fontSize: 12,
+    lineHeight: 1.4,
+  },
+  manualToggle: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    minHeight: 42,
+    padding: "0 12px",
+    borderRadius: 999,
+    border: "1px solid #334155",
+    background: "#0f172a",
+    color: "#e2e8f0",
+    fontSize: 12,
+    fontWeight: 900,
+    whiteSpace: "nowrap" as const,
+  },
   queueCard: {
     width: "100%",
     textAlign: "left" as const,
@@ -5161,6 +5436,17 @@ const styles = {
     fontWeight: 800,
     fontSize: 14,
     cursor: "pointer",
+  } as const,
+  disabledActionButton: {
+    minHeight: 50,
+    borderRadius: 15,
+    border: "1px solid #334155",
+    background: "#1e293b",
+    color: "#64748b",
+    fontWeight: 800,
+    fontSize: 14,
+    cursor: "not-allowed",
+    padding: "0 18px",
   } as const,
   secondaryButton: {
     width: "100%",

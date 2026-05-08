@@ -57,6 +57,15 @@ export type DispatchOrder = {
   updated_at?: string;
 };
 
+export type DispatchProductDetail = {
+  sku: string;
+  title: string;
+  vendor: string;
+  imageUrl: string;
+  unitLabel: string;
+  variantId: string;
+};
+
 export type DispatchDriverLocation = {
   id: string;
   routeId?: string | null;
@@ -488,6 +497,51 @@ export async function getDispatchMaterialOptions() {
       seen.add(key);
       return true;
     });
+}
+
+export async function getDispatchProductDetailsForMaterials(materials: string[]) {
+  const uniqueMaterials = Array.from(
+    new Set(materials.map((material) => String(material || "").trim()).filter(Boolean)),
+  );
+  if (!uniqueMaterials.length) return {} as Record<string, DispatchProductDetail>;
+
+  const result = await supabaseAdmin
+    .from("product_source_map")
+    .select("*");
+
+  if (result.error) {
+    console.error("[DISPATCH PRODUCT DETAILS ERROR]", result.error);
+    return {} as Record<string, DispatchProductDetail>;
+  }
+
+  const rows = ((result.data || []) as Array<Record<string, any>>).filter(
+    (row) => row.product_title || row.sku,
+  );
+
+  return uniqueMaterials.reduce<Record<string, DispatchProductDetail>>((details, material) => {
+    const bestMatch = rows
+      .map((row) => ({
+        row,
+        score: getProductMatchScore(material, {
+          sku: row.sku,
+          product_title: row.product_title,
+        }),
+      }))
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score)[0]?.row;
+
+    if (!bestMatch) return details;
+
+    details[material] = {
+      sku: String(bestMatch.sku || ""),
+      title: String(bestMatch.product_title || bestMatch.sku || material),
+      vendor: String(bestMatch.pickup_vendor || ""),
+      imageUrl: String(bestMatch.image_url || ""),
+      unitLabel: String(bestMatch.unit_label || bestMatch.price_unit_label || ""),
+      variantId: String(bestMatch.variant_id || ""),
+    };
+    return details;
+  }, {});
 }
 
 function parseQuantityFromEmail(raw: string) {

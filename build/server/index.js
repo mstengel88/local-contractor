@@ -1216,10 +1216,7 @@ async function hasAdminQuoteAccess(request) {
     const url = new URL(request.url);
     throw redirect(`/change-password?next=${encodeURIComponent(url.pathname + url.search)}`);
   }
-  if (user) return true;
-  const cookieHeader = request.headers.get("Cookie");
-  const cookieValue = await adminQuoteCookie.parse(cookieHeader);
-  return cookieValue === "ok";
+  return Boolean(user);
 }
 async function hasAdminQuotePermissionAccess(request, permission) {
   const user = await getCurrentUser(request);
@@ -1228,12 +1225,7 @@ async function hasAdminQuotePermissionAccess(request, permission) {
     throw redirect(`/change-password?next=${encodeURIComponent(url.pathname + url.search)}`);
   }
   if (user) return user.permissions.includes(permission);
-  const cookieHeader = request.headers.get("Cookie");
-  const cookieValue = await adminQuoteCookie.parse(cookieHeader);
-  return cookieValue === "ok";
-}
-function getAdminQuotePassword() {
-  return process.env.ADMIN_QUOTE_PASSWORD || "";
+  return false;
 }
 function normalizeQuoteAudience(value) {
   if (value === "contractor") return "contractor";
@@ -1893,6 +1885,9 @@ async function loader$o({
     });
   }
   const allowed = await hasAdminQuotePermissionAccess(request, "quoteTool");
+  if (!allowed) {
+    return redirect(`/login?next=${encodeURIComponent(url.pathname + url.search)}`);
+  }
   const [products, recentQuotes, currentUser] = allowed ? await Promise.all([getProductOptionsFromSupabase(), getRecentCustomQuotes(15), getCurrentUser(request)]) : [[], [], null];
   return data({
     allowed,
@@ -1905,45 +1900,12 @@ async function loader$o({
 async function action$r({
   request
 }) {
+  const url = new URL(request.url);
   const form = await request.formData();
   const intent = String(form.get("intent") || "");
-  if (intent === "login") {
-    const password = String(form.get("password") || "");
-    const expected = getAdminQuotePassword();
-    if (!expected || password !== expected) {
-      return data({
-        allowed: false,
-        loginError: "Invalid password",
-        products: [],
-        recentQuotes: [],
-        googleMapsApiKey: getBrowserGoogleMapsApiKey$1()
-      }, {
-        status: 401
-      });
-    }
-    const [products2, recentQuotes2] = await Promise.all([getProductOptionsFromSupabase(), getRecentCustomQuotes(15)]);
-    return data({
-      allowed: true,
-      products: products2,
-      recentQuotes: recentQuotes2,
-      googleMapsApiKey: getBrowserGoogleMapsApiKey$1()
-    }, {
-      headers: {
-        "Set-Cookie": await adminQuoteCookie.serialize("ok")
-      }
-    });
-  }
   const allowed = await hasAdminQuotePermissionAccess(request, "quoteTool");
   if (!allowed) {
-    return data({
-      allowed: false,
-      loginError: "Please log in",
-      products: [],
-      recentQuotes: [],
-      googleMapsApiKey: getBrowserGoogleMapsApiKey$1()
-    }, {
-      status: 401
-    });
+    return redirect(`/login?next=${encodeURIComponent(url.pathname + url.search)}`);
   }
   const [products, recentQuotes] = await Promise.all([getProductOptionsFromSupabase(), getRecentCustomQuotes(15)]);
   const customerName = String(form.get("customerName") || "");
@@ -2354,6 +2316,7 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
   const dispatchHref = isEmbeddedRoute ? "/app/classic" : "/classic";
   const logoutHref = isEmbeddedRoute ? "/app/custom-quote?logout=1" : "/custom-quote?logout=1";
   const mobileDashboardHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
+  const loginHref = `/login?next=${encodeURIComponent(location.pathname + location.search)}`;
   const canAccess = (permission) => {
     var _a3;
     return !currentUser || ((_a3 = currentUser.permissions) == null ? void 0 : _a3.includes(permission));
@@ -2538,37 +2501,20 @@ const customQuote = UNSAFE_withComponentProps(function PublicCustomQuotePage() {
             children: "Custom Quote Portal"
           }), /* @__PURE__ */ jsx("p", {
             style: styles$d.subtitle,
-            children: "Enter the admin password to access the quote tool."
-          }), /* @__PURE__ */ jsxs(Form, {
-            method: "post",
-            autoComplete: "off",
+            children: "Sign in with your contractor user account to access the quote tool."
+          }), /* @__PURE__ */ jsx("a", {
+            href: loginHref,
             style: {
-              marginTop: "22px"
+              ...styles$d.buttonPrimary,
+              marginTop: "18px",
+              width: "100%",
+              minHeight: 48,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              textDecoration: "none"
             },
-            children: [/* @__PURE__ */ jsx("input", {
-              type: "hidden",
-              name: "intent",
-              value: "login"
-            }), /* @__PURE__ */ jsx("label", {
-              style: styles$d.label,
-              children: "Admin Password"
-            }), /* @__PURE__ */ jsx("input", {
-              type: "password",
-              name: "password",
-              autoComplete: "current-password",
-              style: styles$d.input
-            }), (actionData == null ? void 0 : actionData.loginError) ? /* @__PURE__ */ jsx("div", {
-              style: styles$d.statusErr,
-              children: actionData.loginError
-            }) : null, /* @__PURE__ */ jsx("button", {
-              type: "submit",
-              style: {
-                ...styles$d.buttonPrimary,
-                marginTop: "18px",
-                width: "100%"
-              },
-              children: "Unlock Quote Tool"
-            })]
+            children: "Sign In"
           })]
         })
       })
@@ -3995,6 +3941,9 @@ async function loader$n({
     });
   }
   const allowed = await hasAdminQuotePermissionAccess(request, "reviewQuotes");
+  if (!allowed) {
+    return redirect(`/login?next=${encodeURIComponent(url.pathname + url.search)}`);
+  }
   const [quotes, currentUser] = allowed ? await Promise.all([getRecentCustomQuotes(250), getCurrentUser(request)]) : [[], null];
   return data({
     allowed,
@@ -4005,36 +3954,14 @@ async function loader$n({
 async function action$q({
   request
 }) {
-  const form = await request.formData();
-  const intent = String(form.get("intent") || "");
-  if (intent !== "login") {
-    return data({
-      allowed: false,
-      loginError: "Invalid request",
-      quotes: []
-    }, {
-      status: 400
-    });
-  }
-  const password = String(form.get("password") || "");
-  const expected = getAdminQuotePassword();
-  if (!expected || password !== expected) {
-    return data({
-      allowed: false,
-      loginError: "Invalid password",
-      quotes: []
-    }, {
-      status: 401
-    });
+  const url = new URL(request.url);
+  const allowed = await hasAdminQuotePermissionAccess(request, "reviewQuotes");
+  if (!allowed) {
+    return redirect(`/login?next=${encodeURIComponent(url.pathname + url.search)}`);
   }
   return data({
     allowed: true,
-    loginError: null,
     quotes: await getRecentCustomQuotes(250)
-  }, {
-    headers: {
-      "Set-Cookie": await adminQuoteCookie.serialize("ok")
-    }
   });
 }
 const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
@@ -4068,6 +3995,7 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
   const dispatchHref = isEmbeddedRoute ? "/app/classic" : "/classic";
   const mobileDashboardHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
   const logoutHref = currentUser ? "/login?logout=1" : "?logout=1";
+  const loginHref = `/login?next=${encodeURIComponent(location.pathname + location.search)}`;
   const canAccess = (permission) => {
     var _a3;
     return !currentUser || ((_a3 = currentUser.permissions) == null ? void 0 : _a3.includes(permission));
@@ -4186,36 +4114,18 @@ const quoteReview = UNSAFE_withComponentProps(function QuoteReviewPage() {
             children: "Quote Review"
           }), /* @__PURE__ */ jsx("p", {
             style: styles$c.subtitle,
-            children: "Enter the admin password to search saved quotes and send them to Shopify."
-          }), /* @__PURE__ */ jsxs(Form, {
-            method: "post",
-            autoComplete: "off",
+            children: "Sign in with your contractor user account to search saved quotes and send them to Shopify."
+          }), /* @__PURE__ */ jsx("a", {
+            href: loginHref,
             style: {
-              marginTop: 22
+              ...styles$c.buttonPrimary,
+              marginTop: 16,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              textDecoration: "none"
             },
-            children: [/* @__PURE__ */ jsx("input", {
-              type: "hidden",
-              name: "intent",
-              value: "login"
-            }), /* @__PURE__ */ jsx("label", {
-              style: styles$c.label,
-              children: "Admin Password"
-            }), /* @__PURE__ */ jsx("input", {
-              type: "password",
-              name: "password",
-              autoComplete: "current-password",
-              style: styles$c.input
-            }), (actionData == null ? void 0 : actionData.loginError) ? /* @__PURE__ */ jsx("div", {
-              style: styles$c.statusErr,
-              children: actionData.loginError
-            }) : null, /* @__PURE__ */ jsx("button", {
-              type: "submit",
-              style: {
-                ...styles$c.buttonPrimary,
-                marginTop: 16
-              },
-              children: "Open Quote Review"
-            })]
+            children: "Sign In"
           })]
         })
       })
@@ -5284,6 +5194,7 @@ const classicColumnOptions = {
   sites: [
     { key: "stop", label: "#" },
     { key: "orderNo", label: "Order No" },
+    { key: "sku", label: "SKU" },
     { key: "customer", label: "Customer" },
     { key: "product", label: "Product" },
     { key: "quantity", label: "Qty" },
@@ -5324,7 +5235,7 @@ const classicColumnOptions = {
 };
 const defaultClassicColumnSettings = {
   routes: ["code", "driver", "status", "weight", "start", "finish", "distance"],
-  sites: ["stop", "orderNo", "address", "arrived", "departed", "eta", "miles"],
+  sites: ["stop", "orderNo", "sku", "address", "arrived", "departed", "eta", "miles"],
   orders: ["type", "orderNo", "date", "client", "weight", "volume", "status", "material"],
   unscheduled: ["orderNo", "date", "client", "address", "weight", "volume", "route"]
 };
@@ -5580,6 +5491,40 @@ async function getDispatchMaterialOptions() {
     seen.add(key);
     return true;
   });
+}
+async function getDispatchProductDetailsForMaterials(materials) {
+  const uniqueMaterials = Array.from(
+    new Set(materials.map((material) => String(material || "").trim()).filter(Boolean))
+  );
+  if (!uniqueMaterials.length) return {};
+  const result = await supabaseAdmin.from("product_source_map").select("*");
+  if (result.error) {
+    console.error("[DISPATCH PRODUCT DETAILS ERROR]", result.error);
+    return {};
+  }
+  const rows = (result.data || []).filter(
+    (row) => row.product_title || row.sku
+  );
+  return uniqueMaterials.reduce((details, material) => {
+    var _a2;
+    const bestMatch = (_a2 = rows.map((row) => ({
+      row,
+      score: getProductMatchScore(material, {
+        sku: row.sku,
+        product_title: row.product_title
+      })
+    })).filter((entry2) => entry2.score > 0).sort((a, b) => b.score - a.score)[0]) == null ? void 0 : _a2.row;
+    if (!bestMatch) return details;
+    details[material] = {
+      sku: String(bestMatch.sku || ""),
+      title: String(bestMatch.product_title || bestMatch.sku || material),
+      vendor: String(bestMatch.pickup_vendor || ""),
+      imageUrl: String(bestMatch.image_url || ""),
+      unitLabel: String(bestMatch.unit_label || bestMatch.price_unit_label || ""),
+      variantId: String(bestMatch.variant_id || "")
+    };
+    return details;
+  }, {});
 }
 function parseQuantityFromEmail(raw) {
   var _a2, _b;
@@ -7004,6 +6949,7 @@ async function maybeAutoPollDispatchMailbox() {
   return pollDispatchMailbox();
 }
 const DISPATCH_NAV_COLLAPSED_KEY$4 = "dispatchNavCollapsed";
+const DISPATCH_MANUAL_ROUTING_KEY = "dispatchManualRoutingMode";
 function getDeliveryStatusLabel(status) {
   if (status === "en_route") return "Enroute";
   if (status === "delivered") return "Delivered";
@@ -7119,6 +7065,11 @@ function getTruckCapacityLabel(unit) {
   if (/yards?/i.test(unit)) return "yards";
   return "";
 }
+function getOrderCapacityUnit(order) {
+  if (/tons?/i.test(order.unit)) return "tons";
+  if (/yards?/i.test(order.unit)) return "yards";
+  return "unitless";
+}
 function getCapacityError(order, truck) {
   if (!truck) return "This route does not have a truck assigned yet.";
   const quantity = Number(order.quantity || 0);
@@ -7127,6 +7078,15 @@ function getCapacityError(order, truck) {
   if (!quantity || !capacity || !capacityLabel) return "";
   if (quantity <= capacity) return "";
   return `${order.customer} needs ${quantity} ${capacityLabel}, but ${truck.label} is set to ${capacity} ${capacityLabel}.`;
+}
+function hasTruckCapacityForOrder(order, truck, currentQty = 0) {
+  if (!truck) return false;
+  const quantity = Number(order.quantity || 0);
+  const capacity = getTruckCapacityForOrderUnit(truck, order.unit);
+  const capacityLabel = getTruckCapacityLabel(order.unit);
+  if (!quantity || !capacityLabel) return true;
+  if (!capacity) return false;
+  return currentQty + quantity <= capacity;
 }
 function isYardOrder(order) {
   return /yards?/i.test(order.unit);
@@ -7259,6 +7219,134 @@ async function assignOrderToRoute({
     ok: true,
     message: `Split #${baseOrderNumber} into ${splitCount} route tickets.`,
     createdCount: splitCount
+  };
+}
+function getAutoRouteMaterialKey(order) {
+  return String(order.material || "").toLowerCase().replace(/[#"'.,/()-]+/g, " ").replace(/\b(?:washed|screened|green|hills|supply|mix|blend)\b/g, " ").replace(/\s+/g, " ").trim() || "material";
+}
+function getAutoRouteTimeRank(order) {
+  const value = `${order.timePreference || ""} ${order.requestedWindow || ""} ${order.notes || ""}`.toLowerCase();
+  if (value.includes("morning")) return 0;
+  if (value.includes("afternoon")) return 1;
+  if (value.includes("evening")) return 2;
+  return 3;
+}
+function getAutoRouteCode(truck, index, existingCodes) {
+  var _a2;
+  const truckDigits = ((_a2 = String(truck.label || "").match(/\d+/)) == null ? void 0 : _a2[0]) || String(index + 1).padStart(2, "0");
+  const baseCode = `R-${truckDigits}`;
+  let code = baseCode;
+  let suffix = 2;
+  while (existingCodes.has(code)) {
+    code = `${baseCode}-${suffix}`;
+    suffix += 1;
+  }
+  existingCodes.add(code);
+  return code;
+}
+function routeCanTakeOrder(order, bucket) {
+  const unit = getOrderCapacityUnit(order);
+  return hasTruckCapacityForOrder(order, bucket.truck, bucket.usedByUnit[unit] || 0);
+}
+async function autoRouteOrdersForDispatch() {
+  const [allOrders, existingRoutes, trucks, employees] = await Promise.all([getDispatchOrders(), getDispatchRoutes(), getDispatchTrucks(), getDispatchEmployees()]);
+  const activeTrucks = trucks.filter((truck) => truck.isActive !== false);
+  const drivers = employees.filter((employee) => employee.role === "driver" && employee.isActive !== false);
+  const existingCodes = new Set(existingRoutes.map((route54) => route54.code).filter(Boolean));
+  const routeBuckets = existingRoutes.map((route54) => {
+    const truck = activeTrucks.find((entry2) => entry2.id === route54.truckId) || activeTrucks.find((entry2) => entry2.label === route54.truck) || null;
+    if (!truck) return null;
+    return {
+      route: route54,
+      truck,
+      usedByUnit: {},
+      materialKeys: /* @__PURE__ */ new Set(),
+      orderIds: [],
+      maxSequence: 0
+    };
+  }).filter((bucket) => Boolean(bucket));
+  for (const order of allOrders) {
+    if (!order.assignedRouteId || order.status === "delivered" || order.status === "cancelled" || order.deliveryStatus === "delivered") {
+      continue;
+    }
+    const bucket = routeBuckets.find((entry2) => entry2.route.id === order.assignedRouteId);
+    if (!bucket) continue;
+    const unit = getOrderCapacityUnit(order);
+    const quantity = Number(order.quantity || 0);
+    bucket.orderIds.push(order.id);
+    bucket.materialKeys.add(getAutoRouteMaterialKey(order));
+    bucket.maxSequence = Math.max(bucket.maxSequence, Number(order.stopSequence || 0));
+    bucket.usedByUnit[unit] = (bucket.usedByUnit[unit] || 0) + (Number.isFinite(quantity) ? quantity : 0);
+  }
+  const routedTruckIds = new Set(routeBuckets.map((bucket) => bucket.truck.id));
+  const unusedTrucks = activeTrucks.filter((truck) => !routedTruckIds.has(truck.id));
+  const usedDriverIds = new Set(existingRoutes.map((route54) => route54.driverId).filter(Boolean));
+  const unusedDrivers = drivers.filter((driver) => !usedDriverIds.has(driver.id));
+  const planningOrders = allOrders.filter((order) => order.status !== "delivered" && order.status !== "cancelled" && order.deliveryStatus !== "delivered" && !order.assignedRouteId).sort((a, b) => {
+    const dateDiff = getRequestedDeliverySortValue(a) - getRequestedDeliverySortValue(b);
+    if (dateDiff !== 0) return dateDiff;
+    const timeDiff = getAutoRouteTimeRank(a) - getAutoRouteTimeRank(b);
+    if (timeDiff !== 0) return timeDiff;
+    const materialDiff = getAutoRouteMaterialKey(a).localeCompare(getAutoRouteMaterialKey(b));
+    if (materialDiff !== 0) return materialDiff;
+    return getOrderTravelMinutes(a) - getOrderTravelMinutes(b);
+  });
+  let createdRoutes = 0;
+  let assignedOrders = 0;
+  const skipped = [];
+  for (const order of planningOrders) {
+    const materialKey = getAutoRouteMaterialKey(order);
+    const quantity = Number(order.quantity || 0);
+    const unit = getOrderCapacityUnit(order);
+    const compatibleBuckets = routeBuckets.filter((bucket2) => routeCanTakeOrder(order, bucket2));
+    let bucket = compatibleBuckets.find((entry2) => entry2.materialKeys.has(materialKey)) || compatibleBuckets.find((entry2) => entry2.orderIds.length === 0) || compatibleBuckets[0] || null;
+    if (!bucket && unusedTrucks.length) {
+      const truck = unusedTrucks.shift();
+      const driver = unusedDrivers.shift() || drivers[routeBuckets.length % Math.max(drivers.length, 1)] || null;
+      const created = await createDispatchRoute({
+        code: getAutoRouteCode(truck, routeBuckets.length, existingCodes),
+        truckId: truck.id,
+        truck: truck.label,
+        driverId: (driver == null ? void 0 : driver.id) || "",
+        driver: (driver == null ? void 0 : driver.name) || "",
+        helperId: "",
+        helper: "",
+        color: ["#f97316", "#22c55e", "#38bdf8", "#a3e635", "#eab308", "#fb7185"][routeBuckets.length % 6],
+        shift: "Auto routed",
+        region: "Auto"
+      });
+      bucket = {
+        route: created,
+        truck,
+        usedByUnit: {},
+        materialKeys: /* @__PURE__ */ new Set(),
+        orderIds: [],
+        maxSequence: 0
+      };
+      routeBuckets.push(bucket);
+      createdRoutes += 1;
+    }
+    if (!bucket || !routeCanTakeOrder(order, bucket)) {
+      skipped.push(`${getOrderDisplayNumber$2(order)} ${order.customer}: no available truck capacity`);
+      continue;
+    }
+    const nextSequence = bucket.maxSequence + 1;
+    await updateDispatchOrder(order.id, {
+      assignedRouteId: bucket.route.id,
+      stopSequence: nextSequence,
+      status: "scheduled",
+      deliveryStatus: order.deliveryStatus || "not_started"
+    });
+    bucket.orderIds.push(order.id);
+    bucket.maxSequence = nextSequence;
+    bucket.materialKeys.add(materialKey);
+    bucket.usedByUnit[unit] = (bucket.usedByUnit[unit] || 0) + (Number.isFinite(quantity) ? quantity : 0);
+    assignedOrders += 1;
+  }
+  return {
+    assignedOrders,
+    createdRoutes,
+    skipped
   };
 }
 function buildChecklistJson$1(form) {
@@ -7594,6 +7682,7 @@ async function loadDispatchState(options = {}) {
       }
     }
     const [orders, routes2, trucks, employees, materialOptions, mapOriginAddress, classicColumnSettings, driverLocations] = await Promise.all([getDispatchOrders(), getDispatchRoutes(), getDispatchTrucks(), getDispatchEmployees(), getDispatchMaterialOptions(), getDispatchOriginAddress(), getClassicColumnSettings(), getLatestDispatchDriverLocations()]);
+    const productDetailsByMaterial = await getDispatchProductDetailsForMaterials(orders.map((order) => order.material));
     const state = {
       orders,
       routes: routes2,
@@ -7603,6 +7692,7 @@ async function loadDispatchState(options = {}) {
       mapOriginAddress,
       classicColumnSettings,
       driverLocations,
+      productDetailsByMaterial,
       storageReady: true,
       storageError: null
     };
@@ -7625,6 +7715,7 @@ async function loadDispatchState(options = {}) {
       mapOriginAddress: "W185 N7487 Narrow Ln, Menomonee Falls, WI 53051",
       classicColumnSettings: void 0,
       driverLocations: [],
+      productDetailsByMaterial: {},
       storageReady: false,
       storageError: message
     };
@@ -7664,20 +7755,7 @@ async function loader$m({
   }
   const allowed = await hasAdminQuotePermissionAccess(request, "dispatch");
   if (!allowed) {
-    return data({
-      allowed: false,
-      orders: [],
-      routes: [],
-      trucks: [],
-      employees: [],
-      materialOptions: [],
-      googleMapsApiKey: getBrowserGoogleMapsApiKey(),
-      mapOriginAddress: "",
-      classicColumnSettings: void 0,
-      driverLocations: [],
-      storageReady: false,
-      storageError: null
-    });
+    return redirect(`/login?next=${encodeURIComponent(url.pathname + url.search)}`);
   }
   const currentUser = await getCurrentUser(request);
   const requestedView = url.searchParams.get("view") || "dashboard";
@@ -7716,51 +7794,9 @@ async function action$p({
   const form = await request.formData();
   const intent = String(form.get("intent") || "");
   clearDispatchStateCache();
-  if (intent === "login") {
-    const password = String(form.get("password") || "");
-    const expected = getAdminQuotePassword();
-    if (!expected || password !== expected) {
-      return data({
-        allowed: false,
-        loginError: "Invalid password",
-        orders: [],
-        routes: [],
-        trucks: [],
-        employees: [],
-        materialOptions: [],
-        googleMapsApiKey: getBrowserGoogleMapsApiKey(),
-        mapOriginAddress: ""
-      }, {
-        status: 401
-      });
-    }
-    const dispatchState = await loadDispatchState();
-    return data({
-      allowed: true,
-      loginError: null,
-      googleMapsApiKey: getBrowserGoogleMapsApiKey(),
-      ...dispatchState
-    }, {
-      headers: {
-        "Set-Cookie": await adminQuoteCookie.serialize("ok")
-      }
-    });
-  }
   const allowed = await hasAdminQuotePermissionAccess(request, "dispatch");
   if (!allowed) {
-    return data({
-      allowed: false,
-      loginError: "Please log in",
-      orders: [],
-      routes: [],
-      trucks: [],
-      employees: [],
-      materialOptions: [],
-      googleMapsApiKey: getBrowserGoogleMapsApiKey(),
-      mapOriginAddress: ""
-    }, {
-      status: 401
-    });
+    return redirect(`/login?next=${encodeURIComponent(url.pathname + url.search)}`);
   }
   const currentUser = await getCurrentUser(request);
   const canManageDispatch = await hasAdminQuotePermissionAccess(request, "manageDispatch");
@@ -7780,6 +7816,38 @@ async function action$p({
   try {
     if (process.env.DISPATCH_AUTO_DAILY_RESET === "true") {
       await resetDispatchRoutesForNewDay();
+    }
+    if (intent === "auto-route-orders") {
+      if (form.get("manualRoutingMode") === "on") {
+        const dispatchState2 = await loadDispatchState({
+          skipSetup: true
+        });
+        return data({
+          allowed: true,
+          ok: false,
+          message: "Manual routing mode is on. Turn it off before running Auto Route.",
+          ...dispatchState2
+        });
+      }
+      const result = await autoRouteOrdersForDispatch();
+      const dispatchState = await loadDispatchState({
+        skipSetup: true
+      });
+      const skippedText = result.skipped.length ? ` Skipped ${result.skipped.length}: ${result.skipped.slice(0, 3).join("; ")}${result.skipped.length > 3 ? "..." : ""}` : "";
+      await logAuditEvent({
+        actor: currentUser,
+        action: "auto_route_orders",
+        targetType: "dispatch",
+        targetId: "auto-route",
+        targetLabel: "Auto Route",
+        details: result
+      });
+      return data({
+        allowed: true,
+        ok: result.assignedOrders > 0,
+        message: `Auto Route assigned ${result.assignedOrders} order${result.assignedOrders === 1 ? "" : "s"} and created ${result.createdRoutes} route${result.createdRoutes === 1 ? "" : "s"}.${skippedText}`,
+        ...dispatchState
+      });
     }
     if (intent === "create-order") {
       const customer = String(form.get("customer") || "").trim();
@@ -8591,6 +8659,7 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
   const loaderHref = isEmbeddedRoute ? "/app/loader" : "/loader";
   const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
   const logoutHref = `${dispatchHref}?logout=1`;
+  const loginHref = `/login?next=${encodeURIComponent(location.pathname + location.search)}`;
   const canAccess = (permission) => {
     var _a3;
     return !currentUser || ((_a3 = currentUser.permissions) == null ? void 0 : _a3.includes(permission));
@@ -8670,6 +8739,10 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(DISPATCH_NAV_COLLAPSED_KEY$4) === "1";
   });
+  const [manualRoutingMode, setManualRoutingMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(DISPATCH_MANUAL_ROUTING_KEY) === "1";
+  });
   const deferredOrderSearch = useDeferredValue(orderSearch);
   const normalizedOrderSearch = deferredOrderSearch.trim().toLowerCase();
   assignmentFetcher.state === "submitting";
@@ -8717,6 +8790,16 @@ How many tickets should I split it into?`, String(minimumSplits));
       const next = !current;
       try {
         window.localStorage.setItem(DISPATCH_NAV_COLLAPSED_KEY$4, next ? "1" : "0");
+      } catch {
+      }
+      return next;
+    });
+  }
+  function toggleManualRoutingMode() {
+    setManualRoutingMode((current) => {
+      const next = !current;
+      try {
+        window.localStorage.setItem(DISPATCH_MANUAL_ROUTING_KEY, next ? "1" : "0");
       } catch {
       }
       return next;
@@ -8847,37 +8930,20 @@ How many tickets should I split it into?`, String(minimumSplits));
             children: "Dispatch"
           }), /* @__PURE__ */ jsx("p", {
             style: styles$b.subtitle,
-            children: "Enter the admin password to open the contractor dispatch workspace."
-          }), /* @__PURE__ */ jsxs(Form, {
-            method: "post",
-            autoComplete: "off",
+            children: "Sign in with your contractor user account to open the dispatch workspace."
+          }), /* @__PURE__ */ jsx("a", {
+            href: loginHref,
             style: {
-              marginTop: 22
+              ...styles$b.primaryButton,
+              width: "100%",
+              marginTop: 16,
+              minHeight: 50,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              textDecoration: "none"
             },
-            children: [/* @__PURE__ */ jsx("input", {
-              type: "hidden",
-              name: "intent",
-              value: "login"
-            }), /* @__PURE__ */ jsx("label", {
-              style: styles$b.label,
-              children: "Admin Password"
-            }), /* @__PURE__ */ jsx("input", {
-              type: "password",
-              name: "password",
-              autoComplete: "current-password",
-              style: styles$b.input
-            }), (actionData == null ? void 0 : actionData.loginError) ? /* @__PURE__ */ jsx("div", {
-              style: styles$b.statusErr,
-              children: actionData.loginError
-            }) : null, /* @__PURE__ */ jsx("button", {
-              type: "submit",
-              style: {
-                ...styles$b.primaryButton,
-                width: "100%",
-                marginTop: 16
-              },
-              children: "Open Dispatch"
-            })]
+            children: "Sign In"
           })]
         })
       })
@@ -10800,7 +10866,50 @@ How many tickets should I split it into?`, String(minimumSplits));
                   style: styles$b.headerPill,
                   children: [searchedActiveOrders.length, " in queue"]
                 })]
-              }), renderSearchBar("Search dispatch by any field: order, customer, route, truck, driver, address, material, notes..."), /* @__PURE__ */ jsxs("div", {
+              }), canManageDispatch ? /* @__PURE__ */ jsxs("div", {
+                style: styles$b.autoRouteBar,
+                children: [/* @__PURE__ */ jsxs("div", {
+                  children: [/* @__PURE__ */ jsx("div", {
+                    style: styles$b.autoRouteTitle,
+                    children: "Auto Route Planner"
+                  }), /* @__PURE__ */ jsx("div", {
+                    style: styles$b.autoRouteSub,
+                    children: "Sorts by requested date, time preference, truck capacity, then similar materials."
+                  })]
+                }), /* @__PURE__ */ jsxs("label", {
+                  style: styles$b.manualToggle,
+                  children: [/* @__PURE__ */ jsx("input", {
+                    type: "checkbox",
+                    checked: manualRoutingMode,
+                    onChange: toggleManualRoutingMode
+                  }), "Manual routing mode"]
+                }), /* @__PURE__ */ jsxs(Form, {
+                  method: "post",
+                  onSubmit: (event) => {
+                    if (manualRoutingMode) {
+                      event.preventDefault();
+                      return;
+                    }
+                    if (!window.confirm("Auto Route will assign current unscheduled orders to available routes/trucks. Existing route stops will be left in place. Continue?")) {
+                      event.preventDefault();
+                    }
+                  },
+                  children: [/* @__PURE__ */ jsx("input", {
+                    type: "hidden",
+                    name: "intent",
+                    value: "auto-route-orders"
+                  }), manualRoutingMode ? /* @__PURE__ */ jsx("input", {
+                    type: "hidden",
+                    name: "manualRoutingMode",
+                    value: "on"
+                  }) : null, /* @__PURE__ */ jsx("button", {
+                    type: "submit",
+                    disabled: manualRoutingMode,
+                    style: manualRoutingMode ? styles$b.disabledActionButton : styles$b.primaryButton,
+                    children: "Auto Route"
+                  })]
+                })]
+              }) : null, renderSearchBar("Search dispatch by any field: order, customer, route, truck, driver, address, material, notes..."), /* @__PURE__ */ jsxs("div", {
                 style: {
                   display: "grid",
                   gap: 10
@@ -11924,6 +12033,42 @@ const styles$b = {
     textTransform: "uppercase",
     letterSpacing: "0.08em"
   },
+  autoRouteBar: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto auto",
+    alignItems: "center",
+    gap: 12,
+    padding: 12,
+    margin: "0 0 16px",
+    borderRadius: 6,
+    border: "1px solid #334155",
+    background: "#020617"
+  },
+  autoRouteTitle: {
+    color: "#f8fafc",
+    fontWeight: 900,
+    fontSize: 13
+  },
+  autoRouteSub: {
+    marginTop: 4,
+    color: "#94a3b8",
+    fontSize: 12,
+    lineHeight: 1.4
+  },
+  manualToggle: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    minHeight: 42,
+    padding: "0 12px",
+    borderRadius: 999,
+    border: "1px solid #334155",
+    background: "#0f172a",
+    color: "#e2e8f0",
+    fontSize: 12,
+    fontWeight: 900,
+    whiteSpace: "nowrap"
+  },
   queueCard: {
     width: "100%",
     textAlign: "left",
@@ -12073,6 +12218,17 @@ const styles$b = {
     fontWeight: 800,
     fontSize: 14,
     cursor: "pointer"
+  },
+  disabledActionButton: {
+    minHeight: 50,
+    borderRadius: 15,
+    border: "1px solid #334155",
+    background: "#1e293b",
+    color: "#64748b",
+    fontWeight: 800,
+    fontSize: 14,
+    cursor: "not-allowed",
+    padding: "0 18px"
   },
   secondaryButton: {
     width: "100%",
@@ -12762,6 +12918,7 @@ const CLASSIC_PANEL_LAYOUT_KEY = "classicDispatchPanelLayout";
 const CLASSIC_SELECTED_ROUTE_KEY = "classicDispatchSelectedRouteId";
 const DISPATCH_NAV_COLLAPSED_KEY$3 = "dispatchNavCollapsed";
 const DISPATCH_CHIME_ENABLED_KEY = "dispatchChimeEnabled";
+const CLASSIC_MANUAL_ROUTING_KEY = "dispatchManualRoutingMode";
 const MIN_CLASSIC_COLUMN_WIDTH = 48;
 const DEFAULT_CLASSIC_PANEL_LAYOUT = {
   mainLeft: 50,
@@ -12781,6 +12938,7 @@ const defaultColumnWidths = {
   sites: {
     stop: 60,
     orderNo: 95,
+    sku: 110,
     customer: 160,
     product: 180,
     quantity: 80,
@@ -13284,6 +13442,10 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(DISPATCH_NAV_COLLAPSED_KEY$3) === "1";
   });
+  const [manualRoutingMode, setManualRoutingMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(CLASSIC_MANUAL_ROUTING_KEY) === "1";
+  });
   const [tableSorts, setTableSorts] = useState({
     routes: {
       key: "weight",
@@ -13329,6 +13491,7 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
   const [driverLocations, setDriverLocations] = useState(initialDriverLocations);
   const materialOptions = (actionData == null ? void 0 : actionData.materialOptions) ?? loaderData.materialOptions ?? [];
   const classicColumnSettings = (actionData == null ? void 0 : actionData.classicColumnSettings) ?? loaderData.classicColumnSettings ?? defaultClassicColumnSettings;
+  const productDetailsByMaterial = (actionData == null ? void 0 : actionData.productDetailsByMaterial) ?? loaderData.productDetailsByMaterial ?? {};
   const message = (actionData == null ? void 0 : actionData.message) || ((_a2 = loaderData == null ? void 0 : loaderData.mailboxStatus) == null ? void 0 : _a2.message) || "";
   const mailboxStatus = (actionData == null ? void 0 : actionData.mailboxStatus) || (loaderData == null ? void 0 : loaderData.mailboxStatus) || null;
   const googleMapsApiKey = (actionData == null ? void 0 : actionData.googleMapsApiKey) ?? loaderData.googleMapsApiKey ?? "";
@@ -13350,11 +13513,14 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
     var _a3;
     return !currentUser || ((_a3 = currentUser.permissions) == null ? void 0 : _a3.includes(permission));
   };
+  const canManageDispatch = canAccess("manageDispatch");
   const logoutHref = currentUser ? "/login?logout=1" : `${dispatchHref}?logout=1`;
+  const loginHref = `/login?next=${encodeURIComponent(location.pathname + location.search)}`;
   const drivers = employees.filter((employee) => employee.role === "driver");
   const helpers = employees.filter((employee) => employee.role === "helper");
   const routeColumnKeys = classicColumnSettings.routes || defaultClassicColumnSettings.routes;
-  const siteColumnKeys = classicColumnSettings.sites || defaultClassicColumnSettings.sites;
+  const savedSiteColumnKeys = classicColumnSettings.sites || defaultClassicColumnSettings.sites;
+  const siteColumnKeys = savedSiteColumnKeys.includes("sku") ? savedSiteColumnKeys : [...savedSiteColumnKeys.slice(0, Math.max(2, savedSiteColumnKeys.indexOf("orderNo") + 1)), "sku", ...savedSiteColumnKeys.slice(Math.max(2, savedSiteColumnKeys.indexOf("orderNo") + 1))];
   const orderColumnKeys = classicColumnSettings.orders || defaultClassicColumnSettings.orders;
   const unscheduledColumnKeys = classicColumnSettings.unscheduled || defaultClassicColumnSettings.unscheduled;
   function toggleNavCollapsed() {
@@ -13362,6 +13528,16 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
       const next = !current;
       try {
         window.localStorage.setItem(DISPATCH_NAV_COLLAPSED_KEY$3, next ? "1" : "0");
+      } catch {
+      }
+      return next;
+    });
+  }
+  function toggleManualRoutingMode() {
+    setManualRoutingMode((current) => {
+      const next = !current;
+      try {
+        window.localStorage.setItem(CLASSIC_MANUAL_ROUTING_KEY, next ? "1" : "0");
       } catch {
       }
       return next;
@@ -13437,6 +13613,12 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
   }), [routes2, tableSorts.routes]);
   const selectedRoute = sortedRoutes.find((route54) => route54.id === selectedRouteId) || sortedRoutes[0] || null;
   const selectedOrder = orders.find((order) => order.id === selectedOrderId) || null;
+  function getOrderProductDetail(order) {
+    var _a3;
+    if (!order) return null;
+    return productDetailsByMaterial[order.material] || ((_a3 = Object.entries(productDetailsByMaterial).find(([material]) => material.toLowerCase() === String(order.material || "").toLowerCase())) == null ? void 0 : _a3[1]) || null;
+  }
+  const selectedOrderProductDetail = getOrderProductDetail(selectedOrder);
   useEffect(() => {
     if (!sortedRoutes.length) return;
     if (selectedRouteId && sortedRoutes.some((route54) => route54.id === selectedRouteId)) return;
@@ -13450,8 +13632,10 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
     }
   }, [selectedRouteId]);
   const sortedSiteOrders = useMemo(() => sortItems((selectedRoute == null ? void 0 : selectedRoute.orders) || [], tableSorts.sites, (order, key) => {
+    var _a3;
     if (key === "stop") return order.stopSequence || 9999;
     if (key === "orderNo") return getOrderNumber$5(order);
+    if (key === "sku") return ((_a3 = getOrderProductDetail(order)) == null ? void 0 : _a3.sku) || "";
     if (key === "address") return getOrderAddress$4(order);
     if (key === "customer") return order.customer;
     if (key === "product") return order.material;
@@ -13464,7 +13648,7 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
     if (key === "eta") return order.eta || order.requestedWindow || "";
     if (key === "miles") return order.travelMiles || "";
     return "";
-  }), [selectedRoute, tableSorts.sites]);
+  }), [selectedRoute, tableSorts.sites, productDetailsByMaterial]);
   const search = query.trim().toLowerCase();
   const visibleOrders = useMemo(() => search ? orders.filter((order) => buildSearchText$2(order).includes(search)) : orders, [orders, search]);
   const unscheduledOrders = visibleOrders.filter((order) => !order.assignedRouteId && isActiveBoardOrder(order) && order.status !== "scheduled");
@@ -13691,6 +13875,21 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
         children: getOrderNumber$5(order)
       });
     }
+    if (key === "sku") {
+      const detail = getOrderProductDetail(order);
+      const label = (detail == null ? void 0 : detail.sku) || "No SKU";
+      return /* @__PURE__ */ jsx("button", {
+        type: "button",
+        style: (detail == null ? void 0 : detail.sku) ? styles$a.rowSkuButton : styles$a.rowSkuButtonMuted,
+        onClick: () => {
+          setSelectedOrderId(order.id);
+          setOrderDrawerOpen(true);
+          setRouteDrawerOpen(false);
+        },
+        title: (detail == null ? void 0 : detail.title) || order.material || "Product details",
+        children: label
+      });
+    }
     if (key === "date" || key === "requested") return order.requestedWindow || "-";
     if (key === "client" || key === "customer") return order.customer || "-";
     if (key === "address") return getOrderAddress$4(order) || "-";
@@ -13790,28 +13989,21 @@ How many tickets should I split it into?`, String(minimumSplits));
   if (!allowed) {
     return /* @__PURE__ */ jsx("main", {
       style: styles$a.loginPage,
-      children: /* @__PURE__ */ jsxs(Form, {
-        method: "post",
+      children: /* @__PURE__ */ jsxs("section", {
         style: styles$a.loginBox,
         children: [/* @__PURE__ */ jsx("h1", {
           style: styles$a.loginTitle,
           children: "Classic Dispatch"
         }), /* @__PURE__ */ jsx("p", {
           style: styles$a.muted,
-          children: "Log in to open the light plan-and-track board."
-        }), /* @__PURE__ */ jsx("input", {
-          type: "hidden",
-          name: "intent",
-          value: "login"
-        }), /* @__PURE__ */ jsx("input", {
-          name: "password",
-          type: "password",
-          placeholder: "Password",
-          style: styles$a.input
-        }), /* @__PURE__ */ jsx("button", {
-          type: "submit",
-          style: styles$a.orangeButton,
-          children: "Log In"
+          children: "Sign in with your contractor user account to open the plan-and-track board."
+        }), /* @__PURE__ */ jsx("a", {
+          href: loginHref,
+          style: {
+            ...styles$a.orangeButton,
+            textDecoration: "none"
+          },
+          children: "Sign In"
         })]
       })
     });
@@ -14003,7 +14195,45 @@ How many tickets should I split it into?`, String(minimumSplits));
             style: styles$a.outlineButton,
             children: "Import Mail"
           })]
-        }), /* @__PURE__ */ jsx("button", {
+        }), canManageDispatch ? /* @__PURE__ */ jsxs(Fragment, {
+          children: [/* @__PURE__ */ jsxs("label", {
+            style: styles$a.manualRouteToggle,
+            children: [/* @__PURE__ */ jsx("input", {
+              type: "checkbox",
+              checked: manualRoutingMode,
+              onChange: toggleManualRoutingMode
+            }), "Manual"]
+          }), /* @__PURE__ */ jsxs(Form, {
+            method: "post",
+            style: styles$a.compactTopForm,
+            onSubmit: (event) => {
+              if (manualRoutingMode) {
+                event.preventDefault();
+                return;
+              }
+              if (!window.confirm("Auto Route will assign unscheduled orders by date, time preference, truck capacity, and similar materials. Existing route stops stay in place. Continue?")) {
+                event.preventDefault();
+              }
+            },
+            children: [/* @__PURE__ */ jsx("input", {
+              type: "hidden",
+              name: "intent",
+              value: "auto-route-orders"
+            }), manualRoutingMode ? /* @__PURE__ */ jsx("input", {
+              type: "hidden",
+              name: "manualRoutingMode",
+              value: "on"
+            }) : null, /* @__PURE__ */ jsx("button", {
+              type: "submit",
+              disabled: manualRoutingMode,
+              style: manualRoutingMode ? {
+                ...styles$a.outlineButton,
+                ...styles$a.disabledOutlineButton
+              } : styles$a.outlineButton,
+              children: "Auto Route"
+            })]
+          })]
+        }) : null, /* @__PURE__ */ jsx("button", {
           type: "button",
           style: styles$a.outlineButton,
           onClick: testChime,
@@ -14550,6 +14780,26 @@ How many tickets should I split it into?`, String(minimumSplits));
           }), /* @__PURE__ */ jsxs("dd", {
             children: [selectedOrder.quantity || "-", " ", selectedOrder.unit, " ", selectedOrder.material]
           }), /* @__PURE__ */ jsx("dt", {
+            children: "Product SKU"
+          }), /* @__PURE__ */ jsx("dd", {
+            children: (selectedOrderProductDetail == null ? void 0 : selectedOrderProductDetail.sku) || "No SKU matched"
+          }), /* @__PURE__ */ jsx("dt", {
+            children: "Product Title"
+          }), /* @__PURE__ */ jsx("dd", {
+            children: (selectedOrderProductDetail == null ? void 0 : selectedOrderProductDetail.title) || selectedOrder.material || "No product matched"
+          }), (selectedOrderProductDetail == null ? void 0 : selectedOrderProductDetail.unitLabel) ? /* @__PURE__ */ jsxs(Fragment, {
+            children: [/* @__PURE__ */ jsx("dt", {
+              children: "Unit Label"
+            }), /* @__PURE__ */ jsx("dd", {
+              children: selectedOrderProductDetail.unitLabel
+            })]
+          }) : null, (selectedOrderProductDetail == null ? void 0 : selectedOrderProductDetail.vendor) ? /* @__PURE__ */ jsxs(Fragment, {
+            children: [/* @__PURE__ */ jsx("dt", {
+              children: "Vendor"
+            }), /* @__PURE__ */ jsx("dd", {
+              children: selectedOrderProductDetail.vendor
+            })]
+          }) : null, /* @__PURE__ */ jsx("dt", {
             children: "Requested"
           }), /* @__PURE__ */ jsx("dd", {
             children: selectedOrder.requestedWindow || "Needs scheduling"
@@ -14566,7 +14816,20 @@ How many tickets should I split it into?`, String(minimumSplits));
           }), /* @__PURE__ */ jsx("dd", {
             children: selectedOrder.travelSummary || formatTime$1(getTravelMinutes$4(selectedOrder))
           })]
-        }), selectedOrder.notes ? /* @__PURE__ */ jsxs("div", {
+        }), (selectedOrderProductDetail == null ? void 0 : selectedOrderProductDetail.imageUrl) ? /* @__PURE__ */ jsxs("div", {
+          style: styles$a.productPreview,
+          children: [/* @__PURE__ */ jsx("img", {
+            src: selectedOrderProductDetail.imageUrl,
+            alt: selectedOrderProductDetail.title,
+            style: styles$a.productPreviewImage
+          }), /* @__PURE__ */ jsxs("div", {
+            children: [/* @__PURE__ */ jsx("strong", {
+              children: selectedOrderProductDetail.title
+            }), /* @__PURE__ */ jsx("p", {
+              children: "Use this synced product match to verify blend/mix details before loading."
+            })]
+          })]
+        }) : null, selectedOrder.notes ? /* @__PURE__ */ jsxs("div", {
           style: styles$a.drawerNotes,
           children: [/* @__PURE__ */ jsx("strong", {
             children: "Notes"
@@ -14746,8 +15009,24 @@ const styles$a = {
   topForm: {
     marginLeft: "auto"
   },
+  compactTopForm: {
+    marginLeft: 0
+  },
   company: {
     marginLeft: 12,
+    fontWeight: 800,
+    whiteSpace: "nowrap"
+  },
+  manualRouteToggle: {
+    height: 34,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 7,
+    padding: "0 12px",
+    borderRadius: 999,
+    border: "1px solid var(--classic-border)",
+    background: "var(--classic-panel-bg)",
+    color: "var(--classic-text)",
     fontWeight: 800,
     whiteSpace: "nowrap"
   },
@@ -14764,6 +15043,12 @@ const styles$a = {
     textDecoration: "none",
     fontWeight: 800,
     cursor: "pointer"
+  },
+  disabledOutlineButton: {
+    borderColor: "var(--classic-border)",
+    color: "var(--classic-muted)",
+    opacity: 0.65,
+    cursor: "not-allowed"
   },
   orangeButton: {
     minHeight: 34,
@@ -14919,6 +15204,21 @@ const styles$a = {
     fontWeight: 900,
     cursor: "pointer",
     textDecoration: "underline"
+  },
+  rowSkuButton: {
+    border: "none",
+    background: "transparent",
+    color: "#22c55e",
+    fontWeight: 900,
+    cursor: "pointer",
+    textDecoration: "underline"
+  },
+  rowSkuButtonMuted: {
+    border: "none",
+    background: "transparent",
+    color: "var(--classic-muted)",
+    fontWeight: 800,
+    cursor: "pointer"
   },
   dropZone: {
     height: 24,
@@ -15263,6 +15563,24 @@ const styles$a = {
     border: "1px solid var(--classic-border)",
     borderRadius: 6,
     background: "var(--classic-panel-header-bg)"
+  },
+  productPreview: {
+    marginTop: 16,
+    display: "grid",
+    gridTemplateColumns: "72px 1fr",
+    gap: 12,
+    alignItems: "center",
+    padding: 10,
+    border: "1px solid var(--classic-border)",
+    borderRadius: 6,
+    background: "var(--classic-panel-header-bg)"
+  },
+  productPreviewImage: {
+    width: 72,
+    height: 72,
+    objectFit: "cover",
+    borderRadius: 6,
+    border: "1px solid var(--classic-border)"
   },
   drawerButtonGrid: {
     display: "grid",
@@ -16991,7 +17309,6 @@ const calendar = UNSAFE_withComponentProps(function DispatchCalendarPage() {
   const actionData = useActionData();
   const location = useLocation();
   const allowed = (actionData == null ? void 0 : actionData.allowed) ?? loaderData.allowed;
-  const loginError = actionData == null ? void 0 : actionData.loginError;
   const orders = (actionData == null ? void 0 : actionData.orders) ?? loaderData.orders ?? [];
   const currentUser = (actionData == null ? void 0 : actionData.currentUser) ?? loaderData.currentUser ?? null;
   const [viewMode, setViewMode] = useState("month");
@@ -17018,6 +17335,7 @@ const calendar = UNSAFE_withComponentProps(function DispatchCalendarPage() {
     return !currentUser || ((_a2 = currentUser.permissions) == null ? void 0 : _a2.includes(permission));
   };
   const logoutHref = currentUser ? "/login?logout=1" : `${dispatchHref}?logout=1`;
+  const loginHref = `/login?next=${encodeURIComponent(location.pathname + location.search)}`;
   function toggleNavCollapsed() {
     setNavCollapsed((current) => {
       const next = !current;
@@ -17175,30 +17493,14 @@ const calendar = UNSAFE_withComponentProps(function DispatchCalendarPage() {
           children: "Dispatch Calendar"
         }), /* @__PURE__ */ jsx("p", {
           style: styles$7.subtle,
-          children: "Enter the admin password to open the contractor calendar."
-        }), /* @__PURE__ */ jsxs(Form, {
-          method: "post",
-          style: styles$7.loginForm,
-          children: [/* @__PURE__ */ jsx("input", {
-            type: "hidden",
-            name: "intent",
-            value: "login"
-          }), /* @__PURE__ */ jsx("label", {
-            style: styles$7.label,
-            children: "Admin Password"
-          }), /* @__PURE__ */ jsx("input", {
-            name: "password",
-            type: "password",
-            autoComplete: "current-password",
-            style: styles$7.input
-          }), loginError ? /* @__PURE__ */ jsx("div", {
-            style: styles$7.error,
-            children: loginError
-          }) : null, /* @__PURE__ */ jsx("button", {
-            type: "submit",
-            style: styles$7.primaryButton,
-            children: "Open Calendar"
-          })]
+          children: "Sign in with your contractor user account to open the contractor calendar."
+        }), /* @__PURE__ */ jsx("a", {
+          href: loginHref,
+          style: {
+            ...styles$7.primaryButton,
+            textDecoration: "none"
+          },
+          children: "Sign In"
         })]
       })
     });
@@ -17529,11 +17831,6 @@ const styles$7 = {
   loginTitle: {
     fontSize: 34,
     margin: "0 0 8px"
-  },
-  loginForm: {
-    display: "grid",
-    gap: 12,
-    marginTop: 22
   },
   sideRail: {
     background: "#020617",
@@ -17892,24 +18189,6 @@ const styles$7 = {
     padding: 14,
     textDecoration: "none"
   },
-  label: {
-    color: "var(--calendar-muted)",
-    display: "block",
-    fontSize: 12,
-    fontWeight: 900,
-    letterSpacing: 1,
-    marginBottom: 8,
-    textTransform: "uppercase"
-  },
-  input: {
-    background: "#020617",
-    border: "1px solid var(--calendar-border)",
-    borderRadius: 14,
-    color: "var(--calendar-text)",
-    fontSize: 16,
-    padding: "13px 14px",
-    width: "100%"
-  },
   primaryButton: {
     background: "linear-gradient(180deg, #ff9b25, #ff6b00)",
     border: "1px solid #ff7a1a",
@@ -17918,13 +18197,6 @@ const styles$7 = {
     cursor: "pointer",
     fontWeight: 900,
     padding: "14px 16px"
-  },
-  error: {
-    background: "rgba(127, 29, 29, 0.35)",
-    border: "1px solid rgba(248, 113, 113, 0.4)",
-    borderRadius: 12,
-    color: "#fecaca",
-    padding: 12
   }
 };
 const route8 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
@@ -18014,7 +18286,6 @@ const allotment = UNSAFE_withComponentProps(function AllotmentPage() {
   const actionData = useActionData();
   const location = useLocation();
   const allowed = (actionData == null ? void 0 : actionData.allowed) ?? loaderData.allowed;
-  const loginError = actionData == null ? void 0 : actionData.loginError;
   const orders = (actionData == null ? void 0 : actionData.orders) ?? loaderData.orders ?? [];
   const currentUser = (actionData == null ? void 0 : actionData.currentUser) ?? loaderData.currentUser ?? null;
   const [query, setQuery] = useState("");
@@ -18039,6 +18310,7 @@ const allotment = UNSAFE_withComponentProps(function AllotmentPage() {
     return !currentUser || ((_a3 = currentUser.permissions) == null ? void 0 : _a3.includes(permission));
   };
   const logoutHref = currentUser ? "/login?logout=1" : `${dispatchHref}?logout=1`;
+  const loginHref = `/login?next=${encodeURIComponent(location.pathname + location.search)}`;
   function toggleNavCollapsed() {
     setNavCollapsed((current) => {
       const next = !current;
@@ -18122,30 +18394,14 @@ const allotment = UNSAFE_withComponentProps(function AllotmentPage() {
           children: "Material Allotment"
         }), /* @__PURE__ */ jsx("p", {
           style: styles$6.subtle,
-          children: "Enter the admin password to open the daily material totals."
-        }), /* @__PURE__ */ jsxs(Form, {
-          method: "post",
-          style: styles$6.loginForm,
-          children: [/* @__PURE__ */ jsx("input", {
-            type: "hidden",
-            name: "intent",
-            value: "login"
-          }), /* @__PURE__ */ jsx("label", {
-            style: styles$6.label,
-            children: "Admin Password"
-          }), /* @__PURE__ */ jsx("input", {
-            name: "password",
-            type: "password",
-            autoComplete: "current-password",
-            style: styles$6.input
-          }), loginError ? /* @__PURE__ */ jsx("div", {
-            style: styles$6.error,
-            children: loginError
-          }) : null, /* @__PURE__ */ jsx("button", {
-            type: "submit",
-            style: styles$6.primaryButton,
-            children: "Open Allotment"
-          })]
+          children: "Sign in with your contractor user account to open the daily material totals."
+        }), /* @__PURE__ */ jsx("a", {
+          href: loginHref,
+          style: {
+            ...styles$6.primaryButton,
+            textDecoration: "none"
+          },
+          children: "Sign In"
         })]
       })
     });
@@ -18431,11 +18687,6 @@ const styles$6 = {
     fontSize: 34,
     margin: "0 0 8px"
   },
-  loginForm: {
-    display: "grid",
-    gap: 12,
-    marginTop: 22
-  },
   sideRail: {
     background: "#020617",
     borderRight: "1px solid #1e293b",
@@ -18700,24 +18951,6 @@ const styles$6 = {
     fontWeight: 900,
     padding: 16
   },
-  label: {
-    color: "var(--allotment-muted)",
-    display: "block",
-    fontSize: 12,
-    fontWeight: 900,
-    letterSpacing: 1,
-    marginBottom: 8,
-    textTransform: "uppercase"
-  },
-  input: {
-    background: "#020617",
-    border: "1px solid var(--allotment-border)",
-    borderRadius: 14,
-    color: "var(--allotment-text)",
-    fontSize: 16,
-    padding: "13px 14px",
-    width: "100%"
-  },
   primaryButton: {
     background: "linear-gradient(180deg, #ff9b25, #ff6b00)",
     border: "1px solid #ff7a1a",
@@ -18726,13 +18959,6 @@ const styles$6 = {
     cursor: "pointer",
     fontWeight: 900,
     padding: "14px 16px"
-  },
-  error: {
-    background: "rgba(127, 29, 29, 0.35)",
-    border: "1px solid rgba(248, 113, 113, 0.4)",
-    borderRadius: 12,
-    color: "#fecaca",
-    padding: 12
   }
 };
 const route9 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
@@ -19182,13 +19408,7 @@ async function loader$e({
   }
   const allowed = await hasAdminQuotePermissionAccess(request, "driver");
   if (!allowed) {
-    return data({
-      allowed: false,
-      orders: [],
-      routes: [],
-      storageReady: false,
-      storageError: null
-    });
+    return redirect(`/login?next=${encodeURIComponent(url.pathname + url.search)}`);
   }
   return data({
     allowed: true,
@@ -19198,42 +19418,12 @@ async function loader$e({
 async function action$j({
   request
 }) {
+  const url = new URL(request.url);
   const form = await request.formData();
   const intent = String(form.get("intent") || "");
-  if (intent === "login") {
-    const password = String(form.get("password") || "");
-    const expected = getAdminQuotePassword();
-    if (!expected || password !== expected) {
-      return data({
-        allowed: false,
-        loginError: "Invalid password",
-        orders: [],
-        routes: []
-      }, {
-        status: 401
-      });
-    }
-    return data({
-      allowed: true,
-      loginError: null,
-      ...await loadDriverState(),
-      currentUser: null
-    }, {
-      headers: {
-        "Set-Cookie": await adminQuoteCookie.serialize("ok")
-      }
-    });
-  }
   const allowed = await hasAdminQuotePermissionAccess(request, "driver");
   if (!allowed) {
-    return data({
-      allowed: false,
-      loginError: "Please log in",
-      orders: [],
-      routes: []
-    }, {
-      status: 401
-    });
+    return redirect(`/login?next=${encodeURIComponent(url.pathname + url.search)}`);
   }
   if (intent !== "update-stop-status") {
     return data({
@@ -19348,6 +19538,7 @@ const dispatchDriver = UNSAFE_withComponentProps(function DispatchDriverPage() {
   const detailHref = isEmbeddedRoute ? "/app/dispatch/driver/detail" : "/dispatch/driver/detail";
   const dispatchHref = getDispatchPath(location.pathname);
   const logoutHref = `${driverHref}?logout=1`;
+  const loginHref = `/login?next=${encodeURIComponent(location.pathname + location.search)}`;
   const orders = (actionData == null ? void 0 : actionData.orders) ?? loaderData.orders ?? [];
   const routes2 = (actionData == null ? void 0 : actionData.routes) ?? loaderData.routes ?? [];
   const storageReady = (actionData == null ? void 0 : actionData.storageReady) ?? loaderData.storageReady ?? false;
@@ -19388,33 +19579,18 @@ const dispatchDriver = UNSAFE_withComponentProps(function DispatchDriverPage() {
           children: "Driver Route"
         }), /* @__PURE__ */ jsx("p", {
           style: styles$5.subtle,
-          children: "Enter the admin password to open route stops."
-        }), /* @__PURE__ */ jsxs(Form, {
-          method: "post",
+          children: "Sign in with your contractor user account to open route stops."
+        }), /* @__PURE__ */ jsx("a", {
+          href: loginHref,
           style: {
-            display: "grid",
-            gap: 12,
-            marginTop: 18
+            ...styles$5.primaryButton,
+            marginTop: 18,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            textDecoration: "none"
           },
-          children: [/* @__PURE__ */ jsx("input", {
-            type: "hidden",
-            name: "intent",
-            value: "login"
-          }), /* @__PURE__ */ jsx("label", {
-            style: styles$5.label,
-            children: "Admin Password"
-          }), /* @__PURE__ */ jsx("input", {
-            name: "password",
-            type: "password",
-            style: styles$5.input
-          }), (actionData == null ? void 0 : actionData.loginError) ? /* @__PURE__ */ jsx("div", {
-            style: styles$5.error,
-            children: actionData.loginError
-          }) : null, /* @__PURE__ */ jsx("button", {
-            type: "submit",
-            style: styles$5.primaryButton,
-            children: "Open Route"
-          })]
+          children: "Sign In"
         })]
       })
     });
@@ -20861,24 +21037,6 @@ const styles$3 = {
     textDecoration: "none",
     fontWeight: 700
   },
-  input: {
-    width: "100%",
-    borderRadius: "14px",
-    border: "1px solid #334155",
-    background: "rgba(15, 23, 42, 0.92)",
-    color: "#f8fafc",
-    padding: "14px 16px",
-    fontSize: "15px",
-    outline: "none",
-    boxSizing: "border-box"
-  },
-  label: {
-    display: "block",
-    marginBottom: "8px",
-    fontSize: "13px",
-    fontWeight: 700,
-    color: "#cbd5e1"
-  },
   bottomNav: {
     position: "fixed",
     left: 12,
@@ -20908,15 +21066,6 @@ const styles$3 = {
     fontWeight: 700,
     fontSize: "11px",
     letterSpacing: "0.01em"
-  },
-  statusErr: {
-    marginTop: "16px",
-    padding: "14px 16px",
-    borderRadius: "14px",
-    background: "rgba(220, 38, 38, 0.15)",
-    border: "1px solid rgba(248, 113, 113, 0.5)",
-    color: "#fee2e2",
-    fontWeight: 700
   }
 };
 function navLinkStyle(active) {
@@ -20956,7 +21105,10 @@ async function loader$c({
     });
   }
   const allowed = await hasAdminQuotePermissionAccess(request, "quoteTool");
-  const recentQuotes = allowed ? await getRecentCustomQuotes(8) : [];
+  if (!allowed) {
+    return redirect(`/login?next=${encodeURIComponent(url.pathname + url.search)}`);
+  }
+  const recentQuotes = await getRecentCustomQuotes(8);
   return data({
     allowed,
     recentQuotes
@@ -20965,36 +21117,14 @@ async function loader$c({
 async function action$i({
   request
 }) {
-  const form = await request.formData();
-  const intent = String(form.get("intent") || "");
-  if (intent !== "login") {
-    return data({
-      allowed: false,
-      loginError: "Invalid request",
-      recentQuotes: []
-    }, {
-      status: 400
-    });
-  }
-  const password = String(form.get("password") || "");
-  const expected = getAdminQuotePassword();
-  if (!expected || password !== expected) {
-    return data({
-      allowed: false,
-      loginError: "Invalid password",
-      recentQuotes: []
-    }, {
-      status: 401
-    });
+  const url = new URL(request.url);
+  const allowed = await hasAdminQuotePermissionAccess(request, "quoteTool");
+  if (!allowed) {
+    return redirect(`/login?next=${encodeURIComponent(url.pathname + url.search)}`);
   }
   return data({
     allowed: true,
-    loginError: null,
     recentQuotes: await getRecentCustomQuotes(8)
-  }, {
-    headers: {
-      "Set-Cookie": await adminQuoteCookie.serialize("ok")
-    }
   });
 }
 const mobileDashboard = UNSAFE_withComponentProps(function MobileDashboardPage() {
@@ -21009,6 +21139,7 @@ const mobileDashboard = UNSAFE_withComponentProps(function MobileDashboardPage()
   const dashboardHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
   const dispatchHref = isEmbeddedRoute ? "/app/classic" : "/classic";
   const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
+  const loginHref = `/login?next=${encodeURIComponent(location.pathname + location.search)}`;
   if (!allowed) {
     return /* @__PURE__ */ jsx("div", {
       style: styles$3.page,
@@ -21021,38 +21152,17 @@ const mobileDashboard = UNSAFE_withComponentProps(function MobileDashboardPage()
             children: "Mobile Dashboard"
           }), /* @__PURE__ */ jsx("p", {
             style: styles$3.subtitle,
-            children: "Enter the admin password to open the mobile quote workspace."
-          }), /* @__PURE__ */ jsxs(Form, {
-            method: "post",
-            autoComplete: "off",
+            children: "Sign in with your contractor user account to open the mobile quote workspace."
+          }), /* @__PURE__ */ jsx("a", {
+            href: loginHref,
             style: {
-              marginTop: 22
+              ...styles$3.smallButton,
+              marginTop: 16,
+              background: "linear-gradient(135deg, #2563eb, #14b8a6)",
+              color: "#eff6ff",
+              textDecoration: "none"
             },
-            children: [/* @__PURE__ */ jsx("input", {
-              type: "hidden",
-              name: "intent",
-              value: "login"
-            }), /* @__PURE__ */ jsx("label", {
-              style: styles$3.label,
-              children: "Admin Password"
-            }), /* @__PURE__ */ jsx("input", {
-              type: "password",
-              name: "password",
-              autoComplete: "current-password",
-              style: styles$3.input
-            }), (actionData == null ? void 0 : actionData.loginError) ? /* @__PURE__ */ jsx("div", {
-              style: styles$3.statusErr,
-              children: actionData.loginError
-            }) : null, /* @__PURE__ */ jsx("button", {
-              type: "submit",
-              style: {
-                ...styles$3.smallButton,
-                marginTop: 16,
-                background: "linear-gradient(135deg, #2563eb, #14b8a6)",
-                color: "#eff6ff"
-              },
-              children: "Open Mobile Dashboard"
-            })]
+            children: "Sign In"
           })]
         })
       })
@@ -24511,7 +24621,7 @@ const route53 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.definePrope
   __proto__: null,
   action
 }, Symbol.toStringTag, { value: "Module" }));
-const serverManifest = { "entry": { "module": "/assets/entry.client-oNGMiw6i.js", "imports": ["/assets/jsx-runtime-DJxbfBsx.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/root-BjGothWo.js", "imports": ["/assets/jsx-runtime-DJxbfBsx.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/_index/route": { "id": "routes/_index/route", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-Cmf56Jwf.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/custom-quote": { "id": "routes/custom-quote", "parentId": "root", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/custom-quote-DiOlRPJA.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/quote-review": { "id": "routes/quote-review", "parentId": "root", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/quote-review-BYEZif_z.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch": { "id": "routes/dispatch", "parentId": "root", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-8I2vZ68O.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/classic": { "id": "routes/classic", "parentId": "root", "path": "classic", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/classic-ClouwQbO.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-DSXwe04k.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/monitor": { "id": "routes/monitor", "parentId": "root", "path": "monitor", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/monitor-D-6D68Te.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/loader": { "id": "routes/loader", "parentId": "root", "path": "loader", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/loader-bzDTNw5Q.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar": { "id": "routes/calendar", "parentId": "root", "path": "calendar", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/calendar-D2HhWQqX.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/allotment": { "id": "routes/allotment", "parentId": "root", "path": "allotment", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/allotment-RU0rdK1w.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar.ics": { "id": "routes/calendar.ics", "parentId": "root", "path": "calendar.ics", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar.ics-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar-feed.$secret": { "id": "routes/calendar-feed.$secret", "parentId": "root", "path": "calendar-feed/:secret", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar-feed._secret-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar.rss": { "id": "routes/calendar.rss", "parentId": "root", "path": "calendar.rss", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar.rss-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch-driver": { "id": "routes/dispatch-driver", "parentId": "root", "path": "dispatch/driver", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-driver-BG9sA3jV.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch-driver-detail": { "id": "routes/dispatch-driver-detail", "parentId": "root", "path": "dispatch/driver/detail", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-driver-detail-DVs_f_11.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/mobile-dashboard": { "id": "routes/mobile-dashboard", "parentId": "root", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/mobile-dashboard-Bu62B7DL.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/login": { "id": "routes/login", "parentId": "root", "path": "login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/login-BLokXFd3.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/change-password": { "id": "routes/change-password", "parentId": "root", "path": "change-password", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/change-password-DNG9C_4s.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/settings": { "id": "routes/settings", "parentId": "root", "path": "settings", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/settings-DVqBt5Yw.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-DSXwe04k.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.login/route": { "id": "routes/auth.login/route", "parentId": "root", "path": "auth/login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-CG8tQ2tr.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.$": { "id": "routes/auth.$", "parentId": "root", "path": "auth/*", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/auth._-p3tFrFib.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app": { "id": "routes/app", "parentId": "root", "path": "app", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": true, "module": "/assets/app--bd_F85Q.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app._index": { "id": "routes/app._index", "parentId": "routes/app", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app._index-BoDF1DO_.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.admin": { "id": "routes/app.admin", "parentId": "routes/app", "path": "admin", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.admin-CW6O1zQ4.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.additional": { "id": "routes/app.additional", "parentId": "routes/app", "path": "additional", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.additional-CCXuFT6z.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.custom-quote": { "id": "routes/app.custom-quote", "parentId": "routes/app", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.custom-quote-eC0hOSjc.js", "imports": ["/assets/custom-quote-DiOlRPJA.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.quote-review": { "id": "routes/app.quote-review", "parentId": "routes/app", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.quote-review-su2sDfLQ.js", "imports": ["/assets/quote-review-BYEZif_z.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch": { "id": "routes/app.dispatch", "parentId": "routes/app", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-C2fRsRcL.js", "imports": ["/assets/dispatch-8I2vZ68O.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.classic": { "id": "routes/app.classic", "parentId": "routes/app", "path": "classic", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.classic-BbN7tVOd.js", "imports": ["/assets/classic-ClouwQbO.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-DSXwe04k.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.monitor": { "id": "routes/app.monitor", "parentId": "routes/app", "path": "monitor", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.monitor-CCjPg_Q9.js", "imports": ["/assets/monitor-D-6D68Te.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.loader": { "id": "routes/app.loader", "parentId": "routes/app", "path": "loader", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.loader-MAKSPBga.js", "imports": ["/assets/loader-bzDTNw5Q.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.calendar": { "id": "routes/app.calendar", "parentId": "routes/app", "path": "calendar", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.calendar-CoNgeiv8.js", "imports": ["/assets/calendar-D2HhWQqX.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.allotment": { "id": "routes/app.allotment", "parentId": "routes/app", "path": "allotment", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.allotment-sQBbhOPn.js", "imports": ["/assets/allotment-RU0rdK1w.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch-driver": { "id": "routes/app.dispatch-driver", "parentId": "routes/app", "path": "dispatch/driver", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-driver-DWjZtX1x.js", "imports": ["/assets/dispatch-driver-BG9sA3jV.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch-driver-detail": { "id": "routes/app.dispatch-driver-detail", "parentId": "routes/app", "path": "dispatch/driver/detail", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-driver-detail-CcJGmFUW.js", "imports": ["/assets/dispatch-driver-detail-DVs_f_11.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.mobile": { "id": "routes/app.mobile", "parentId": "routes/app", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.mobile-B7VYsfmU.js", "imports": ["/assets/mobile-dashboard-Bu62B7DL.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.shipping-estimate": { "id": "routes/api.shipping-estimate", "parentId": "root", "path": "api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.carrier-service": { "id": "routes/api.carrier-service", "parentId": "root", "path": "api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.sync-products": { "id": "routes/api.sync-products", "parentId": "root", "path": "api/sync-products", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.sync-products-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.create-draft-order": { "id": "routes/api.create-draft-order", "parentId": "root", "path": "api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.delete-quote": { "id": "routes/api.delete-quote", "parentId": "root", "path": "api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.update-quote": { "id": "routes/api.update-quote", "parentId": "root", "path": "api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.dispatch-poll-mailbox": { "id": "routes/api.dispatch-poll-mailbox", "parentId": "root", "path": "api/dispatch-poll-mailbox", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.dispatch-poll-mailbox-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.dispatch-driver-location": { "id": "routes/api.dispatch-driver-location", "parentId": "root", "path": "api/dispatch-driver-location", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.dispatch-driver-location-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.loader-notifications": { "id": "routes/api.loader-notifications", "parentId": "root", "path": "api/loader-notifications", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.loader-notifications-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.loader-push-subscription": { "id": "routes/api.loader-push-subscription", "parentId": "root", "path": "api/loader-push-subscription", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.loader-push-subscription-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.shipping-estimate": { "id": "routes/app.api.shipping-estimate", "parentId": "root", "path": "app/api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.carrier-service": { "id": "routes/app.api.carrier-service", "parentId": "root", "path": "app/api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.create-draft-order": { "id": "routes/app.api.create-draft-order", "parentId": "root", "path": "app/api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.delete-quote": { "id": "routes/app.api.delete-quote", "parentId": "root", "path": "app/api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.update-quote": { "id": "routes/app.api.update-quote", "parentId": "root", "path": "app/api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.products.update": { "id": "routes/webhooks.products.update", "parentId": "root", "path": "webhooks/products/update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.products.update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.scopes_update": { "id": "routes/webhooks.app.scopes_update", "parentId": "root", "path": "webhooks/app/scopes_update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.scopes_update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.uninstalled": { "id": "routes/webhooks.app.uninstalled", "parentId": "root", "path": "webhooks/app/uninstalled", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.uninstalled-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-2ef711b0.js", "version": "2ef711b0", "sri": void 0 };
+const serverManifest = { "entry": { "module": "/assets/entry.client-oNGMiw6i.js", "imports": ["/assets/jsx-runtime-DJxbfBsx.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/root-BjGothWo.js", "imports": ["/assets/jsx-runtime-DJxbfBsx.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/_index/route": { "id": "routes/_index/route", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-Cmf56Jwf.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/custom-quote": { "id": "routes/custom-quote", "parentId": "root", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/custom-quote-D5uQYK0n.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/quote-review": { "id": "routes/quote-review", "parentId": "root", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/quote-review-gYhVWCz5.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch": { "id": "routes/dispatch", "parentId": "root", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-YcAzqfMt.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/classic": { "id": "routes/classic", "parentId": "root", "path": "classic", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/classic-xY26wQTh.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-OjMtKtX8.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/monitor": { "id": "routes/monitor", "parentId": "root", "path": "monitor", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/monitor-D-6D68Te.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/loader": { "id": "routes/loader", "parentId": "root", "path": "loader", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/loader-bzDTNw5Q.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar": { "id": "routes/calendar", "parentId": "root", "path": "calendar", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/calendar-B9B8WvWZ.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/allotment": { "id": "routes/allotment", "parentId": "root", "path": "allotment", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/allotment-D8Oj59U7.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar.ics": { "id": "routes/calendar.ics", "parentId": "root", "path": "calendar.ics", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar.ics-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar-feed.$secret": { "id": "routes/calendar-feed.$secret", "parentId": "root", "path": "calendar-feed/:secret", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar-feed._secret-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar.rss": { "id": "routes/calendar.rss", "parentId": "root", "path": "calendar.rss", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar.rss-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch-driver": { "id": "routes/dispatch-driver", "parentId": "root", "path": "dispatch/driver", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-driver-DhizIu3J.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch-driver-detail": { "id": "routes/dispatch-driver-detail", "parentId": "root", "path": "dispatch/driver/detail", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-driver-detail-DVs_f_11.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/mobile-dashboard": { "id": "routes/mobile-dashboard", "parentId": "root", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/mobile-dashboard-yPRn0BhP.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/login": { "id": "routes/login", "parentId": "root", "path": "login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/login-BLokXFd3.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/change-password": { "id": "routes/change-password", "parentId": "root", "path": "change-password", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/change-password-DNG9C_4s.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/settings": { "id": "routes/settings", "parentId": "root", "path": "settings", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/settings-BeM-ZG2p.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-OjMtKtX8.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.login/route": { "id": "routes/auth.login/route", "parentId": "root", "path": "auth/login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-CG8tQ2tr.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.$": { "id": "routes/auth.$", "parentId": "root", "path": "auth/*", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/auth._-p3tFrFib.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app": { "id": "routes/app", "parentId": "root", "path": "app", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": true, "module": "/assets/app--bd_F85Q.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app._index": { "id": "routes/app._index", "parentId": "routes/app", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app._index-BoDF1DO_.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.admin": { "id": "routes/app.admin", "parentId": "routes/app", "path": "admin", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.admin-CW6O1zQ4.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.additional": { "id": "routes/app.additional", "parentId": "routes/app", "path": "additional", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.additional-CCXuFT6z.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.custom-quote": { "id": "routes/app.custom-quote", "parentId": "routes/app", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.custom-quote-CVtv5s1O.js", "imports": ["/assets/custom-quote-D5uQYK0n.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.quote-review": { "id": "routes/app.quote-review", "parentId": "routes/app", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.quote-review-CTzZcwLR.js", "imports": ["/assets/quote-review-gYhVWCz5.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch": { "id": "routes/app.dispatch", "parentId": "routes/app", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-D9DxIlg_.js", "imports": ["/assets/dispatch-YcAzqfMt.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.classic": { "id": "routes/app.classic", "parentId": "routes/app", "path": "classic", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.classic-Dy9oggsk.js", "imports": ["/assets/classic-xY26wQTh.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-OjMtKtX8.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.monitor": { "id": "routes/app.monitor", "parentId": "routes/app", "path": "monitor", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.monitor-CCjPg_Q9.js", "imports": ["/assets/monitor-D-6D68Te.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.loader": { "id": "routes/app.loader", "parentId": "routes/app", "path": "loader", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.loader-MAKSPBga.js", "imports": ["/assets/loader-bzDTNw5Q.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.calendar": { "id": "routes/app.calendar", "parentId": "routes/app", "path": "calendar", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.calendar-bdYGDu9o.js", "imports": ["/assets/calendar-B9B8WvWZ.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.allotment": { "id": "routes/app.allotment", "parentId": "routes/app", "path": "allotment", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.allotment-Bh13LqAz.js", "imports": ["/assets/allotment-D8Oj59U7.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch-driver": { "id": "routes/app.dispatch-driver", "parentId": "routes/app", "path": "dispatch/driver", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-driver-CcDxCRWX.js", "imports": ["/assets/dispatch-driver-DhizIu3J.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch-driver-detail": { "id": "routes/app.dispatch-driver-detail", "parentId": "routes/app", "path": "dispatch/driver/detail", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-driver-detail-CcJGmFUW.js", "imports": ["/assets/dispatch-driver-detail-DVs_f_11.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.mobile": { "id": "routes/app.mobile", "parentId": "routes/app", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.mobile-BCRA_95T.js", "imports": ["/assets/mobile-dashboard-yPRn0BhP.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.shipping-estimate": { "id": "routes/api.shipping-estimate", "parentId": "root", "path": "api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.carrier-service": { "id": "routes/api.carrier-service", "parentId": "root", "path": "api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.sync-products": { "id": "routes/api.sync-products", "parentId": "root", "path": "api/sync-products", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.sync-products-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.create-draft-order": { "id": "routes/api.create-draft-order", "parentId": "root", "path": "api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.delete-quote": { "id": "routes/api.delete-quote", "parentId": "root", "path": "api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.update-quote": { "id": "routes/api.update-quote", "parentId": "root", "path": "api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.dispatch-poll-mailbox": { "id": "routes/api.dispatch-poll-mailbox", "parentId": "root", "path": "api/dispatch-poll-mailbox", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.dispatch-poll-mailbox-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.dispatch-driver-location": { "id": "routes/api.dispatch-driver-location", "parentId": "root", "path": "api/dispatch-driver-location", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.dispatch-driver-location-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.loader-notifications": { "id": "routes/api.loader-notifications", "parentId": "root", "path": "api/loader-notifications", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.loader-notifications-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.loader-push-subscription": { "id": "routes/api.loader-push-subscription", "parentId": "root", "path": "api/loader-push-subscription", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.loader-push-subscription-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.shipping-estimate": { "id": "routes/app.api.shipping-estimate", "parentId": "root", "path": "app/api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.carrier-service": { "id": "routes/app.api.carrier-service", "parentId": "root", "path": "app/api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.create-draft-order": { "id": "routes/app.api.create-draft-order", "parentId": "root", "path": "app/api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.delete-quote": { "id": "routes/app.api.delete-quote", "parentId": "root", "path": "app/api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.update-quote": { "id": "routes/app.api.update-quote", "parentId": "root", "path": "app/api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.products.update": { "id": "routes/webhooks.products.update", "parentId": "root", "path": "webhooks/products/update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.products.update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.scopes_update": { "id": "routes/webhooks.app.scopes_update", "parentId": "root", "path": "webhooks/app/scopes_update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.scopes_update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.uninstalled": { "id": "routes/webhooks.app.uninstalled", "parentId": "root", "path": "webhooks/app/uninstalled", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.uninstalled-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-26a62402.js", "version": "26a62402", "sri": void 0 };
 const assetsBuildDirectory = "build/client";
 const basename = "/";
 const future = { "unstable_optimizeDeps": false, "unstable_passThroughRequests": false, "unstable_subResourceIntegrity": false, "unstable_trailingSlashAwareDataRequests": false, "unstable_previewServerPrerendering": false, "v8_middleware": false, "v8_splitRouteModules": false, "v8_viteEnvironmentApi": false };

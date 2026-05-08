@@ -3,7 +3,6 @@ import { Form, useActionData, useLoaderData, useLocation } from "react-router";
 import { data, redirect } from "react-router";
 import {
   adminQuoteCookie,
-  getAdminQuotePassword,
   hasAdminQuotePermissionAccess,
 } from "../lib/admin-quote-auth.server";
 import {
@@ -242,13 +241,7 @@ export async function loader({ request }: any) {
 
   const allowed = await hasAdminQuotePermissionAccess(request, "driver");
   if (!allowed) {
-    return data({
-      allowed: false,
-      orders: [],
-      routes: [],
-      storageReady: false,
-      storageError: null,
-    });
+    return redirect(`/login?next=${encodeURIComponent(url.pathname + url.search)}`);
   }
 
   return data({
@@ -258,41 +251,13 @@ export async function loader({ request }: any) {
 }
 
 export async function action({ request }: any) {
+  const url = new URL(request.url);
   const form = await request.formData();
   const intent = String(form.get("intent") || "");
 
-  if (intent === "login") {
-    const password = String(form.get("password") || "");
-    const expected = getAdminQuotePassword();
-
-    if (!expected || password !== expected) {
-      return data(
-        { allowed: false, loginError: "Invalid password", orders: [], routes: [] },
-        { status: 401 },
-      );
-    }
-
-    return data(
-      {
-        allowed: true,
-        loginError: null,
-        ...(await loadDriverState()),
-        currentUser: null,
-      },
-      {
-        headers: {
-          "Set-Cookie": await adminQuoteCookie.serialize("ok"),
-        },
-      },
-    );
-  }
-
   const allowed = await hasAdminQuotePermissionAccess(request, "driver");
   if (!allowed) {
-    return data(
-      { allowed: false, loginError: "Please log in", orders: [], routes: [] },
-      { status: 401 },
-    );
+    return redirect(`/login?next=${encodeURIComponent(url.pathname + url.search)}`);
   }
 
   if (intent !== "update-stop-status") {
@@ -437,6 +402,7 @@ export default function DispatchDriverPage() {
     : "/dispatch/driver/detail";
   const dispatchHref = getDispatchPath(location.pathname);
   const logoutHref = `${driverHref}?logout=1`;
+  const loginHref = `/login?next=${encodeURIComponent(location.pathname + location.search)}`;
   const orders = (actionData?.orders ?? loaderData.orders ?? []) as DispatchOrder[];
   const routes = (actionData?.routes ?? loaderData.routes ?? []) as DispatchRoute[];
   const storageReady = actionData?.storageReady ?? loaderData.storageReady ?? false;
@@ -503,16 +469,20 @@ export default function DispatchDriverPage() {
       <div style={styles.page}>
         <div style={styles.loginCard}>
           <h1 style={styles.title}>Driver Route</h1>
-          <p style={styles.subtle}>Enter the admin password to open route stops.</p>
-          <Form method="post" style={{ display: "grid", gap: 12, marginTop: 18 }}>
-            <input type="hidden" name="intent" value="login" />
-            <label style={styles.label}>Admin Password</label>
-            <input name="password" type="password" style={styles.input} />
-            {actionData?.loginError ? (
-              <div style={styles.error}>{actionData.loginError}</div>
-            ) : null}
-            <button type="submit" style={styles.primaryButton}>Open Route</button>
-          </Form>
+          <p style={styles.subtle}>Sign in with your contractor user account to open route stops.</p>
+          <a
+            href={loginHref}
+            style={{
+              ...styles.primaryButton,
+              marginTop: 18,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              textDecoration: "none",
+            }}
+          >
+            Sign In
+          </a>
         </div>
       </div>
     );

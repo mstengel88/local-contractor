@@ -20,11 +20,7 @@ export async function hasAdminQuoteAccess(request: Request) {
     const url = new URL(request.url);
     throw redirect(`/change-password?next=${encodeURIComponent(url.pathname + url.search)}`);
   }
-  if (user) return true;
-
-  const cookieHeader = request.headers.get("Cookie");
-  const cookieValue = await adminQuoteCookie.parse(cookieHeader);
-  return cookieValue === "ok";
+  return Boolean(user);
 }
 
 export async function hasAdminQuotePermissionAccess(
@@ -37,12 +33,5 @@ export async function hasAdminQuotePermissionAccess(
     throw redirect(`/change-password?next=${encodeURIComponent(url.pathname + url.search)}`);
   }
   if (user) return user.permissions.includes(permission);
-
-  const cookieHeader = request.headers.get("Cookie");
-  const cookieValue = await adminQuoteCookie.parse(cookieHeader);
-  return cookieValue === "ok";
-}
-
-export function getAdminQuotePassword() {
-  return process.env.ADMIN_QUOTE_PASSWORD || "";
+  return false;
 }

@@ -4,7 +4,6 @@ import { data, redirect } from "react-router";
 import { getRecentCustomQuotes, type SavedCustomQuote } from "../lib/custom-quotes.server";
 import {
   adminQuoteCookie,
-  getAdminQuotePassword,
   hasAdminQuotePermissionAccess,
 } from "../lib/admin-quote-auth.server";
 import { getCurrentUser, userAuthCookie } from "../lib/user-auth.server";
@@ -174,6 +173,10 @@ export async function loader({ request }: any) {
   }
 
   const allowed = await hasAdminQuotePermissionAccess(request, "reviewQuotes");
+  if (!allowed) {
+    return redirect(`/login?next=${encodeURIComponent(url.pathname + url.search)}`);
+  }
+
   const [quotes, currentUser] = allowed
     ? await Promise.all([getRecentCustomQuotes(250), getCurrentUser(request)])
     : [[], null];
@@ -182,35 +185,13 @@ export async function loader({ request }: any) {
 }
 
 export async function action({ request }: any) {
-  const form = await request.formData();
-  const intent = String(form.get("intent") || "");
-
-  if (intent !== "login") {
-    return data({ allowed: false, loginError: "Invalid request", quotes: [] }, { status: 400 });
+  const url = new URL(request.url);
+  const allowed = await hasAdminQuotePermissionAccess(request, "reviewQuotes");
+  if (!allowed) {
+    return redirect(`/login?next=${encodeURIComponent(url.pathname + url.search)}`);
   }
 
-  const password = String(form.get("password") || "");
-  const expected = getAdminQuotePassword();
-
-  if (!expected || password !== expected) {
-    return data(
-      { allowed: false, loginError: "Invalid password", quotes: [] },
-      { status: 401 },
-    );
-  }
-
-  return data(
-    {
-      allowed: true,
-      loginError: null,
-      quotes: await getRecentCustomQuotes(250),
-    },
-    {
-      headers: {
-        "Set-Cookie": await adminQuoteCookie.serialize("ok"),
-      },
-    },
-  );
+  return data({ allowed: true, quotes: await getRecentCustomQuotes(250) });
 }
 
 export default function QuoteReviewPage() {
@@ -253,6 +234,7 @@ export default function QuoteReviewPage() {
   const dispatchHref = isEmbeddedRoute ? "/app/classic" : "/classic";
   const mobileDashboardHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
   const logoutHref = currentUser ? "/login?logout=1" : "?logout=1";
+  const loginHref = `/login?next=${encodeURIComponent(location.pathname + location.search)}`;
   const canAccess = (permission: string) =>
     !currentUser || currentUser.permissions?.includes(permission);
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
@@ -381,20 +363,21 @@ export default function QuoteReviewPage() {
           <div style={styles.card}>
             <h1 style={styles.title}>Quote Review</h1>
             <p style={styles.subtitle}>
-              Enter the admin password to search saved quotes and send them to Shopify.
+              Sign in with your contractor user account to search saved quotes and send them to Shopify.
             </p>
-
-            <Form method="post" autoComplete="off" style={{ marginTop: 22 }}>
-              <input type="hidden" name="intent" value="login" />
-              <label style={styles.label}>Admin Password</label>
-              <input type="password" name="password" autoComplete="current-password" style={styles.input} />
-              {actionData?.loginError ? (
-                <div style={styles.statusErr}>{actionData.loginError}</div>
-              ) : null}
-              <button type="submit" style={{ ...styles.buttonPrimary, marginTop: 16 }}>
-                Open Quote Review
-              </button>
-            </Form>
+            <a
+              href={loginHref}
+              style={{
+                ...styles.buttonPrimary,
+                marginTop: 16,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                textDecoration: "none",
+              }}
+            >
+              Sign In
+            </a>
           </div>
         </div>
       </div>

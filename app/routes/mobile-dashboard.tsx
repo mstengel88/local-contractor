@@ -3,7 +3,6 @@ import { data, redirect } from "react-router";
 import { getRecentCustomQuotes } from "../lib/custom-quotes.server";
 import {
   adminQuoteCookie,
-  getAdminQuotePassword,
   hasAdminQuotePermissionAccess,
 } from "../lib/admin-quote-auth.server";
 import { userAuthCookie } from "../lib/user-auth.server";
@@ -191,41 +190,21 @@ export async function loader({ request }: any) {
   }
 
   const allowed = await hasAdminQuotePermissionAccess(request, "quoteTool");
-  const recentQuotes = allowed ? await getRecentCustomQuotes(8) : [];
+  if (!allowed) {
+    return redirect(`/login?next=${encodeURIComponent(url.pathname + url.search)}`);
+  }
+  const recentQuotes = await getRecentCustomQuotes(8);
 
   return data({ allowed, recentQuotes });
 }
 
 export async function action({ request }: any) {
-  const form = await request.formData();
-  const intent = String(form.get("intent") || "");
-
-  if (intent !== "login") {
-    return data({ allowed: false, loginError: "Invalid request", recentQuotes: [] }, { status: 400 });
+  const url = new URL(request.url);
+  const allowed = await hasAdminQuotePermissionAccess(request, "quoteTool");
+  if (!allowed) {
+    return redirect(`/login?next=${encodeURIComponent(url.pathname + url.search)}`);
   }
-
-  const password = String(form.get("password") || "");
-  const expected = getAdminQuotePassword();
-
-  if (!expected || password !== expected) {
-    return data(
-      { allowed: false, loginError: "Invalid password", recentQuotes: [] },
-      { status: 401 },
-    );
-  }
-
-  return data(
-    {
-      allowed: true,
-      loginError: null,
-      recentQuotes: await getRecentCustomQuotes(8),
-    },
-    {
-      headers: {
-        "Set-Cookie": await adminQuoteCookie.serialize("ok"),
-      },
-    },
-  );
+  return data({ allowed: true, recentQuotes: await getRecentCustomQuotes(8) });
 }
 
 export default function MobileDashboardPage() {
@@ -240,6 +219,7 @@ export default function MobileDashboardPage() {
   const dashboardHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
   const dispatchHref = isEmbeddedRoute ? "/app/classic" : "/classic";
   const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
+  const loginHref = `/login?next=${encodeURIComponent(location.pathname + location.search)}`;
 
   if (!allowed) {
     return (
@@ -248,23 +228,20 @@ export default function MobileDashboardPage() {
           <div style={styles.card}>
             <h1 style={styles.title}>Mobile Dashboard</h1>
             <p style={styles.subtitle}>
-              Enter the admin password to open the mobile quote workspace.
+              Sign in with your contractor user account to open the mobile quote workspace.
             </p>
-
-            <Form method="post" autoComplete="off" style={{ marginTop: 22 }}>
-              <input type="hidden" name="intent" value="login" />
-              <label style={styles.label}>Admin Password</label>
-              <input type="password" name="password" autoComplete="current-password" style={styles.input} />
-              {actionData?.loginError ? (
-                <div style={styles.statusErr}>{actionData.loginError}</div>
-              ) : null}
-              <button
-                type="submit"
-                style={{ ...styles.smallButton, marginTop: 16, background: "linear-gradient(135deg, #2563eb, #14b8a6)", color: "#eff6ff" }}
-              >
-                Open Mobile Dashboard
-              </button>
-            </Form>
+            <a
+              href={loginHref}
+              style={{
+                ...styles.smallButton,
+                marginTop: 16,
+                background: "linear-gradient(135deg, #2563eb, #14b8a6)",
+                color: "#eff6ff",
+                textDecoration: "none",
+              }}
+            >
+              Sign In
+            </a>
           </div>
         </div>
       </div>

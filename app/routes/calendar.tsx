@@ -1,5 +1,5 @@
 import { useMemo, useState, type CSSProperties } from "react";
-import { Form, Link, useActionData, useLoaderData, useLocation } from "react-router";
+import { Link, useActionData, useLoaderData, useLocation } from "react-router";
 import {
   action as dispatchAction,
   loader as dispatchLoader,
@@ -166,7 +166,6 @@ export default function DispatchCalendarPage() {
   const actionData = useActionData() as any;
   const location = useLocation();
   const allowed = actionData?.allowed ?? loaderData.allowed;
-  const loginError = actionData?.loginError;
   const orders = (actionData?.orders ?? loaderData.orders ?? []) as DispatchOrder[];
   const currentUser = actionData?.currentUser ?? loaderData.currentUser ?? null;
   const [viewMode, setViewMode] = useState<"day" | "week" | "month" | "list">("month");
@@ -195,6 +194,7 @@ export default function DispatchCalendarPage() {
   const canAccess = (permission: string) =>
     !currentUser || currentUser.permissions?.includes(permission);
   const logoutHref = currentUser ? "/login?logout=1" : `${dispatchHref}?logout=1`;
+  const loginHref = `/login?next=${encodeURIComponent(location.pathname + location.search)}`;
 
   function toggleNavCollapsed() {
     setNavCollapsed((current) => {
@@ -379,14 +379,8 @@ export default function DispatchCalendarPage() {
       <main style={styles.loginPage}>
         <section style={styles.loginCard}>
           <h1 style={styles.loginTitle}>Dispatch Calendar</h1>
-          <p style={styles.subtle}>Enter the admin password to open the contractor calendar.</p>
-          <Form method="post" style={styles.loginForm}>
-            <input type="hidden" name="intent" value="login" />
-            <label style={styles.label}>Admin Password</label>
-            <input name="password" type="password" autoComplete="current-password" style={styles.input} />
-            {loginError ? <div style={styles.error}>{loginError}</div> : null}
-            <button type="submit" style={styles.primaryButton}>Open Calendar</button>
-          </Form>
+          <p style={styles.subtle}>Sign in with your contractor user account to open the contractor calendar.</p>
+          <a href={loginHref} style={{ ...styles.primaryButton, textDecoration: "none" }}>Sign In</a>
         </section>
       </main>
     );

@@ -8,6 +8,7 @@ import type {
   DispatchEmployee,
   DispatchDriverLocation,
   DispatchOrder,
+  DispatchProductDetail,
   DispatchRoute,
   DispatchTruck,
 } from "../lib/dispatch.server";
@@ -217,6 +218,7 @@ const CLASSIC_PANEL_LAYOUT_KEY = "classicDispatchPanelLayout";
 const CLASSIC_SELECTED_ROUTE_KEY = "classicDispatchSelectedRouteId";
 const DISPATCH_NAV_COLLAPSED_KEY = "dispatchNavCollapsed";
 const DISPATCH_CHIME_ENABLED_KEY = "dispatchChimeEnabled";
+const CLASSIC_MANUAL_ROUTING_KEY = "dispatchManualRoutingMode";
 const MIN_CLASSIC_COLUMN_WIDTH = 48;
 const DEFAULT_CLASSIC_PANEL_LAYOUT: ClassicPanelLayout = {
   mainLeft: 50,
@@ -236,6 +238,7 @@ const defaultColumnWidths: Record<ClassicSortTable, Record<string, number>> = {
   sites: {
     stop: 60,
     orderNo: 95,
+    sku: 110,
     customer: 160,
     product: 180,
     quantity: 80,
@@ -771,6 +774,10 @@ export default function ClassicDispatchPage() {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(DISPATCH_NAV_COLLAPSED_KEY) === "1";
   });
+  const [manualRoutingMode, setManualRoutingMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(CLASSIC_MANUAL_ROUTING_KEY) === "1";
+  });
   const [tableSorts, setTableSorts] = useState<Record<ClassicSortTable, ClassicSortConfig>>({
     routes: { key: "weight", direction: "desc" },
     sites: { key: "stop", direction: "asc" },
@@ -811,6 +818,9 @@ export default function ClassicDispatchPage() {
   const classicColumnSettings = (actionData?.classicColumnSettings ??
     loaderData.classicColumnSettings ??
     defaultClassicColumnSettings) as ClassicColumnSettings;
+  const productDetailsByMaterial = (actionData?.productDetailsByMaterial ??
+    loaderData.productDetailsByMaterial ??
+    {}) as Record<string, DispatchProductDetail>;
   const message = actionData?.message || loaderData?.mailboxStatus?.message || "";
   const mailboxStatus = actionData?.mailboxStatus || loaderData?.mailboxStatus || null;
   const googleMapsApiKey = actionData?.googleMapsApiKey ?? loaderData.googleMapsApiKey ?? "";
@@ -831,11 +841,20 @@ export default function ClassicDispatchPage() {
   const dispatchViewHref = (view: string) => `${dispatchHref}?view=${view}`;
   const canAccess = (permission: string) =>
     !currentUser || currentUser.permissions?.includes(permission);
+  const canManageDispatch = canAccess("manageDispatch");
   const logoutHref = currentUser ? "/login?logout=1" : `${dispatchHref}?logout=1`;
+  const loginHref = `/login?next=${encodeURIComponent(location.pathname + location.search)}`;
   const drivers = employees.filter((employee) => employee.role === "driver");
   const helpers = employees.filter((employee) => employee.role === "helper");
   const routeColumnKeys = classicColumnSettings.routes || defaultClassicColumnSettings.routes;
-  const siteColumnKeys = classicColumnSettings.sites || defaultClassicColumnSettings.sites;
+  const savedSiteColumnKeys = classicColumnSettings.sites || defaultClassicColumnSettings.sites;
+  const siteColumnKeys = savedSiteColumnKeys.includes("sku")
+    ? savedSiteColumnKeys
+    : [
+        ...savedSiteColumnKeys.slice(0, Math.max(2, savedSiteColumnKeys.indexOf("orderNo") + 1)),
+        "sku",
+        ...savedSiteColumnKeys.slice(Math.max(2, savedSiteColumnKeys.indexOf("orderNo") + 1)),
+      ];
   const orderColumnKeys = classicColumnSettings.orders || defaultClassicColumnSettings.orders;
   const unscheduledColumnKeys =
     classicColumnSettings.unscheduled || defaultClassicColumnSettings.unscheduled;
@@ -847,6 +866,18 @@ export default function ClassicDispatchPage() {
         window.localStorage.setItem(DISPATCH_NAV_COLLAPSED_KEY, next ? "1" : "0");
       } catch {
         // The nav still collapses even if browser storage is unavailable.
+      }
+      return next;
+    });
+  }
+
+  function toggleManualRoutingMode() {
+    setManualRoutingMode((current) => {
+      const next = !current;
+      try {
+        window.localStorage.setItem(CLASSIC_MANUAL_ROUTING_KEY, next ? "1" : "0");
+      } catch {
+        // The toggle still works for the current session if browser storage is unavailable.
       }
       return next;
     });
@@ -952,6 +983,19 @@ export default function ClassicDispatchPage() {
     sortedRoutes.find((route) => route.id === selectedRouteId) || sortedRoutes[0] || null;
   const selectedOrder = orders.find((order) => order.id === selectedOrderId) || null;
 
+  function getOrderProductDetail(order: DispatchOrder | null | undefined) {
+    if (!order) return null;
+    return (
+      productDetailsByMaterial[order.material] ||
+      Object.entries(productDetailsByMaterial).find(
+        ([material]) => material.toLowerCase() === String(order.material || "").toLowerCase(),
+      )?.[1] ||
+      null
+    );
+  }
+
+  const selectedOrderProductDetail = getOrderProductDetail(selectedOrder);
+
   useEffect(() => {
     if (!sortedRoutes.length) return;
     if (selectedRouteId && sortedRoutes.some((route) => route.id === selectedRouteId)) return;
@@ -973,6 +1017,7 @@ export default function ClassicDispatchPage() {
       sortItems(selectedRoute?.orders || [], tableSorts.sites, (order, key) => {
         if (key === "stop") return order.stopSequence || 9999;
         if (key === "orderNo") return getOrderNumber(order);
+        if (key === "sku") return getOrderProductDetail(order)?.sku || "";
         if (key === "address") return getOrderAddress(order);
         if (key === "customer") return order.customer;
         if (key === "product") return order.material;
@@ -986,7 +1031,7 @@ export default function ClassicDispatchPage() {
         if (key === "miles") return order.travelMiles || "";
         return "";
       }),
-    [selectedRoute, tableSorts.sites],
+    [selectedRoute, tableSorts.sites, productDetailsByMaterial],
   );
 
   const search = query.trim().toLowerCase();
@@ -1288,6 +1333,24 @@ export default function ClassicDispatchPage() {
         </button>
       );
     }
+    if (key === "sku") {
+      const detail = getOrderProductDetail(order);
+      const label = detail?.sku || "No SKU";
+      return (
+        <button
+          type="button"
+          style={detail?.sku ? styles.rowSkuButton : styles.rowSkuButtonMuted}
+          onClick={() => {
+            setSelectedOrderId(order.id);
+            setOrderDrawerOpen(true);
+            setRouteDrawerOpen(false);
+          }}
+          title={detail?.title || order.material || "Product details"}
+        >
+          {label}
+        </button>
+      );
+    }
     if (key === "date" || key === "requested") return order.requestedWindow || "-";
     if (key === "client" || key === "customer") return order.customer || "-";
     if (key === "address") return getOrderAddress(order) || "-";
@@ -1406,13 +1469,11 @@ export default function ClassicDispatchPage() {
   if (!allowed) {
     return (
       <main style={styles.loginPage}>
-        <Form method="post" style={styles.loginBox}>
+        <section style={styles.loginBox}>
           <h1 style={styles.loginTitle}>Classic Dispatch</h1>
-          <p style={styles.muted}>Log in to open the light plan-and-track board.</p>
-          <input type="hidden" name="intent" value="login" />
-          <input name="password" type="password" placeholder="Password" style={styles.input} />
-          <button type="submit" style={styles.orangeButton}>Log In</button>
-        </Form>
+          <p style={styles.muted}>Sign in with your contractor user account to open the plan-and-track board.</p>
+          <a href={loginHref} style={{ ...styles.orangeButton, textDecoration: "none" }}>Sign In</a>
+        </section>
       </main>
     );
   }
@@ -1526,6 +1587,52 @@ export default function ClassicDispatchPage() {
             <input type="hidden" name="intent" value="poll-mailbox" />
             <button type="submit" style={styles.outlineButton}>Import Mail</button>
           </Form>
+          {canManageDispatch ? (
+            <>
+              <label style={styles.manualRouteToggle}>
+                <input
+                  type="checkbox"
+                  checked={manualRoutingMode}
+                  onChange={toggleManualRoutingMode}
+                />
+                Manual
+              </label>
+              <Form
+                method="post"
+                style={styles.compactTopForm}
+                onSubmit={(event) => {
+                  if (manualRoutingMode) {
+                    event.preventDefault();
+                    return;
+                  }
+
+                  if (
+                    !window.confirm(
+                      "Auto Route will assign unscheduled orders by date, time preference, truck capacity, and similar materials. Existing route stops stay in place. Continue?",
+                    )
+                  ) {
+                    event.preventDefault();
+                  }
+                }}
+              >
+                <input type="hidden" name="intent" value="auto-route-orders" />
+                {manualRoutingMode ? (
+                  <input type="hidden" name="manualRoutingMode" value="on" />
+                ) : null}
+                <button
+                  type="submit"
+                  disabled={manualRoutingMode}
+                  style={
+                    manualRoutingMode
+                      ? { ...styles.outlineButton, ...styles.disabledOutlineButton }
+                      : styles.outlineButton
+                  }
+                >
+                  Auto Route
+                </button>
+              </Form>
+            </>
+          ) : null}
           <button type="button" style={styles.outlineButton} onClick={testChime}>
             Test Chime
           </button>
@@ -1931,6 +2038,22 @@ export default function ClassicDispatchPage() {
               <dd>{getOrderAddress(selectedOrder) || "No address"}</dd>
               <dt>Load</dt>
               <dd>{selectedOrder.quantity || "-"} {selectedOrder.unit} {selectedOrder.material}</dd>
+              <dt>Product SKU</dt>
+              <dd>{selectedOrderProductDetail?.sku || "No SKU matched"}</dd>
+              <dt>Product Title</dt>
+              <dd>{selectedOrderProductDetail?.title || selectedOrder.material || "No product matched"}</dd>
+              {selectedOrderProductDetail?.unitLabel ? (
+                <>
+                  <dt>Unit Label</dt>
+                  <dd>{selectedOrderProductDetail.unitLabel}</dd>
+                </>
+              ) : null}
+              {selectedOrderProductDetail?.vendor ? (
+                <>
+                  <dt>Vendor</dt>
+                  <dd>{selectedOrderProductDetail.vendor}</dd>
+                </>
+              ) : null}
               <dt>Requested</dt>
               <dd>{selectedOrder.requestedWindow || "Needs scheduling"}</dd>
               <dt>Status</dt>
@@ -1940,6 +2063,21 @@ export default function ClassicDispatchPage() {
               <dt>Travel</dt>
               <dd>{selectedOrder.travelSummary || formatTime(getTravelMinutes(selectedOrder))}</dd>
             </dl>
+            {selectedOrderProductDetail?.imageUrl ? (
+              <div style={styles.productPreview}>
+                <img
+                  src={selectedOrderProductDetail.imageUrl}
+                  alt={selectedOrderProductDetail.title}
+                  style={styles.productPreviewImage}
+                />
+                <div>
+                  <strong>{selectedOrderProductDetail.title}</strong>
+                  <p>
+                    Use this synced product match to verify blend/mix details before loading.
+                  </p>
+                </div>
+              </div>
+            ) : null}
             {selectedOrder.notes ? (
               <div style={styles.drawerNotes}>
                 <strong>Notes</strong>
@@ -2107,7 +2245,21 @@ const styles: Record<string, any> = {
     outline: "none",
   },
   topForm: { marginLeft: "auto" },
+  compactTopForm: { marginLeft: 0 },
   company: { marginLeft: 12, fontWeight: 800, whiteSpace: "nowrap" },
+  manualRouteToggle: {
+    height: 34,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 7,
+    padding: "0 12px",
+    borderRadius: 999,
+    border: "1px solid var(--classic-border)",
+    background: "var(--classic-panel-bg)",
+    color: "var(--classic-text)",
+    fontWeight: 800,
+    whiteSpace: "nowrap",
+  },
   outlineButton: {
     height: 34,
     display: "inline-flex",
@@ -2121,6 +2273,12 @@ const styles: Record<string, any> = {
     textDecoration: "none",
     fontWeight: 800,
     cursor: "pointer",
+  },
+  disabledOutlineButton: {
+    borderColor: "var(--classic-border)",
+    color: "var(--classic-muted)",
+    opacity: 0.65,
+    cursor: "not-allowed",
   },
   orangeButton: {
     minHeight: 34,
@@ -2276,6 +2434,21 @@ const styles: Record<string, any> = {
     fontWeight: 900,
     cursor: "pointer",
     textDecoration: "underline",
+  },
+  rowSkuButton: {
+    border: "none",
+    background: "transparent",
+    color: "#22c55e",
+    fontWeight: 900,
+    cursor: "pointer",
+    textDecoration: "underline",
+  },
+  rowSkuButtonMuted: {
+    border: "none",
+    background: "transparent",
+    color: "var(--classic-muted)",
+    fontWeight: 800,
+    cursor: "pointer",
   },
   dropZone: {
     height: 24,
@@ -2614,6 +2787,24 @@ const styles: Record<string, any> = {
     border: "1px solid var(--classic-border)",
     borderRadius: 6,
     background: "var(--classic-panel-header-bg)",
+  },
+  productPreview: {
+    marginTop: 16,
+    display: "grid",
+    gridTemplateColumns: "72px 1fr",
+    gap: 12,
+    alignItems: "center",
+    padding: 10,
+    border: "1px solid var(--classic-border)",
+    borderRadius: 6,
+    background: "var(--classic-panel-header-bg)",
+  },
+  productPreviewImage: {
+    width: 72,
+    height: 72,
+    objectFit: "cover",
+    borderRadius: 6,
+    border: "1px solid var(--classic-border)",
   },
   drawerButtonGrid: {
     display: "grid",
