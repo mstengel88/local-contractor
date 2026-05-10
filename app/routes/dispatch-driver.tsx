@@ -12,6 +12,10 @@ import {
 } from "../lib/user-auth.server";
 import { sendDeliveryConfirmationEmail } from "../lib/delivery-confirmation-email.server";
 import {
+  buildEnrouteTextMessage,
+  sendCustomerEnrouteText,
+} from "../lib/customer-text.server";
+import {
   ensureSeedDispatchEmployees,
   ensureSeedDispatchOrders,
   ensureSeedDispatchRoutes,
@@ -104,30 +108,6 @@ function getOneWayTravelMinutes(order: DispatchOrder) {
 function getCustomerEtaText(order: DispatchOrder) {
   const oneWayMinutes = getOneWayTravelMinutes(order);
   return oneWayMinutes ? `${oneWayMinutes} minute${oneWayMinutes === 1 ? "" : "s"}` : "soon";
-}
-
-function buildEnrouteSmsPreview({
-  order,
-  route,
-}: {
-  order: DispatchOrder;
-  route: DispatchRoute | null;
-}) {
-  const to = extractPhone(order.contact);
-  const body = [
-    `Green Hills Supply: your delivery is en route and should arrive in about ${getCustomerEtaText(order)}.`,
-    route?.truck ? `Truck: ${route.truck}.` : "",
-    "Please make sure the drop area is clear.",
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  return {
-    to,
-    body,
-    ready: Boolean(to),
-    reason: to ? "SMS preview is ready." : "No customer phone number was found in the contact field.",
-  };
 }
 
 function getReleaseDelayMs(order: DispatchOrder) {
@@ -381,13 +361,21 @@ export async function action({ request }: any) {
 
   let smsNote = "";
   if (deliveryStatus === "en_route") {
-    const smsPreview = buildEnrouteSmsPreview({
-      order: updatedOrder,
-      route: currentRoute,
-    });
-    smsNote = smsPreview.ready
-      ? ` Customer enroute text is ready for ${smsPreview.to}: "${smsPreview.body}"`
-      : ` Customer enroute text skipped: ${smsPreview.reason}`;
+    try {
+      const smsResult = await sendCustomerEnrouteText({
+        order: updatedOrder,
+        route: currentRoute,
+      });
+      if (smsResult.sent) {
+        const textMessage = buildEnrouteTextMessage({ order: updatedOrder, route: currentRoute });
+        smsNote = ` Customer enroute text sent with Kenect to ${textMessage.to}.`;
+      } else {
+        smsNote = ` Customer enroute text skipped: ${smsResult.reason}`;
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown text message error.";
+      smsNote = ` Customer enroute text failed: ${message}`;
+    }
   }
 
   let emailNote = "";

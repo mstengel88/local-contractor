@@ -48,6 +48,7 @@ export default [
   route("api/delete-quote", "routes/api.delete-quote.ts"),
   route("api/update-quote", "routes/api.update-quote.ts"),
   route("api/dispatch-poll-mailbox", "routes/api.dispatch-poll-mailbox.ts"),
+  route("api/dispatch-poll-shopify", "routes/api.dispatch-poll-shopify.ts"),
   route("api/dispatch-driver-location", "routes/api.dispatch-driver-location.ts"),
   route("api/loader-notifications", "routes/api.loader-notifications.ts"),
   route("api/loader-push-subscription", "routes/api.loader-push-subscription.ts"),

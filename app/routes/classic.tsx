@@ -823,6 +823,8 @@ export default function ClassicDispatchPage() {
     {}) as Record<string, DispatchProductDetail>;
   const message = actionData?.message || loaderData?.mailboxStatus?.message || "";
   const mailboxStatus = actionData?.mailboxStatus || loaderData?.mailboxStatus || null;
+  const shopifyImportStatus = actionData?.shopifyImportStatus || null;
+  const importStatus = shopifyImportStatus || mailboxStatus;
   const googleMapsApiKey = actionData?.googleMapsApiKey ?? loaderData.googleMapsApiKey ?? "";
   const mapOriginAddress = actionData?.mapOriginAddress ?? loaderData.mapOriginAddress ?? "";
   const currentUser = actionData?.currentUser ?? loaderData.currentUser ?? null;
@@ -901,13 +903,13 @@ export default function ClassicDispatchPage() {
   }, [initialDriverLocations]);
 
   useEffect(() => {
-    const imported = Number(mailboxStatus?.imported || 0);
+    const imported = Number(importStatus?.imported || 0);
     if (imported <= 0) return;
 
     const chimeKey = [
-      mailboxStatus?.message || "",
+      importStatus?.message || "",
       imported,
-      mailboxStatus?.skipped || 0,
+      importStatus?.skipped || 0,
     ].join("|");
 
     if (!chimeKey || lastChimeKey.current === chimeKey) return;
@@ -921,7 +923,7 @@ export default function ClassicDispatchPage() {
     void playDispatchChime().catch(() => {
       // Some browsers require the Test Chime button before allowing sound.
     });
-  }, [chimeEnabled, mailboxStatus]);
+  }, [chimeEnabled, importStatus]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1668,6 +1670,10 @@ export default function ClassicDispatchPage() {
             style={styles.search}
           />
           <Form method="post" style={styles.topForm}>
+            <input type="hidden" name="intent" value="poll-shopify-orders" />
+            <button type="submit" style={styles.outlineButton}>Import Shopify</button>
+          </Form>
+          <Form method="post" style={styles.compactTopForm}>
             <input type="hidden" name="intent" value="poll-mailbox" />
             <button type="submit" style={styles.outlineButton}>Import Mail</button>
           </Form>

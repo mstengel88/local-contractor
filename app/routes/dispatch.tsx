@@ -54,6 +54,7 @@ import {
   maybeAutoPollDispatchMailbox,
   pollDispatchMailbox,
 } from "../lib/dispatch-mailbox.server";
+import { importDispatchShopifyOrders } from "../lib/dispatch-shopify-orders.server";
 import { attachAddressAutocomplete, loadGooglePlaces } from "../lib/google-places";
 import { getCurrentUser, logAuditEvent } from "../lib/user-auth.server";
 
@@ -1636,6 +1637,19 @@ export async function action({ request }: any) {
       });
     }
 
+    if (intent === "poll-shopify-orders") {
+      const shopifyImportStatus = await importDispatchShopifyOrders();
+      const dispatchState = await loadDispatchState();
+
+      return data({
+        allowed: true,
+        ok: shopifyImportStatus.configured,
+        message: shopifyImportStatus.message,
+        shopifyImportStatus,
+        ...dispatchState,
+      });
+    }
+
     if (intent === "create-route") {
       const code = String(form.get("code") || "").trim();
       const truckId = String(form.get("truckId") || "").trim();
@@ -2367,6 +2381,7 @@ export default function DispatchPage() {
   const storageReady = actionData?.storageReady ?? loaderData.storageReady ?? false;
   const storageError = actionData?.storageError ?? loaderData.storageError ?? null;
   const mailboxStatus = actionData?.mailboxStatus ?? loaderData.mailboxStatus ?? null;
+  const shopifyImportStatus = actionData?.shopifyImportStatus ?? null;
   const googleMapsApiKey =
     actionData?.googleMapsApiKey ?? loaderData.googleMapsApiKey ?? "";
   const mapOriginAddress =
@@ -2964,6 +2979,33 @@ export default function DispatchPage() {
           </div>
         ) : null}
 
+        {shopifyImportStatus ? (
+          <div
+            style={
+              shopifyImportStatus.configured ? styles.statusOk : styles.statusWarn
+            }
+          >
+            {shopifyImportStatus.message}
+            {shopifyImportStatus.skipReasons?.length ? (
+              <div style={styles.skipReasonList}>
+                {shopifyImportStatus.skipReasons.slice(0, 5).map((item: string) => (
+                  <div key={item} style={styles.skipReasonItem}>
+                    <span>{item}</span>
+                  </div>
+                ))}
+                {shopifyImportStatus.skipReasons.length > 5 ? (
+                  <div style={styles.skipReasonItem}>
+                    <span>
+                      {shopifyImportStatus.skipReasons.length - 5} additional skipped
+                      Shopify orders not shown.
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         <div style={styles.metricsGrid}>
           {metricCard("Inbox", String(inboxOrders.length), "#f97316")}
           {metricCard("Scheduled", String(scheduledOrders.length), "#22c55e")}
@@ -3205,6 +3247,11 @@ export default function DispatchPage() {
                   <p style={styles.panelSub}>Create a dispatch card manually or poll the mailbox.</p>
                 </div>
               </div>
+
+              <Form method="post" style={{ display: "grid", gap: 12, marginBottom: 16 }}>
+                <input type="hidden" name="intent" value="poll-shopify-orders" />
+                <button type="submit" style={styles.primaryButton}>Import Shopify Orders</button>
+              </Form>
 
               <Form method="post" style={{ display: "grid", gap: 12, marginBottom: 16 }}>
                 <input type="hidden" name="intent" value="poll-mailbox" />

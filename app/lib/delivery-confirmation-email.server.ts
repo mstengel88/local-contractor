@@ -192,12 +192,19 @@ export async function sendDeliveryConfirmationEmail({
   if (!to) return { sent: false, skipped: true, reason: "No customer email found." };
 
   const resendApiKey = process.env.RESEND_API_KEY;
-  const from = process.env.DELIVERY_CONFIRMATION_FROM;
+  const from =
+    process.env.DELIVERY_CONFIRMATION_FROM ||
+    "Green Hills Supply <dispatch@ghstickets.com>";
+  const replyTo =
+    process.env.DELIVERY_CONFIRMATION_REPLY_TO ||
+    process.env.DELIVERY_CONFIRMATION_FROM ||
+    "info@greenhillssupply.com";
+
   if (!resendApiKey || !from) {
     return {
       sent: false,
       skipped: true,
-      reason: "Delivery email is not configured. Set RESEND_API_KEY and DELIVERY_CONFIRMATION_FROM.",
+      reason: "Delivery email is not configured. Set RESEND_API_KEY and verify the sender domain.",
     };
   }
 
@@ -214,6 +221,7 @@ export async function sendDeliveryConfirmationEmail({
       subject: email.subject,
       html: email.html,
       text: email.text,
+      reply_to: replyTo,
     }),
   });
 
