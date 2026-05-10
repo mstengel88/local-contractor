@@ -2803,13 +2803,44 @@ export default function DispatchPage() {
 
   return (
     <div style={styles.page}>
+      <style>
+        {`
+          @media (max-width: 900px) {
+            .dispatch-frame {
+              display: block !important;
+            }
+
+            .dispatch-sidebar {
+              position: sticky !important;
+              top: 0 !important;
+              z-index: 30 !important;
+              min-height: auto !important;
+              height: auto !important;
+              border-right: 0 !important;
+              border-bottom: 1px solid #1e293b !important;
+            }
+
+            .dispatch-shell {
+              padding: 10px !important;
+            }
+
+            .dispatch-hero {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
+          }
+        `}
+      </style>
       <div
+        className="dispatch-frame"
         style={{
           ...styles.appFrame,
           gridTemplateColumns: navCollapsed ? "56px minmax(0, 1fr)" : "230px minmax(0, 1fr)",
         }}
       >
-        <aside style={{ ...styles.sidebar, padding: navCollapsed ? "12px 8px" : "16px 14px" }}>
+        <aside
+          className="dispatch-sidebar"
+          style={{ ...styles.sidebar, padding: navCollapsed ? "12px 8px" : "16px 14px" }}
+        >
           <button
             type="button"
             onClick={toggleNavCollapsed}
@@ -2876,8 +2907,8 @@ export default function DispatchPage() {
           </div>
         </aside>
 
-        <main style={styles.shell}>
-        <div id="dashboard" style={styles.hero}>
+        <main className="dispatch-shell" style={styles.shell}>
+        <div id="dashboard" className="dispatch-hero" style={styles.hero}>
           <div>
             <div style={styles.kicker}>Dispatch Workspace</div>
             <h1 style={styles.title}>Plan, intake, and assign deliveries</h1>
@@ -5072,18 +5103,18 @@ const styles = {
   } as const,
   metricsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
     gap: 14,
   } as const,
   workspaceGrid: {
     display: "grid",
-    gridTemplateColumns: "minmax(320px, 0.9fr) minmax(520px, 1.25fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 420px), 1fr))",
     gap: 18,
     alignItems: "start",
   } as const,
   focusGrid: {
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1.1fr) minmax(360px, 0.9fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 420px), 1fr))",
     gap: 18,
     alignItems: "start",
   } as const,

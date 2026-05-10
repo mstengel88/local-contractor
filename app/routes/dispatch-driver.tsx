@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Form, useActionData, useLoaderData, useLocation } from "react-router";
 import { data, redirect } from "react-router";
 import {
@@ -47,6 +47,32 @@ function getStatusColor(status?: DispatchDeliveryStatus) {
   if (status === "delivered") return "#16a34a";
   if (status === "en_route") return "#ea580c";
   return "#0284c7";
+}
+
+type NativeDispatchLocationPlugin = {
+  startTracking: (options: {
+    endpoint: string;
+    routeId: string;
+    orderId?: string | null;
+    driverId?: string | null;
+    driverName?: string;
+    truck?: string;
+  }) => Promise<{ ok?: boolean; message?: string }>;
+  stopTracking?: () => Promise<{ ok?: boolean; message?: string }>;
+  status?: () => Promise<Record<string, unknown>>;
+};
+
+function getNativeDispatchLocationPlugin() {
+  if (typeof window === "undefined") return null;
+  const nativeWindow = window as typeof window & {
+    Capacitor?: {
+      Plugins?: {
+        DispatchLocation?: NativeDispatchLocationPlugin;
+      };
+    };
+  };
+
+  return nativeWindow.Capacitor?.Plugins?.DispatchLocation || null;
 }
 
 function getOrderDisplayNumber(order: DispatchOrder) {
@@ -490,8 +516,85 @@ export default function DispatchDriverPage() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.shell}>
-        <header style={styles.header}>
+      <style>
+        {`
+          @media (max-width: 760px) {
+            .driver-shell {
+              max-width: none !important;
+              width: 100% !important;
+              gap: 12px !important;
+            }
+
+            .driver-header {
+              display: grid !important;
+              grid-template-columns: minmax(0, 1fr) !important;
+              padding: 14px !important;
+            }
+
+            .driver-header-actions {
+              justify-content: stretch !important;
+            }
+
+            .driver-header-actions > a {
+              flex: 1 1 120px !important;
+            }
+
+            .driver-route-picker {
+              display: flex !important;
+              overflow-x: auto !important;
+              padding-bottom: 4px !important;
+              scroll-snap-type: x proximity;
+            }
+
+            .driver-route-picker > a {
+              min-width: 175px !important;
+              scroll-snap-align: start;
+            }
+
+            .driver-summary-grid {
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+              gap: 8px !important;
+            }
+
+            .driver-summary-grid > div {
+              padding: 11px !important;
+            }
+
+            .driver-stop-card {
+              padding: 14px !important;
+              border-radius: 16px !important;
+            }
+
+            .driver-stop-top {
+              grid-template-columns: 36px minmax(0, 1fr) !important;
+              align-items: start !important;
+            }
+
+            .driver-status-pill {
+              grid-column: 1 / -1 !important;
+              justify-self: start !important;
+              margin-left: 46px !important;
+            }
+
+            .driver-sheet-grid,
+            .driver-loaded-panel,
+            .driver-proof-grid {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            .driver-utility-row {
+              justify-content: stretch !important;
+            }
+
+            .driver-utility-row > a,
+            .driver-utility-row > button {
+              flex: 1 1 150px !important;
+            }
+          }
+        `}
+      </style>
+      <div className="driver-shell" style={styles.shell}>
+        <header className="driver-header" style={styles.header}>
           <div>
             <div style={styles.kicker}>Driver Mode</div>
             <h1 style={styles.title}>{selectedRoute?.truck || "Driver Route"}</h1>
@@ -501,7 +604,7 @@ export default function DispatchDriverPage() {
                 : "No active route selected"}
             </p>
           </div>
-          <div style={styles.headerActions}>
+          <div className="driver-header-actions" style={styles.headerActions}>
             <a href={dispatchHref} style={styles.ghostButton}>Dispatch</a>
             <a href={logoutHref} style={styles.ghostButton}>Log Out</a>
           </div>
@@ -531,7 +634,7 @@ export default function DispatchDriverPage() {
           </div>
         ) : null}
 
-        <section style={styles.routePicker}>
+        <section className="driver-route-picker" style={styles.routePicker}>
           {routes.map((route) => (
             <a
               key={route.id}
@@ -551,7 +654,7 @@ export default function DispatchDriverPage() {
           ))}
         </section>
 
-        <section style={styles.summaryGrid}>
+        <section className="driver-summary-grid" style={styles.summaryGrid}>
           <div style={styles.summaryCard}>
             <span>Stops</span>
             <strong>{routeStops.length}</strong>
@@ -586,14 +689,15 @@ export default function DispatchDriverPage() {
               </div>
             ) : null}
             {visibleStops.map((stop) => (
-              <article key={stop.id} style={styles.stopCard}>
-                <div style={styles.stopTop}>
+              <article key={stop.id} className="driver-stop-card" style={styles.stopCard}>
+                <div className="driver-stop-top" style={styles.stopTop}>
                   <div style={styles.stopNumber}>{stop.stopSequence || "-"}</div>
                   <div style={{ minWidth: 0 }}>
                     <h2 style={styles.stopTitle}>{stop.customer}</h2>
                     <p style={styles.stopAddress}>{stop.address}, {stop.city}</p>
                   </div>
                   <span
+                    className="driver-status-pill"
                     style={{
                       ...styles.statusPill,
                       color: getStatusColor(stop.deliveryStatus),
@@ -605,7 +709,7 @@ export default function DispatchDriverPage() {
                   </span>
                 </div>
 
-                <div style={styles.sheetGrid}>
+                <div className="driver-sheet-grid" style={styles.sheetGrid}>
                   <section style={styles.sheetSection}>
                     <h3 style={styles.sheetTitle}>Driver & Truck</h3>
                     <SheetLine label="Truck" value={selectedRoute?.truck || "Not set"} />
@@ -665,6 +769,44 @@ function DriverLiveTracking({
     trackingEnabled ? "Starting GPS tracking..." : "Live GPS is off on this device.",
   );
   const [lastPing, setLastPing] = useState("");
+  const routeRef = useRef(route);
+  const activeStopRef = useRef(activeStop);
+  const latestPositionRef = useRef<GeolocationPosition | null>(null);
+  const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null);
+
+  useEffect(() => {
+    routeRef.current = route;
+    activeStopRef.current = activeStop;
+  }, [activeStop, route]);
+
+  useEffect(() => {
+    if (!trackingEnabled) return;
+
+    const nativeLocation = getNativeDispatchLocationPlugin();
+    if (!nativeLocation) return;
+
+    nativeLocation
+      .startTracking({
+        endpoint: `${window.location.origin}/api/dispatch-driver-location`,
+        routeId: route.id,
+        orderId: activeStop?.id || null,
+        driverId: route.driverId || null,
+        driverName: route.driver || "",
+        truck: route.truck || route.code,
+      })
+      .then((result) => {
+        if (result?.ok !== false) {
+          setTrackingStatus("Native background GPS tracking active.");
+        }
+      })
+      .catch((error) => {
+        setTrackingStatus(
+          error instanceof Error
+            ? error.message
+            : "Native GPS could not start; using browser GPS while the page is open.",
+        );
+      });
+  }, [activeStop?.id, route.code, route.driver, route.driverId, route.id, route.truck, trackingEnabled]);
 
   useEffect(() => {
     if (!trackingEnabled) return;
@@ -674,27 +816,51 @@ function DriverLiveTracking({
       return;
     }
 
-    let lastSentAt = 0;
     let cancelled = false;
+    let lastSentAt = 0;
+    const geoOptions: PositionOptions = {
+      enableHighAccuracy: true,
+      maximumAge: 5000,
+      timeout: 20000,
+    };
 
-    async function sendLocation(position: GeolocationPosition) {
+    async function requestWakeLock() {
+      const wakeLock = (navigator as Navigator & {
+        wakeLock?: {
+          request: (type: "screen") => Promise<{ release: () => Promise<void> }>;
+        };
+      }).wakeLock;
+
+      if (!wakeLock || wakeLockRef.current) return;
+
+      try {
+        wakeLockRef.current = await wakeLock.request("screen");
+      } catch {
+        // Some browsers do not support wake lock. GPS still runs while the page is active.
+      }
+    }
+
+    async function sendLocation(position: GeolocationPosition, force = false) {
       const now = Date.now();
-      if (now - lastSentAt < 15000) return;
+      if (!force && now - lastSentAt < 10000) return;
       lastSentAt = now;
+      latestPositionRef.current = position;
 
       const { latitude, longitude, accuracy, heading, speed } = position.coords;
-      setTrackingStatus("GPS tracking active.");
+      const currentRoute = routeRef.current;
+      const currentStop = activeStopRef.current;
+      setTrackingStatus("GPS tracking active for this route.");
 
       try {
         const response = await fetch("/api/dispatch-driver-location", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            routeId: route.id,
-            orderId: activeStop?.id || null,
-            driverId: route.driverId || null,
-            driverName: route.driver || "",
-            truck: route.truck || route.code,
+            routeId: currentRoute.id,
+            orderId: currentStop?.id || null,
+            driverId: currentRoute.driverId || null,
+            driverName: currentRoute.driver || "",
+            truck: currentRoute.truck || currentRoute.code,
             latitude,
             longitude,
             accuracy,
@@ -719,6 +885,20 @@ function DriverLiveTracking({
       }
     }
 
+    function requestFreshPosition(force = false) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          void sendLocation(position, force);
+        },
+        (error) => {
+          if (!cancelled) {
+            setTrackingStatus(error.message || "Unable to refresh GPS location.");
+          }
+        },
+        geoOptions,
+      );
+    }
+
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
         void sendLocation(position);
@@ -726,14 +906,39 @@ function DriverLiveTracking({
       (error) => {
         setTrackingStatus(error.message || "Unable to start GPS tracking.");
       },
-      { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 },
+      geoOptions,
     );
+
+    const heartbeatId = window.setInterval(() => {
+      if (latestPositionRef.current) {
+        void sendLocation(latestPositionRef.current, true);
+      } else {
+        requestFreshPosition(true);
+      }
+    }, 30000);
+
+    const visibilityHandler = () => {
+      if (document.visibilityState === "visible") {
+        void requestWakeLock();
+        requestFreshPosition(true);
+      }
+    };
+
+    document.addEventListener("visibilitychange", visibilityHandler);
+    void requestWakeLock();
+    requestFreshPosition(true);
 
     return () => {
       cancelled = true;
+      window.clearInterval(heartbeatId);
+      document.removeEventListener("visibilitychange", visibilityHandler);
       navigator.geolocation.clearWatch(watchId);
+      if (wakeLockRef.current) {
+        void wakeLockRef.current.release().catch(() => undefined);
+        wakeLockRef.current = null;
+      }
     };
-  }, [activeStop?.id, route.code, route.driver, route.driverId, route.id, route.truck, trackingEnabled]);
+  }, [trackingEnabled]);
 
   function enableTracking() {
     if (!navigator.geolocation) {
@@ -870,7 +1075,7 @@ function StopDeliveryForm({
       <input type="hidden" name="routeId" value={routeId} />
       <input type="hidden" name="orderId" value={stop.id} />
 
-      <section style={styles.loadedQuantityPanel}>
+      <section className="driver-loaded-panel" style={styles.loadedQuantityPanel}>
         <div>
           <label style={styles.label}>Qty Loaded On Truck</label>
           <input
@@ -959,7 +1164,7 @@ function StopDeliveryForm({
         </div>
       </section>
 
-      <div style={styles.proofGrid}>
+      <div className="driver-proof-grid" style={styles.proofGrid}>
         <div>
           <label style={styles.label}>Driver Signature / Name</label>
           <input
@@ -988,7 +1193,7 @@ function StopDeliveryForm({
       <input type="hidden" name="inspectionStatus" value={stop.inspectionStatus || ""} />
       <input type="hidden" name="customChecklist" value={stop.checklistJson || ""} />
 
-      <div style={styles.utilityRow}>
+      <div className="driver-utility-row" style={styles.utilityRow}>
         <a
           href={`https://maps.google.com/?q=${encodeURIComponent(`${stop.address}, ${stop.city}`)}`}
           target="_blank"

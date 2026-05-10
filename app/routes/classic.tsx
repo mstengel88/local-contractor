@@ -394,7 +394,7 @@ function ClassicMapFallback({
   );
 
   return (
-    <div style={styles.mapCanvas}>
+    <div className="classic-map-panel" style={styles.mapCanvas}>
       <div style={styles.mapToolbar}>
         <button style={styles.mapToggle}>Map</button>
         <button style={styles.mapToggleMuted}>Hybrid</button>
@@ -707,7 +707,7 @@ function ClassicMap({
 
   if (useFallback) {
     return (
-      <div style={styles.mapCanvas}>
+      <div className="classic-map-panel" style={styles.mapCanvas}>
         <ClassicMapFallback routes={routes.filter((route) => !hiddenRouteIds.includes(route.id))} />
         {status ? <div style={styles.classicMapStatus}>{status}</div> : null}
       </div>
@@ -715,7 +715,7 @@ function ClassicMap({
   }
 
   return (
-    <div style={styles.mapCanvas}>
+    <div className="classic-map-panel" style={styles.mapCanvas}>
       <div ref={mapRef} style={styles.realMapCanvas} />
       {status ? <div style={styles.classicMapStatus}>{status}</div> : null}
       <div style={styles.mapLegend}>
@@ -1530,9 +1530,93 @@ export default function ClassicDispatchPage() {
           .classic-table tr:hover td {
             background: var(--classic-table-hover);
           }
+
+          @media (max-width: 900px) {
+            .classic-shell {
+              display: block !important;
+              overflow-x: hidden !important;
+            }
+
+            .classic-side-rail {
+              position: sticky !important;
+              top: 0 !important;
+              z-index: 20 !important;
+              min-height: auto !important;
+              height: auto !important;
+              width: auto !important;
+              border-right: 0 !important;
+              border-bottom: 1px solid var(--classic-border) !important;
+            }
+
+            .classic-workspace {
+              min-width: 0 !important;
+              width: 100% !important;
+              overflow: visible !important;
+            }
+
+            .classic-topbar {
+              min-height: auto !important;
+              flex-wrap: wrap !important;
+              align-items: stretch !important;
+              padding: 10px !important;
+              gap: 8px !important;
+            }
+
+            .classic-topbar input {
+              order: 10 !important;
+              width: 100% !important;
+              max-width: none !important;
+            }
+
+            .classic-topbar form,
+            .classic-topbar a,
+            .classic-topbar button {
+              flex: 1 1 128px !important;
+            }
+
+            .classic-topbar .classic-company {
+              flex: 1 1 100% !important;
+              margin-left: 0 !important;
+            }
+
+            .classic-main-grid {
+              display: block !important;
+              height: auto !important;
+              overflow: visible !important;
+            }
+
+            .classic-left-stack,
+            .classic-right-stack {
+              display: block !important;
+              overflow: visible !important;
+            }
+
+            .classic-panel,
+            .classic-map-panel {
+              min-height: 260px !important;
+              max-height: 72vh !important;
+              overflow: auto !important;
+              border-bottom: 1px solid var(--classic-border) !important;
+            }
+
+            .classic-map-panel {
+              height: 52vh !important;
+            }
+
+            .classic-resizer {
+              display: none !important;
+            }
+
+            .classic-table {
+              width: max-content !important;
+            }
+          }
         `}
       </style>
-      <aside style={{ ...styles.sideRail, padding: navCollapsed ? "12px 8px" : "16px 14px" }}>
+      <aside
+        className="classic-side-rail"
+        style={{ ...styles.sideRail, padding: navCollapsed ? "12px 8px" : "16px 14px" }}
+      >
         <button
           type="button"
           onClick={toggleNavCollapsed}
@@ -1573,8 +1657,8 @@ export default function ClassicDispatchPage() {
         </div>
       </aside>
 
-      <section style={styles.workspace}>
-        <header style={styles.topBar}>
+      <section className="classic-workspace" style={styles.workspace}>
+        <header className="classic-topbar" style={styles.topBar}>
           <div style={styles.brandMark}>✓</div>
           <strong style={styles.brandText}>Plan & Track</strong>
           <input
@@ -1639,7 +1723,7 @@ export default function ClassicDispatchPage() {
           {chimeStatus ? <span style={styles.chimeStatus}>{chimeStatus}</span> : null}
           <a href="#add-route" style={styles.outlineButton}>Add Route</a>
           <a href="#add-order" style={styles.orangeButton}>Add Order</a>
-          <div style={styles.company}>Green Hills Dispatch</div>
+          <div className="classic-company" style={styles.company}>Green Hills Dispatch</div>
         </header>
 
         {message ? (
@@ -1649,18 +1733,20 @@ export default function ClassicDispatchPage() {
         ) : null}
 
         <div
+          className="classic-main-grid"
           style={{
             ...styles.mainGrid,
             gridTemplateColumns: `${panelLayout.mainLeft}fr 8px ${100 - panelLayout.mainLeft}fr`,
           }}
         >
           <section
+            className="classic-left-stack"
             style={{
               ...styles.leftStack,
               gridTemplateRows: `${panelLayout.leftRows[0]}fr 8px ${panelLayout.leftRows[1]}fr 8px ${panelLayout.leftRows[2]}fr`,
             }}
           >
-            <div style={styles.panel}>
+            <div className="classic-panel" style={styles.panel}>
               <div style={styles.panelHeader}>
                 <strong>Routes {routes.length}</strong>
                 <span>Today</span>
@@ -1717,12 +1803,13 @@ export default function ClassicDispatchPage() {
             </div>
 
             <div
+              className="classic-resizer"
               style={styles.rowResizeHandle}
               onMouseDown={(event) => beginRowResize("leftRows", 0, event)}
               title="Drag to resize Routes and Sites"
             />
 
-            <div style={styles.panel}>
+            <div className="classic-panel" style={styles.panel}>
               <div style={styles.panelHeader}>
                 <strong>Sites {selectedRoute?.orders.length || 0}</strong>
                 <span>{selectedRoute ? `${selectedRoute.code} · ${selectedRoute.truck || "No truck"}` : "Select a route"}</span>
@@ -1809,12 +1896,13 @@ export default function ClassicDispatchPage() {
             </div>
 
             <div
+              className="classic-resizer"
               style={styles.rowResizeHandle}
               onMouseDown={(event) => beginRowResize("leftRows", 1, event)}
               title="Drag to resize Sites and Orders"
             />
 
-            <div style={styles.panel}>
+            <div className="classic-panel" style={styles.panel}>
               <div style={styles.panelHeader}>
                 <strong>Orders {visibleOrders.length}</strong>
                 <span>{deliveredCount} delivered</span>
@@ -1848,12 +1936,14 @@ export default function ClassicDispatchPage() {
           </section>
 
           <div
+            className="classic-resizer"
             style={styles.columnResizePanelHandle}
             onMouseDown={beginMainPanelResize}
             title="Drag to resize left and right work areas"
           />
 
           <section
+            className="classic-right-stack"
             style={{
               ...styles.rightStack,
               gridTemplateRows: `${panelLayout.rightRows[0]}fr 8px ${panelLayout.rightRows[1]}fr 8px ${panelLayout.rightRows[2]}fr`,
@@ -1867,12 +1957,13 @@ export default function ClassicDispatchPage() {
             />
 
             <div
+              className="classic-resizer"
               style={styles.rowResizeHandle}
               onMouseDown={(event) => beginRowResize("rightRows", 0, event)}
               title="Drag to resize Map and Unscheduled"
             />
 
-            <div style={styles.panel}>
+            <div className="classic-panel" style={styles.panel}>
               <div style={styles.panelHeader}>
                 <strong>Unscheduled {unscheduledOrders.length}</strong>
                 <span>Routing</span>
@@ -1942,12 +2033,13 @@ export default function ClassicDispatchPage() {
             </div>
 
             <div
+              className="classic-resizer"
               style={styles.rowResizeHandle}
               onMouseDown={(event) => beginRowResize("rightRows", 1, event)}
               title="Drag to resize Unscheduled and Add forms"
             />
 
-            <div style={styles.formGrid}>
+            <div className="classic-panel" style={styles.formGrid}>
               <Form id="add-route" method="post" style={styles.compactForm}>
                 <input type="hidden" name="intent" value="create-route" />
                 <strong>Add Route</strong>
