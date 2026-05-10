@@ -47,12 +47,12 @@ function formatSheetDate(date: Date) {
   return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
 }
 
-function escapeHtml(value: string | number | null | undefined) {
+function escapeCell(value: string | number | null | undefined) {
   return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/\r?\n/g, " ")
+    .replace(/\t/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 function cleanOrderNumber(order: DispatchOrder) {
@@ -109,57 +109,33 @@ function getSheetStatus(order: DispatchOrder) {
   return "DISPATCHED";
 }
 
-function getStatusClass(status: string) {
-  if (status === "DELIVERED") return "status-delivered";
-  if (status === "PENDING DISPATCH") return "status-pending";
-  return "status-dispatched";
-}
-
 function orderSortValue(order: DispatchOrder) {
   const numeric = Number(String(order.orderNumber || "").replace(/\D/g, ""));
   return Number.isFinite(numeric) && numeric > 0 ? numeric : Number.MAX_SAFE_INTEGER;
 }
 
-function buildWorkbookHtml(orders: DispatchOrder[], requestedDate: Date) {
-  const rows = orders
+function buildSpreadsheetRows(orders: DispatchOrder[], requestedDate: Date) {
+  return orders
     .slice()
     .sort((a, b) => orderSortValue(a) - orderSortValue(b))
-    .map((order) => {
-      const status = getSheetStatus(order);
-      return `
-        <tr>
-          <td class="order">${escapeHtml(cleanOrderNumber(order))}</td>
-          <td>${escapeHtml(order.customer)}</td>
-          <td>${escapeHtml(extractPhone(order))}</td>
-          <td>${escapeHtml(getCity(order))}</td>
-          <td>${escapeHtml(order.material)}</td>
-          <td>${escapeHtml(getQuantity(order))}</td>
-          <td>DELIVERY</td>
-          <td>${escapeHtml(formatSheetDate(requestedDate))}</td>
-          <td>${escapeHtml(getTimePreference(order))}</td>
-          <td class="${getStatusClass(status)}">${escapeHtml(status)}</td>
-        </tr>
-      `;
-    })
-    .join("");
+    .map((order) => [
+      cleanOrderNumber(order),
+      order.customer,
+      extractPhone(order),
+      getCity(order),
+      order.material,
+      getQuantity(order),
+      "DELIVERY",
+      formatSheetDate(requestedDate),
+      getTimePreference(order),
+      getSheetStatus(order),
+    ]);
+}
 
-  return `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <style>
-    table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12pt; }
-    td { border: 1px solid #000; padding: 2px 8px; font-weight: 700; text-align: center; white-space: nowrap; }
-    .order { background: #fff; }
-    .status-dispatched { background: #ffe600; }
-    .status-delivered { background: #00ff00; }
-    .status-pending { background: #ff00ff; }
-  </style>
-</head>
-<body>
-  <table>${rows}</table>
-</body>
-</html>`;
+function buildTsv(orders: DispatchOrder[], requestedDate: Date) {
+  return buildSpreadsheetRows(orders, requestedDate)
+    .map((row) => row.map(escapeCell).join("\t"))
+    .join("\r\n");
 }
 
 export async function loader({ request }: { request: Request }) {
@@ -176,10 +152,10 @@ export async function loader({ request }: { request: Request }) {
     return orderDate ? dateKey(orderDate) === requestedKey : false;
   });
 
-  return new Response(buildWorkbookHtml(orders, requestedDate), {
+  return new Response(buildTsv(orders, requestedDate), {
     headers: {
-      "Content-Type": "application/vnd.ms-excel; charset=utf-8",
-      "Content-Disposition": `attachment; filename="dispatch-orders-${requestedKey}.xls"`,
+      "Content-Type": "text/tab-separated-values; charset=utf-8",
+      "Content-Disposition": `attachment; filename="dispatch-orders-${requestedKey}.tsv"`,
       "Cache-Control": "no-store",
     },
   });

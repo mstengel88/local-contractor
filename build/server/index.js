@@ -4811,7 +4811,7 @@ const route3 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProper
   default: quoteReview,
   loader: loader$p
 }, Symbol.toStringTag, { value: "Module" }));
-function escapeHtml$1(value) {
+function escapeHtml(value) {
   return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 function getOrderDisplayNumber$3(order) {
@@ -4881,7 +4881,7 @@ function buildDeliveryConfirmationEmail({
           </td>
           <td style="padding-left:16px;vertical-align:middle;">
             <div style="border:2px solid #ffffff;padding:12px 14px;font-size:20px;font-weight:900;color:#ffffff;">
-              Delivery Confirmation ${escapeHtml$1(orderNumber)}
+              Delivery Confirmation ${escapeHtml(orderNumber)}
             </div>
           </td>
         </tr>
@@ -4951,19 +4951,19 @@ function buildDeliveryConfirmationEmail({
   return { subject, html, text };
 }
 function sectionTitle(title) {
-  return `<div style="margin-top:24px;background:#2368aa;color:#9ad20f;text-align:center;font-weight:900;padding:8px 10px;">${escapeHtml$1(title)}</div>`;
+  return `<div style="margin-top:24px;background:#2368aa;color:#9ad20f;text-align:center;font-weight:900;padding:8px 10px;">${escapeHtml(title)}</div>`;
 }
 function fieldCell(label, value) {
   return `<td style="width:50%;border:2px solid #ffffff;padding:8px 10px;vertical-align:top;">
-    <div style="color:#9ad20f;font-size:12px;font-weight:900;">${escapeHtml$1(label)}</div>
-    <div style="color:#ffffff;font-size:14px;line-height:1.45;margin-top:4px;">${escapeHtml$1(value || " ")}</div>
+    <div style="color:#9ad20f;font-size:12px;font-weight:900;">${escapeHtml(label)}</div>
+    <div style="color:#ffffff;font-size:14px;line-height:1.45;margin-top:4px;">${escapeHtml(value || " ")}</div>
   </td>`;
 }
 function tableHeader(label) {
-  return `<th style="background:#2368aa;color:#9ad20f;border:1px solid #ffffff;padding:8px 6px;font-size:12px;line-height:1.2;text-align:center;">${escapeHtml$1(label)}</th>`;
+  return `<th style="background:#2368aa;color:#9ad20f;border:1px solid #ffffff;padding:8px 6px;font-size:12px;line-height:1.2;text-align:center;">${escapeHtml(label)}</th>`;
 }
 function tableCell(value) {
-  return `<td style="background:#ffffff;color:#000000;border:1px solid #777;padding:8px 6px;font-size:13px;text-align:center;">${escapeHtml$1(value || " ")}</td>`;
+  return `<td style="background:#ffffff;color:#000000;border:1px solid #777;padding:8px 6px;font-size:13px;text-align:center;">${escapeHtml(value || " ")}</td>`;
 }
 async function sendDeliveryConfirmationEmail({
   order,
@@ -13189,8 +13189,8 @@ function dateKey$5(date) {
 function formatSheetDate(date) {
   return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
 }
-function escapeHtml(value) {
-  return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+function escapeCell(value) {
+  return String(value ?? "").replace(/\r?\n/g, " ").replace(/\t/g, " ").replace(/\s{2,}/g, " ").trim();
 }
 function cleanOrderNumber(order) {
   return String(order.orderNumber || order.id || "").replace(/^#/, "").trim();
@@ -13234,50 +13234,15 @@ function getSheetStatus(order) {
   if (order.status === "new" || order.status === "hold") return "PENDING DISPATCH";
   return "DISPATCHED";
 }
-function getStatusClass(status) {
-  if (status === "DELIVERED") return "status-delivered";
-  if (status === "PENDING DISPATCH") return "status-pending";
-  return "status-dispatched";
-}
 function orderSortValue(order) {
   const numeric = Number(String(order.orderNumber || "").replace(/\D/g, ""));
   return Number.isFinite(numeric) && numeric > 0 ? numeric : Number.MAX_SAFE_INTEGER;
 }
-function buildWorkbookHtml(orders, requestedDate) {
-  const rows = orders.slice().sort((a, b) => orderSortValue(a) - orderSortValue(b)).map((order) => {
-    const status = getSheetStatus(order);
-    return `
-        <tr>
-          <td class="order">${escapeHtml(cleanOrderNumber(order))}</td>
-          <td>${escapeHtml(order.customer)}</td>
-          <td>${escapeHtml(extractPhone$2(order))}</td>
-          <td>${escapeHtml(getCity(order))}</td>
-          <td>${escapeHtml(order.material)}</td>
-          <td>${escapeHtml(getQuantity(order))}</td>
-          <td>DELIVERY</td>
-          <td>${escapeHtml(formatSheetDate(requestedDate))}</td>
-          <td>${escapeHtml(getTimePreference(order))}</td>
-          <td class="${getStatusClass(status)}">${escapeHtml(status)}</td>
-        </tr>
-      `;
-  }).join("");
-  return `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <style>
-    table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12pt; }
-    td { border: 1px solid #000; padding: 2px 8px; font-weight: 700; text-align: center; white-space: nowrap; }
-    .order { background: #fff; }
-    .status-dispatched { background: #ffe600; }
-    .status-delivered { background: #00ff00; }
-    .status-pending { background: #ff00ff; }
-  </style>
-</head>
-<body>
-  <table>${rows}</table>
-</body>
-</html>`;
+function buildSpreadsheetRows(orders, requestedDate) {
+  return orders.slice().sort((a, b) => orderSortValue(a) - orderSortValue(b)).map((order) => [cleanOrderNumber(order), order.customer, extractPhone$2(order), getCity(order), order.material, getQuantity(order), "DELIVERY", formatSheetDate(requestedDate), getTimePreference(order), getSheetStatus(order)]);
+}
+function buildTsv(orders, requestedDate) {
+  return buildSpreadsheetRows(orders, requestedDate).map((row) => row.map(escapeCell).join("	")).join("\r\n");
 }
 async function loader$n({
   request
@@ -13295,10 +13260,10 @@ async function loader$n({
     const orderDate = parseRequestedDate$5(order.requestedWindow);
     return orderDate ? dateKey$5(orderDate) === requestedKey : false;
   });
-  return new Response(buildWorkbookHtml(orders, requestedDate), {
+  return new Response(buildTsv(orders, requestedDate), {
     headers: {
-      "Content-Type": "application/vnd.ms-excel; charset=utf-8",
-      "Content-Disposition": `attachment; filename="dispatch-orders-${requestedKey}.xls"`,
+      "Content-Type": "text/tab-separated-values; charset=utf-8",
+      "Content-Disposition": `attachment; filename="dispatch-orders-${requestedKey}.tsv"`,
       "Cache-Control": "no-store"
     }
   });
