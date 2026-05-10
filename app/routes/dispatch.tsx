@@ -143,6 +143,11 @@ function formatRequestedWindow(value: string) {
   return `${dateInput[2]}/${dateInput[3]}/${dateInput[1]}`;
 }
 
+function getTodayDateInputValue() {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+}
+
 function getRequestedWindowDateInputValue(value?: string | null) {
   const trimmed = String(value || "").trim();
   const isoDate = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -2360,6 +2365,7 @@ export default function DispatchPage() {
   const reviewHref = isEmbeddedRoute ? "/app/quote-review" : "/quote-review";
   const mobileHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
+  const dailyExportHref = `${dispatchHref}/export-day.xls?date=${getTodayDateInputValue()}`;
   const classicHref = isEmbeddedRoute ? "/app/classic" : "/classic";
   const monitorHref = isEmbeddedRoute ? "/app/monitor" : "/monitor";
   const calendarHref = isEmbeddedRoute ? "/app/calendar" : "/calendar";
@@ -2937,6 +2943,7 @@ export default function DispatchPage() {
             <a href={mobileHref} style={styles.ghostButton}>Dashboard</a>
             <a href={reviewHref} style={styles.ghostButton}>Review Quotes</a>
             <a href={driverHref} style={styles.ghostButton}>Driver View</a>
+            <a href={dailyExportHref} style={styles.ghostButton}>Export Today</a>
           </div>
         </div>
 

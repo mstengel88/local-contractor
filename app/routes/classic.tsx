@@ -42,6 +42,11 @@ function formatTime(minutes: number) {
   return remainder ? `${hours}h ${remainder}m` : `${hours}h`;
 }
 
+function getTodayDateInputValue() {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+}
+
 function statusLabel(order: DispatchOrder) {
   if (order.status === "delivered" || order.deliveryStatus === "delivered") return "Delivered";
   if (order.status === "cancelled") return "Cancelled";
@@ -835,6 +840,7 @@ export default function ClassicDispatchPage() {
   const allotmentHref = isEmbeddedRoute ? "/app/allotment" : "/allotment";
   const loaderHref = isEmbeddedRoute ? "/app/loader" : "/loader";
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
+  const dailyExportHref = `${dispatchHref}/export-day.xls?date=${getTodayDateInputValue()}`;
   const quoteHref = isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote";
   const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
   const mobileHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
@@ -1677,6 +1683,9 @@ export default function ClassicDispatchPage() {
             <input type="hidden" name="intent" value="poll-mailbox" />
             <button type="submit" style={styles.outlineButton}>Import Mail</button>
           </Form>
+          <a href={dailyExportHref} style={styles.outlineButton}>
+            Export Today
+          </a>
           {canManageDispatch ? (
             <>
               <label style={styles.manualRouteToggle}>

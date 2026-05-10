@@ -784,7 +784,7 @@ const route0 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProper
   default: root,
   links
 }, Symbol.toStringTag, { value: "Module" }));
-async function loader$q({
+async function loader$r({
   request
 }) {
   const url = new URL(request.url);
@@ -797,7 +797,7 @@ const route$1 = UNSAFE_withComponentProps(function Index() {
 const route1 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: route$1,
-  loader: loader$q
+  loader: loader$r
 }, Symbol.toStringTag, { value: "Module" }));
 function getCreatorPayload(input) {
   return {
@@ -1324,7 +1324,7 @@ function attachAddressAutocomplete(options) {
     const place = autocomplete.getPlace();
     const components = (place == null ? void 0 : place.address_components) || [];
     let streetNumber = "";
-    let route55 = "";
+    let route57 = "";
     let locality = "";
     let administrativeArea = "";
     let zip = "";
@@ -1332,7 +1332,7 @@ function attachAddressAutocomplete(options) {
     for (const component of components) {
       const types = component.types || [];
       if (types.includes("street_number")) streetNumber = component.long_name || "";
-      if (types.includes("route")) route55 = component.long_name || "";
+      if (types.includes("route")) route57 = component.long_name || "";
       if (types.includes("locality")) locality = component.long_name || "";
       if (types.includes("administrative_area_level_1")) {
         administrativeArea = component.short_name || component.long_name || "";
@@ -1342,7 +1342,7 @@ function attachAddressAutocomplete(options) {
         countryCode = component.short_name || component.long_name || "US";
       }
     }
-    address1.value = [streetNumber, route55].filter(Boolean).join(" ").trim();
+    address1.value = [streetNumber, route57].filter(Boolean).join(" ").trim();
     city.value = options.cityFormat === "cityStateZip" ? [locality, [administrativeArea, zip].filter(Boolean).join(" ")].filter(Boolean).join(", ") : locality;
     province.value = administrativeArea;
     postalCode.value = zip;
@@ -1871,7 +1871,7 @@ function formatQuantityWithUnit(quantity, unitLabel) {
 function getBrowserGoogleMapsApiKey$1() {
   return process.env.GOOGLE_MAPS_BROWSER_API_KEY || process.env.GOOGLE_MAPS_API_KEY || "";
 }
-async function loader$p({
+async function loader$q({
   request
 }) {
   const url = new URL(request.url);
@@ -3824,7 +3824,7 @@ const route2 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProper
   __proto__: null,
   action: action$r,
   default: customQuote,
-  loader: loader$p
+  loader: loader$q
 }, Symbol.toStringTag, { value: "Module" }));
 function formatMoney$1(cents) {
   return `$${(Number(cents || 0) / 100).toFixed(2)}`;
@@ -3925,7 +3925,7 @@ const styles$c = {
     color: "#fee2e2"
   }
 };
-async function loader$o({
+async function loader$p({
   request
 }) {
   const url = new URL(request.url);
@@ -4809,9 +4809,9 @@ const route3 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProper
   __proto__: null,
   action: action$q,
   default: quoteReview,
-  loader: loader$o
+  loader: loader$p
 }, Symbol.toStringTag, { value: "Module" }));
-function escapeHtml(value) {
+function escapeHtml$1(value) {
   return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 function getOrderDisplayNumber$3(order) {
@@ -4836,12 +4836,12 @@ function getQuantityColumns(order) {
 }
 function buildDeliveryConfirmationEmail({
   order,
-  route: route55
+  route: route57
 }) {
   const quantity = getQuantityColumns(order);
   const orderNumber = getOrderDisplayNumber$3(order);
   const deliveredAt = formatDeliveredAt(order);
-  const driverName = order.signatureName || (route55 == null ? void 0 : route55.driver) || order.proofName || "";
+  const driverName = order.signatureName || (route57 == null ? void 0 : route57.driver) || order.proofName || "";
   const photoProof = order.photoUrls || "Not captured";
   const gpsProof = order.signatureData || "Not captured";
   const subject = `Green Hills Supply delivery confirmation ${orderNumber}`;
@@ -4852,9 +4852,9 @@ function buildDeliveryConfirmationEmail({
     `Delivered: ${deliveredAt}`,
     ``,
     `Driver and Truck Information`,
-    `Truck: ${(route55 == null ? void 0 : route55.truck) || ""}`,
+    `Truck: ${(route57 == null ? void 0 : route57.truck) || ""}`,
     `Driver: ${driverName}`,
-    `Route: ${(route55 == null ? void 0 : route55.code) || ""}`,
+    `Route: ${(route57 == null ? void 0 : route57.code) || ""}`,
     ``,
     `Customer Information`,
     `Customer: ${order.customer}`,
@@ -4881,7 +4881,7 @@ function buildDeliveryConfirmationEmail({
           </td>
           <td style="padding-left:16px;vertical-align:middle;">
             <div style="border:2px solid #ffffff;padding:12px 14px;font-size:20px;font-weight:900;color:#ffffff;">
-              Delivery Confirmation ${escapeHtml(orderNumber)}
+              Delivery Confirmation ${escapeHtml$1(orderNumber)}
             </div>
           </td>
         </tr>
@@ -4890,7 +4890,7 @@ function buildDeliveryConfirmationEmail({
       ${sectionTitle("Driver and Truck Information")}
       <table role="presentation" width="100%" cellspacing="12" cellpadding="0" style="border-collapse:separate;margin-top:10px;">
         <tr>
-          ${fieldCell("Truck Number", (route55 == null ? void 0 : route55.truck) || "")}
+          ${fieldCell("Truck Number", (route57 == null ? void 0 : route57.truck) || "")}
           ${fieldCell("Driver Name", driverName)}
         </tr>
         <tr>
@@ -4951,23 +4951,23 @@ function buildDeliveryConfirmationEmail({
   return { subject, html, text };
 }
 function sectionTitle(title) {
-  return `<div style="margin-top:24px;background:#2368aa;color:#9ad20f;text-align:center;font-weight:900;padding:8px 10px;">${escapeHtml(title)}</div>`;
+  return `<div style="margin-top:24px;background:#2368aa;color:#9ad20f;text-align:center;font-weight:900;padding:8px 10px;">${escapeHtml$1(title)}</div>`;
 }
 function fieldCell(label, value) {
   return `<td style="width:50%;border:2px solid #ffffff;padding:8px 10px;vertical-align:top;">
-    <div style="color:#9ad20f;font-size:12px;font-weight:900;">${escapeHtml(label)}</div>
-    <div style="color:#ffffff;font-size:14px;line-height:1.45;margin-top:4px;">${escapeHtml(value || " ")}</div>
+    <div style="color:#9ad20f;font-size:12px;font-weight:900;">${escapeHtml$1(label)}</div>
+    <div style="color:#ffffff;font-size:14px;line-height:1.45;margin-top:4px;">${escapeHtml$1(value || " ")}</div>
   </td>`;
 }
 function tableHeader(label) {
-  return `<th style="background:#2368aa;color:#9ad20f;border:1px solid #ffffff;padding:8px 6px;font-size:12px;line-height:1.2;text-align:center;">${escapeHtml(label)}</th>`;
+  return `<th style="background:#2368aa;color:#9ad20f;border:1px solid #ffffff;padding:8px 6px;font-size:12px;line-height:1.2;text-align:center;">${escapeHtml$1(label)}</th>`;
 }
 function tableCell(value) {
-  return `<td style="background:#ffffff;color:#000000;border:1px solid #777;padding:8px 6px;font-size:13px;text-align:center;">${escapeHtml(value || " ")}</td>`;
+  return `<td style="background:#ffffff;color:#000000;border:1px solid #777;padding:8px 6px;font-size:13px;text-align:center;">${escapeHtml$1(value || " ")}</td>`;
 }
 async function sendDeliveryConfirmationEmail({
   order,
-  route: route55
+  route: route57
 }) {
   const to = getCustomerEmail(order);
   if (!to) return { sent: false, skipped: true, reason: "No customer email found." };
@@ -4981,7 +4981,7 @@ async function sendDeliveryConfirmationEmail({
       reason: "Delivery email is not configured. Set RESEND_API_KEY and verify the sender domain."
     };
   }
-  const email = buildDeliveryConfirmationEmail({ order, route: route55 });
+  const email = buildDeliveryConfirmationEmail({ order, route: route57 });
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -5111,11 +5111,11 @@ function formatOrderNumber(order) {
 function getLoadLabel$4(order) {
   return [order.quantity, order.unit, order.material].filter(Boolean).join(" ");
 }
-function getRouteLabel(route55) {
-  if (!route55) return "Unassigned route";
-  const parts = [`Route ${route55.code}`];
-  if (route55.truck) parts.push(`Truck ${route55.truck}`);
-  if (route55.driver) parts.push(route55.driver);
+function getRouteLabel(route57) {
+  if (!route57) return "Unassigned route";
+  const parts = [`Route ${route57.code}`];
+  if (route57.truck) parts.push(`Truck ${route57.truck}`);
+  if (route57.driver) parts.push(route57.driver);
   return parts.join(" / ");
 }
 function cleanLoaderNote(value) {
@@ -5280,7 +5280,7 @@ function parseShopifyOrderNumber(raw, subject = "") {
   const text = normalizeEmailText(raw);
   return ((_b = (_a2 = subject.match(/new order:\s*#?([A-Z0-9-]+)/i)) == null ? void 0 : _a2[1]) == null ? void 0 : _b.trim()) || ((_d = (_c = text.match(/new order:\s*#?([A-Z0-9-]+)/i)) == null ? void 0 : _c[1]) == null ? void 0 : _d.trim()) || ((_f = (_e = text.match(/order\s+#?([A-Z0-9-]+)\s*\(/i)) == null ? void 0 : _e[1]) == null ? void 0 : _f.trim()) || ((_h = (_g = text.match(/\border\s+#?([A-Z0-9-]+)/i)) == null ? void 0 : _g[1]) == null ? void 0 : _h.trim()) || "";
 }
-function cleanOrderNumber$1(value) {
+function cleanOrderNumber$2(value) {
   var _a2, _b;
   return ((_b = (_a2 = value.match(/#?\s*([A-Z0-9-]+)/i)) == null ? void 0 : _a2[1]) == null ? void 0 : _b.trim()) || "";
 }
@@ -5652,7 +5652,7 @@ function parseDispatchEmail(raw) {
   const shopifyProducts = parseShopifyProducts(raw);
   const shopifyNotes = parseShopifyDeliveryNotes(raw);
   const subject = readEmailField(normalized, ["Subject"]);
-  const orderNumber = cleanOrderNumber$1(
+  const orderNumber = cleanOrderNumber$2(
     readEmailField(normalized, ["Order Number", "Order No"]) || parseShopifyOrderNumber(raw, subject)
   );
   const contactEmail = readEmailField(normalized, ["Email", "Contact", "Customer Email"]) || shipping.contact || ((_a2 = normalized.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)) == null ? void 0 : _a2[0]) || "";
@@ -6143,19 +6143,19 @@ async function ensureSeedDispatchRoutes() {
     return;
   }
   const { error: insertError } = await supabaseAdmin.from(ROUTES_TABLE).insert(
-    seedDispatchRoutes.map((route55) => ({
-      id: route55.id,
-      code: route55.code,
-      truck_id: route55.truckId || null,
-      truck: route55.truck,
-      driver_id: route55.driverId || null,
-      driver: route55.driver,
-      helper_id: route55.helperId || null,
-      helper: route55.helper,
-      color: route55.color,
-      shift: route55.shift,
-      region: route55.region,
-      is_active: route55.isActive !== false
+    seedDispatchRoutes.map((route57) => ({
+      id: route57.id,
+      code: route57.code,
+      truck_id: route57.truckId || null,
+      truck: route57.truck,
+      driver_id: route57.driverId || null,
+      driver: route57.driver,
+      helper_id: route57.helperId || null,
+      helper: route57.helper,
+      color: route57.color,
+      shift: route57.shift,
+      region: route57.region,
+      is_active: route57.isActive !== false
     }))
   );
   if (insertError) {
@@ -6259,7 +6259,7 @@ async function getDispatchOrderByMailboxMessageId(messageId) {
   return data2 ? normalizeOrder(data2) : null;
 }
 async function getDispatchOrdersByOrderNumber(orderNumber) {
-  const baseOrderNumber = cleanOrderNumber$1(orderNumber);
+  const baseOrderNumber = cleanOrderNumber$2(orderNumber);
   if (!baseOrderNumber) return [];
   const { data: data2, error } = await supabaseAdmin.from(ORDERS_TABLE).select("*").ilike("order_number", `${baseOrderNumber}%`).order("created_at", { ascending: false });
   if (error) {
@@ -6740,7 +6740,7 @@ function suffixMailboxMessageId(messageId, index, total) {
   if (!messageId || total <= 1) return messageId;
   return `${messageId}#${String.fromCharCode(97 + index)}`;
 }
-function extractPhone$2(value) {
+function extractPhone$3(value) {
   const text = String(value || "").replace(/[\u00ad\u200B-\u200D\uFEFF]/g, " ");
   const candidates = [
     ...Array.from(text.matchAll(/(?:^|\D)(1?[2-9]\d{9})(?=\D|$)/g), (match) => match[1]),
@@ -6762,7 +6762,7 @@ function extractPhone$2(value) {
   return "";
 }
 function formatPhone$1(phone) {
-  const digits = extractPhone$2(phone);
+  const digits = extractPhone$3(phone);
   return digits ? `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}` : "";
 }
 function findPhoneInMailboxText(value) {
@@ -6775,7 +6775,7 @@ function findPhoneInMailboxText(value) {
     )
   ];
   for (const candidate of candidates) {
-    const phone = extractPhone$2(candidate);
+    const phone = extractPhone$3(candidate);
     if (phone) return phone;
   }
   return "";
@@ -6867,7 +6867,7 @@ async function pollDispatchMailbox() {
     }
     const parsed = parseDispatchEmail(email.raw);
     const mailboxPhone = extractMailboxPhone(email.raw);
-    const parsedContact = extractPhone$2(parsed.contact) || !mailboxPhone ? parsed.contact : [parsed.contact, formatPhone$1(mailboxPhone)].filter(Boolean).join(" / ");
+    const parsedContact = extractPhone$3(parsed.contact) || !mailboxPhone ? parsed.contact : [parsed.contact, formatPhone$1(mailboxPhone)].filter(Boolean).join(" / ");
     const products = ((_a2 = parsed.products) == null ? void 0 : _a2.length) ? parsed.products : [{ material: parsed.material, quantity: parsed.quantity }];
     const validProducts = products.filter((product) => product.material);
     const messageIdOrders = await Promise.all(
@@ -6953,7 +6953,7 @@ async function maybeAutoPollDispatchMailbox() {
 function normalizeWhitespace(value) {
   return value.replace(/\s+/g, " ").trim();
 }
-function cleanOrderNumber(value) {
+function cleanOrderNumber$1(value) {
   return String(value || "").replace(/^#/, "").trim();
 }
 function suffixOrderNumber$1(orderNumber, index, total) {
@@ -7180,7 +7180,7 @@ async function importDispatchShopifyOrders() {
       skipReasons.push(`${order.name || order.id}: missing shipping address.`);
       continue;
     }
-    const baseOrderNumber = cleanOrderNumber(order.name || order.legacyResourceId);
+    const baseOrderNumber = cleanOrderNumber$1(order.name || order.legacyResourceId);
     for (const [index, lineItem] of validLineItems.entries()) {
       const lineKey = lineItem.id || `${order.id}:${lineItem.sku || lineItem.title || index}`;
       const importKey = `shopify:${order.id}#${lineKey}`;
@@ -7283,6 +7283,10 @@ function formatRequestedWindow(value) {
   if (!dateInput) return trimmed;
   return `${dateInput[2]}/${dateInput[3]}/${dateInput[1]}`;
 }
+function getTodayDateInputValue$1() {
+  const today = /* @__PURE__ */ new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+}
 function getRequestedWindowDateInputValue(value) {
   const trimmed = String(value || "").trim();
   const isoDate = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -7316,21 +7320,21 @@ function formatTravelMinutes$3(minutes) {
   return remainder ? `${hours} hr ${remainder} min` : `${hours} hr`;
 }
 function buildDispatchOrderSearchText(order, routes2) {
-  const route55 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
-  return [order.id, order.orderNumber, order.source, order.customer, order.contact, order.address, order.city, order.material, order.quantity, order.unit, order.requestedWindow, order.timePreference, order.truckPreference, order.notes, order.status, order.deliveryStatus, order.eta, order.travelMinutes, order.travelMiles, order.travelSummary, order.emailSubject, order.rawEmail, order.proofName, order.proofNotes, order.signatureName, order.inspectionStatus, route55 == null ? void 0 : route55.code, route55 == null ? void 0 : route55.truck, route55 == null ? void 0 : route55.driver, route55 == null ? void 0 : route55.helper, route55 == null ? void 0 : route55.region].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
+  const route57 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
+  return [order.id, order.orderNumber, order.source, order.customer, order.contact, order.address, order.city, order.material, order.quantity, order.unit, order.requestedWindow, order.timePreference, order.truckPreference, order.notes, order.status, order.deliveryStatus, order.eta, order.travelMinutes, order.travelMiles, order.travelSummary, order.emailSubject, order.rawEmail, order.proofName, order.proofNotes, order.signatureName, order.inspectionStatus, route57 == null ? void 0 : route57.code, route57 == null ? void 0 : route57.truck, route57 == null ? void 0 : route57.driver, route57 == null ? void 0 : route57.helper, route57 == null ? void 0 : route57.region].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
 }
-function buildRouteSearchText(route55, orders) {
+function buildRouteSearchText(route57, orders) {
   var _a2;
-  const routeOrders = ((_a2 = route55.orders) == null ? void 0 : _a2.length) ? route55.orders : orders.filter((order) => order.assignedRouteId === route55.id);
-  return [route55.id, route55.code, route55.truckId, route55.truck, route55.driverId, route55.driver, route55.helperId, route55.helper, route55.color, route55.shift, route55.region, route55.stops, route55.totalTravelMinutes, route55.loadSummary, route55.created_at, route55.updated_at, ...routeOrders.map((order) => buildDispatchOrderSearchText(order, [route55]))].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
+  const routeOrders = ((_a2 = route57.orders) == null ? void 0 : _a2.length) ? route57.orders : orders.filter((order) => order.assignedRouteId === route57.id);
+  return [route57.id, route57.code, route57.truckId, route57.truck, route57.driverId, route57.driver, route57.helperId, route57.helper, route57.color, route57.shift, route57.region, route57.stops, route57.totalTravelMinutes, route57.loadSummary, route57.created_at, route57.updated_at, ...routeOrders.map((order) => buildDispatchOrderSearchText(order, [route57]))].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
 }
 function buildTruckSearchText(truck, routes2, orders) {
-  const truckRoutes = routes2.filter((route55) => route55.truckId === truck.id || route55.truck === truck.label);
-  return [truck.id, truck.label, truck.truckType, truck.tons, truck.yards, truck.capacity, truck.licensePlate, truck.created_at, truck.updated_at, ...truckRoutes.map((route55) => buildRouteSearchText(route55, orders))].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
+  const truckRoutes = routes2.filter((route57) => route57.truckId === truck.id || route57.truck === truck.label);
+  return [truck.id, truck.label, truck.truckType, truck.tons, truck.yards, truck.capacity, truck.licensePlate, truck.created_at, truck.updated_at, ...truckRoutes.map((route57) => buildRouteSearchText(route57, orders))].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
 }
 function buildEmployeeSearchText(employee, routes2, orders) {
-  const employeeRoutes = routes2.filter((route55) => route55.driverId === employee.id || route55.helperId === employee.id || route55.driver === employee.name || route55.helper === employee.name);
-  return [employee.id, employee.name, employee.role, employee.phone, employee.email, employee.created_at, employee.updated_at, ...employeeRoutes.map((route55) => buildRouteSearchText(route55, orders))].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
+  const employeeRoutes = routes2.filter((route57) => route57.driverId === employee.id || route57.helperId === employee.id || route57.driver === employee.name || route57.helper === employee.name);
+  return [employee.id, employee.name, employee.role, employee.phone, employee.email, employee.created_at, employee.updated_at, ...employeeRoutes.map((route57) => buildRouteSearchText(route57, orders))].filter((value) => value !== null && value !== void 0 && value !== "").join(" ").toLowerCase();
 }
 function getTruckCapacityForOrderUnit(truck, unit) {
   if (/tons?/i.test(unit)) return Number(truck.tons || 0);
@@ -7529,12 +7533,12 @@ async function autoRouteOrdersForDispatch() {
   const [allOrders, existingRoutes, trucks, employees] = await Promise.all([getDispatchOrders(), getDispatchRoutes(), getDispatchTrucks(), getDispatchEmployees()]);
   const activeTrucks = trucks.filter((truck) => truck.isActive !== false);
   const drivers = employees.filter((employee) => employee.role === "driver" && employee.isActive !== false);
-  const existingCodes = new Set(existingRoutes.map((route55) => route55.code).filter(Boolean));
-  const routeBuckets = existingRoutes.map((route55) => {
-    const truck = activeTrucks.find((entry2) => entry2.id === route55.truckId) || activeTrucks.find((entry2) => entry2.label === route55.truck) || null;
+  const existingCodes = new Set(existingRoutes.map((route57) => route57.code).filter(Boolean));
+  const routeBuckets = existingRoutes.map((route57) => {
+    const truck = activeTrucks.find((entry2) => entry2.id === route57.truckId) || activeTrucks.find((entry2) => entry2.label === route57.truck) || null;
     if (!truck) return null;
     return {
-      route: route55,
+      route: route57,
       truck,
       usedByUnit: {},
       materialKeys: /* @__PURE__ */ new Set(),
@@ -7557,7 +7561,7 @@ async function autoRouteOrdersForDispatch() {
   }
   const routedTruckIds = new Set(routeBuckets.map((bucket) => bucket.truck.id));
   const unusedTrucks = activeTrucks.filter((truck) => !routedTruckIds.has(truck.id));
-  const usedDriverIds = new Set(existingRoutes.map((route55) => route55.driverId).filter(Boolean));
+  const usedDriverIds = new Set(existingRoutes.map((route57) => route57.driverId).filter(Boolean));
   const unusedDrivers = drivers.filter((driver) => !usedDriverIds.has(driver.id));
   const planningOrders = allOrders.filter((order) => order.status !== "delivered" && order.status !== "cancelled" && order.deliveryStatus !== "delivered" && !order.assignedRouteId).sort((a, b) => {
     const dateDiff = getRequestedDeliverySortValue(a) - getRequestedDeliverySortValue(b);
@@ -7704,16 +7708,16 @@ function RouteMapPreview({
     if (order.travelMinutes) return `${order.travelMinutes} min RT`;
     return order.travelSummary || "RT not calculated";
   };
-  const routePlan = useMemo(() => routes2.map((route55) => ({
-    id: route55.id,
-    color: route55.color || "#38bdf8",
-    label: `${route55.code} · ${route55.truck}`,
-    stops: route55.orders.map((order) => ({
+  const routePlan = useMemo(() => routes2.map((route57) => ({
+    id: route57.id,
+    color: route57.color || "#38bdf8",
+    label: `${route57.code} · ${route57.truck}`,
+    stops: route57.orders.map((order) => ({
       address: [order.address, order.city].map((part) => String(part || "").trim()).filter(Boolean).join(", "),
       customer: order.customer,
       travelLabel: getTravelLabel(order)
     })).filter((stop) => stop.address)
-  })).filter((route55) => route55.stops.length > 0), [routes2]);
+  })).filter((route57) => route57.stops.length > 0), [routes2]);
   useEffect(() => {
     let cancelled = false;
     async function drawMap() {
@@ -7784,7 +7788,7 @@ function RouteMapPreview({
           overlay.setMap(map);
           mapObjectsRef.current.push(overlay);
         };
-        const addStopMarker = (position, route55, stop, stopIndex) => {
+        const addStopMarker = (position, route57, stop, stopIndex) => {
           const marker = new google.maps.Marker({
             map,
             position,
@@ -7792,7 +7796,7 @@ function RouteMapPreview({
             title: `${stop.customer} · ${stop.travelLabel}`
           });
           mapObjectsRef.current.push(marker);
-          addTimeBadge(position, stop.travelLabel, route55.color);
+          addTimeBadge(position, stop.travelLabel, route57.color);
           bounds.extend(position);
         };
         const geocodeAddress = (address) => new Promise((resolve) => {
@@ -7808,13 +7812,13 @@ function RouteMapPreview({
             resolve(null);
           });
         });
-        const drawFallbackRoute = async (route55) => {
-          const points = (await Promise.all([originAddress, ...route55.stops.map((stop) => stop.address), originAddress].map((address) => geocodeAddress(address)))).filter(Boolean);
+        const drawFallbackRoute = async (route57) => {
+          const points = (await Promise.all([originAddress, ...route57.stops.map((stop) => stop.address), originAddress].map((address) => geocodeAddress(address)))).filter(Boolean);
           if (points.length < 2) return false;
           const polyline = new google.maps.Polyline({
             map,
             path: points,
-            strokeColor: route55.color,
+            strokeColor: route57.color,
             strokeOpacity: 0.82,
             strokeWeight: 5
           });
@@ -7825,23 +7829,23 @@ function RouteMapPreview({
               map,
               position: point,
               label: isYard ? "Y" : String(index),
-              title: isYard ? "Yard" : `${route55.stops[index - 1].customer} · ${route55.stops[index - 1].travelLabel}`
+              title: isYard ? "Yard" : `${route57.stops[index - 1].customer} · ${route57.stops[index - 1].travelLabel}`
             });
             mapObjectsRef.current.push(marker);
             if (!isYard) {
-              addTimeBadge(point, route55.stops[index - 1].travelLabel, route55.color);
+              addTimeBadge(point, route57.stops[index - 1].travelLabel, route57.color);
             }
             bounds.extend(point);
           });
           return true;
         };
-        await Promise.all(routePlan.map((route55) => new Promise((resolve) => {
+        await Promise.all(routePlan.map((route57) => new Promise((resolve) => {
           const renderer = new google.maps.DirectionsRenderer({
             map,
             preserveViewport: true,
             suppressMarkers: true,
             polylineOptions: {
-              strokeColor: route55.color,
+              strokeColor: route57.color,
               strokeOpacity: 0.9,
               strokeWeight: 6
             }
@@ -7850,7 +7854,7 @@ function RouteMapPreview({
           directionsService.route({
             origin: originAddress,
             destination: originAddress,
-            waypoints: route55.stops.map((stop) => ({
+            waypoints: route57.stops.map((stop) => ({
               location: stop.address,
               stopover: true
             })),
@@ -7874,18 +7878,18 @@ function RouteMapPreview({
                 });
                 mapObjectsRef.current.push(yardMarker);
               }
-              route55.stops.forEach((stop, stopIndex) => {
+              route57.stops.forEach((stop, stopIndex) => {
                 var _a3, _b2, _c2;
                 const leg = (_c2 = (_b2 = (_a3 = result.routes) == null ? void 0 : _a3[0]) == null ? void 0 : _b2.legs) == null ? void 0 : _c2[stopIndex];
                 if (leg == null ? void 0 : leg.end_location) {
-                  addStopMarker(leg.end_location, route55, stop, stopIndex);
+                  addStopMarker(leg.end_location, route57, stop, stopIndex);
                 }
               });
             } else {
-              console.warn("[DISPATCH MAP ROUTE ERROR]", route55.label, routeStatus);
+              console.warn("[DISPATCH MAP ROUTE ERROR]", route57.label, routeStatus);
               renderer.setMap(null);
-              const drewFallback = await drawFallbackRoute(route55);
-              warnings.push(drewFallback ? `${route55.label}: showing fallback stop-to-stop lines because Google Directions returned ${routeStatus}.` : `${route55.label}: Google Directions returned ${routeStatus}, and the stop addresses could not be geocoded.`);
+              const drewFallback = await drawFallbackRoute(route57);
+              warnings.push(drewFallback ? `${route57.label}: showing fallback stop-to-stop lines because Google Directions returned ${routeStatus}.` : `${route57.label}: Google Directions returned ${routeStatus}, and the stop addresses could not be geocoded.`);
             }
             resolve();
           });
@@ -7921,18 +7925,18 @@ function RouteMapPreview({
       }, warning))
     }) : null, routePlan.length ? /* @__PURE__ */ jsx("div", {
       style: styles$b.mapLegend,
-      children: routePlan.map((route55) => /* @__PURE__ */ jsxs("div", {
+      children: routePlan.map((route57) => /* @__PURE__ */ jsxs("div", {
         style: {
           display: "flex",
           alignItems: "center",
           gap: 8
         },
         children: [/* @__PURE__ */ jsx("div", {
-          style: styles$b.routeColor(route55.color)
+          style: styles$b.routeColor(route57.color)
         }), /* @__PURE__ */ jsx("span", {
-          children: route55.label
+          children: route57.label
         })]
-      }, route55.id))
+      }, route57.id))
     }) : null]
   });
 }
@@ -8016,7 +8020,7 @@ async function resequenceChangedRoutes(routeIds) {
   const uniqueRouteIds = Array.from(new Set(routeIds.filter((routeId) => Boolean(routeId))));
   await Promise.all(uniqueRouteIds.map((routeId) => resequenceRouteStops(routeId)));
 }
-async function loader$n({
+async function loader$o({
   request
 }) {
   const url = new URL(request.url);
@@ -8281,7 +8285,7 @@ async function action$p({
         const previousRouteId = updated.assignedRouteId || null;
         if (routeId) {
           const [allRoutes, allTrucks] = await Promise.all([getDispatchRoutes(), getDispatchTrucks()]);
-          const selectedRoute = allRoutes.find((route55) => route55.id === routeId);
+          const selectedRoute = allRoutes.find((route57) => route57.id === routeId);
           const selectedTruck = allTrucks.find((truck) => truck.id === (selectedRoute == null ? void 0 : selectedRoute.truckId));
           const splitCount = getSplitCountFromForm(form);
           const capacityError = !selectedRoute ? "Select a valid route before assigning this order." : getSplitCapacityError(updated, selectedTruck, splitCount);
@@ -8665,7 +8669,7 @@ async function action$p({
       }
       const [allOrders, allRoutes, allTrucks] = await Promise.all([getDispatchOrders(), getDispatchRoutes(), getDispatchTrucks()]);
       const selectedOrder = allOrders.find((order) => order.id === orderId);
-      const selectedRoute = allRoutes.find((route55) => route55.id === routeId);
+      const selectedRoute = allRoutes.find((route57) => route57.id === routeId);
       const selectedTruck = allTrucks.find((truck) => truck.id === (selectedRoute == null ? void 0 : selectedRoute.truckId));
       const splitCount = getSplitCountFromForm(form);
       const capacityError = !selectedOrder ? "Order was not found." : !selectedRoute ? "Select a valid route before assigning this order." : getSplitCapacityError(selectedOrder, selectedTruck, splitCount);
@@ -8708,10 +8712,10 @@ async function action$p({
       const [allOrders, allRoutes] = await Promise.all([getDispatchOrders(), getDispatchRoutes()]);
       const order = allOrders.find((entry2) => entry2.id === orderId);
       if (!order) throw new Error("Order was not found.");
-      const route55 = allRoutes.find((entry2) => entry2.id === order.assignedRouteId) || null;
+      const route57 = allRoutes.find((entry2) => entry2.id === order.assignedRouteId) || null;
       const notification = await createLoaderNotification({
         order,
-        route: route55,
+        route: route57,
         actor: currentUser,
         loaderNote
       });
@@ -8724,7 +8728,7 @@ async function action$p({
         details: {
           notificationId: notification.id,
           message: notification.message,
-          route: (route55 == null ? void 0 : route55.code) || null,
+          route: (route57 == null ? void 0 : route57.code) || null,
           loaderNote: loaderNote || null
         }
       });
@@ -8884,13 +8888,13 @@ async function action$p({
         patch.deliveredAt = now;
       }
       const updatedOrder = await updateDispatchOrder(orderId, patch);
-      const route55 = updatedOrder.assignedRouteId ? (await getDispatchRoutes()).find((entry2) => entry2.id === updatedOrder.assignedRouteId) || null : null;
+      const route57 = updatedOrder.assignedRouteId ? (await getDispatchRoutes()).find((entry2) => entry2.id === updatedOrder.assignedRouteId) || null : null;
       let emailNote = "";
       if (deliveryStatus === "delivered") {
         try {
           const emailResult = await sendDeliveryConfirmationEmail({
             order: updatedOrder,
-            route: route55
+            route: route57
           });
           emailNote = emailResult.sent ? " Delivery confirmation email sent." : ` Delivery confirmation email skipped: ${emailResult.reason}`;
         } catch (error) {
@@ -8940,6 +8944,7 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
   const reviewHref = isEmbeddedRoute ? "/app/quote-review" : "/quote-review";
   const mobileHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
+  const dailyExportHref = `${dispatchHref}/export-day.xls?date=${getTodayDateInputValue$1()}`;
   const classicHref = isEmbeddedRoute ? "/app/classic" : "/classic";
   const monitorHref = isEmbeddedRoute ? "/app/monitor" : "/monitor";
   const calendarHref = isEmbeddedRoute ? "/app/calendar" : "/calendar";
@@ -8986,17 +8991,17 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
   const queryDashboardSelectedOrderId = searchParams.get("selected");
   const selectedOrderId = (actionData == null ? void 0 : actionData.selectedOrderId) || queryDashboardSelectedOrderId || querySelectedOrderId || ((_a2 = orders[0]) == null ? void 0 : _a2.id);
   const selectedOrder = useMemo(() => orders.find((order) => order.id === selectedOrderId) || orders[0] || null, [orders, selectedOrderId]);
-  const routes2 = useMemo(() => dispatchRoutes.map((route55) => {
-    const routeOrders = orders.filter((order) => order.assignedRouteId === route55.id && order.status !== "delivered" && order.deliveryStatus !== "delivered").sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999));
+  const routes2 = useMemo(() => dispatchRoutes.map((route57) => {
+    const routeOrders = orders.filter((order) => order.assignedRouteId === route57.id && order.status !== "delivered" && order.deliveryStatus !== "delivered").sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999));
     return {
-      ...route55,
+      ...route57,
       stops: routeOrders.length,
       totalTravelMinutes: routeOrders.reduce((sum, order) => sum + getOrderTravelMinutes(order), 0),
       loadSummary: routeOrders.map((order) => `${order.quantity} ${order.unit} ${order.material}`).slice(0, 2).join(" • "),
       orders: routeOrders
     };
   }), [dispatchRoutes, orders]);
-  const selectedOrderRoute = (selectedOrder == null ? void 0 : selectedOrder.assignedRouteId) ? routes2.find((route55) => route55.id === selectedOrder.assignedRouteId) || null : null;
+  const selectedOrderRoute = (selectedOrder == null ? void 0 : selectedOrder.assignedRouteId) ? routes2.find((route57) => route57.id === selectedOrder.assignedRouteId) || null : null;
   const activeOrders = useMemo(() => orders.filter((order) => !order.assignedRouteId && order.status !== "scheduled" && order.status !== "delivered" && order.deliveryStatus !== "delivered").sort((a, b) => {
     const dateDiff = getRequestedDeliverySortValue(a) - getRequestedDeliverySortValue(b);
     if (dateDiff !== 0) return dateDiff;
@@ -9035,18 +9040,18 @@ const dispatch = UNSAFE_withComponentProps(function DispatchPage() {
   const deferredOrderSearch = useDeferredValue(orderSearch);
   const normalizedOrderSearch = deferredOrderSearch.trim().toLowerCase();
   assignmentFetcher.state === "submitting";
-  function getRouteTruck(route55) {
-    if (!route55) return null;
-    return trucks.find((truck) => truck.id === route55.truckId) || trucks.find((truck) => truck.label === route55.truck) || null;
+  function getRouteTruck(route57) {
+    if (!route57) return null;
+    return trucks.find((truck) => truck.id === route57.truckId) || trucks.find((truck) => truck.label === route57.truck) || null;
   }
-  function getAssignmentSplitCount(order, route55) {
-    if (!order || !route55 || !/yards?/i.test(order.unit)) return "";
-    const truck = getRouteTruck(route55);
+  function getAssignmentSplitCount(order, route57) {
+    if (!order || !route57 || !/yards?/i.test(order.unit)) return "";
+    const truck = getRouteTruck(route57);
     const capacity = Number((truck == null ? void 0 : truck.yards) || 30);
     const quantity = Number(order.quantity || 0);
     if (!quantity || !capacity || quantity <= capacity) return "";
     const minimumSplits = Math.ceil(quantity / capacity);
-    const routeLabel = `${route55.code}${(truck == null ? void 0 : truck.label) ? ` / ${truck.label}` : ""}`;
+    const routeLabel = `${route57.code}${(truck == null ? void 0 : truck.label) ? ` / ${truck.label}` : ""}`;
     const answer = window.prompt(`${getOrderDisplayNumber$2(order)} is ${quantity} yards, which is over the ${capacity} yard truck limit for ${routeLabel}.
 
 How many tickets should I split it into?`, String(minimumSplits));
@@ -9059,8 +9064,8 @@ How many tickets should I split it into?`, String(minimumSplits));
     return String(splitCount);
   }
   function prepareAssignmentSubmit(order, routeId, form, event) {
-    const route55 = routes2.find((entry2) => entry2.id === routeId);
-    const splitCount = getAssignmentSplitCount(order, route55);
+    const route57 = routes2.find((entry2) => entry2.id === routeId);
+    const splitCount = getAssignmentSplitCount(order, route57);
     if (splitCount === null) {
       event.preventDefault();
       return;
@@ -9106,7 +9111,7 @@ How many tickets should I split it into?`, String(minimumSplits));
   const searchedDeliveredOrders = useMemo(() => searchOrders(deliveredOrders), [deliveredOrders, normalizedOrderSearch, routes2]);
   const searchedRoutes = useMemo(() => {
     if (!normalizedOrderSearch) return routes2;
-    return routes2.filter((route55) => buildRouteSearchText(route55, orders).includes(normalizedOrderSearch));
+    return routes2.filter((route57) => buildRouteSearchText(route57, orders).includes(normalizedOrderSearch));
   }, [normalizedOrderSearch, orders, routes2]);
   const searchedTrucks = useMemo(() => {
     if (!normalizedOrderSearch) return trucks;
@@ -9152,8 +9157,8 @@ How many tickets should I split it into?`, String(minimumSplits));
     clearDragState();
     if (!orderId || !routeId || !canManageDispatch) return;
     const order = orders.find((entry2) => entry2.id === orderId);
-    const route55 = routes2.find((entry2) => entry2.id === routeId);
-    const splitCount = getAssignmentSplitCount(order, route55);
+    const route57 = routes2.find((entry2) => entry2.id === routeId);
+    const splitCount = getAssignmentSplitCount(order, route57);
     if (splitCount === null) return;
     assignmentFetcher.submit({
       intent: "assign-order",
@@ -9182,8 +9187,8 @@ How many tickets should I split it into?`, String(minimumSplits));
   function moveOrderWithSelect(orderId, routeId) {
     if (!orderId || !canManageDispatch) return;
     const order = orders.find((entry2) => entry2.id === orderId);
-    const route55 = routes2.find((entry2) => entry2.id === routeId);
-    const splitCount = routeId ? getAssignmentSplitCount(order, route55) : "";
+    const route57 = routes2.find((entry2) => entry2.id === routeId);
+    const splitCount = routeId ? getAssignmentSplitCount(order, route57) : "";
     if (splitCount === null) return;
     assignmentFetcher.submit(routeId ? {
       intent: "assign-order",
@@ -9410,6 +9415,10 @@ How many tickets should I split it into?`, String(minimumSplits));
               href: driverHref,
               style: styles$b.ghostButton,
               children: "Driver View"
+            }), /* @__PURE__ */ jsx("a", {
+              href: dailyExportHref,
+              style: styles$b.ghostButton,
+              children: "Export Today"
             })]
           })]
         }), !storageReady ? /* @__PURE__ */ jsxs("div", {
@@ -9495,7 +9504,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                 gap: 10
               },
               children: [searchedActiveOrders.map((order) => {
-                const route55 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
+                const route57 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
                 return /* @__PURE__ */ jsxs("a", {
                   href: `${dispatchHref}?view=orders&order=${encodeURIComponent(order.id)}`,
                   style: {
@@ -9531,7 +9540,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                     }), order.travelMinutes ? /* @__PURE__ */ jsxs("span", {
                       children: [order.travelMinutes, " min RT"]
                     }) : null, /* @__PURE__ */ jsx("span", {
-                      children: route55 ? route55.truck : "Unassigned"
+                      children: route57 ? route57.truck : "Unassigned"
                     })]
                   })]
                 }, order.id);
@@ -9775,10 +9784,10 @@ How many tickets should I split it into?`, String(minimumSplits));
                       children: [/* @__PURE__ */ jsx("option", {
                         value: "",
                         children: "Unassigned"
-                      }), routes2.map((route55) => /* @__PURE__ */ jsxs("option", {
-                        value: route55.id,
-                        children: [route55.code, " - ", route55.truck, " - ", route55.driver]
-                      }, route55.id))]
+                      }), routes2.map((route57) => /* @__PURE__ */ jsxs("option", {
+                        value: route57.id,
+                        children: [route57.code, " - ", route57.truck, " - ", route57.driver]
+                      }, route57.id))]
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     children: [/* @__PURE__ */ jsx("label", {
@@ -10105,7 +10114,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                 },
                 children: scheduledOrders.length ? "No scheduled orders matched that search." : "No scheduled orders yet."
               }) : searchedScheduledOrders.map((order) => {
-                const route55 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
+                const route57 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
                 return /* @__PURE__ */ jsxs("div", {
                   style: styles$b.queueCard,
                   children: [/* @__PURE__ */ jsxs("div", {
@@ -10141,7 +10150,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                     }) : null, order.stopSequence ? /* @__PURE__ */ jsxs("span", {
                       children: ["Stop ", order.stopSequence]
                     }) : null, /* @__PURE__ */ jsx("span", {
-                      children: route55 ? `${route55.truck || route55.code} / ${route55.driver || "No driver"}` : "No route"
+                      children: route57 ? `${route57.truck || route57.code} / ${route57.driver || "No driver"}` : "No route"
                     })]
                   }), order.notes ? /* @__PURE__ */ jsxs("div", {
                     style: styles$b.queueNotes,
@@ -10194,7 +10203,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                 },
                 children: deliveredOrders.length ? "No delivered orders matched that search." : "No delivered orders yet."
               }) : searchedDeliveredOrders.map((order) => {
-                const route55 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
+                const route57 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
                 return /* @__PURE__ */ jsxs("div", {
                   style: styles$b.queueCard,
                   children: [/* @__PURE__ */ jsxs("div", {
@@ -10226,7 +10235,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                     }), order.deliveredAt ? /* @__PURE__ */ jsx("span", {
                       children: new Date(order.deliveredAt).toLocaleString()
                     }) : null, /* @__PURE__ */ jsx("span", {
-                      children: route55 ? route55.truck || route55.code : "No route"
+                      children: route57 ? route57.truck || route57.code : "No route"
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
                     style: styles$b.deliveredActions,
@@ -10881,9 +10890,9 @@ How many tickets should I split it into?`, String(minimumSplits));
                 display: "grid",
                 gap: 12
               },
-              children: [searchedRoutes.map((route55) => /* @__PURE__ */ jsxs(Form, {
+              children: [searchedRoutes.map((route57) => /* @__PURE__ */ jsxs(Form, {
                 method: "post",
-                style: styles$b.routeCard(route55.color),
+                style: styles$b.routeCard(route57.color),
                 onSubmit: (event) => {
                   const submitter = event.nativeEvent.submitter;
                   if ((submitter == null ? void 0 : submitter.value) === "delete-route" && !window.confirm("Delete this route from the active board? Move or unassign active orders first. This cannot be undone.")) {
@@ -10893,7 +10902,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                 children: [/* @__PURE__ */ jsx("input", {
                   type: "hidden",
                   name: "routeId",
-                  value: route55.id
+                  value: route57.id
                 }), /* @__PURE__ */ jsxs("div", {
                   style: {
                     display: "flex",
@@ -10908,13 +10917,13 @@ How many tickets should I split it into?`, String(minimumSplits));
                         gap: 10
                       },
                       children: [/* @__PURE__ */ jsx("div", {
-                        style: styles$b.routeColor(route55.color)
+                        style: styles$b.routeColor(route57.color)
                       }), /* @__PURE__ */ jsx("div", {
                         style: styles$b.routeCode,
-                        children: route55.code
+                        children: route57.code
                       }), /* @__PURE__ */ jsx("div", {
                         style: styles$b.routeRegion,
-                        children: route55.region
+                        children: route57.region
                       })]
                     }), /* @__PURE__ */ jsxs("div", {
                       style: {
@@ -10922,10 +10931,10 @@ How many tickets should I split it into?`, String(minimumSplits));
                         color: "#e2e8f0",
                         fontWeight: 700
                       },
-                      children: [route55.truck || "No truck", " · ", route55.driver || "No driver", " / ", route55.helper || "No helper"]
+                      children: [route57.truck || "No truck", " · ", route57.driver || "No driver", " / ", route57.helper || "No helper"]
                     })]
                   }), /* @__PURE__ */ jsx("a", {
-                    href: `${driverHref}?route=${encodeURIComponent(route55.id)}`,
+                    href: `${driverHref}?route=${encodeURIComponent(route57.id)}`,
                     style: styles$b.assignButton,
                     children: "Driver View"
                   })]
@@ -10940,7 +10949,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       children: "Route Code"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "code",
-                      defaultValue: route55.code,
+                      defaultValue: route57.code,
                       style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
@@ -10949,7 +10958,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       children: "Truck"
                     }), /* @__PURE__ */ jsxs("select", {
                       name: "truckId",
-                      defaultValue: route55.truckId || "",
+                      defaultValue: route57.truckId || "",
                       style: styles$b.input,
                       children: [/* @__PURE__ */ jsx("option", {
                         value: "",
@@ -10966,7 +10975,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                     }), /* @__PURE__ */ jsx("input", {
                       type: "color",
                       name: "color",
-                      defaultValue: route55.color,
+                      defaultValue: route57.color,
                       style: styles$b.colorInput
                     })]
                   })]
@@ -10981,7 +10990,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       children: "Driver"
                     }), /* @__PURE__ */ jsxs("select", {
                       name: "driverId",
-                      defaultValue: route55.driverId || "",
+                      defaultValue: route57.driverId || "",
                       style: styles$b.input,
                       children: [/* @__PURE__ */ jsx("option", {
                         value: "",
@@ -10997,7 +11006,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       children: "Helper"
                     }), /* @__PURE__ */ jsxs("select", {
                       name: "helperId",
-                      defaultValue: route55.helperId || "",
+                      defaultValue: route57.helperId || "",
                       style: styles$b.input,
                       children: [/* @__PURE__ */ jsx("option", {
                         value: "",
@@ -11013,7 +11022,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       children: "Shift"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "shift",
-                      defaultValue: route55.shift,
+                      defaultValue: route57.shift,
                       style: styles$b.input
                     })]
                   })]
@@ -11028,7 +11037,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       children: "Region"
                     }), /* @__PURE__ */ jsx("input", {
                       name: "region",
-                      defaultValue: route55.region,
+                      defaultValue: route57.region,
                       style: styles$b.input
                     })]
                   }), /* @__PURE__ */ jsxs("div", {
@@ -11060,14 +11069,14 @@ How many tickets should I split it into?`, String(minimumSplits));
                 }), /* @__PURE__ */ jsxs("div", {
                   style: styles$b.routeStats,
                   children: [/* @__PURE__ */ jsx("span", {
-                    children: route55.shift
+                    children: route57.shift
                   }), /* @__PURE__ */ jsxs("span", {
-                    children: [route55.stops, " stops"]
+                    children: [route57.stops, " stops"]
                   }), /* @__PURE__ */ jsx("span", {
-                    children: route55.loadSummary || "No assigned loads yet"
+                    children: route57.loadSummary || "No assigned loads yet"
                   })]
                 })]
-              }, route55.id)), searchedRoutes.length === 0 ? /* @__PURE__ */ jsx("div", {
+              }, route57.id)), searchedRoutes.length === 0 ? /* @__PURE__ */ jsx("div", {
                 style: styles$b.emptySearch,
                 children: "No routes matched that search."
               }) : null]
@@ -11267,7 +11276,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                 },
                 children: [searchedActiveOrders.map((order) => {
                   const active = order.id === (selectedOrder == null ? void 0 : selectedOrder.id);
-                  const route55 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
+                  const route57 = routes2.find((entry2) => entry2.id === order.assignedRouteId);
                   return /* @__PURE__ */ jsx("div", {
                     draggable: canManageDispatch,
                     onDragStart: (event) => startOrderDrag(order.id, event),
@@ -11328,7 +11337,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                           children: [/* @__PURE__ */ jsx("span", {
                             children: order.requestedWindow
                           }), /* @__PURE__ */ jsx("span", {
-                            children: route55 ? `${route55.truck} / ${getDeliveryStatusLabel(order.deliveryStatus)}` : "Unassigned"
+                            children: route57 ? `${route57.truck} / ${getDeliveryStatusLabel(order.deliveryStatus)}` : "Unassigned"
                           })]
                         })]
                       }), /* @__PURE__ */ jsx("a", {
@@ -11372,24 +11381,24 @@ How many tickets should I split it into?`, String(minimumSplits));
                   display: "grid",
                   gap: 12
                 },
-                children: [searchedRoutes.map((route55) => /* @__PURE__ */ jsxs("div", {
+                children: [searchedRoutes.map((route57) => /* @__PURE__ */ jsxs("div", {
                   onDragEnter: (event) => {
                     if (!draggedOrderId || !canManageDispatch) return;
                     event.preventDefault();
                     setDragOverQueue(false);
-                    setDragOverRouteId(route55.id);
+                    setDragOverRouteId(route57.id);
                   },
                   onDragOver: (event) => {
                     if (!draggedOrderId || !canManageDispatch) return;
                     event.preventDefault();
                     event.dataTransfer.dropEffect = "move";
                     setDragOverQueue(false);
-                    setDragOverRouteId(route55.id);
+                    setDragOverRouteId(route57.id);
                   },
-                  onDrop: (event) => assignDraggedOrder(route55.id, event),
+                  onDrop: (event) => assignDraggedOrder(route57.id, event),
                   style: {
-                    ...styles$b.routeCard(route55.color),
-                    ...dragOverRouteId === route55.id ? styles$b.routeDropActive : {}
+                    ...styles$b.routeCard(route57.color),
+                    ...dragOverRouteId === route57.id ? styles$b.routeDropActive : {}
                   },
                   children: [/* @__PURE__ */ jsxs("div", {
                     style: {
@@ -11406,13 +11415,13 @@ How many tickets should I split it into?`, String(minimumSplits));
                           gap: 10
                         },
                         children: [/* @__PURE__ */ jsx("div", {
-                          style: styles$b.routeColor(route55.color)
+                          style: styles$b.routeColor(route57.color)
                         }), /* @__PURE__ */ jsx("div", {
                           style: styles$b.routeCode,
-                          children: route55.code
+                          children: route57.code
                         }), /* @__PURE__ */ jsx("div", {
                           style: styles$b.routeRegion,
-                          children: route55.region
+                          children: route57.region
                         })]
                       }), /* @__PURE__ */ jsxs("div", {
                         style: {
@@ -11420,20 +11429,20 @@ How many tickets should I split it into?`, String(minimumSplits));
                           color: "#e2e8f0",
                           fontWeight: 700
                         },
-                        children: [route55.truck, " · ", route55.driver, " / ", route55.helper]
+                        children: [route57.truck, " · ", route57.driver, " / ", route57.helper]
                       })]
                     }), /* @__PURE__ */ jsx("a", {
-                      href: `${driverHref}?route=${encodeURIComponent(route55.id)}`,
+                      href: `${driverHref}?route=${encodeURIComponent(route57.id)}`,
                       draggable: false,
                       style: styles$b.assignButton,
                       children: "Driver View"
                     }), /* @__PURE__ */ jsxs("div", {
                       style: styles$b.routeTimePill,
-                      children: ["Total Time: ", formatTravelMinutes$3(route55.totalTravelMinutes)]
-                    }), selectedOrder ? selectedOrder.assignedRouteId === route55.id ? /* @__PURE__ */ jsxs(Form, {
+                      children: ["Total Time: ", formatTravelMinutes$3(route57.totalTravelMinutes)]
+                    }), selectedOrder ? selectedOrder.assignedRouteId === route57.id ? /* @__PURE__ */ jsxs(Form, {
                       method: "post",
                       style: styles$b.assignForm,
-                      onSubmit: (event) => prepareAssignmentSubmit(selectedOrder, route55.id, event.currentTarget, event),
+                      onSubmit: (event) => prepareAssignmentSubmit(selectedOrder, route57.id, event.currentTarget, event),
                       children: [/* @__PURE__ */ jsx("input", {
                         type: "hidden",
                         name: "intent",
@@ -11450,7 +11459,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                     }) : /* @__PURE__ */ jsxs(Form, {
                       method: "post",
                       style: styles$b.assignForm,
-                      onSubmit: (event) => prepareAssignmentSubmit(selectedOrder, route55.id, event.currentTarget, event),
+                      onSubmit: (event) => prepareAssignmentSubmit(selectedOrder, route57.id, event.currentTarget, event),
                       children: [/* @__PURE__ */ jsx("input", {
                         type: "hidden",
                         name: "intent",
@@ -11462,7 +11471,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       }), /* @__PURE__ */ jsx("input", {
                         type: "hidden",
                         name: "routeId",
-                        value: route55.id
+                        value: route57.id
                       }), /* @__PURE__ */ jsx("input", {
                         name: "eta",
                         placeholder: "ETA",
@@ -11475,22 +11484,22 @@ How many tickets should I split it into?`, String(minimumSplits));
                       })]
                     }) : null]
                   }), draggedOrderId && canManageDispatch ? /* @__PURE__ */ jsxs("div", {
-                    style: dragOverRouteId === route55.id ? styles$b.dropHintActive : styles$b.dropHint,
-                    children: ["Drop here to assign to ", route55.code]
+                    style: dragOverRouteId === route57.id ? styles$b.dropHintActive : styles$b.dropHint,
+                    children: ["Drop here to assign to ", route57.code]
                   }) : null, /* @__PURE__ */ jsxs("div", {
                     style: styles$b.routeStats,
                     children: [/* @__PURE__ */ jsx("span", {
-                      children: route55.shift
+                      children: route57.shift
                     }), /* @__PURE__ */ jsxs("span", {
-                      children: [route55.stops, " stops"]
+                      children: [route57.stops, " stops"]
                     }), /* @__PURE__ */ jsxs("span", {
-                      children: ["Total route: ", formatTravelMinutes$3(route55.totalTravelMinutes)]
+                      children: ["Total route: ", formatTravelMinutes$3(route57.totalTravelMinutes)]
                     }), /* @__PURE__ */ jsx("span", {
-                      children: route55.loadSummary || "No assigned loads yet"
+                      children: route57.loadSummary || "No assigned loads yet"
                     })]
-                  }), route55.orders.length ? /* @__PURE__ */ jsx("div", {
+                  }), route57.orders.length ? /* @__PURE__ */ jsx("div", {
                     style: styles$b.stopList,
-                    children: route55.orders.map((order, index) => /* @__PURE__ */ jsxs("div", {
+                    children: route57.orders.map((order, index) => /* @__PURE__ */ jsxs("div", {
                       draggable: canManageDispatch,
                       onDragStart: (event) => startOrderDrag(order.id, event),
                       onDragEnd: clearDragState,
@@ -11531,7 +11540,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                           }), /* @__PURE__ */ jsx("input", {
                             type: "hidden",
                             name: "routeId",
-                            value: route55.id
+                            value: route57.id
                           }), /* @__PURE__ */ jsx("input", {
                             type: "hidden",
                             name: "orderId",
@@ -11551,9 +11560,9 @@ How many tickets should I split it into?`, String(minimumSplits));
                             value: "down",
                             style: {
                               ...styles$b.stopDetailButton,
-                              ...index === route55.orders.length - 1 ? styles$b.disabledStopButton : null
+                              ...index === route57.orders.length - 1 ? styles$b.disabledStopButton : null
                             },
-                            disabled: index === route55.orders.length - 1,
+                            disabled: index === route57.orders.length - 1,
                             title: "Move stop down",
                             children: "Down"
                           })]
@@ -11604,7 +11613,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       })]
                     }, order.id))
                   }) : null]
-                }, route55.id)), searchedRoutes.length === 0 ? /* @__PURE__ */ jsx("div", {
+                }, route57.id)), searchedRoutes.length === 0 ? /* @__PURE__ */ jsx("div", {
                   style: styles$b.emptySearch,
                   children: "No routes matched that search."
                 }) : null]
@@ -11793,10 +11802,10 @@ How many tickets should I split it into?`, String(minimumSplits));
                             value: "",
                             disabled: true,
                             children: "Select route"
-                          }), routes2.map((route55) => /* @__PURE__ */ jsxs("option", {
-                            value: route55.id,
-                            children: [route55.code, " - ", route55.truck, " - ", route55.driver]
-                          }, route55.id))]
+                          }), routes2.map((route57) => /* @__PURE__ */ jsxs("option", {
+                            value: route57.id,
+                            children: [route57.code, " - ", route57.truck, " - ", route57.driver]
+                          }, route57.id))]
                         })]
                       }), /* @__PURE__ */ jsxs("div", {
                         children: [/* @__PURE__ */ jsx("label", {
@@ -13141,9 +13150,164 @@ const route4 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProper
   __proto__: null,
   action: action$p,
   default: dispatch,
+  loader: loader$o
+}, Symbol.toStringTag, { value: "Module" }));
+function getLocalDateKey(date = /* @__PURE__ */ new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: process.env.DISPATCH_RESET_TIMEZONE || "America/Chicago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(date);
+}
+function parseRequestedDate$5(value) {
+  const trimmed = String(value || "").trim();
+  if (!trimmed || /needs scheduling|unavailable|unknown/i.test(trimmed)) return null;
+  const today = /* @__PURE__ */ new Date();
+  if (/\btoday\b/i.test(trimmed)) {
+    return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  }
+  if (/\btomorrow\b/i.test(trimmed)) {
+    const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow;
+  }
+  const isoDate = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoDate) return new Date(Number(isoDate[1]), Number(isoDate[2]) - 1, Number(isoDate[3]));
+  const slashDate = trimmed.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/);
+  if (slashDate) {
+    const year = slashDate[3].length === 2 ? 2e3 + Number(slashDate[3]) : Number(slashDate[3]);
+    return new Date(year, Number(slashDate[1]) - 1, Number(slashDate[2]));
+  }
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+}
+function dateKey$5(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+function formatSheetDate(date) {
+  return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+}
+function escapeHtml(value) {
+  return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function cleanOrderNumber(order) {
+  return String(order.orderNumber || order.id || "").replace(/^#/, "").trim();
+}
+function extractPhone$2(order) {
+  const text = [order.contact, order.notes, order.rawEmail].filter(Boolean).join("\n");
+  const match = text.match(/(?:\+?1[\s.-]?)?(?:\(?([2-9]\d{2})\)?[\s.-]?)([2-9]\d{2})[\s.-]?(\d{4})/);
+  return match ? `${match[1]}-${match[2]}-${match[3]}` : "";
+}
+function getCity(order) {
+  const city = String(order.city || "").trim();
+  if (city) return city.split(",")[0].trim();
+  const parts = String(order.address || "").split(",").map((part) => part.trim()).filter(Boolean);
+  return parts.length >= 2 ? parts[parts.length - 2] : "";
+}
+function getUnitLabel(unit, quantity) {
+  const normalized = String(unit || "Unit").trim().toLowerCase();
+  const qty = Number(String(quantity || "").replace(/[^\d.]/g, ""));
+  const plural = !Number.isFinite(qty) || qty !== 1;
+  if (/yards?/.test(normalized)) return plural ? "YARDS" : "YARD";
+  if (/tons?/.test(normalized)) return plural ? "TONS" : "TON";
+  if (/bags?/.test(normalized)) return plural ? "BAGS" : "BAG";
+  if (/gallons?/.test(normalized)) return plural ? "GALLONS" : "GALLON";
+  return plural ? "UNITS" : "UNIT";
+}
+function getQuantity(order) {
+  const quantity = String(order.quantity || "").trim();
+  return [quantity, getUnitLabel(order.unit, quantity)].filter(Boolean).join(" ");
+}
+function getTimePreference(order) {
+  const value = `${order.timePreference || ""} ${order.requestedWindow || ""} ${order.notes || ""}`;
+  if (/\bmorning\b|\bam\b/i.test(value)) return "AM";
+  if (/\bafternoon\b|\bpm\b/i.test(value)) return "PM";
+  if (/\bevening\b/i.test(value)) return "EVENING";
+  return "";
+}
+function getSheetStatus(order) {
+  if (order.status === "delivered" || order.deliveryStatus === "delivered") {
+    return "DELIVERED";
+  }
+  if (order.status === "new" || order.status === "hold") return "PENDING DISPATCH";
+  return "DISPATCHED";
+}
+function getStatusClass(status) {
+  if (status === "DELIVERED") return "status-delivered";
+  if (status === "PENDING DISPATCH") return "status-pending";
+  return "status-dispatched";
+}
+function orderSortValue(order) {
+  const numeric = Number(String(order.orderNumber || "").replace(/\D/g, ""));
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : Number.MAX_SAFE_INTEGER;
+}
+function buildWorkbookHtml(orders, requestedDate) {
+  const rows = orders.slice().sort((a, b) => orderSortValue(a) - orderSortValue(b)).map((order) => {
+    const status = getSheetStatus(order);
+    return `
+        <tr>
+          <td class="order">${escapeHtml(cleanOrderNumber(order))}</td>
+          <td>${escapeHtml(order.customer)}</td>
+          <td>${escapeHtml(extractPhone$2(order))}</td>
+          <td>${escapeHtml(getCity(order))}</td>
+          <td>${escapeHtml(order.material)}</td>
+          <td>${escapeHtml(getQuantity(order))}</td>
+          <td>DELIVERY</td>
+          <td>${escapeHtml(formatSheetDate(requestedDate))}</td>
+          <td>${escapeHtml(getTimePreference(order))}</td>
+          <td class="${getStatusClass(status)}">${escapeHtml(status)}</td>
+        </tr>
+      `;
+  }).join("");
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12pt; }
+    td { border: 1px solid #000; padding: 2px 8px; font-weight: 700; text-align: center; white-space: nowrap; }
+    .order { background: #fff; }
+    .status-dispatched { background: #ffe600; }
+    .status-delivered { background: #00ff00; }
+    .status-pending { background: #ff00ff; }
+  </style>
+</head>
+<body>
+  <table>${rows}</table>
+</body>
+</html>`;
+}
+async function loader$n({
+  request
+}) {
+  const allowed = await hasAdminQuotePermissionAccess(request, "dispatch");
+  if (!allowed) return new Response("Unauthorized", {
+    status: 401
+  });
+  const url = new URL(request.url);
+  const dateParam = url.searchParams.get("date") || getLocalDateKey();
+  const requestedDate = parseRequestedDate$5(dateParam) || /* @__PURE__ */ new Date();
+  const requestedKey = dateKey$5(requestedDate);
+  const orders = (await getDispatchOrders()).filter((order) => {
+    if (order.status === "cancelled") return false;
+    const orderDate = parseRequestedDate$5(order.requestedWindow);
+    return orderDate ? dateKey$5(orderDate) === requestedKey : false;
+  });
+  return new Response(buildWorkbookHtml(orders, requestedDate), {
+    headers: {
+      "Content-Type": "application/vnd.ms-excel; charset=utf-8",
+      "Content-Disposition": `attachment; filename="dispatch-orders-${requestedKey}.xls"`,
+      "Cache-Control": "no-store"
+    }
+  });
+}
+const route5 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
   loader: loader$n
 }, Symbol.toStringTag, { value: "Module" }));
-const loader$m = loader$n;
+const loader$m = loader$o;
 const action$o = action$p;
 function getOrderNumber$5(order) {
   return order.orderNumber ? `#${order.orderNumber}` : order.id;
@@ -13161,6 +13325,10 @@ function formatTime$1(minutes) {
   const hours = Math.floor(minutes / 60);
   const remainder = Math.round(minutes % 60);
   return remainder ? `${hours}h ${remainder}m` : `${hours}h`;
+}
+function getTodayDateInputValue() {
+  const today = /* @__PURE__ */ new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 }
 function statusLabel(order) {
   if (order.status === "delivered" || order.deliveryStatus === "delivered") return "Delivered";
@@ -13403,7 +13571,7 @@ function ClassicMapFallback({
   routes: routes2
 }) {
   const colors = ["#d93025", "#f97316", "#2563eb", "#0f9f9a", "#9333ea"];
-  const activeRoutes = useMemo(() => routes2.filter((route55) => route55.orders.length), [routes2]);
+  const activeRoutes = useMemo(() => routes2.filter((route57) => route57.orders.length), [routes2]);
   return /* @__PURE__ */ jsxs("div", {
     className: "classic-map-panel",
     style: styles$a.mapCanvas,
@@ -13464,8 +13632,8 @@ function ClassicMapFallback({
         strokeWidth: "10",
         fill: "none",
         opacity: "0.75"
-      }), activeRoutes.slice(0, 5).map((route55, routeIndex) => {
-        const color = route55.color || colors[routeIndex % colors.length];
+      }), activeRoutes.slice(0, 5).map((route57, routeIndex) => {
+        const color = route57.color || colors[routeIndex % colors.length];
         const startY = 88 + routeIndex * 60;
         const path = `M ${78 + routeIndex * 12} ${startY} C ${180 + routeIndex * 22} ${45 + routeIndex * 52}, ${260 + routeIndex * 18} ${220 - routeIndex * 20}, ${370 + routeIndex * 28} ${160 + routeIndex * 44} S ${570 - routeIndex * 25} ${280 - routeIndex * 18}, ${650 - routeIndex * 18} ${120 + routeIndex * 56}`;
         return /* @__PURE__ */ jsxs("g", {
@@ -13476,7 +13644,7 @@ function ClassicMapFallback({
             fill: "none",
             strokeLinecap: "round",
             strokeLinejoin: "round"
-          }), route55.orders.slice(0, 8).map((order, stopIndex) => {
+          }), route57.orders.slice(0, 8).map((order, stopIndex) => {
             const x = 90 + stopIndex * 72 + routeIndex * 10;
             const y = startY + Math.sin(stopIndex + routeIndex) * 54 + stopIndex * 18;
             return /* @__PURE__ */ jsxs("g", {
@@ -13498,19 +13666,19 @@ function ClassicMapFallback({
               })]
             }, order.id);
           })]
-        }, route55.id);
+        }, route57.id);
       })]
     }), /* @__PURE__ */ jsx("div", {
       style: styles$a.mapLegend,
-      children: activeRoutes.slice(0, 5).map((route55) => /* @__PURE__ */ jsxs("span", {
+      children: activeRoutes.slice(0, 5).map((route57) => /* @__PURE__ */ jsxs("span", {
         style: styles$a.legendItem,
         children: [/* @__PURE__ */ jsx("span", {
           style: {
             ...styles$a.legendDot,
-            background: route55.color
+            background: route57.color
           }
-        }), route55.code, " ", route55.truck || "Unassigned"]
-      }, route55.id))
+        }), route57.code, " ", route57.truck || "Unassigned"]
+      }, route57.id))
     })]
   });
 }
@@ -13527,25 +13695,25 @@ function ClassicMap({
   const [status, setStatus] = useState("");
   const [useFallback, setUseFallback] = useState(false);
   const [hiddenRouteIds, setHiddenRouteIds] = useState([]);
-  const activeRoutes = useMemo(() => routes2.filter((route55) => route55.orders.length), [routes2]);
-  const visibleRouteIds = useMemo(() => new Set(activeRoutes.map((route55) => route55.id).filter((id) => !hiddenRouteIds.includes(id))), [activeRoutes, hiddenRouteIds]);
-  const routeColorById = useMemo(() => new Map(routes2.map((route55) => [route55.id, route55.color || "#f97316"])), [routes2]);
-  const routePlan = useMemo(() => routes2.filter((route55) => route55.orders.length && visibleRouteIds.has(route55.id)).map((route55) => ({
-    id: route55.id,
-    code: route55.code,
-    truck: route55.truck,
-    color: route55.color || "#f97316",
-    stops: route55.orders.map((order) => ({
+  const activeRoutes = useMemo(() => routes2.filter((route57) => route57.orders.length), [routes2]);
+  const visibleRouteIds = useMemo(() => new Set(activeRoutes.map((route57) => route57.id).filter((id) => !hiddenRouteIds.includes(id))), [activeRoutes, hiddenRouteIds]);
+  const routeColorById = useMemo(() => new Map(routes2.map((route57) => [route57.id, route57.color || "#f97316"])), [routes2]);
+  const routePlan = useMemo(() => routes2.filter((route57) => route57.orders.length && visibleRouteIds.has(route57.id)).map((route57) => ({
+    id: route57.id,
+    code: route57.code,
+    truck: route57.truck,
+    color: route57.color || "#f97316",
+    stops: route57.orders.map((order) => ({
       address: getOrderAddress$4(order),
       customer: order.customer,
       label: getOrderNumber$5(order)
     })).filter((stop) => stop.address)
-  })).filter((route55) => route55.stops.length), [routes2, visibleRouteIds]);
-  const routePlanKey = useMemo(() => JSON.stringify(routePlan.map((route55) => ({
-    id: route55.id,
-    color: route55.color,
-    stops: route55.stops.map((stop) => stop.address),
-    hidden: hiddenRouteIds.includes(route55.id)
+  })).filter((route57) => route57.stops.length), [routes2, visibleRouteIds]);
+  const routePlanKey = useMemo(() => JSON.stringify(routePlan.map((route57) => ({
+    id: route57.id,
+    color: route57.color,
+    stops: route57.stops.map((stop) => stop.address),
+    hidden: hiddenRouteIds.includes(route57.id)
   }))), [routePlan, hiddenRouteIds]);
   function toggleRoute(routeId) {
     setHiddenRouteIds((current) => current.includes(routeId) ? current.filter((id) => id !== routeId) : [...current, routeId]);
@@ -13583,15 +13751,15 @@ function ClassicMap({
         const bounds = new google.maps.LatLngBounds();
         const directionsService = new google.maps.DirectionsService();
         let yardMarkerAdded = false;
-        for (const route55 of routePlan.slice(0, 6)) {
-          for (const [stopIndex, stop] of route55.stops.entries()) {
+        for (const route57 of routePlan.slice(0, 6)) {
+          for (const [stopIndex, stop] of route57.stops.entries()) {
             await new Promise((resolve) => {
               const renderer = new google.maps.DirectionsRenderer({
                 map,
                 preserveViewport: true,
                 suppressMarkers: true,
                 polylineOptions: {
-                  strokeColor: route55.color,
+                  strokeColor: route57.color,
                   strokeOpacity: 0.78,
                   strokeWeight: 5
                 }
@@ -13642,7 +13810,7 @@ function ClassicMap({
                   }
                   if (returnLeg == null ? void 0 : returnLeg.end_location) bounds.extend(returnLeg.end_location);
                 } else {
-                  console.warn("[CLASSIC MAP ROUND TRIP ERROR]", route55.code, stop.address, routeStatus);
+                  console.warn("[CLASSIC MAP ROUND TRIP ERROR]", route57.code, stop.address, routeStatus);
                 }
                 resolve();
               });
@@ -13730,7 +13898,7 @@ function ClassicMap({
       className: "classic-map-panel",
       style: styles$a.mapCanvas,
       children: [/* @__PURE__ */ jsx(ClassicMapFallback, {
-        routes: routes2.filter((route55) => !hiddenRouteIds.includes(route55.id))
+        routes: routes2.filter((route57) => !hiddenRouteIds.includes(route57.id))
       }), status ? /* @__PURE__ */ jsx("div", {
         style: styles$a.classicMapStatus,
         children: status
@@ -13748,18 +13916,18 @@ function ClassicMap({
       children: status
     }) : null, /* @__PURE__ */ jsxs("div", {
       style: styles$a.mapLegend,
-      children: [activeRoutes.slice(0, 6).map((route55) => /* @__PURE__ */ jsxs("button", {
+      children: [activeRoutes.slice(0, 6).map((route57) => /* @__PURE__ */ jsxs("button", {
         type: "button",
-        style: hiddenRouteIds.includes(route55.id) ? styles$a.legendItemOff : styles$a.legendItem,
-        onClick: () => toggleRoute(route55.id),
-        title: `${hiddenRouteIds.includes(route55.id) ? "Show" : "Hide"} ${route55.code}`,
+        style: hiddenRouteIds.includes(route57.id) ? styles$a.legendItemOff : styles$a.legendItem,
+        onClick: () => toggleRoute(route57.id),
+        title: `${hiddenRouteIds.includes(route57.id) ? "Show" : "Hide"} ${route57.code}`,
         children: [/* @__PURE__ */ jsx("span", {
           style: {
             ...styles$a.legendDot,
-            background: route55.color
+            background: route57.color
           }
-        }), route55.code, " ", route55.truck || "Unassigned"]
-      }, route55.id)), driverLocations.length ? /* @__PURE__ */ jsxs("span", {
+        }), route57.code, " ", route57.truck || "Unassigned"]
+      }, route57.id)), driverLocations.length ? /* @__PURE__ */ jsxs("span", {
         style: styles$a.driverLegendItem,
         children: [driverLocations.slice(0, 4).map((location) => /* @__PURE__ */ jsx("span", {
           style: {
@@ -13860,6 +14028,7 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
   const allotmentHref = isEmbeddedRoute ? "/app/allotment" : "/allotment";
   const loaderHref = isEmbeddedRoute ? "/app/loader" : "/loader";
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
+  const dailyExportHref = `${dispatchHref}/export-day.xls?date=${getTodayDateInputValue()}`;
   const quoteHref = isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote";
   const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
   const mobileHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
@@ -13947,27 +14116,27 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
       window.clearInterval(timer);
     };
   }, []);
-  const routes2 = useMemo(() => baseRoutes.map((route55) => {
-    const routeOrders = orders.filter((order) => order.assignedRouteId === route55.id && isActiveBoardOrder(order)).sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999));
+  const routes2 = useMemo(() => baseRoutes.map((route57) => {
+    const routeOrders = orders.filter((order) => order.assignedRouteId === route57.id && isActiveBoardOrder(order)).sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999));
     return {
-      ...route55,
+      ...route57,
       orders: routeOrders,
       weight: routeOrders.length,
       totalMinutes: routeOrders.reduce((sum, order) => sum + getTravelMinutes$4(order), 0)
     };
   }), [baseRoutes, orders]);
-  const sortedRoutes = useMemo(() => sortItems(routes2, tableSorts.routes, (route55, key) => {
+  const sortedRoutes = useMemo(() => sortItems(routes2, tableSorts.routes, (route57, key) => {
     var _a3, _b2, _c, _d;
-    if (key === "code") return route55.code;
-    if (key === "driver") return `${route55.truck || ""} ${route55.driver || ""}`;
-    if (key === "status") return route55.orders.length ? "Active" : "Open";
-    if (key === "weight") return route55.weight;
-    if (key === "start") return ((_b2 = (_a3 = route55.shift) == null ? void 0 : _a3.split("-")[0]) == null ? void 0 : _b2.trim()) || "6:00 am";
-    if (key === "finish") return ((_d = (_c = route55.shift) == null ? void 0 : _c.split("-")[1]) == null ? void 0 : _d.trim()) || formatTime$1(route55.totalMinutes);
-    if (key === "distance") return route55.totalMinutes;
+    if (key === "code") return route57.code;
+    if (key === "driver") return `${route57.truck || ""} ${route57.driver || ""}`;
+    if (key === "status") return route57.orders.length ? "Active" : "Open";
+    if (key === "weight") return route57.weight;
+    if (key === "start") return ((_b2 = (_a3 = route57.shift) == null ? void 0 : _a3.split("-")[0]) == null ? void 0 : _b2.trim()) || "6:00 am";
+    if (key === "finish") return ((_d = (_c = route57.shift) == null ? void 0 : _c.split("-")[1]) == null ? void 0 : _d.trim()) || formatTime$1(route57.totalMinutes);
+    if (key === "distance") return route57.totalMinutes;
     return "";
   }), [routes2, tableSorts.routes]);
-  const selectedRoute = sortedRoutes.find((route55) => route55.id === selectedRouteId) || sortedRoutes[0] || null;
+  const selectedRoute = sortedRoutes.find((route57) => route57.id === selectedRouteId) || sortedRoutes[0] || null;
   const selectedOrder = orders.find((order) => order.id === selectedOrderId) || null;
   function getOrderProductDetail(order) {
     var _a3;
@@ -13977,7 +14146,7 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
   const selectedOrderProductDetail = getOrderProductDetail(selectedOrder);
   useEffect(() => {
     if (!sortedRoutes.length) return;
-    if (selectedRouteId && sortedRoutes.some((route55) => route55.id === selectedRouteId)) return;
+    if (selectedRouteId && sortedRoutes.some((route57) => route57.id === selectedRouteId)) return;
     setSelectedRouteId(sortedRoutes[0].id);
   }, [selectedRouteId, sortedRoutes]);
   useEffect(() => {
@@ -14194,26 +14363,26 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
     var _a3;
     return ((_a3 = classicColumnOptions[table].find((option) => option.key === key)) == null ? void 0 : _a3.label) || key;
   }
-  function routeColumnValue(route55, key) {
+  function routeColumnValue(route57, key) {
     var _a3, _b2, _c, _d;
     if (key === "code") {
       return /* @__PURE__ */ jsx("button", {
         type: "button",
-        style: styles$a.rowRouteButton((selectedRoute == null ? void 0 : selectedRoute.id) === route55.id),
+        style: styles$a.rowRouteButton((selectedRoute == null ? void 0 : selectedRoute.id) === route57.id),
         onClick: () => {
-          setSelectedRouteId(route55.id);
+          setSelectedRouteId(route57.id);
           setRouteDrawerOpen(false);
           setOrderDrawerOpen(false);
         },
-        children: route55.code
+        children: route57.code
       });
     }
-    if (key === "driver") return `${route55.truck || "No truck"} (${route55.driver || "No driver"})`;
-    if (key === "status") return route55.orders.length ? "Active" : "Open";
-    if (key === "weight") return route55.orders.length || "-";
-    if (key === "start") return ((_b2 = (_a3 = route55.shift) == null ? void 0 : _a3.split("-")[0]) == null ? void 0 : _b2.trim()) || "6:00 am";
-    if (key === "finish") return ((_d = (_c = route55.shift) == null ? void 0 : _c.split("-")[1]) == null ? void 0 : _d.trim()) || formatTime$1(route55.totalMinutes);
-    if (key === "distance") return formatTime$1(route55.totalMinutes);
+    if (key === "driver") return `${route57.truck || "No truck"} (${route57.driver || "No driver"})`;
+    if (key === "status") return route57.orders.length ? "Active" : "Open";
+    if (key === "weight") return route57.orders.length || "-";
+    if (key === "start") return ((_b2 = (_a3 = route57.shift) == null ? void 0 : _a3.split("-")[0]) == null ? void 0 : _b2.trim()) || "6:00 am";
+    if (key === "finish") return ((_d = (_c = route57.shift) == null ? void 0 : _c.split("-")[1]) == null ? void 0 : _d.trim()) || formatTime$1(route57.totalMinutes);
+    if (key === "distance") return formatTime$1(route57.totalMinutes);
     return "-";
   }
   function orderColumnValue(order, key, index = 0) {
@@ -14303,18 +14472,18 @@ const classic = UNSAFE_withComponentProps(function ClassicDispatchPage() {
     });
     setDraggedOrderId("");
   }
-  function getRouteTruck(route55) {
-    if (!route55) return null;
-    return trucks.find((truck) => truck.id === route55.truckId) || trucks.find((truck) => truck.label === route55.truck) || null;
+  function getRouteTruck(route57) {
+    if (!route57) return null;
+    return trucks.find((truck) => truck.id === route57.truckId) || trucks.find((truck) => truck.label === route57.truck) || null;
   }
-  function getAssignmentSplitCount(order, route55) {
-    if (!order || !route55 || !/yards?/i.test(order.unit)) return "";
-    const truck = getRouteTruck(route55);
+  function getAssignmentSplitCount(order, route57) {
+    if (!order || !route57 || !/yards?/i.test(order.unit)) return "";
+    const truck = getRouteTruck(route57);
     const capacity = Number((truck == null ? void 0 : truck.yards) || 30);
     const quantity = Number(order.quantity || 0);
     if (!quantity || !capacity || quantity <= capacity) return "";
     const minimumSplits = Math.ceil(quantity / capacity);
-    const routeLabel = `${route55.code}${(truck == null ? void 0 : truck.label) ? ` / ${truck.label}` : ""}`;
+    const routeLabel = `${route57.code}${(truck == null ? void 0 : truck.label) ? ` / ${truck.label}` : ""}`;
     const answer = window.prompt(`${getOrderNumber$5(order)} is ${quantity} yards, which is over the ${capacity} yard truck limit for ${routeLabel}.
 
 How many tickets should I split it into?`, String(minimumSplits));
@@ -14327,8 +14496,8 @@ How many tickets should I split it into?`, String(minimumSplits));
     return String(splitCount);
   }
   function prepareAssignmentSubmit(order, routeId, form, event) {
-    const route55 = routes2.find((entry2) => entry2.id === routeId);
-    const splitCount = getAssignmentSplitCount(order, route55);
+    const route57 = routes2.find((entry2) => entry2.id === routeId);
+    const splitCount = getAssignmentSplitCount(order, route57);
     if (splitCount === null) {
       event.preventDefault();
       return;
@@ -14647,6 +14816,10 @@ How many tickets should I split it into?`, String(minimumSplits));
             style: styles$a.outlineButton,
             children: "Import Mail"
           })]
+        }), /* @__PURE__ */ jsx("a", {
+          href: dailyExportHref,
+          style: styles$a.outlineButton,
+          children: "Export Today"
         }), canManageDispatch ? /* @__PURE__ */ jsxs(Fragment, {
           children: [/* @__PURE__ */ jsxs("label", {
             style: styles$a.manualRouteToggle,
@@ -14744,16 +14917,16 @@ How many tickets should I split it into?`, String(minimumSplits));
                   }, key)), /* @__PURE__ */ jsx("th", {})]
                 })
               }), /* @__PURE__ */ jsxs("tbody", {
-                children: [sortedRoutes.map((route55) => /* @__PURE__ */ jsxs("tr", {
+                children: [sortedRoutes.map((route57) => /* @__PURE__ */ jsxs("tr", {
                   children: [/* @__PURE__ */ jsx("td", {
                     children: /* @__PURE__ */ jsx("span", {
                       style: {
                         ...styles$a.colorBar,
-                        background: route55.color || "#f97316"
+                        background: route57.color || "#f97316"
                       }
                     })
                   }), routeColumnKeys.map((key) => /* @__PURE__ */ jsx("td", {
-                    children: routeColumnValue(route55, key)
+                    children: routeColumnValue(route57, key)
                   }, key)), /* @__PURE__ */ jsx("td", {
                     children: /* @__PURE__ */ jsxs(Form, {
                       method: "post",
@@ -14761,14 +14934,14 @@ How many tickets should I split it into?`, String(minimumSplits));
                       children: [/* @__PURE__ */ jsx("input", {
                         type: "hidden",
                         name: "routeId",
-                        value: route55.id
+                        value: route57.id
                       }), /* @__PURE__ */ jsx("button", {
                         name: "intent",
                         value: "delete-route",
                         style: styles$a.iconButton,
                         title: "Delete route",
                         onClick: (event) => {
-                          if (!window.confirm(`Delete route ${route55.code}? Active orders must be moved first.`)) {
+                          if (!window.confirm(`Delete route ${route57.code}? Active orders must be moved first.`)) {
                             event.preventDefault();
                           }
                         },
@@ -14776,7 +14949,7 @@ How many tickets should I split it into?`, String(minimumSplits));
                       })]
                     })
                   })]
-                }, route55.id)), !routes2.length ? /* @__PURE__ */ jsx("tr", {
+                }, route57.id)), !routes2.length ? /* @__PURE__ */ jsx("tr", {
                   children: /* @__PURE__ */ jsx("td", {
                     colSpan: routeColumnKeys.length + 2,
                     style: styles$a.emptyCell,
@@ -15010,10 +15183,10 @@ How many tickets should I split it into?`, String(minimumSplits));
                         children: [/* @__PURE__ */ jsx("option", {
                           value: "",
                           children: "Route"
-                        }), routes2.map((route55) => /* @__PURE__ */ jsx("option", {
-                          value: route55.id,
-                          children: route55.code
-                        }, route55.id))]
+                        }), routes2.map((route57) => /* @__PURE__ */ jsx("option", {
+                          value: route57.id,
+                          children: route57.code
+                        }, route57.id))]
                       }), /* @__PURE__ */ jsx("button", {
                         style: styles$a.assignMini,
                         children: "Assign"
@@ -15276,7 +15449,7 @@ How many tickets should I split it into?`, String(minimumSplits));
           }), /* @__PURE__ */ jsx("dt", {
             children: "Route"
           }), /* @__PURE__ */ jsx("dd", {
-            children: ((_b = routes2.find((route55) => route55.id === selectedOrder.assignedRouteId)) == null ? void 0 : _b.code) || "Unassigned"
+            children: ((_b = routes2.find((route57) => route57.id === selectedOrder.assignedRouteId)) == null ? void 0 : _b.code) || "Unassigned"
           }), /* @__PURE__ */ jsx("dt", {
             children: "Travel"
           }), /* @__PURE__ */ jsx("dd", {
@@ -16099,13 +16272,13 @@ const styles$a = {
     color: "#6b7280"
   }
 };
-const route5 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route6 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$o,
   default: classic,
   loader: loader$m
 }, Symbol.toStringTag, { value: "Module" }));
-const loader$l = loader$n;
+const loader$l = loader$o;
 const action$n = action$p;
 const MONITOR_VIEWPORT_KEY = "dispatchMonitorMapViewport";
 const MONITOR_HIDDEN_ROUTES_KEY = "dispatchMonitorHiddenRoutes";
@@ -16224,15 +16397,15 @@ function MonitorMap({
   const routeObjectsRef = useRef([]);
   const driverMarkersRef = useRef([]);
   const [status, setStatus] = useState("");
-  const visibleRouteIds = useMemo(() => new Set(routes2.map((route55) => route55.id).filter((id) => !hiddenRouteIds.includes(id))), [routes2, hiddenRouteIds]);
-  const routeColorById = useMemo(() => new Map(routes2.map((route55) => [route55.id, route55.color || "#f97316"])), [routes2]);
-  const routePlan = useMemo(() => routes2.filter((route55) => route55.orders.length && visibleRouteIds.has(route55.id)).map((route55) => {
-    const orders = filterByDate ? route55.orders.filter((order) => dateKey$4(parseRequestedDate$4(order.requestedWindow)) === selectedDateKey) : route55.orders;
+  const visibleRouteIds = useMemo(() => new Set(routes2.map((route57) => route57.id).filter((id) => !hiddenRouteIds.includes(id))), [routes2, hiddenRouteIds]);
+  const routeColorById = useMemo(() => new Map(routes2.map((route57) => [route57.id, route57.color || "#f97316"])), [routes2]);
+  const routePlan = useMemo(() => routes2.filter((route57) => route57.orders.length && visibleRouteIds.has(route57.id)).map((route57) => {
+    const orders = filterByDate ? route57.orders.filter((order) => dateKey$4(parseRequestedDate$4(order.requestedWindow)) === selectedDateKey) : route57.orders;
     return {
-      id: route55.id,
-      code: route55.code,
-      truck: route55.truck,
-      color: route55.color || "#f97316",
+      id: route57.id,
+      code: route57.code,
+      truck: route57.truck,
+      color: route57.color || "#f97316",
       stops: orders.map((order) => ({
         address: getOrderAddress$3(order),
         customer: order.customer,
@@ -16240,11 +16413,11 @@ function MonitorMap({
         load: getLoadLabel$3(order)
       })).filter((stop) => stop.address)
     };
-  }).filter((route55) => route55.stops.length), [filterByDate, routes2, selectedDateKey, visibleRouteIds]);
-  const routePlanKey = useMemo(() => JSON.stringify(routePlan.map((route55) => ({
-    id: route55.id,
-    color: route55.color,
-    stops: route55.stops.map((stop) => stop.address)
+  }).filter((route57) => route57.stops.length), [filterByDate, routes2, selectedDateKey, visibleRouteIds]);
+  const routePlanKey = useMemo(() => JSON.stringify(routePlan.map((route57) => ({
+    id: route57.id,
+    color: route57.color,
+    stops: route57.stops.map((stop) => stop.address)
   }))), [routePlan]);
   useEffect(() => {
     let cancelled = false;
@@ -16293,15 +16466,15 @@ function MonitorMap({
         const bounds = new google.maps.LatLngBounds();
         const directionsService = new google.maps.DirectionsService();
         let yardMarkerAdded = false;
-        for (const route55 of routePlan.slice(0, 8)) {
-          for (const [stopIndex, stop] of route55.stops.entries()) {
+        for (const route57 of routePlan.slice(0, 8)) {
+          for (const [stopIndex, stop] of route57.stops.entries()) {
             await new Promise((resolve) => {
               const renderer = new google.maps.DirectionsRenderer({
                 map,
                 preserveViewport: true,
                 suppressMarkers: true,
                 polylineOptions: {
-                  strokeColor: route55.color,
+                  strokeColor: route57.color,
                   strokeOpacity: 0.8,
                   strokeWeight: 5
                 }
@@ -16346,13 +16519,13 @@ function MonitorMap({
                       map,
                       position: outboundLeg.end_location,
                       label: String(stopIndex + 1),
-                      title: `${route55.code} ${stop.label} · ${stop.customer} · ${stop.load}`
+                      title: `${route57.code} ${stop.label} · ${stop.customer} · ${stop.load}`
                     });
                     routeObjectsRef.current.push(marker);
                   }
                   if (returnLeg == null ? void 0 : returnLeg.end_location) bounds.extend(returnLeg.end_location);
                 } else {
-                  console.warn("[MONITOR MAP ROUTE ERROR]", route55.code, stop.address, routeStatus);
+                  console.warn("[MONITOR MAP ROUTE ERROR]", route57.code, stop.address, routeStatus);
                 }
                 resolve();
               });
@@ -16504,23 +16677,23 @@ const monitor = UNSAFE_withComponentProps(function DispatchMonitorPage() {
       window.clearInterval(timer);
     };
   }, []);
-  const routes2 = useMemo(() => baseRoutes.map((route55) => {
-    const routeOrders = orders.filter((order) => order.assignedRouteId === route55.id && order.status !== "delivered" && order.deliveryStatus !== "delivered").sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999));
+  const routes2 = useMemo(() => baseRoutes.map((route57) => {
+    const routeOrders = orders.filter((order) => order.assignedRouteId === route57.id && order.status !== "delivered" && order.deliveryStatus !== "delivered").sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999));
     return {
-      ...route55,
+      ...route57,
       orders: routeOrders
     };
   }), [baseRoutes, orders]);
-  const activeRoutes = routes2.filter((route55) => route55.orders.length);
-  const visibleRouteOrders = activeRoutes.map((route55) => {
-    const routeOrders = filterByDate ? route55.orders.filter((order) => dateKey$4(parseRequestedDate$4(order.requestedWindow)) === selectedDateKey) : route55.orders;
+  const activeRoutes = routes2.filter((route57) => route57.orders.length);
+  const visibleRouteOrders = activeRoutes.map((route57) => {
+    const routeOrders = filterByDate ? route57.orders.filter((order) => dateKey$4(parseRequestedDate$4(order.requestedWindow)) === selectedDateKey) : route57.orders;
     return {
-      ...route55,
+      ...route57,
       orders: routeOrders,
       totalTravelMinutes: routeOrders.reduce((sum, order) => sum + getTravelMinutes$3(order), 0)
     };
   });
-  const visibleRouteOrderCount = visibleRouteOrders.reduce((sum, route55) => sum + route55.orders.length, 0);
+  const visibleRouteOrderCount = visibleRouteOrders.reduce((sum, route57) => sum + route57.orders.length, 0);
   function toggleNavCollapsed() {
     setNavCollapsed((current) => {
       const next = !current;
@@ -16705,25 +16878,25 @@ const monitor = UNSAFE_withComponentProps(function DispatchMonitorPage() {
           })]
         }), /* @__PURE__ */ jsxs("div", {
           style: styles$9.truckList,
-          children: [visibleRouteOrders.map((route55) => /* @__PURE__ */ jsxs("section", {
+          children: [visibleRouteOrders.map((route57) => /* @__PURE__ */ jsxs("section", {
             style: compactRoutes ? styles$9.truckCardCompact : styles$9.truckCard,
             children: [/* @__PURE__ */ jsxs("div", {
               style: compactRoutes ? styles$9.truckHeaderCompact : styles$9.truckHeader,
               children: [/* @__PURE__ */ jsx("span", {
                 style: {
                   ...styles$9.routeDot,
-                  background: route55.color || "#f97316"
+                  background: route57.color || "#f97316"
                 }
               }), /* @__PURE__ */ jsxs("div", {
                 children: [/* @__PURE__ */ jsxs("strong", {
-                  children: [route55.code, " · ", route55.truck || "No truck"]
+                  children: [route57.code, " · ", route57.truck || "No truck"]
                 }), /* @__PURE__ */ jsxs("small", {
-                  children: [route55.driver || "No driver", " · ", route55.orders.length, " stop", route55.orders.length === 1 ? "" : "s", " · ", formatTravel(route55.totalTravelMinutes)]
+                  children: [route57.driver || "No driver", " · ", route57.orders.length, " stop", route57.orders.length === 1 ? "" : "s", " · ", formatTravel(route57.totalTravelMinutes)]
                 })]
               })]
             }), /* @__PURE__ */ jsxs("div", {
               style: compactRoutes ? styles$9.truckOrdersCompact : styles$9.truckOrders,
-              children: [route55.orders.map((order, index) => /* @__PURE__ */ jsxs(Link, {
+              children: [route57.orders.map((order, index) => /* @__PURE__ */ jsxs(Link, {
                 to: `${dispatchHref}?view=orders&order=${encodeURIComponent(order.id)}&returnTo=${encodeURIComponent(monitorHref)}`,
                 style: compactRoutes ? styles$9.orderCardCompact : styles$9.orderCard,
                 children: [/* @__PURE__ */ jsx("span", {
@@ -16743,12 +16916,12 @@ const monitor = UNSAFE_withComponentProps(function DispatchMonitorPage() {
                     })]
                   })]
                 })]
-              }, order.id)), !route55.orders.length ? /* @__PURE__ */ jsx("div", {
+              }, order.id)), !route57.orders.length ? /* @__PURE__ */ jsx("div", {
                 style: styles$9.empty,
                 children: "No loads for this filter."
               }) : null]
             })]
-          }, route55.id)), !visibleRouteOrders.length ? /* @__PURE__ */ jsx("div", {
+          }, route57.id)), !visibleRouteOrders.length ? /* @__PURE__ */ jsx("div", {
             style: styles$9.empty,
             children: "No active routes yet."
           }) : null]
@@ -16757,19 +16930,19 @@ const monitor = UNSAFE_withComponentProps(function DispatchMonitorPage() {
         style: styles$9.mapSide,
         children: [/* @__PURE__ */ jsx("div", {
           style: styles$9.routeLegend,
-          children: activeRoutes.map((route55) => {
-            const hidden = hiddenRouteIds.includes(route55.id);
+          children: activeRoutes.map((route57) => {
+            const hidden = hiddenRouteIds.includes(route57.id);
             return /* @__PURE__ */ jsxs("button", {
               type: "button",
-              onClick: () => toggleRoute(route55.id),
+              onClick: () => toggleRoute(route57.id),
               style: hidden ? styles$9.routeButtonHidden : styles$9.routeButton,
               children: [/* @__PURE__ */ jsx("span", {
                 style: {
                   ...styles$9.routeDot,
-                  background: route55.color || "#f97316"
+                  background: route57.color || "#f97316"
                 }
-              }), route55.code, " ", route55.truck || ""]
-            }, route55.id);
+              }), route57.code, " ", route57.truck || ""]
+            }, route57.id);
           })
         }), /* @__PURE__ */ jsx(MonitorMap, {
           googleMapsApiKey,
@@ -17141,7 +17314,7 @@ const styles$9 = {
     fontWeight: 900
   }
 };
-const route6 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route7 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$n,
   default: monitor,
@@ -17674,13 +17847,13 @@ const styles$8 = {
     color: "#94a3b8"
   }
 };
-const route7 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route8 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$m,
   default: loader_default,
   loader: loader$k
 }, Symbol.toStringTag, { value: "Module" }));
-const loader$j = loader$n;
+const loader$j = loader$o;
 const action$l = action$p;
 const DISPATCH_NAV_COLLAPSED_KEY$1 = "dispatchNavCollapsed";
 const monthNames$1 = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -18665,13 +18838,13 @@ const styles$7 = {
     padding: "14px 16px"
   }
 };
-const route8 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route9 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$l,
   default: calendar,
   loader: loader$j
 }, Symbol.toStringTag, { value: "Module" }));
-const loader$i = loader$n;
+const loader$i = loader$o;
 const action$k = action$p;
 const DISPATCH_NAV_COLLAPSED_KEY = "dispatchNavCollapsed";
 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -19427,7 +19600,7 @@ const styles$6 = {
     padding: "14px 16px"
   }
 };
-const route9 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route10 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$k,
   default: allotment,
@@ -19560,11 +19733,11 @@ async function loader$h({
     }
   });
 }
-const route10 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   loader: loader$h
 }, Symbol.toStringTag, { value: "Module" }));
-const route11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route12 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   loader: loader$h
 }, Symbol.toStringTag, { value: "Module" }));
@@ -19700,7 +19873,7 @@ async function loader$g({
     }
   });
 }
-const route12 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route13 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   loader: loader$g
 }, Symbol.toStringTag, { value: "Module" }));
@@ -19721,12 +19894,12 @@ function getCustomerEtaText$1(order) {
 }
 function buildEnrouteTextMessage({
   order,
-  route: route55
+  route: route57
 }) {
   const to = extractPhone$1(order.contact);
   const body = [
     `Green Hills Supply: your delivery is en route and should arrive in about ${getCustomerEtaText$1(order)}.`,
-    (route55 == null ? void 0 : route55.truck) ? `Truck: ${route55.truck}.` : "",
+    (route57 == null ? void 0 : route57.truck) ? `Truck: ${route57.truck}.` : "",
     "Please make sure the drop area is clear."
   ].filter(Boolean).join(" ");
   return {
@@ -19740,7 +19913,7 @@ async function sendKenectTextMessage({
   to,
   body,
   order,
-  route: route55
+  route: route57
 }) {
   const endpoint = process.env.KENECT_API_URL;
   const apiKey = process.env.KENECT_API_KEY;
@@ -19773,9 +19946,9 @@ async function sendKenectTextMessage({
         orderId: (order == null ? void 0 : order.id) || null,
         orderNumber: (order == null ? void 0 : order.orderNumber) || null,
         customer: (order == null ? void 0 : order.customer) || null,
-        routeId: (route55 == null ? void 0 : route55.id) || null,
-        routeCode: (route55 == null ? void 0 : route55.code) || null,
-        truck: (route55 == null ? void 0 : route55.truck) || null
+        routeId: (route57 == null ? void 0 : route57.id) || null,
+        routeCode: (route57 == null ? void 0 : route57.code) || null,
+        truck: (route57 == null ? void 0 : route57.truck) || null
       }
     })
   });
@@ -19787,9 +19960,9 @@ async function sendKenectTextMessage({
 }
 async function sendCustomerEnrouteText({
   order,
-  route: route55
+  route: route57
 }) {
-  const message = buildEnrouteTextMessage({ order, route: route55 });
+  const message = buildEnrouteTextMessage({ order, route: route57 });
   if (!message.ready) {
     return {
       sent: false,
@@ -19802,7 +19975,7 @@ async function sendCustomerEnrouteText({
     to: message.to,
     body: message.body,
     order,
-    route: route55
+    route: route57
   });
 }
 function getDriverPath(url) {
@@ -19909,8 +20082,8 @@ function filterDriverStateForUser(state, user) {
       driverScopeMessage: "No driver employee is assigned to this login yet. Ask an admin to match this user to an employee in Settings."
     };
   }
-  const routes2 = state.routes.filter((route55) => route55.driverId === employeeId);
-  const routeIds = new Set(routes2.map((route55) => route55.id));
+  const routes2 = state.routes.filter((route57) => route57.driverId === employeeId);
+  const routeIds = new Set(routes2.map((route57) => route57.id));
   return {
     ...state,
     routes: routes2,
@@ -20016,7 +20189,7 @@ async function action$j({
   const currentUser = await getCurrentUser(request);
   const scopedState = filterDriverStateForUser(currentState, currentUser);
   const currentOrder = scopedState.orders.find((order) => order.id === orderId) || null;
-  const currentRoute = scopedState.routes.find((route55) => route55.id === (routeId || (currentOrder == null ? void 0 : currentOrder.assignedRouteId))) || null;
+  const currentRoute = scopedState.routes.find((route57) => route57.id === (routeId || (currentOrder == null ? void 0 : currentOrder.assignedRouteId))) || null;
   if (!currentOrder || !currentRoute) {
     return data({
       allowed: true,
@@ -20120,7 +20293,7 @@ const dispatchDriver = UNSAFE_withComponentProps(function DispatchDriverPage() {
   const [nowMs, setNowMs] = useState(() => Date.now());
   const searchParams = new URLSearchParams(location.search);
   const selectedRouteId = (actionData == null ? void 0 : actionData.selectedRouteId) || searchParams.get("route") || ((_a2 = routes2[0]) == null ? void 0 : _a2.id) || "";
-  const selectedRoute = routes2.find((route55) => route55.id === selectedRouteId) || routes2[0] || null;
+  const selectedRoute = routes2.find((route57) => route57.id === selectedRouteId) || routes2[0] || null;
   const routeStops = useMemo(() => selectedRoute ? orders.filter((order) => order.assignedRouteId === selectedRoute.id && order.status !== "delivered" && order.deliveryStatus !== "delivered").sort((a, b) => Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999)) : [], [orders, selectedRoute]);
   const completedCount = routeStops.filter((stop) => stop.deliveryStatus === "delivered").length;
   const visibleStopCount = routeStops.reduce((count, stop, index) => {
@@ -20291,24 +20464,24 @@ const dispatchDriver = UNSAFE_withComponentProps(function DispatchDriverPage() {
       }) : null, /* @__PURE__ */ jsx("section", {
         className: "driver-route-picker",
         style: styles$5.routePicker,
-        children: routes2.map((route55) => /* @__PURE__ */ jsxs("a", {
-          href: `${driverHref}?route=${encodeURIComponent(route55.id)}`,
+        children: routes2.map((route57) => /* @__PURE__ */ jsxs("a", {
+          href: `${driverHref}?route=${encodeURIComponent(route57.id)}`,
           style: {
             ...styles$5.routeChip,
-            borderColor: route55.id === (selectedRoute == null ? void 0 : selectedRoute.id) ? route55.color : "rgba(203, 213, 225, 0.28)",
-            background: route55.id === (selectedRoute == null ? void 0 : selectedRoute.id) ? `${route55.color}22` : "#0f172a"
+            borderColor: route57.id === (selectedRoute == null ? void 0 : selectedRoute.id) ? route57.color : "rgba(203, 213, 225, 0.28)",
+            background: route57.id === (selectedRoute == null ? void 0 : selectedRoute.id) ? `${route57.color}22` : "#0f172a"
           },
           children: [/* @__PURE__ */ jsx("span", {
             style: {
               ...styles$5.routeDot,
-              background: route55.color
+              background: route57.color
             }
           }), /* @__PURE__ */ jsx("span", {
-            children: route55.code
+            children: route57.code
           }), /* @__PURE__ */ jsx("small", {
-            children: route55.truck
+            children: route57.truck
           })]
-        }, route55.id))
+        }, route57.id))
       }), /* @__PURE__ */ jsxs("section", {
         className: "driver-summary-grid",
         style: styles$5.summaryGrid,
@@ -20459,7 +20632,7 @@ const dispatchDriver = UNSAFE_withComponentProps(function DispatchDriverPage() {
   });
 });
 function DriverLiveTracking({
-  route: route55,
+  route: route57,
   activeStop
 }) {
   const [trackingEnabled, setTrackingEnabled] = useState(() => {
@@ -20468,25 +20641,25 @@ function DriverLiveTracking({
   });
   const [trackingStatus, setTrackingStatus] = useState(trackingEnabled ? "Starting GPS tracking..." : "Live GPS is off on this device.");
   const [lastPing, setLastPing] = useState("");
-  const routeRef = useRef(route55);
+  const routeRef = useRef(route57);
   const activeStopRef = useRef(activeStop);
   const latestPositionRef = useRef(null);
   const wakeLockRef = useRef(null);
   useEffect(() => {
-    routeRef.current = route55;
+    routeRef.current = route57;
     activeStopRef.current = activeStop;
-  }, [activeStop, route55]);
+  }, [activeStop, route57]);
   useEffect(() => {
     if (!trackingEnabled) return;
     const nativeLocation = getNativeDispatchLocationPlugin();
     if (!nativeLocation) return;
     nativeLocation.startTracking({
       endpoint: `${window.location.origin}/api/dispatch-driver-location`,
-      routeId: route55.id,
+      routeId: route57.id,
       orderId: (activeStop == null ? void 0 : activeStop.id) || null,
-      driverId: route55.driverId || null,
-      driverName: route55.driver || "",
-      truck: route55.truck || route55.code
+      driverId: route57.driverId || null,
+      driverName: route57.driver || "",
+      truck: route57.truck || route57.code
     }).then((result) => {
       if ((result == null ? void 0 : result.ok) !== false) {
         setTrackingStatus("Native background GPS tracking active.");
@@ -20494,7 +20667,7 @@ function DriverLiveTracking({
     }).catch((error) => {
       setTrackingStatus(error instanceof Error ? error.message : "Native GPS could not start; using browser GPS while the page is open.");
     });
-  }, [activeStop == null ? void 0 : activeStop.id, route55.code, route55.driver, route55.driverId, route55.id, route55.truck, trackingEnabled]);
+  }, [activeStop == null ? void 0 : activeStop.id, route57.code, route57.driver, route57.driverId, route57.id, route57.truck, trackingEnabled]);
   useEffect(() => {
     if (!trackingEnabled) return;
     if (!navigator.geolocation) {
@@ -21382,7 +21555,7 @@ const styles$5 = {
     textAlign: "center"
   }
 };
-const route13 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route14 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$j,
   default: dispatchDriver,
@@ -21680,7 +21853,7 @@ const styles$4 = {
     border: "1px solid #cbd5e1"
   }
 };
-const route14 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route15 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: dispatchDriverDetail,
   loader: loader$e
@@ -22080,7 +22253,7 @@ const mobileDashboard = UNSAFE_withComponentProps(function MobileDashboardPage()
     })]
   });
 });
-const route15 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route16 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$i,
   default: mobileDashboard,
@@ -22300,7 +22473,7 @@ const styles$2 = {
     textDecoration: "none"
   }
 };
-const route16 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route17 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$h,
   default: login,
@@ -22518,7 +22691,7 @@ const styles$1 = {
     textDecoration: "none"
   }
 };
-const route17 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route18 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$g,
   default: changePassword,
@@ -23264,7 +23437,7 @@ const styles = {
     whiteSpace: "pre-wrap"
   }
 };
-const route18 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route19 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$f,
   default: settings,
@@ -23328,7 +23501,7 @@ const route = UNSAFE_withComponentProps(function Auth() {
     })
   });
 });
-const route19 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route20 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$e,
   default: route,
@@ -23343,7 +23516,7 @@ async function loader$8({
 const auth_$ = UNSAFE_withComponentProps(function AuthCatchAll() {
   return null;
 });
-const route20 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route21 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: auth_$,
   loader: loader$8
@@ -23540,7 +23713,7 @@ const app = UNSAFE_withComponentProps(function AppLayout() {
     })]
   });
 });
-const route21 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route22 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   ErrorBoundary,
   default: app,
@@ -23836,7 +24009,7 @@ const app__index = UNSAFE_withComponentProps(function AppIndex() {
     })]
   });
 });
-const route22 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route23 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$d,
   default: app__index,
@@ -24309,7 +24482,7 @@ const app_admin = UNSAFE_withComponentProps(function AdminPage() {
     })]
   });
 });
-const route23 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route24 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$c,
   default: app_admin,
@@ -24350,70 +24523,74 @@ const app_additional = UNSAFE_withComponentProps(function AdditionalPage() {
     })]
   });
 });
-const route24 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route25 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: app_additional
 }, Symbol.toStringTag, { value: "Module" }));
-const route25 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route26 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$r,
   default: customQuote,
-  loader: loader$p
-}, Symbol.toStringTag, { value: "Module" }));
-const route26 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-  __proto__: null,
-  action: action$q,
-  default: quoteReview,
-  loader: loader$o
+  loader: loader$q
 }, Symbol.toStringTag, { value: "Module" }));
 const route27 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  action: action$p,
-  default: dispatch,
-  loader: loader$n
+  action: action$q,
+  default: quoteReview,
+  loader: loader$p
 }, Symbol.toStringTag, { value: "Module" }));
 const route28 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  action: action$p,
+  default: dispatch,
+  loader: loader$o
+}, Symbol.toStringTag, { value: "Module" }));
+const route29 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  loader: loader$n
+}, Symbol.toStringTag, { value: "Module" }));
+const route30 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$o,
   default: classic,
   loader: loader$m
 }, Symbol.toStringTag, { value: "Module" }));
-const route29 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route31 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$n,
   default: monitor,
   loader: loader$l
 }, Symbol.toStringTag, { value: "Module" }));
-const route30 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route32 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$m,
   default: loader_default,
   loader: loader$k
 }, Symbol.toStringTag, { value: "Module" }));
-const route31 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route33 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$l,
   default: calendar,
   loader: loader$j
 }, Symbol.toStringTag, { value: "Module" }));
-const route32 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route34 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$k,
   default: allotment,
   loader: loader$i
 }, Symbol.toStringTag, { value: "Module" }));
-const route33 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route35 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$j,
   default: dispatchDriver,
   loader: loader$f
 }, Symbol.toStringTag, { value: "Module" }));
-const route34 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route36 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: dispatchDriverDetail,
   loader: loader$e
 }, Symbol.toStringTag, { value: "Module" }));
-const route35 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route37 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$i,
   default: mobileDashboard,
@@ -24459,7 +24636,7 @@ async function action$b({
     outsideDeliveryPhone: quote.outsideDeliveryPhone ?? "(262) 345-4001"
   });
 }
-const route36 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route38 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$b
 }, Symbol.toStringTag, { value: "Module" }));
@@ -24517,7 +24694,7 @@ async function action$a({
     }]
   });
 }
-const route37 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route39 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$a
 }, Symbol.toStringTag, { value: "Module" }));
@@ -24547,7 +24724,7 @@ async function action$9({
     });
   }
 }
-const route38 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route40 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$9
 }, Symbol.toStringTag, { value: "Module" }));
@@ -24827,11 +25004,11 @@ async function action$8({
     draftOrderAdminUrl: draftOrder.legacyResourceId ? `https://admin.shopify.com/store/${getStoreHandle(shop)}/draft_orders/${draftOrder.legacyResourceId}` : null
   });
 }
-const route49 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route51 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$8
 }, Symbol.toStringTag, { value: "Module" }));
-const route39 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route41 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$8
 }, Symbol.toStringTag, { value: "Module" }));
@@ -24879,11 +25056,11 @@ async function action$7({
     deletedQuoteId: quoteId
   });
 }
-const route50 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route52 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$7
 }, Symbol.toStringTag, { value: "Module" }));
-const route40 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route42 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$7
 }, Symbol.toStringTag, { value: "Module" }));
@@ -25018,11 +25195,11 @@ async function action$6({
     quote: updatedQuote
   });
 }
-const route51 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route53 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$6
 }, Symbol.toStringTag, { value: "Module" }));
-const route41 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route43 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$6
 }, Symbol.toStringTag, { value: "Module" }));
@@ -25059,7 +25236,7 @@ async function loader$4({
     });
   }
 }
-const route42 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route44 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   loader: loader$4
 }, Symbol.toStringTag, { value: "Module" }));
@@ -25096,7 +25273,7 @@ async function loader$3({
     });
   }
 }
-const route43 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route45 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   loader: loader$3
 }, Symbol.toStringTag, { value: "Module" }));
@@ -25178,7 +25355,7 @@ async function action$5({
     });
   }
 }
-const route44 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route46 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$5,
   loader: loader$2
@@ -25229,7 +25406,7 @@ async function action$4({
     status: 400
   });
 }
-const route45 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route47 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$4,
   loader: loader$1
@@ -25287,16 +25464,16 @@ async function action$3({
     status: 400
   });
 }
-const route46 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route48 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$3,
   loader
 }, Symbol.toStringTag, { value: "Module" }));
-const route47 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route49 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$b
 }, Symbol.toStringTag, { value: "Module" }));
-const route48 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route50 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$a
 }, Symbol.toStringTag, { value: "Module" }));
@@ -25336,7 +25513,7 @@ async function action$2({
   console.log("[WEBHOOK SYNC]", shop, product.title);
   return new Response();
 }
-const route52 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route54 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$2
 }, Symbol.toStringTag, { value: "Module" }));
@@ -25363,7 +25540,7 @@ const action$1 = async ({
   }
   return new Response();
 };
-const route53 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route55 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$1
 }, Symbol.toStringTag, { value: "Module" }));
@@ -25385,11 +25562,11 @@ const action = async ({
   }
   return new Response();
 };
-const route54 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route56 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action
 }, Symbol.toStringTag, { value: "Module" }));
-const serverManifest = { "entry": { "module": "/assets/entry.client-oNGMiw6i.js", "imports": ["/assets/jsx-runtime-DJxbfBsx.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/root-BjGothWo.js", "imports": ["/assets/jsx-runtime-DJxbfBsx.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/_index/route": { "id": "routes/_index/route", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-Cmf56Jwf.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/custom-quote": { "id": "routes/custom-quote", "parentId": "root", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/custom-quote-D5uQYK0n.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/quote-review": { "id": "routes/quote-review", "parentId": "root", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/quote-review-gYhVWCz5.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch": { "id": "routes/dispatch", "parentId": "root", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-DI50N7G2.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/classic": { "id": "routes/classic", "parentId": "root", "path": "classic", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/classic-BW49bT4s.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-OjMtKtX8.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/monitor": { "id": "routes/monitor", "parentId": "root", "path": "monitor", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/monitor-D-6D68Te.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/loader": { "id": "routes/loader", "parentId": "root", "path": "loader", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/loader-bzDTNw5Q.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar": { "id": "routes/calendar", "parentId": "root", "path": "calendar", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/calendar-B9B8WvWZ.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/allotment": { "id": "routes/allotment", "parentId": "root", "path": "allotment", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/allotment-D8Oj59U7.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar.ics": { "id": "routes/calendar.ics", "parentId": "root", "path": "calendar.ics", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar.ics-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar-feed.$secret": { "id": "routes/calendar-feed.$secret", "parentId": "root", "path": "calendar-feed/:secret", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar-feed._secret-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar.rss": { "id": "routes/calendar.rss", "parentId": "root", "path": "calendar.rss", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar.rss-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch-driver": { "id": "routes/dispatch-driver", "parentId": "root", "path": "dispatch/driver", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-driver-CPd1uDeP.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch-driver-detail": { "id": "routes/dispatch-driver-detail", "parentId": "root", "path": "dispatch/driver/detail", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-driver-detail-DVs_f_11.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/mobile-dashboard": { "id": "routes/mobile-dashboard", "parentId": "root", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/mobile-dashboard-yPRn0BhP.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/login": { "id": "routes/login", "parentId": "root", "path": "login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/login-BLokXFd3.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/change-password": { "id": "routes/change-password", "parentId": "root", "path": "change-password", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/change-password-DNG9C_4s.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/settings": { "id": "routes/settings", "parentId": "root", "path": "settings", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/settings-BeM-ZG2p.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-OjMtKtX8.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.login/route": { "id": "routes/auth.login/route", "parentId": "root", "path": "auth/login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-CG8tQ2tr.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.$": { "id": "routes/auth.$", "parentId": "root", "path": "auth/*", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/auth._-p3tFrFib.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app": { "id": "routes/app", "parentId": "root", "path": "app", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": true, "module": "/assets/app--bd_F85Q.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app._index": { "id": "routes/app._index", "parentId": "routes/app", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app._index-BoDF1DO_.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.admin": { "id": "routes/app.admin", "parentId": "routes/app", "path": "admin", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.admin-CW6O1zQ4.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.additional": { "id": "routes/app.additional", "parentId": "routes/app", "path": "additional", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.additional-CCXuFT6z.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.custom-quote": { "id": "routes/app.custom-quote", "parentId": "routes/app", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.custom-quote-CVtv5s1O.js", "imports": ["/assets/custom-quote-D5uQYK0n.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.quote-review": { "id": "routes/app.quote-review", "parentId": "routes/app", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.quote-review-CTzZcwLR.js", "imports": ["/assets/quote-review-gYhVWCz5.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch": { "id": "routes/app.dispatch", "parentId": "routes/app", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-aKwt5sWG.js", "imports": ["/assets/dispatch-DI50N7G2.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.classic": { "id": "routes/app.classic", "parentId": "routes/app", "path": "classic", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.classic-1BhEXjEh.js", "imports": ["/assets/classic-BW49bT4s.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-OjMtKtX8.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.monitor": { "id": "routes/app.monitor", "parentId": "routes/app", "path": "monitor", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.monitor-CCjPg_Q9.js", "imports": ["/assets/monitor-D-6D68Te.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.loader": { "id": "routes/app.loader", "parentId": "routes/app", "path": "loader", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.loader-MAKSPBga.js", "imports": ["/assets/loader-bzDTNw5Q.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.calendar": { "id": "routes/app.calendar", "parentId": "routes/app", "path": "calendar", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.calendar-bdYGDu9o.js", "imports": ["/assets/calendar-B9B8WvWZ.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.allotment": { "id": "routes/app.allotment", "parentId": "routes/app", "path": "allotment", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.allotment-Bh13LqAz.js", "imports": ["/assets/allotment-D8Oj59U7.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch-driver": { "id": "routes/app.dispatch-driver", "parentId": "routes/app", "path": "dispatch/driver", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-driver-DXBFEAtS.js", "imports": ["/assets/dispatch-driver-CPd1uDeP.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch-driver-detail": { "id": "routes/app.dispatch-driver-detail", "parentId": "routes/app", "path": "dispatch/driver/detail", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-driver-detail-CcJGmFUW.js", "imports": ["/assets/dispatch-driver-detail-DVs_f_11.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.mobile": { "id": "routes/app.mobile", "parentId": "routes/app", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.mobile-BCRA_95T.js", "imports": ["/assets/mobile-dashboard-yPRn0BhP.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.shipping-estimate": { "id": "routes/api.shipping-estimate", "parentId": "root", "path": "api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.carrier-service": { "id": "routes/api.carrier-service", "parentId": "root", "path": "api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.sync-products": { "id": "routes/api.sync-products", "parentId": "root", "path": "api/sync-products", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.sync-products-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.create-draft-order": { "id": "routes/api.create-draft-order", "parentId": "root", "path": "api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.delete-quote": { "id": "routes/api.delete-quote", "parentId": "root", "path": "api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.update-quote": { "id": "routes/api.update-quote", "parentId": "root", "path": "api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.dispatch-poll-mailbox": { "id": "routes/api.dispatch-poll-mailbox", "parentId": "root", "path": "api/dispatch-poll-mailbox", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.dispatch-poll-mailbox-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.dispatch-poll-shopify": { "id": "routes/api.dispatch-poll-shopify", "parentId": "root", "path": "api/dispatch-poll-shopify", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.dispatch-poll-shopify-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.dispatch-driver-location": { "id": "routes/api.dispatch-driver-location", "parentId": "root", "path": "api/dispatch-driver-location", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.dispatch-driver-location-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.loader-notifications": { "id": "routes/api.loader-notifications", "parentId": "root", "path": "api/loader-notifications", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.loader-notifications-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.loader-push-subscription": { "id": "routes/api.loader-push-subscription", "parentId": "root", "path": "api/loader-push-subscription", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.loader-push-subscription-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.shipping-estimate": { "id": "routes/app.api.shipping-estimate", "parentId": "root", "path": "app/api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.carrier-service": { "id": "routes/app.api.carrier-service", "parentId": "root", "path": "app/api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.create-draft-order": { "id": "routes/app.api.create-draft-order", "parentId": "root", "path": "app/api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.delete-quote": { "id": "routes/app.api.delete-quote", "parentId": "root", "path": "app/api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.update-quote": { "id": "routes/app.api.update-quote", "parentId": "root", "path": "app/api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.products.update": { "id": "routes/webhooks.products.update", "parentId": "root", "path": "webhooks/products/update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.products.update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.scopes_update": { "id": "routes/webhooks.app.scopes_update", "parentId": "root", "path": "webhooks/app/scopes_update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.scopes_update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.uninstalled": { "id": "routes/webhooks.app.uninstalled", "parentId": "root", "path": "webhooks/app/uninstalled", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.uninstalled-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-b6633ec7.js", "version": "b6633ec7", "sri": void 0 };
+const serverManifest = { "entry": { "module": "/assets/entry.client-oNGMiw6i.js", "imports": ["/assets/jsx-runtime-DJxbfBsx.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/root-BjGothWo.js", "imports": ["/assets/jsx-runtime-DJxbfBsx.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/_index/route": { "id": "routes/_index/route", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-Cmf56Jwf.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/custom-quote": { "id": "routes/custom-quote", "parentId": "root", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/custom-quote-D5uQYK0n.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/quote-review": { "id": "routes/quote-review", "parentId": "root", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/quote-review-gYhVWCz5.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch": { "id": "routes/dispatch", "parentId": "root", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-DXXC7xky.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch.export-day.xls": { "id": "routes/dispatch.export-day.xls", "parentId": "root", "path": "dispatch/export-day.xls", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/dispatch.export-day.xls-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/classic": { "id": "routes/classic", "parentId": "root", "path": "classic", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/classic-upCjpPtY.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-OjMtKtX8.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/monitor": { "id": "routes/monitor", "parentId": "root", "path": "monitor", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/monitor-D-6D68Te.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/loader": { "id": "routes/loader", "parentId": "root", "path": "loader", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/loader-bzDTNw5Q.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar": { "id": "routes/calendar", "parentId": "root", "path": "calendar", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/calendar-B9B8WvWZ.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/allotment": { "id": "routes/allotment", "parentId": "root", "path": "allotment", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/allotment-D8Oj59U7.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar.ics": { "id": "routes/calendar.ics", "parentId": "root", "path": "calendar.ics", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar.ics-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar-feed.$secret": { "id": "routes/calendar-feed.$secret", "parentId": "root", "path": "calendar-feed/:secret", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar-feed._secret-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/calendar.rss": { "id": "routes/calendar.rss", "parentId": "root", "path": "calendar.rss", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/calendar.rss-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch-driver": { "id": "routes/dispatch-driver", "parentId": "root", "path": "dispatch/driver", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-driver-CPd1uDeP.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/dispatch-driver-detail": { "id": "routes/dispatch-driver-detail", "parentId": "root", "path": "dispatch/driver/detail", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/dispatch-driver-detail-DVs_f_11.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/mobile-dashboard": { "id": "routes/mobile-dashboard", "parentId": "root", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/mobile-dashboard-yPRn0BhP.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/login": { "id": "routes/login", "parentId": "root", "path": "login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/login-BLokXFd3.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/change-password": { "id": "routes/change-password", "parentId": "root", "path": "change-password", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/change-password-DNG9C_4s.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/settings": { "id": "routes/settings", "parentId": "root", "path": "settings", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/settings-BeM-ZG2p.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-OjMtKtX8.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.login/route": { "id": "routes/auth.login/route", "parentId": "root", "path": "auth/login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/route-CG8tQ2tr.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.$": { "id": "routes/auth.$", "parentId": "root", "path": "auth/*", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/auth._-p3tFrFib.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app": { "id": "routes/app", "parentId": "root", "path": "app", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": true, "module": "/assets/app--bd_F85Q.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app._index": { "id": "routes/app._index", "parentId": "routes/app", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app._index-BoDF1DO_.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.admin": { "id": "routes/app.admin", "parentId": "routes/app", "path": "admin", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.admin-CW6O1zQ4.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.additional": { "id": "routes/app.additional", "parentId": "routes/app", "path": "additional", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.additional-CCXuFT6z.js", "imports": ["/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.custom-quote": { "id": "routes/app.custom-quote", "parentId": "routes/app", "path": "custom-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.custom-quote-CVtv5s1O.js", "imports": ["/assets/custom-quote-D5uQYK0n.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.quote-review": { "id": "routes/app.quote-review", "parentId": "routes/app", "path": "quote-review", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.quote-review-CTzZcwLR.js", "imports": ["/assets/quote-review-gYhVWCz5.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch": { "id": "routes/app.dispatch", "parentId": "routes/app", "path": "dispatch", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-9Ij1WVPZ.js", "imports": ["/assets/dispatch-DXXC7xky.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/google-places-Xg9p-f4E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch-export-day.xls": { "id": "routes/app.dispatch-export-day.xls", "parentId": "routes/app", "path": "dispatch/export-day.xls", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.dispatch-export-day.xls-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.classic": { "id": "routes/app.classic", "parentId": "routes/app", "path": "classic", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.classic-wt5mOTeG.js", "imports": ["/assets/classic-upCjpPtY.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js", "/assets/classic-columns-OjMtKtX8.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.monitor": { "id": "routes/app.monitor", "parentId": "routes/app", "path": "monitor", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.monitor-CCjPg_Q9.js", "imports": ["/assets/monitor-D-6D68Te.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.loader": { "id": "routes/app.loader", "parentId": "routes/app", "path": "loader", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.loader-MAKSPBga.js", "imports": ["/assets/loader-bzDTNw5Q.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.calendar": { "id": "routes/app.calendar", "parentId": "routes/app", "path": "calendar", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.calendar-bdYGDu9o.js", "imports": ["/assets/calendar-B9B8WvWZ.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.allotment": { "id": "routes/app.allotment", "parentId": "routes/app", "path": "allotment", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.allotment-Bh13LqAz.js", "imports": ["/assets/allotment-D8Oj59U7.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch-driver": { "id": "routes/app.dispatch-driver", "parentId": "routes/app", "path": "dispatch/driver", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-driver-DXBFEAtS.js", "imports": ["/assets/dispatch-driver-CPd1uDeP.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.dispatch-driver-detail": { "id": "routes/app.dispatch-driver-detail", "parentId": "routes/app", "path": "dispatch/driver/detail", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.dispatch-driver-detail-CcJGmFUW.js", "imports": ["/assets/dispatch-driver-detail-DVs_f_11.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.mobile": { "id": "routes/app.mobile", "parentId": "routes/app", "path": "mobile", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/app.mobile-BCRA_95T.js", "imports": ["/assets/mobile-dashboard-yPRn0BhP.js", "/assets/chunk-UVKPFVEO-BzvOWzz9.js", "/assets/jsx-runtime-DJxbfBsx.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.shipping-estimate": { "id": "routes/api.shipping-estimate", "parentId": "root", "path": "api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.carrier-service": { "id": "routes/api.carrier-service", "parentId": "root", "path": "api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.sync-products": { "id": "routes/api.sync-products", "parentId": "root", "path": "api/sync-products", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.sync-products-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.create-draft-order": { "id": "routes/api.create-draft-order", "parentId": "root", "path": "api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.delete-quote": { "id": "routes/api.delete-quote", "parentId": "root", "path": "api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.update-quote": { "id": "routes/api.update-quote", "parentId": "root", "path": "api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.dispatch-poll-mailbox": { "id": "routes/api.dispatch-poll-mailbox", "parentId": "root", "path": "api/dispatch-poll-mailbox", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.dispatch-poll-mailbox-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.dispatch-poll-shopify": { "id": "routes/api.dispatch-poll-shopify", "parentId": "root", "path": "api/dispatch-poll-shopify", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.dispatch-poll-shopify-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.dispatch-driver-location": { "id": "routes/api.dispatch-driver-location", "parentId": "root", "path": "api/dispatch-driver-location", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.dispatch-driver-location-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.loader-notifications": { "id": "routes/api.loader-notifications", "parentId": "root", "path": "api/loader-notifications", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.loader-notifications-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/api.loader-push-subscription": { "id": "routes/api.loader-push-subscription", "parentId": "root", "path": "api/loader-push-subscription", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/api.loader-push-subscription-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.shipping-estimate": { "id": "routes/app.api.shipping-estimate", "parentId": "root", "path": "app/api/shipping-estimate", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.shipping-estimate-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.carrier-service": { "id": "routes/app.api.carrier-service", "parentId": "root", "path": "app/api/carrier-service", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.carrier-service-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.create-draft-order": { "id": "routes/app.api.create-draft-order", "parentId": "root", "path": "app/api/create-draft-order", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.create-draft-order-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.delete-quote": { "id": "routes/app.api.delete-quote", "parentId": "root", "path": "app/api/delete-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.delete-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/app.api.update-quote": { "id": "routes/app.api.update-quote", "parentId": "root", "path": "app/api/update-quote", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/app.api.update-quote-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.products.update": { "id": "routes/webhooks.products.update", "parentId": "root", "path": "webhooks/products/update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.products.update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.scopes_update": { "id": "routes/webhooks.app.scopes_update", "parentId": "root", "path": "webhooks/app/scopes_update", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.scopes_update-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/webhooks.app.uninstalled": { "id": "routes/webhooks.app.uninstalled", "parentId": "root", "path": "webhooks/app/uninstalled", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": false, "module": "/assets/webhooks.app.uninstalled-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-31dd850e.js", "version": "31dd850e", "sri": void 0 };
 const assetsBuildDirectory = "build/client";
 const basename = "/";
 const future = { "unstable_optimizeDeps": false, "unstable_passThroughRequests": false, "unstable_subResourceIntegrity": false, "unstable_trailingSlashAwareDataRequests": false, "unstable_previewServerPrerendering": false, "v8_middleware": false, "v8_splitRouteModules": false, "v8_viteEnvironmentApi": false };
@@ -25440,13 +25617,21 @@ const routes = {
     caseSensitive: void 0,
     module: route4
   },
+  "routes/dispatch.export-day.xls": {
+    id: "routes/dispatch.export-day.xls",
+    parentId: "root",
+    path: "dispatch/export-day.xls",
+    index: void 0,
+    caseSensitive: void 0,
+    module: route5
+  },
   "routes/classic": {
     id: "routes/classic",
     parentId: "root",
     path: "classic",
     index: void 0,
     caseSensitive: void 0,
-    module: route5
+    module: route6
   },
   "routes/monitor": {
     id: "routes/monitor",
@@ -25454,7 +25639,7 @@ const routes = {
     path: "monitor",
     index: void 0,
     caseSensitive: void 0,
-    module: route6
+    module: route7
   },
   "routes/loader": {
     id: "routes/loader",
@@ -25462,7 +25647,7 @@ const routes = {
     path: "loader",
     index: void 0,
     caseSensitive: void 0,
-    module: route7
+    module: route8
   },
   "routes/calendar": {
     id: "routes/calendar",
@@ -25470,7 +25655,7 @@ const routes = {
     path: "calendar",
     index: void 0,
     caseSensitive: void 0,
-    module: route8
+    module: route9
   },
   "routes/allotment": {
     id: "routes/allotment",
@@ -25478,7 +25663,7 @@ const routes = {
     path: "allotment",
     index: void 0,
     caseSensitive: void 0,
-    module: route9
+    module: route10
   },
   "routes/calendar.ics": {
     id: "routes/calendar.ics",
@@ -25486,7 +25671,7 @@ const routes = {
     path: "calendar.ics",
     index: void 0,
     caseSensitive: void 0,
-    module: route10
+    module: route11
   },
   "routes/calendar-feed.$secret": {
     id: "routes/calendar-feed.$secret",
@@ -25494,7 +25679,7 @@ const routes = {
     path: "calendar-feed/:secret",
     index: void 0,
     caseSensitive: void 0,
-    module: route11
+    module: route12
   },
   "routes/calendar.rss": {
     id: "routes/calendar.rss",
@@ -25502,7 +25687,7 @@ const routes = {
     path: "calendar.rss",
     index: void 0,
     caseSensitive: void 0,
-    module: route12
+    module: route13
   },
   "routes/dispatch-driver": {
     id: "routes/dispatch-driver",
@@ -25510,7 +25695,7 @@ const routes = {
     path: "dispatch/driver",
     index: void 0,
     caseSensitive: void 0,
-    module: route13
+    module: route14
   },
   "routes/dispatch-driver-detail": {
     id: "routes/dispatch-driver-detail",
@@ -25518,7 +25703,7 @@ const routes = {
     path: "dispatch/driver/detail",
     index: void 0,
     caseSensitive: void 0,
-    module: route14
+    module: route15
   },
   "routes/mobile-dashboard": {
     id: "routes/mobile-dashboard",
@@ -25526,7 +25711,7 @@ const routes = {
     path: "mobile",
     index: void 0,
     caseSensitive: void 0,
-    module: route15
+    module: route16
   },
   "routes/login": {
     id: "routes/login",
@@ -25534,7 +25719,7 @@ const routes = {
     path: "login",
     index: void 0,
     caseSensitive: void 0,
-    module: route16
+    module: route17
   },
   "routes/change-password": {
     id: "routes/change-password",
@@ -25542,7 +25727,7 @@ const routes = {
     path: "change-password",
     index: void 0,
     caseSensitive: void 0,
-    module: route17
+    module: route18
   },
   "routes/settings": {
     id: "routes/settings",
@@ -25550,7 +25735,7 @@ const routes = {
     path: "settings",
     index: void 0,
     caseSensitive: void 0,
-    module: route18
+    module: route19
   },
   "routes/auth.login/route": {
     id: "routes/auth.login/route",
@@ -25558,7 +25743,7 @@ const routes = {
     path: "auth/login",
     index: void 0,
     caseSensitive: void 0,
-    module: route19
+    module: route20
   },
   "routes/auth.$": {
     id: "routes/auth.$",
@@ -25566,7 +25751,7 @@ const routes = {
     path: "auth/*",
     index: void 0,
     caseSensitive: void 0,
-    module: route20
+    module: route21
   },
   "routes/app": {
     id: "routes/app",
@@ -25574,7 +25759,7 @@ const routes = {
     path: "app",
     index: void 0,
     caseSensitive: void 0,
-    module: route21
+    module: route22
   },
   "routes/app._index": {
     id: "routes/app._index",
@@ -25582,7 +25767,7 @@ const routes = {
     path: void 0,
     index: true,
     caseSensitive: void 0,
-    module: route22
+    module: route23
   },
   "routes/app.admin": {
     id: "routes/app.admin",
@@ -25590,7 +25775,7 @@ const routes = {
     path: "admin",
     index: void 0,
     caseSensitive: void 0,
-    module: route23
+    module: route24
   },
   "routes/app.additional": {
     id: "routes/app.additional",
@@ -25598,7 +25783,7 @@ const routes = {
     path: "additional",
     index: void 0,
     caseSensitive: void 0,
-    module: route24
+    module: route25
   },
   "routes/app.custom-quote": {
     id: "routes/app.custom-quote",
@@ -25606,7 +25791,7 @@ const routes = {
     path: "custom-quote",
     index: void 0,
     caseSensitive: void 0,
-    module: route25
+    module: route26
   },
   "routes/app.quote-review": {
     id: "routes/app.quote-review",
@@ -25614,7 +25799,7 @@ const routes = {
     path: "quote-review",
     index: void 0,
     caseSensitive: void 0,
-    module: route26
+    module: route27
   },
   "routes/app.dispatch": {
     id: "routes/app.dispatch",
@@ -25622,7 +25807,15 @@ const routes = {
     path: "dispatch",
     index: void 0,
     caseSensitive: void 0,
-    module: route27
+    module: route28
+  },
+  "routes/app.dispatch-export-day.xls": {
+    id: "routes/app.dispatch-export-day.xls",
+    parentId: "routes/app",
+    path: "dispatch/export-day.xls",
+    index: void 0,
+    caseSensitive: void 0,
+    module: route29
   },
   "routes/app.classic": {
     id: "routes/app.classic",
@@ -25630,7 +25823,7 @@ const routes = {
     path: "classic",
     index: void 0,
     caseSensitive: void 0,
-    module: route28
+    module: route30
   },
   "routes/app.monitor": {
     id: "routes/app.monitor",
@@ -25638,7 +25831,7 @@ const routes = {
     path: "monitor",
     index: void 0,
     caseSensitive: void 0,
-    module: route29
+    module: route31
   },
   "routes/app.loader": {
     id: "routes/app.loader",
@@ -25646,7 +25839,7 @@ const routes = {
     path: "loader",
     index: void 0,
     caseSensitive: void 0,
-    module: route30
+    module: route32
   },
   "routes/app.calendar": {
     id: "routes/app.calendar",
@@ -25654,7 +25847,7 @@ const routes = {
     path: "calendar",
     index: void 0,
     caseSensitive: void 0,
-    module: route31
+    module: route33
   },
   "routes/app.allotment": {
     id: "routes/app.allotment",
@@ -25662,7 +25855,7 @@ const routes = {
     path: "allotment",
     index: void 0,
     caseSensitive: void 0,
-    module: route32
+    module: route34
   },
   "routes/app.dispatch-driver": {
     id: "routes/app.dispatch-driver",
@@ -25670,7 +25863,7 @@ const routes = {
     path: "dispatch/driver",
     index: void 0,
     caseSensitive: void 0,
-    module: route33
+    module: route35
   },
   "routes/app.dispatch-driver-detail": {
     id: "routes/app.dispatch-driver-detail",
@@ -25678,7 +25871,7 @@ const routes = {
     path: "dispatch/driver/detail",
     index: void 0,
     caseSensitive: void 0,
-    module: route34
+    module: route36
   },
   "routes/app.mobile": {
     id: "routes/app.mobile",
@@ -25686,7 +25879,7 @@ const routes = {
     path: "mobile",
     index: void 0,
     caseSensitive: void 0,
-    module: route35
+    module: route37
   },
   "routes/api.shipping-estimate": {
     id: "routes/api.shipping-estimate",
@@ -25694,7 +25887,7 @@ const routes = {
     path: "api/shipping-estimate",
     index: void 0,
     caseSensitive: void 0,
-    module: route36
+    module: route38
   },
   "routes/api.carrier-service": {
     id: "routes/api.carrier-service",
@@ -25702,7 +25895,7 @@ const routes = {
     path: "api/carrier-service",
     index: void 0,
     caseSensitive: void 0,
-    module: route37
+    module: route39
   },
   "routes/api.sync-products": {
     id: "routes/api.sync-products",
@@ -25710,7 +25903,7 @@ const routes = {
     path: "api/sync-products",
     index: void 0,
     caseSensitive: void 0,
-    module: route38
+    module: route40
   },
   "routes/api.create-draft-order": {
     id: "routes/api.create-draft-order",
@@ -25718,7 +25911,7 @@ const routes = {
     path: "api/create-draft-order",
     index: void 0,
     caseSensitive: void 0,
-    module: route39
+    module: route41
   },
   "routes/api.delete-quote": {
     id: "routes/api.delete-quote",
@@ -25726,7 +25919,7 @@ const routes = {
     path: "api/delete-quote",
     index: void 0,
     caseSensitive: void 0,
-    module: route40
+    module: route42
   },
   "routes/api.update-quote": {
     id: "routes/api.update-quote",
@@ -25734,7 +25927,7 @@ const routes = {
     path: "api/update-quote",
     index: void 0,
     caseSensitive: void 0,
-    module: route41
+    module: route43
   },
   "routes/api.dispatch-poll-mailbox": {
     id: "routes/api.dispatch-poll-mailbox",
@@ -25742,7 +25935,7 @@ const routes = {
     path: "api/dispatch-poll-mailbox",
     index: void 0,
     caseSensitive: void 0,
-    module: route42
+    module: route44
   },
   "routes/api.dispatch-poll-shopify": {
     id: "routes/api.dispatch-poll-shopify",
@@ -25750,7 +25943,7 @@ const routes = {
     path: "api/dispatch-poll-shopify",
     index: void 0,
     caseSensitive: void 0,
-    module: route43
+    module: route45
   },
   "routes/api.dispatch-driver-location": {
     id: "routes/api.dispatch-driver-location",
@@ -25758,7 +25951,7 @@ const routes = {
     path: "api/dispatch-driver-location",
     index: void 0,
     caseSensitive: void 0,
-    module: route44
+    module: route46
   },
   "routes/api.loader-notifications": {
     id: "routes/api.loader-notifications",
@@ -25766,7 +25959,7 @@ const routes = {
     path: "api/loader-notifications",
     index: void 0,
     caseSensitive: void 0,
-    module: route45
+    module: route47
   },
   "routes/api.loader-push-subscription": {
     id: "routes/api.loader-push-subscription",
@@ -25774,7 +25967,7 @@ const routes = {
     path: "api/loader-push-subscription",
     index: void 0,
     caseSensitive: void 0,
-    module: route46
+    module: route48
   },
   "routes/app.api.shipping-estimate": {
     id: "routes/app.api.shipping-estimate",
@@ -25782,7 +25975,7 @@ const routes = {
     path: "app/api/shipping-estimate",
     index: void 0,
     caseSensitive: void 0,
-    module: route47
+    module: route49
   },
   "routes/app.api.carrier-service": {
     id: "routes/app.api.carrier-service",
@@ -25790,7 +25983,7 @@ const routes = {
     path: "app/api/carrier-service",
     index: void 0,
     caseSensitive: void 0,
-    module: route48
+    module: route50
   },
   "routes/app.api.create-draft-order": {
     id: "routes/app.api.create-draft-order",
@@ -25798,7 +25991,7 @@ const routes = {
     path: "app/api/create-draft-order",
     index: void 0,
     caseSensitive: void 0,
-    module: route49
+    module: route51
   },
   "routes/app.api.delete-quote": {
     id: "routes/app.api.delete-quote",
@@ -25806,7 +25999,7 @@ const routes = {
     path: "app/api/delete-quote",
     index: void 0,
     caseSensitive: void 0,
-    module: route50
+    module: route52
   },
   "routes/app.api.update-quote": {
     id: "routes/app.api.update-quote",
@@ -25814,7 +26007,7 @@ const routes = {
     path: "app/api/update-quote",
     index: void 0,
     caseSensitive: void 0,
-    module: route51
+    module: route53
   },
   "routes/webhooks.products.update": {
     id: "routes/webhooks.products.update",
@@ -25822,7 +26015,7 @@ const routes = {
     path: "webhooks/products/update",
     index: void 0,
     caseSensitive: void 0,
-    module: route52
+    module: route54
   },
   "routes/webhooks.app.scopes_update": {
     id: "routes/webhooks.app.scopes_update",
@@ -25830,7 +26023,7 @@ const routes = {
     path: "webhooks/app/scopes_update",
     index: void 0,
     caseSensitive: void 0,
-    module: route53
+    module: route55
   },
   "routes/webhooks.app.uninstalled": {
     id: "routes/webhooks.app.uninstalled",
@@ -25838,7 +26031,7 @@ const routes = {
     path: "webhooks/app/uninstalled",
     index: void 0,
     caseSensitive: void 0,
-    module: route54
+    module: route56
   }
 };
 const allowedActionOrigins = false;
