@@ -298,11 +298,15 @@ async function fetchShopifyOrders(shop: string, limit: number, query: string) {
   const json = await response.json();
   const errors = json?.errors || [];
   if (errors.length) {
-    throw new Error(
-      errors
-        .map((error: { message?: string }) => error.message || "Shopify order query failed.")
-        .join("; "),
-    );
+    const message = errors
+      .map((error: { message?: string }) => error.message || "Shopify order query failed.")
+      .join("; ");
+    if (/access denied/i.test(message) && /\border(s)?\b/i.test(message)) {
+      throw new Error(
+        "Shopify denied access to orders. Add read_orders to the contractor app SCOPES/access_scopes, redeploy the Shopify app config, then reinstall or reauthorize the app in Shopify so the offline token gets the new scope.",
+      );
+    }
+    throw new Error(message);
   }
 
   return (json?.data?.orders?.nodes || []) as ShopifyOrder[];
