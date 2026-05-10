@@ -840,7 +840,8 @@ export default function ClassicDispatchPage() {
   const allotmentHref = isEmbeddedRoute ? "/app/allotment" : "/allotment";
   const loaderHref = isEmbeddedRoute ? "/app/loader" : "/loader";
   const dispatchHref = isEmbeddedRoute ? "/app/dispatch" : "/dispatch";
-  const dailyExportHref = `${dispatchHref}/export-day.xls?date=${getTodayDateInputValue()}`;
+  const dailyExportPath = `${dispatchHref}/export-day.xls`;
+  const todayDateInputValue = getTodayDateInputValue();
   const quoteHref = isEmbeddedRoute ? "/app/custom-quote" : "/custom-quote";
   const driverHref = isEmbeddedRoute ? "/app/dispatch/driver" : "/dispatch/driver";
   const mobileHref = isEmbeddedRoute ? "/app/mobile" : "/mobile";
@@ -1683,9 +1684,16 @@ export default function ClassicDispatchPage() {
             <input type="hidden" name="intent" value="poll-mailbox" />
             <button type="submit" style={styles.outlineButton}>Import Mail</button>
           </Form>
-          <a href={dailyExportHref} style={styles.outlineButton}>
-            Export Today
-          </a>
+          <form method="get" action={dailyExportPath} style={styles.exportForm}>
+            <input
+              type="date"
+              name="date"
+              defaultValue={todayDateInputValue}
+              style={styles.exportDateInput}
+              aria-label="Export delivery date"
+            />
+            <button type="submit" style={styles.outlineButton}>Export Shopify</button>
+          </form>
           {canManageDispatch ? (
             <>
               <label style={styles.manualRouteToggle}>
@@ -2353,6 +2361,22 @@ const styles: Record<string, any> = {
   },
   topForm: { marginLeft: "auto" },
   compactTopForm: { marginLeft: 0 },
+  exportForm: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    marginLeft: 0,
+  },
+  exportDateInput: {
+    height: 34,
+    width: 136,
+    borderRadius: 999,
+    border: "1px solid var(--classic-border)",
+    background: "var(--classic-input-bg)",
+    color: "var(--classic-text)",
+    padding: "0 10px",
+    fontWeight: 800,
+  },
   company: { marginLeft: 12, fontWeight: 800, whiteSpace: "nowrap" },
   manualRouteToggle: {
     height: 34,

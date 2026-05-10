@@ -47,6 +47,14 @@ function formatSheetDate(date: Date) {
   return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
 }
 
+function getOrderImportDate(order: DispatchOrder) {
+  const value = order.created_at || "";
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+}
+
 function escapeCell(value: string | number | null | undefined) {
   return String(value ?? "")
     .replace(/\r?\n/g, " ")
@@ -126,13 +134,17 @@ function buildSpreadsheetRows(orders: DispatchOrder[], requestedDate: Date) {
       order.material,
       getQuantity(order),
       "DELIVERY",
-      formatSheetDate(requestedDate),
+      formatSheetDate(parseRequestedDate(order.requestedWindow) || requestedDate),
       getTimePreference(order),
       getSheetStatus(order),
     ]);
 }
 
 function buildTsv(orders: DispatchOrder[], requestedDate: Date) {
+  if (!orders.length) {
+    return `No Shopify-imported dispatch orders found for ${formatSheetDate(requestedDate)}`;
+  }
+
   return buildSpreadsheetRows(orders, requestedDate)
     .map((row) => row.map(escapeCell).join("\t"))
     .join("\r\n");
@@ -148,8 +160,9 @@ export async function loader({ request }: { request: Request }) {
   const requestedKey = dateKey(requestedDate);
   const orders = (await getDispatchOrders()).filter((order) => {
     if (order.status === "cancelled") return false;
-    const orderDate = parseRequestedDate(order.requestedWindow);
-    return orderDate ? dateKey(orderDate) === requestedKey : false;
+    if (!String(order.mailboxMessageId || "").startsWith("shopify:")) return false;
+    const importDate = getOrderImportDate(order);
+    return importDate ? dateKey(importDate) === requestedKey : false;
   });
 
   return new Response(buildTsv(orders, requestedDate), {
