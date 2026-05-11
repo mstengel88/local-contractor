@@ -575,6 +575,7 @@ export default function DispatchMonitorPage() {
           <Link to={dispatchViewHref("scheduled")} style={styles.navLink}>Scheduled</Link>
           {canAccess("manageDispatch") ? <Link to={dispatchViewHref("routes")} style={styles.navLink}>Routes</Link> : null}
           <Link to={dispatchViewHref("delivered")} style={styles.navLink}>Delivered</Link>
+          <a href="https://www.ghstickets.info" style={styles.navLink}>Ticket Creator</a>
         </nav>
         <div style={{ flex: 1 }} />
         <div style={navCollapsed ? styles.hidden : styles.footerNav}>

@@ -1653,6 +1653,7 @@ export default function ClassicDispatchPage() {
           {canAccess("manageDispatch") ? <Link to={dispatchViewHref("trucks")} style={styles.classicNavLink}>Trucks</Link> : null}
           {canAccess("manageDispatch") ? <Link to={dispatchViewHref("employees")} style={styles.classicNavLink}>Employees</Link> : null}
           <Link to={dispatchViewHref("delivered")} style={styles.classicNavLink}>Delivered</Link>
+          <a href="https://www.ghstickets.info" style={styles.classicNavLink}>Ticket Creator</a>
         </nav>
         <div style={{ flex: 1 }} />
         <div style={navCollapsed ? styles.collapsedOnlyHidden : styles.classicFooterNav}>

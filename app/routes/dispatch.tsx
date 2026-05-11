@@ -2906,6 +2906,7 @@ export default function DispatchPage() {
               <a href={dispatchViewHref("employees")} style={styles.sideNavLink(activeView === "employees")}>Employees</a>
             ) : null}
             <a href={dispatchViewHref("delivered")} style={styles.sideNavLink(activeView === "delivered")}>Delivered</a>
+            <a href="https://www.ghstickets.info" style={styles.sideNavLink(false)}>Ticket Creator</a>
           </nav>
 
           <div style={navCollapsed ? styles.collapsedOnlyHidden : styles.sidebarFooter}>

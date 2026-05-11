@@ -305,6 +305,7 @@ export default function AllotmentPage() {
           {canAccess("manageDispatch") ? <Link to={dispatchViewHref("trucks")} style={styles.navLink}>Trucks</Link> : null}
           {canAccess("manageDispatch") ? <Link to={dispatchViewHref("employees")} style={styles.navLink}>Employees</Link> : null}
           <Link to={dispatchViewHref("delivered")} style={styles.navLink}>Delivered</Link>
+          <a href="https://www.ghstickets.info" style={styles.navLink}>Ticket Creator</a>
         </nav>
         <div style={{ flex: 1 }} />
         <div style={navCollapsed ? styles.collapsedOnlyHidden : styles.footerNav}>
