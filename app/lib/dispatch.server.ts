@@ -732,7 +732,7 @@ export function detectTimePreference(text: string) {
   if (/\bmorning\b|\bam\b|a\.m\./i.test(text)) return "Morning";
   if (/\bafternoon\b|\bnoon\b|\bpm\b|p\.m\./i.test(text)) return "Afternoon";
   if (/\bevening\b|\bnight\b/i.test(text)) return "Evening";
-  return "";
+  return "Anytime";
 }
 
 export function parseDispatchEmail(raw: string) {
@@ -1082,7 +1082,7 @@ function normalizeOrder(row: any): DispatchOrder {
   const derivedTimePreference =
     row.time_preference ||
     detectTimePreference(`${requestedWindow}\n${notes}\n${rawEmail || ""}`) ||
-    null;
+    "Anytime";
 
   return {
     id: String(row.id),

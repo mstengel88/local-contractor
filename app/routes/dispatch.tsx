@@ -496,7 +496,7 @@ async function assignOrderToRoute({
       quantity: splitQuantity,
       unit: order.unit,
       requestedWindow: order.requestedWindow,
-      timePreference: order.timePreference || "",
+      timePreference: order.timePreference || "Anytime",
       truckPreference: order.truckPreference || "",
       notes: [order.notes, splitNote].filter(Boolean).join("\n"),
       emailSubject: order.emailSubject || undefined,
@@ -1397,7 +1397,7 @@ export async function action({ request }: any) {
           String(form.get("requestedWindow") || ""),
         ),
         timePreference:
-          String(form.get("timePreference") || "").trim() ||
+          String(form.get("timePreference") || "Anytime").trim() ||
           detectTimePreference(String(form.get("notes") || "")),
         truckPreference: String(form.get("truckPreference") || "").trim(),
         notes: String(form.get("notes") || "").trim(),
@@ -1536,7 +1536,7 @@ export async function action({ request }: any) {
           formatRequestedWindow(String(form.get("requestedWindow") || "")) ||
           "Needs scheduling",
         timePreference:
-          String(form.get("timePreference") || "").trim() ||
+          String(form.get("timePreference") || "Anytime").trim() ||
           detectTimePreference(String(form.get("notes") || "")),
         truckPreference: String(form.get("truckPreference") || "").trim() || null,
         notes: String(form.get("notes") || "").trim(),
@@ -3174,8 +3174,8 @@ export default function DispatchPage() {
                       </div>
                       <div>
                         <label style={styles.label}>Time Preference</label>
-                        <select name="timePreference" defaultValue={selectedOrder.timePreference || ""} style={styles.input}>
-                          <option value="">Infer from notes</option>
+                        <select name="timePreference" defaultValue={selectedOrder.timePreference || "Anytime"} style={styles.input}>
+                          <option value="Anytime">Anytime</option>
                           <option value="Morning">Morning</option>
                           <option value="Afternoon">Afternoon</option>
                           <option value="Evening">Evening</option>
@@ -3342,8 +3342,8 @@ export default function DispatchPage() {
                   </div>
                   <div>
                     <label style={styles.label}>Time Preference</label>
-                    <select name="timePreference" style={styles.input}>
-                      <option value="">Infer from notes</option>
+                    <select name="timePreference" defaultValue="Anytime" style={styles.input}>
+                      <option value="Anytime">Anytime</option>
                       <option value="Morning">Morning</option>
                       <option value="Afternoon">Afternoon</option>
                       <option value="Evening">Evening</option>
@@ -3463,10 +3463,10 @@ export default function DispatchPage() {
                       <label style={styles.label}>Time Preference</label>
                       <select
                         name="timePreference"
-                        defaultValue={selectedOrder.timePreference || ""}
+                        defaultValue={selectedOrder.timePreference || "Anytime"}
                         style={styles.input}
                       >
-                        <option value="">Infer from notes</option>
+                        <option value="Anytime">Anytime</option>
                         <option value="Morning">Morning</option>
                         <option value="Afternoon">Afternoon</option>
                         <option value="Evening">Evening</option>
@@ -3769,7 +3769,7 @@ export default function DispatchPage() {
                   <div>
                     <div style={styles.detailLabel}>Time Preference</div>
                     <div style={styles.detailValue}>
-                      {selectedOrder.timePreference || "No preference"}
+                      {selectedOrder.timePreference || "Anytime"}
                     </div>
                   </div>
                   <div>
@@ -4718,7 +4718,7 @@ export default function DispatchPage() {
                     <div>
                       <div style={styles.detailLabel}>Time Preference</div>
                       <div style={styles.detailValue}>
-                        {selectedOrder.timePreference || "No preference"}
+                        {selectedOrder.timePreference || "Anytime"}
                       </div>
                     </div>
                     <div>

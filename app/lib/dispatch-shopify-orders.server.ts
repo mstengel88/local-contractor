@@ -11,6 +11,13 @@ type ShopifyAttribute = {
   value?: string | null;
 };
 
+type ShopifyMetafield = {
+  namespace?: string | null;
+  key?: string | null;
+  value?: string | null;
+  type?: string | null;
+};
+
 type ShopifyAddress = {
   name?: string | null;
   address1?: string | null;
@@ -52,6 +59,9 @@ type ShopifyOrder = {
   email?: string | null;
   phone?: string | null;
   customAttributes?: ShopifyAttribute[] | null;
+  metafields?: {
+    nodes?: ShopifyMetafield[];
+  } | null;
   customer?: {
     displayName?: string | null;
     email?: string | null;
@@ -76,6 +86,15 @@ export type DispatchShopifyImportStatus = {
 
 function normalizeWhitespace(value: string) {
   return value.replace(/\s+/g, " ").trim();
+}
+
+function normalizeLookupKey(value?: string | null) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function cleanOrderNumber(value?: string | null) {
@@ -133,6 +152,60 @@ function getAttributeText(attributes?: ShopifyAttribute[] | null) {
     .join("\n");
 }
 
+function getMetafieldText(metafields?: { nodes?: ShopifyMetafield[] } | null) {
+  return (metafields?.nodes || [])
+    .map((metafield) =>
+      [metafield.namespace, metafield.key, metafield.value]
+        .filter(Boolean)
+        .join(": "),
+    )
+    .filter(Boolean)
+    .join("\n");
+}
+
+function findOrderMetafieldValue(
+  order: ShopifyOrder,
+  matcher: (lookupKey: string, metafield: ShopifyMetafield) => boolean,
+) {
+  const match = (order.metafields?.nodes || []).find((metafield) => {
+    const lookupKey = normalizeLookupKey(
+      [metafield.namespace, metafield.key].filter(Boolean).join(" "),
+    );
+    return matcher(lookupKey, metafield);
+  });
+
+  return normalizeWhitespace(String(match?.value || ""));
+}
+
+function getPreferredDeliveryMetafield(order: ShopifyOrder) {
+  return findOrderMetafieldValue(order, (lookupKey) => {
+    const hasDelivery = /\bdelivery\b/.test(lookupKey);
+    const hasPickup = /\bpick\s*up\b|\bpickup\b/.test(lookupKey);
+    const hasPreferred = /\bpreferred\b|\bpreference\b|\brequested\b/.test(lookupKey);
+
+    return (
+      (hasPreferred && (hasDelivery || hasPickup)) ||
+      /\bpreferred delivery\b/.test(lookupKey) ||
+      /\bdelivery pick up\b/.test(lookupKey) ||
+      /\bpick up date\b/.test(lookupKey)
+    );
+  });
+}
+
+function getOrderNoteMetafield(order: ShopifyOrder) {
+  return findOrderMetafieldValue(order, (lookupKey) => {
+    const hasNote = /\bnote\b|\binstruction\b|\bdrop\b/.test(lookupKey);
+    const hasOrder = /\border\b/.test(lookupKey);
+
+    return (
+      (hasOrder && hasNote) ||
+      /\border note\b/.test(lookupKey) ||
+      /\bdelivery note\b/.test(lookupKey) ||
+      /\bdelivery instruction\b/.test(lookupKey)
+    );
+  });
+}
+
 function getLineMaterial(lineItem: ShopifyOrderLineItem) {
   const productTitle = String(lineItem.variant?.product?.title || "").trim();
   const title = String(lineItem.title || "").trim();
@@ -150,15 +223,19 @@ function shouldSkipLineItem(material: string) {
 }
 
 function getLineNotes(order: ShopifyOrder, lineItem: ShopifyOrderLineItem) {
+  const orderNote = getOrderNoteMetafield(order) || normalizeWhitespace(order.note || "");
+
+  if (orderNote) return orderNote;
+
   const parts = [
     `Imported from Shopify order ${order.name || order.legacyResourceId || order.id}.`,
-    order.note,
     order.tags?.length ? `Tags: ${order.tags.join(", ")}` : "",
     lineItem.sku || lineItem.variant?.sku ? `SKU: ${lineItem.sku || lineItem.variant?.sku}` : "",
     lineItem.vendor || lineItem.variant?.product?.vendor
       ? `Vendor: ${lineItem.vendor || lineItem.variant?.product?.vendor}`
       : "",
     getAttributeText(order.customAttributes),
+    getMetafieldText(order.metafields),
     getAttributeText(lineItem.customAttributes),
   ];
 
@@ -192,6 +269,34 @@ function normalizeDate(value: string) {
     return `${month}/${day}/${year}`;
   }
 
+  const monthNameMatch = trimmed.match(
+    /^(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+([0-3]?\d),?\s+((?:20)?\d{2})$/i,
+  );
+  if (monthNameMatch) {
+    const monthIndex = [
+      "jan",
+      "feb",
+      "mar",
+      "apr",
+      "may",
+      "jun",
+      "jul",
+      "aug",
+      "sep",
+      "oct",
+      "nov",
+      "dec",
+    ].findIndex((month) =>
+      monthNameMatch[1].toLowerCase().startsWith(month),
+    );
+    const month = String(monthIndex + 1).padStart(2, "0");
+    const day = monthNameMatch[2].padStart(2, "0");
+    const year =
+      monthNameMatch[3].length === 2 ? `20${monthNameMatch[3]}` : monthNameMatch[3];
+
+    if (monthIndex >= 0) return `${month}/${day}/${year}`;
+  }
+
   const match = trimmed.match(/^([0-1]?\d)[/-]([0-3]?\d)[/-]((?:20)?\d{2})$/);
   if (!match) return trimmed;
 
@@ -202,10 +307,16 @@ function normalizeDate(value: string) {
 }
 
 function getRequestedWindow(order: ShopifyOrder, lineItem: ShopifyOrderLineItem) {
+  const preferredDelivery = getPreferredDeliveryMetafield(order);
+  if (preferredDelivery) {
+    return normalizeDate(preferredDelivery);
+  }
+
   const text = [
     order.note,
     order.tags?.join(" "),
     getAttributeText(order.customAttributes),
+    getMetafieldText(order.metafields),
     getAttributeText(lineItem.customAttributes),
   ]
     .filter(Boolean)
@@ -219,6 +330,7 @@ function getOrderText(order: ShopifyOrder, lineItem: ShopifyOrderLineItem) {
     order.note,
     order.tags?.join(" "),
     getAttributeText(order.customAttributes),
+    getMetafieldText(order.metafields),
     getAttributeText(lineItem.customAttributes),
   ]
     .filter(Boolean)
@@ -245,6 +357,14 @@ async function fetchShopifyOrders(shop: string, limit: number, query: string) {
             customAttributes {
               key
               value
+            }
+            metafields(first: 25) {
+              nodes {
+                namespace
+                key
+                value
+                type
+              }
             }
             customer {
               displayName

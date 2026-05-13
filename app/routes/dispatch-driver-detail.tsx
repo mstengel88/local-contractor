@@ -129,7 +129,7 @@ export default function DispatchDriverDetailPage() {
           <Info label="Address" value={`${order.address}, ${order.city}`} />
           <Info label="Load" value={`${order.quantity} ${order.unit} ${order.material}`} />
           <Info label="Requested" value={order.requestedWindow || "Not set"} />
-          <Info label="Time Preference" value={order.timePreference || "No preference"} />
+          <Info label="Time Preference" value={order.timePreference || "Anytime"} />
           <Info label="Travel Time" value={order.travelSummary || "Not calculated"} />
           <Info label="ETA" value={order.eta || "Not set"} />
           <Info label="Stop" value={order.stopSequence ? `Stop ${order.stopSequence}` : "Unassigned"} />
