@@ -100,7 +100,12 @@ function extractPhone(order: DispatchOrder) {
 
 function getCity(order: DispatchOrder) {
   const city = String(order.city || "").trim();
-  if (city) return city.split(",")[0].trim();
+  if (city) {
+    return city
+      .split(",")[0]
+      .replace(/\s+[A-Z]{2}\s+\d{5}(?:-\d{4})?$/i, "")
+      .trim();
+  }
 
   const parts = String(order.address || "")
     .split(",")
@@ -220,7 +225,7 @@ function buildExcelHtml(orders: DispatchOrder[], requestedDate: Date) {
         text-align: center;
         vertical-align: middle;
         white-space: nowrap;
-        background: #dbe8f7;
+        background: #fff;
         color: #000;
         mso-number-format: "\\@";
       }
