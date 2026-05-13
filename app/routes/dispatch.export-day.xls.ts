@@ -80,6 +80,14 @@ function escapeCell(value: string | number | null | undefined) {
     .trim();
 }
 
+function escapeHtml(value: string | number | null | undefined) {
+  return escapeCell(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function cleanOrderNumber(order: DispatchOrder) {
   return String(order.orderNumber || order.id || "").replace(/^#/, "").trim();
 }
@@ -167,6 +175,76 @@ function buildTsv(orders: DispatchOrder[], requestedDate: Date) {
     .join("\r\n");
 }
 
+function getStatusClass(status: string) {
+  if (status === "DELIVERED") return "status-delivered";
+  if (status === "PENDING DISPATCH") return "status-pending";
+  return "status-dispatched";
+}
+
+function buildExcelHtml(orders: DispatchOrder[], requestedDate: Date) {
+  if (!orders.length) {
+    return `<!doctype html>
+<html>
+  <head><meta charset="utf-8" /></head>
+  <body>No Shopify-imported dispatch orders found for ${escapeHtml(formatSheetDate(requestedDate))}</body>
+</html>`;
+  }
+
+  const rows = buildSpreadsheetRows(orders, requestedDate)
+    .map((row) => {
+      const status = String(row[9] || "");
+      return `<tr>${row
+        .map((cell, index) => {
+          const className = index === 9 ? getStatusClass(status) : "";
+          return `<td class="${className}">${escapeHtml(cell)}</td>`;
+        })
+        .join("")}</tr>`;
+    })
+    .join("\n");
+
+  return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      table {
+        border-collapse: collapse;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 11pt;
+      }
+      td {
+        border: 1px solid #000;
+        padding: 2px 8px;
+        height: 20px;
+        font-weight: 700;
+        text-align: center;
+        vertical-align: middle;
+        white-space: nowrap;
+        background: #dbe8f7;
+        color: #000;
+        mso-number-format: "\\@";
+      }
+      td:nth-child(1) { min-width: 90px; }
+      td:nth-child(2) { min-width: 220px; }
+      td:nth-child(3) { min-width: 120px; }
+      td:nth-child(4) { min-width: 150px; }
+      td:nth-child(5) { min-width: 320px; }
+      td:nth-child(6) { min-width: 120px; }
+      td:nth-child(7) { min-width: 90px; }
+      td:nth-child(8) { min-width: 110px; }
+      td:nth-child(9) { min-width: 135px; }
+      td:nth-child(10) { min-width: 220px; }
+      .status-dispatched { background: #ffe600; }
+      .status-delivered { background: #00ff00; }
+      .status-pending { background: #ff00ff; }
+    </style>
+  </head>
+  <body>
+    <table>${rows}</table>
+  </body>
+</html>`;
+}
+
 export async function loader({ request }: { request: Request }) {
   const allowed = await hasAdminQuotePermissionAccess(request, "dispatch");
   if (!allowed) return new Response("Unauthorized", { status: 401 });
@@ -182,10 +260,10 @@ export async function loader({ request }: { request: Request }) {
     return importDate ? timestampDateKey(importDate) === requestedKey : false;
   });
 
-  return new Response(buildTsv(orders, requestedDate), {
+  return new Response(buildExcelHtml(orders, requestedDate), {
     headers: {
-      "Content-Type": "text/tab-separated-values; charset=utf-8",
-      "Content-Disposition": `attachment; filename="dispatch-orders-${requestedKey}.tsv"`,
+      "Content-Type": "application/vnd.ms-excel; charset=utf-8",
+      "Content-Disposition": `attachment; filename="dispatch-orders-${requestedKey}.xls"`,
       "Cache-Control": "no-store",
     },
   });

@@ -4811,7 +4811,7 @@ const route3 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProper
   default: quoteReview,
   loader: loader$p
 }, Symbol.toStringTag, { value: "Module" }));
-function escapeHtml(value) {
+function escapeHtml$1(value) {
   return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 function getOrderDisplayNumber$3(order) {
@@ -4881,7 +4881,7 @@ function buildDeliveryConfirmationEmail({
           </td>
           <td style="padding-left:16px;vertical-align:middle;">
             <div style="border:2px solid #ffffff;padding:12px 14px;font-size:20px;font-weight:900;color:#ffffff;">
-              Delivery Confirmation ${escapeHtml(orderNumber)}
+              Delivery Confirmation ${escapeHtml$1(orderNumber)}
             </div>
           </td>
         </tr>
@@ -4951,19 +4951,19 @@ function buildDeliveryConfirmationEmail({
   return { subject, html, text };
 }
 function sectionTitle(title) {
-  return `<div style="margin-top:24px;background:#2368aa;color:#9ad20f;text-align:center;font-weight:900;padding:8px 10px;">${escapeHtml(title)}</div>`;
+  return `<div style="margin-top:24px;background:#2368aa;color:#9ad20f;text-align:center;font-weight:900;padding:8px 10px;">${escapeHtml$1(title)}</div>`;
 }
 function fieldCell(label, value) {
   return `<td style="width:50%;border:2px solid #ffffff;padding:8px 10px;vertical-align:top;">
-    <div style="color:#9ad20f;font-size:12px;font-weight:900;">${escapeHtml(label)}</div>
-    <div style="color:#ffffff;font-size:14px;line-height:1.45;margin-top:4px;">${escapeHtml(value || " ")}</div>
+    <div style="color:#9ad20f;font-size:12px;font-weight:900;">${escapeHtml$1(label)}</div>
+    <div style="color:#ffffff;font-size:14px;line-height:1.45;margin-top:4px;">${escapeHtml$1(value || " ")}</div>
   </td>`;
 }
 function tableHeader(label) {
-  return `<th style="background:#2368aa;color:#9ad20f;border:1px solid #ffffff;padding:8px 6px;font-size:12px;line-height:1.2;text-align:center;">${escapeHtml(label)}</th>`;
+  return `<th style="background:#2368aa;color:#9ad20f;border:1px solid #ffffff;padding:8px 6px;font-size:12px;line-height:1.2;text-align:center;">${escapeHtml$1(label)}</th>`;
 }
 function tableCell(value) {
-  return `<td style="background:#ffffff;color:#000000;border:1px solid #777;padding:8px 6px;font-size:13px;text-align:center;">${escapeHtml(value || " ")}</td>`;
+  return `<td style="background:#ffffff;color:#000000;border:1px solid #777;padding:8px 6px;font-size:13px;text-align:center;">${escapeHtml$1(value || " ")}</td>`;
 }
 async function sendDeliveryConfirmationEmail({
   order,
@@ -13290,6 +13290,9 @@ function getOrderImportDate(order) {
 function escapeCell(value) {
   return String(value ?? "").replace(/\r?\n/g, " ").replace(/\t/g, " ").replace(/\s{2,}/g, " ").trim();
 }
+function escapeHtml(value) {
+  return escapeCell(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
 function cleanOrderNumber(order) {
   return String(order.orderNumber || order.id || "").replace(/^#/, "").trim();
 }
@@ -13339,11 +13342,67 @@ function orderSortValue(order) {
 function buildSpreadsheetRows(orders, requestedDate) {
   return orders.slice().sort((a, b) => orderSortValue(a) - orderSortValue(b)).map((order) => [cleanOrderNumber(order), order.customer, extractPhone$2(order), getCity(order), order.material, getQuantity(order), "DELIVERY", formatSheetDate(parseRequestedDate$5(order.requestedWindow) || requestedDate), getTimePreference(order), getSheetStatus(order)]);
 }
-function buildTsv(orders, requestedDate) {
+function getStatusClass(status) {
+  if (status === "DELIVERED") return "status-delivered";
+  if (status === "PENDING DISPATCH") return "status-pending";
+  return "status-dispatched";
+}
+function buildExcelHtml(orders, requestedDate) {
   if (!orders.length) {
-    return `No Shopify-imported dispatch orders found for ${formatSheetDate(requestedDate)}`;
+    return `<!doctype html>
+<html>
+  <head><meta charset="utf-8" /></head>
+  <body>No Shopify-imported dispatch orders found for ${escapeHtml(formatSheetDate(requestedDate))}</body>
+</html>`;
   }
-  return buildSpreadsheetRows(orders, requestedDate).map((row) => row.map(escapeCell).join("	")).join("\r\n");
+  const rows = buildSpreadsheetRows(orders, requestedDate).map((row) => {
+    const status = String(row[9] || "");
+    return `<tr>${row.map((cell, index) => {
+      const className = index === 9 ? getStatusClass(status) : "";
+      return `<td class="${className}">${escapeHtml(cell)}</td>`;
+    }).join("")}</tr>`;
+  }).join("\n");
+  return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      table {
+        border-collapse: collapse;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 11pt;
+      }
+      td {
+        border: 1px solid #000;
+        padding: 2px 8px;
+        height: 20px;
+        font-weight: 700;
+        text-align: center;
+        vertical-align: middle;
+        white-space: nowrap;
+        background: #dbe8f7;
+        color: #000;
+        mso-number-format: "\\@";
+      }
+      td:nth-child(1) { min-width: 90px; }
+      td:nth-child(2) { min-width: 220px; }
+      td:nth-child(3) { min-width: 120px; }
+      td:nth-child(4) { min-width: 150px; }
+      td:nth-child(5) { min-width: 320px; }
+      td:nth-child(6) { min-width: 120px; }
+      td:nth-child(7) { min-width: 90px; }
+      td:nth-child(8) { min-width: 110px; }
+      td:nth-child(9) { min-width: 135px; }
+      td:nth-child(10) { min-width: 220px; }
+      .status-dispatched { background: #ffe600; }
+      .status-delivered { background: #00ff00; }
+      .status-pending { background: #ff00ff; }
+    </style>
+  </head>
+  <body>
+    <table>${rows}</table>
+  </body>
+</html>`;
 }
 async function loader$n({
   request
@@ -13362,10 +13421,10 @@ async function loader$n({
     const importDate = getOrderImportDate(order);
     return importDate ? timestampDateKey(importDate) === requestedKey : false;
   });
-  return new Response(buildTsv(orders, requestedDate), {
+  return new Response(buildExcelHtml(orders, requestedDate), {
     headers: {
-      "Content-Type": "text/tab-separated-values; charset=utf-8",
-      "Content-Disposition": `attachment; filename="dispatch-orders-${requestedKey}.tsv"`,
+      "Content-Type": "application/vnd.ms-excel; charset=utf-8",
+      "Content-Disposition": `attachment; filename="dispatch-orders-${requestedKey}.xls"`,
       "Cache-Control": "no-store"
     }
   });
