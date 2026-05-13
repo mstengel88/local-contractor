@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Form, useActionData, useFetcher, useLoaderData, useLocation, useNavigation } from "react-router";
 import { data, redirect } from "react-router";
 import {
@@ -176,6 +176,7 @@ export async function action({ request }: any) {
   ]);
 
   const customerName = String(form.get("customerName") || "");
+  const companyName = String(form.get("companyName") || "").trim();
   const customerEmail = String(form.get("customerEmail") || "").trim();
   const customerPhone = String(form.get("customerPhone") || "").trim();
   const address1 = String(form.get("address1") || "");
@@ -215,6 +216,34 @@ export async function action({ request }: any) {
       ? customRatePerMinuteValue
       : undefined;
   const rawLines = JSON.parse(String(form.get("linesJson") || "[]"));
+
+  if (quoteAudience === "contractor" && !companyName) {
+    return data(
+      {
+        allowed: true,
+        products,
+        recentQuotes,
+        ok: false,
+        message: "Company Name is required for contractor quotes.",
+        customerName,
+        companyName,
+        customerEmail,
+        customerPhone,
+        address: { address1, address2, city, province, postalCode, country },
+        quoteAudience,
+        contractorTier,
+        customDeliveryAmount: customDeliveryAmountInput,
+        customRatePerMinute: customRatePerMinuteInput,
+        customTaxRate: customTaxRateInput,
+        customShippingQuantity: customShippingQuantityInput,
+        customShippingUnit,
+        customShippingRate: customShippingRateInput,
+        customNotes,
+        googleMapsApiKey: getBrowserGoogleMapsApiKey(),
+      },
+      { status: 400 },
+    );
+  }
 
   const selectedProducts = rawLines
     .map((line: any) => {
@@ -265,6 +294,7 @@ export async function action({ request }: any) {
         message:
           "Add at least one product line with a selected product and quantity greater than 0.",
         customerName,
+        companyName,
         customerEmail,
         customerPhone,
         address: { address1, address2, city, province, postalCode, country },
@@ -292,6 +322,7 @@ export async function action({ request }: any) {
         ok: false,
         message: "Address 1, city, state, and ZIP are required.",
         customerName,
+        companyName,
         customerEmail,
         customerPhone,
         address: { address1, address2, city, province, postalCode, country },
@@ -426,6 +457,7 @@ export async function action({ request }: any) {
     recentQuotes,
     ok: true,
     customerName,
+    companyName,
     customerEmail,
     customerPhone,
     address: { address1, address2, city, province, postalCode, country },
@@ -651,6 +683,7 @@ export default function PublicCustomQuotePage() {
   const [contractorTier, setContractorTier] = useState<ContractorTier>(
     normalizeContractorTier(actionData?.contractorTier ?? initialTier),
   );
+  const [companyName, setCompanyName] = useState(actionData?.companyName || "");
   const [lines, setLines] = useState<QuoteLine[]>([
     { sku: "", quantity: "", search: "", customTitle: "", customPrice: "" },
   ]);
@@ -720,7 +753,14 @@ export default function PublicCustomQuotePage() {
   useEffect(() => {
     setQuoteAudience(normalizeQuoteAudience(actionData?.quoteAudience ?? initialAudience));
     setContractorTier(normalizeContractorTier(actionData?.contractorTier ?? initialTier));
-  }, [actionData?.quoteAudience, actionData?.contractorTier, initialAudience, initialTier]);
+    setCompanyName(actionData?.companyName || "");
+  }, [
+    actionData?.quoteAudience,
+    actionData?.contractorTier,
+    actionData?.companyName,
+    initialAudience,
+    initialTier,
+  ]);
 
   const quoteText = useMemo(() => {
     if (!actionData?.pricing || !actionData?.deliveryQuote) return "";
@@ -873,6 +913,13 @@ export default function PublicCustomQuotePage() {
       .slice(0, 12);
   }
 
+  function handleQuoteSubmit(event: FormEvent<HTMLFormElement>) {
+    if (quoteAudience === "contractor" && !companyName.trim()) {
+      event.preventDefault();
+      alert("Company Name is required for contractor quotes.");
+    }
+  }
+
   async function copyQuote() {
     if (!quoteText) return;
     await navigator.clipboard.writeText(quoteText);
@@ -980,7 +1027,7 @@ export default function PublicCustomQuotePage() {
           </div>
         )}
 
-        <Form method="post" style={{ display: "grid", gap: "22px" }}>
+        <Form method="post" style={{ display: "grid", gap: "22px" }} onSubmit={handleQuoteSubmit}>
           <input type="hidden" name="quoteAudience" value={quoteAudience} />
           <input type="hidden" name="contractorTier" value={contractorTier} />
           <input type="hidden" name="linesJson" value={JSON.stringify(lines)} />
@@ -1073,6 +1120,23 @@ export default function PublicCustomQuotePage() {
                   style={styles.input}
                 />
               </div>
+
+              {quoteAudience === "contractor" ? (
+                <div>
+                  <label style={styles.label}>Company Name</label>
+                  <input
+                    type="text"
+                    name="companyName"
+                    autoComplete="organization"
+                    required
+                    value={companyName}
+                    onChange={(event) => setCompanyName(event.target.value)}
+                    style={styles.input}
+                  />
+                </div>
+              ) : (
+                <input type="hidden" name="companyName" value={companyName} />
+              )}
 
               <div>
                 <label style={styles.label}>Email Address</label>
