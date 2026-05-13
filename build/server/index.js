@@ -13231,9 +13231,10 @@ const route4 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProper
   default: dispatch,
   loader: loader$o
 }, Symbol.toStringTag, { value: "Module" }));
+const EXPORT_TIMEZONE = process.env.DISPATCH_RESET_TIMEZONE || "America/Chicago";
 function getLocalDateKey(date = /* @__PURE__ */ new Date()) {
   return new Intl.DateTimeFormat("en-CA", {
-    timeZone: process.env.DISPATCH_RESET_TIMEZONE || "America/Chicago",
+    timeZone: EXPORT_TIMEZONE,
     year: "numeric",
     month: "2-digit",
     day: "2-digit"
@@ -13264,6 +13265,17 @@ function parseRequestedDate$5(value) {
 }
 function dateKey$5(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+function timestampDateKey(date) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: EXPORT_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(date);
+}
+function getSelectedDateKey(dateParam, requestedDate) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : dateKey$5(requestedDate);
 }
 function formatSheetDate(date) {
   return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
@@ -13343,12 +13355,12 @@ async function loader$n({
   const url = new URL(request.url);
   const dateParam = url.searchParams.get("date") || getLocalDateKey();
   const requestedDate = parseRequestedDate$5(dateParam) || /* @__PURE__ */ new Date();
-  const requestedKey = dateKey$5(requestedDate);
+  const requestedKey = getSelectedDateKey(dateParam, requestedDate);
   const orders = (await getDispatchOrders()).filter((order) => {
     if (order.status === "cancelled") return false;
     if (!String(order.mailboxMessageId || "").startsWith("shopify:")) return false;
     const importDate = getOrderImportDate(order);
-    return importDate ? dateKey$5(importDate) === requestedKey : false;
+    return importDate ? timestampDateKey(importDate) === requestedKey : false;
   });
   return new Response(buildTsv(orders, requestedDate), {
     headers: {

@@ -1,9 +1,11 @@
 import { getDispatchOrders, type DispatchOrder } from "../lib/dispatch.server";
 import { hasAdminQuotePermissionAccess } from "../lib/admin-quote-auth.server";
 
+const EXPORT_TIMEZONE = process.env.DISPATCH_RESET_TIMEZONE || "America/Chicago";
+
 function getLocalDateKey(date = new Date()) {
   return new Intl.DateTimeFormat("en-CA", {
-    timeZone: process.env.DISPATCH_RESET_TIMEZONE || "America/Chicago",
+    timeZone: EXPORT_TIMEZONE,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -41,6 +43,21 @@ function parseRequestedDate(value?: string | null) {
 
 function dateKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function timestampDateKey(date: Date) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: EXPORT_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function getSelectedDateKey(dateParam: string, requestedDate: Date) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
+    ? dateParam
+    : dateKey(requestedDate);
 }
 
 function formatSheetDate(date: Date) {
@@ -157,12 +174,12 @@ export async function loader({ request }: { request: Request }) {
   const url = new URL(request.url);
   const dateParam = url.searchParams.get("date") || getLocalDateKey();
   const requestedDate = parseRequestedDate(dateParam) || new Date();
-  const requestedKey = dateKey(requestedDate);
+  const requestedKey = getSelectedDateKey(dateParam, requestedDate);
   const orders = (await getDispatchOrders()).filter((order) => {
     if (order.status === "cancelled") return false;
     if (!String(order.mailboxMessageId || "").startsWith("shopify:")) return false;
     const importDate = getOrderImportDate(order);
-    return importDate ? dateKey(importDate) === requestedKey : false;
+    return importDate ? timestampDateKey(importDate) === requestedKey : false;
   });
 
   return new Response(buildTsv(orders, requestedDate), {
