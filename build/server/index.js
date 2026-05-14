@@ -2084,6 +2084,7 @@ async function action$r({
   const effectiveSummary = deliveryQuote.summary;
   const effectiveDescription = quoteAudience === "custom" && customNotes ? customNotes : deliveryQuote.description;
   const shippingCalculationText = hasCustomShippingCalculation ? `${customShippingQuantityValue.toFixed(2)} ${customShippingUnit} x $${customShippingRateValue.toFixed(2)} = $${effectiveDeliveryAmount.toFixed(2)}` : null;
+  const savedShippingDetails = shippingCalculationText || `Delivery Fee: $${effectiveDeliveryAmount.toFixed(2)}`;
   const sourceBreakdown = getSourceBreakdown(selectedProducts);
   let savedQuoteId = null;
   if (intent === "save") {
@@ -2101,7 +2102,7 @@ async function action$r({
       country,
       quoteTotalCents: Math.round(totalAmount * 100),
       serviceName: effectiveServiceName,
-      shippingDetails: shippingCalculationText || void 0,
+      shippingDetails: savedShippingDetails,
       description: `${effectiveDescription} Pricing: ${pricingLabel}.`,
       eta: effectiveEta,
       summary: void 0,
@@ -25007,6 +25008,37 @@ function buildQuoteTag(quoteId) {
   if (!normalized) return "quote";
   return `quote:${normalized.slice(0, 34)}`;
 }
+function usdMoney(amount) {
+  return {
+    amount: Number(amount || 0).toFixed(2),
+    currencyCode: "USD"
+  };
+}
+function parseSavedDeliveryAmountCents(shippingDetails) {
+  if (!shippingDetails) return null;
+  const exactMatch = shippingDetails.match(/=\s*\$?\s*(\d+(?:\.\d{1,2})?)/);
+  const fallbackMatch = shippingDetails.match(/delivery(?: fee| amount)?:?\s*\$?\s*(\d+(?:\.\d{1,2})?)/i) || shippingDetails.match(/\$\s*(\d+(?:\.\d{1,2})?)/);
+  const amount = Number((exactMatch == null ? void 0 : exactMatch[1]) || (fallbackMatch == null ? void 0 : fallbackMatch[1]) || NaN);
+  return Number.isFinite(amount) ? Math.round(amount * 100) : null;
+}
+function getConfiguredQuoteTaxRate() {
+  const rate = Number(process.env.QUOTE_TAX_RATE || "0");
+  return Number.isFinite(rate) && rate > 0 ? rate : 0;
+}
+function getDeliveryChargeCents({
+  quoteTotalCents,
+  productsSubtotalCents,
+  shippingDetails
+}) {
+  const parsedDeliveryCents = parseSavedDeliveryAmountCents(shippingDetails);
+  if (parsedDeliveryCents !== null) return Math.max(0, parsedDeliveryCents);
+  const taxRate = getConfiguredQuoteTaxRate();
+  if (taxRate > 0) {
+    const subtotalBeforeTaxCents = Math.round(quoteTotalCents / (1 + taxRate));
+    return Math.max(0, subtotalBeforeTaxCents - productsSubtotalCents);
+  }
+  return Math.max(0, quoteTotalCents - productsSubtotalCents);
+}
 function splitCustomerName(name) {
   const normalized = String(name || "").trim();
   if (!normalized) return {
@@ -25132,7 +25164,11 @@ async function action$8({
     });
   }
   const productsSubtotalCents = lineItems.reduce((sum, line) => sum + Math.round(Number(line.price || 0) * 100) * Number(line.quantity || 0), 0);
-  const remainingChargeCents = Math.max(0, Number(quote.quote_total_cents || 0) - productsSubtotalCents);
+  const deliveryChargeCents = getDeliveryChargeCents({
+    quoteTotalCents: Number(quote.quote_total_cents || 0),
+    productsSubtotalCents,
+    shippingDetails: quote.shipping_details
+  });
   const draftLineItems = lineItems.map((line) => {
     var _a3;
     const variantId = line.variantId || ((_a3 = products.find((product) => product.sku === line.sku)) == null ? void 0 : _a3.variantId) || null;
@@ -25140,6 +25176,7 @@ async function action$8({
       return {
         variantId,
         quantity: Number(line.quantity || 0),
+        priceOverride: usdMoney(Number(line.price || 0)),
         customAttributes: [{
           key: "Quote ID",
           value: quote.id
@@ -25155,10 +25192,7 @@ async function action$8({
       quantity: Number(line.quantity || 0),
       requiresShipping: true,
       taxable: false,
-      originalUnitPriceWithCurrency: {
-        amount: Number(line.price || 0).toFixed(2),
-        currencyCode: "USD"
-      },
+      originalUnitPriceWithCurrency: usdMoney(Number(line.price || 0)),
       customAttributes: [{
         key: "Quote ID",
         value: quote.id
@@ -25201,6 +25235,8 @@ async function action$8({
         email: quote.customer_email || void 0,
         customerId: customerId || void 0,
         tags: ["custom-quote", buildQuoteTag(quote.id)],
+        acceptAutomaticDiscounts: false,
+        allowDiscountCodesInCheckout: false,
         shippingAddress: {
           firstName: customerName.firstName,
           lastName: customerName.lastName,
@@ -25224,11 +25260,11 @@ async function action$8({
           phone: quote.customer_phone || void 0
         },
         lineItems: draftLineItems,
-        ...remainingChargeCents > 0 ? {
+        ...deliveryChargeCents > 0 ? {
           shippingLine: {
-            title: truncateShopifyTitle(quote.service_name || "Quoted Delivery / Tax"),
+            title: truncateShopifyTitle(quote.service_name || "Quoted Delivery"),
             priceWithCurrency: {
-              amount: (remainingChargeCents / 100).toFixed(2),
+              amount: (deliveryChargeCents / 100).toFixed(2),
               currencyCode: "USD"
             }
           }
