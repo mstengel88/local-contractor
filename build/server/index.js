@@ -20127,6 +20127,50 @@ function getCustomerEtaText$1(order) {
   const oneWayMinutes = getOneWayTravelMinutes$1(order);
   return oneWayMinutes ? `${oneWayMinutes} minute${oneWayMinutes === 1 ? "" : "s"}` : "soon";
 }
+function getOrderExternalId(order) {
+  if (!order) return void 0;
+  return order.orderNumber ? `dispatch-order-${order.orderNumber}` : order.id;
+}
+function getKenectMessageEndpoint() {
+  const rawEndpoint = process.env.KENECT_MESSAGES_URL || process.env.KENECT_API_URL || process.env.KENECT_API_BASE_URL || "https://integrations-api.kenect.com";
+  try {
+    const url = new URL(rawEndpoint);
+    const normalizedPath = url.pathname.replace(/\/+$/, "");
+    const looksLikeFullMessageEndpoint = normalizedPath === "/api/v1/messages";
+    const looksLikeDocsUrl = normalizedPath.startsWith("/q/swagger-ui") || normalizedPath.startsWith("/q/openapi");
+    if (looksLikeFullMessageEndpoint) return url.toString();
+    if (!looksLikeDocsUrl && normalizedPath && normalizedPath !== "/") {
+      return url.toString();
+    }
+    return `${url.origin}/api/v1/messages`;
+  } catch {
+    return "https://integrations-api.kenect.com/api/v1/messages";
+  }
+}
+function getKenectHeaders() {
+  const apiKey = process.env.KENECT_API_KEY || "";
+  const apiSecret = process.env.KENECT_API_SECRET || "";
+  const locationId = process.env.KENECT_LOCATION_ID || "";
+  const partnerLocationId = process.env.KENECT_PARTNER_LOCATION_ID || "";
+  const partnerLocationZip = process.env.KENECT_PARTNER_LOCATION_ZIP || "";
+  const headers2 = {
+    "Content-Type": "application/json",
+    "X-Api-Key": apiKey,
+    "X-Api-Secret": apiSecret
+  };
+  if (locationId) headers2["X-Location-Id"] = locationId;
+  if (partnerLocationId) headers2["X-Partner-Location-Id"] = partnerLocationId;
+  if (partnerLocationZip) headers2["X-Partner-Location-Zip"] = partnerLocationZip;
+  return {
+    headers: headers2,
+    configured: Boolean(apiKey && apiSecret && (locationId || partnerLocationId))
+  };
+}
+function formatKenectError(status, responseText) {
+  const trimmed = responseText.trim();
+  const suffix = status === 404 ? " Check that KENECT_API_BASE_URL is https://integrations-api.kenect.com and that the location ID belongs to your Kenect account." : "";
+  return `Kenect text failed (${status}): ${trimmed || "No response body."}${suffix}`;
+}
 function buildEnrouteTextMessage({
   order,
   route: route57
@@ -20134,6 +20178,7 @@ function buildEnrouteTextMessage({
   const to = extractPhone$1(order.contact);
   const body = [
     `Green Hills Supply: your delivery is en route and should arrive in about ${getCustomerEtaText$1(order)}.`,
+    (route57 == null ? void 0 : route57.code) ? `Route: ${route57.code}.` : "",
     (route57 == null ? void 0 : route57.truck) ? `Truck: ${route57.truck}.` : "",
     "Please make sure the drop area is clear."
   ].filter(Boolean).join(" ");
@@ -20150,46 +20195,30 @@ async function sendKenectTextMessage({
   order,
   route: route57
 }) {
-  const endpoint = process.env.KENECT_API_URL;
-  const apiKey = process.env.KENECT_API_KEY;
-  const locationId = process.env.KENECT_LOCATION_ID;
-  const fromNumber = process.env.KENECT_FROM_NUMBER;
-  if (!endpoint || !apiKey) {
+  const endpoint = getKenectMessageEndpoint();
+  const { headers: headers2, configured } = getKenectHeaders();
+  if (!configured) {
     return {
       sent: false,
       skipped: true,
       provider: "kenect",
-      reason: "Kenect texting is not configured. Set KENECT_API_URL and KENECT_API_KEY."
+      reason: "Kenect texting is not configured. Set KENECT_API_KEY, KENECT_API_SECRET, and KENECT_LOCATION_ID."
     };
   }
   const response = await fetch(endpoint, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "X-API-Key": apiKey
-    },
+    headers: headers2,
     body: JSON.stringify({
-      locationId,
-      from: fromNumber,
-      to,
-      phone: to,
-      body,
-      message: body,
-      source: "green-hills-dispatch",
-      metadata: {
-        orderId: (order == null ? void 0 : order.id) || null,
-        orderNumber: (order == null ? void 0 : order.orderNumber) || null,
-        customer: (order == null ? void 0 : order.customer) || null,
-        routeId: (route57 == null ? void 0 : route57.id) || null,
-        routeCode: (route57 == null ? void 0 : route57.code) || null,
-        truck: (route57 == null ? void 0 : route57.truck) || null
-      }
+      contactName: (order == null ? void 0 : order.customer) || void 0,
+      contactPhone: to,
+      messageBody: body,
+      externalContactId: getOrderExternalId(order),
+      sentByUserEmail: process.env.KENECT_SENT_BY_USER_EMAIL || void 0
     })
   });
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Kenect text failed: ${errorText}`);
+    throw new Error(formatKenectError(response.status, errorText));
   }
   return { sent: true, provider: "kenect" };
 }
