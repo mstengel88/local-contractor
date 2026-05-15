@@ -3,6 +3,7 @@ import { Form, Link, useActionData, useLoaderData, useLocation, useSubmit } from
 import {
   action as dispatchAction,
   loader as dispatchLoader,
+  shouldRevalidate as dispatchShouldRevalidate,
 } from "./dispatch";
 import type {
   DispatchEmployee,
@@ -20,6 +21,7 @@ import {
 
 export const loader = dispatchLoader;
 export const action = dispatchAction;
+export const shouldRevalidate = dispatchShouldRevalidate;
 
 function getOrderNumber(order: DispatchOrder) {
   return order.orderNumber ? `#${order.orderNumber}` : order.id;
@@ -966,17 +968,28 @@ export default function ClassicDispatchPage() {
     parseDateInputValue(selectedPlanningDate) || parseDateInputValue(getTodayDateInputValue()) || new Date();
   const planningWeekStart = startOfWeek(selectedPlanningDateObject);
   const planningWeekDays = Array.from({ length: 7 }, (_, index) => addDays(planningWeekStart, index));
+  const planningKeyByOrderId = useMemo(
+    () => new Map(orders.map((order) => [order.id, getOrderPlanningDateKey(order)])),
+    [orders],
+  );
   const planningOrders = useMemo(
     () =>
       orders.filter((order) => {
-        const planningKey = getOrderPlanningDateKey(order);
+        const planningKey = planningKeyByOrderId.get(order.id);
         return planningKey === selectedPlanningDate || planningKey === "unscheduled";
       }),
-    [orders, selectedPlanningDate],
+    [orders, planningKeyByOrderId, selectedPlanningDate],
   );
-  const undatedPlanningCount = planningOrders.filter(
-    (order) => getOrderPlanningDateKey(order) === "unscheduled",
-  ).length;
+  const activePlanningCountsByDate = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const order of orders) {
+      if (!isActiveBoardOrder(order)) continue;
+      const planningKey = planningKeyByOrderId.get(order.id) || "unscheduled";
+      counts.set(planningKey, (counts.get(planningKey) || 0) + 1);
+    }
+    return counts;
+  }, [orders, planningKeyByOrderId]);
+  const undatedPlanningCount = activePlanningCountsByDate.get("unscheduled") || 0;
 
   function selectPlanningDate(value: string) {
     setSelectedPlanningDate(value);
@@ -1901,9 +1914,7 @@ export default function ClassicDispatchPage() {
             {planningWeekDays.map((day) => {
               const value = toDateInputValue(day);
               const active = value === selectedPlanningDate;
-              const dayOrdersCount = orders.filter(
-                (order) => getOrderPlanningDateKey(order) === value && isActiveBoardOrder(order),
-              ).length;
+              const dayOrdersCount = activePlanningCountsByDate.get(value) || 0;
 
               return (
                 <button

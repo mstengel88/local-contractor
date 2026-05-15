@@ -1103,7 +1103,7 @@ function clearDispatchStateCache() {
 }
 
 async function loadDispatchState(
-  options: { skipSetup?: boolean; useCache?: boolean } = {},
+  options: { skipSetup?: boolean; useCache?: boolean; fast?: boolean } = {},
 ) {
   if (
     options.useCache &&
@@ -1125,28 +1125,38 @@ async function loadDispatchState(
         await resetDispatchRoutesForNewDay();
       }
     }
-    const [
-      orders,
-      routes,
-      trucks,
-      employees,
-      materialOptions,
-      mapOriginAddress,
-      classicColumnSettings,
-      driverLocations,
-    ] = await Promise.all([
+    const [orders, routes, trucks, employees] = await Promise.all([
       getDispatchOrders(),
       getDispatchRoutes(),
       getDispatchTrucks(),
       getDispatchEmployees(),
+    ]);
+
+    if (options.fast) {
+      return {
+        skipLoaderRevalidation: true,
+        orders,
+        routes,
+        trucks,
+        employees,
+        storageReady: true,
+        storageError: null,
+      };
+    }
+
+    const [
+      materialOptions,
+      mapOriginAddress,
+      classicColumnSettings,
+      driverLocations,
+      productDetailsByMaterial,
+    ] = await Promise.all([
       getDispatchMaterialOptions(),
       getDispatchOriginAddress(),
       getClassicColumnSettings(),
       getLatestDispatchDriverLocations(),
+      getDispatchProductDetailsForMaterials(orders.map((order) => order.material)),
     ]);
-    const productDetailsByMaterial = await getDispatchProductDetailsForMaterials(
-      orders.map((order) => order.material),
-    );
 
     const state = {
       orders,
@@ -1291,6 +1301,11 @@ export async function loader({ request }: any) {
   });
 }
 
+export function shouldRevalidate({ actionResult, defaultShouldRevalidate }: any) {
+  if (actionResult?.skipLoaderRevalidation) return false;
+  return defaultShouldRevalidate;
+}
+
 export async function action({ request }: any) {
   const url = new URL(request.url);
   const dispatchPath = getDispatchPath(url);
@@ -1327,7 +1342,7 @@ export async function action({ request }: any) {
 
     if (intent === "auto-route-orders") {
       if (form.get("manualRoutingMode") === "on") {
-        const dispatchState = await loadDispatchState({ skipSetup: true });
+        const dispatchState = await loadDispatchState({ skipSetup: true, fast: true });
         return data({
           allowed: true,
           ok: false,
@@ -1337,7 +1352,7 @@ export async function action({ request }: any) {
       }
 
       const result = await autoRouteOrdersForDispatch();
-      const dispatchState = await loadDispatchState({ skipSetup: true });
+      const dispatchState = await loadDispatchState({ skipSetup: true, fast: true });
       const skippedText = result.skipped.length
         ? ` Skipped ${result.skipped.length}: ${result.skipped.slice(0, 3).join("; ")}${result.skipped.length > 3 ? "..." : ""}`
         : "";
@@ -1368,7 +1383,7 @@ export async function action({ request }: any) {
       const material = String(form.get("material") || "").trim();
 
       if (!customer || !address || !material) {
-        const dispatchState = await loadDispatchState({ skipSetup: true });
+        const dispatchState = await loadDispatchState({ skipSetup: true, fast: true });
         return data(
           {
             allowed: true,
@@ -1403,7 +1418,7 @@ export async function action({ request }: any) {
         notes: String(form.get("notes") || "").trim(),
       });
 
-      const dispatchState = await loadDispatchState({ skipSetup: true });
+      const dispatchState = await loadDispatchState({ skipSetup: true, fast: true });
 
       return data({
         allowed: true,
@@ -1470,7 +1485,7 @@ export async function action({ request }: any) {
         createdOrders.push(created);
       }
 
-      const dispatchState = await loadDispatchState({ skipSetup: true });
+      const dispatchState = await loadDispatchState({ skipSetup: true, fast: true });
 
       return data({
         allowed: true,
@@ -2034,7 +2049,7 @@ export async function action({ request }: any) {
           : getSplitCapacityError(selectedOrder, selectedTruck, splitCount);
 
       if (capacityError) {
-        const dispatchState = await loadDispatchState({ skipSetup: true });
+        const dispatchState = await loadDispatchState({ skipSetup: true, fast: true });
         return data(
           {
             allowed: true,
@@ -2055,7 +2070,7 @@ export async function action({ request }: any) {
         eta: String(form.get("eta") || "").trim() || null,
       });
 
-      const dispatchState = await loadDispatchState({ skipSetup: true });
+      const dispatchState = await loadDispatchState({ skipSetup: true, fast: true });
 
       return data({
         allowed: true,
@@ -2098,7 +2113,7 @@ export async function action({ request }: any) {
         },
       });
 
-      const dispatchState = await loadDispatchState({ skipSetup: true });
+      const dispatchState = await loadDispatchState({ skipSetup: true, fast: true });
       return data({
         allowed: true,
         ok: true,
@@ -2131,7 +2146,7 @@ export async function action({ request }: any) {
         ),
       );
 
-      const dispatchState = await loadDispatchState({ skipSetup: true });
+      const dispatchState = await loadDispatchState({ skipSetup: true, fast: true });
 
       return data({
         allowed: true,
@@ -2181,7 +2196,7 @@ export async function action({ request }: any) {
         );
       }
 
-      const dispatchState = await loadDispatchState({ skipSetup: true });
+      const dispatchState = await loadDispatchState({ skipSetup: true, fast: true });
 
       return data({
         allowed: true,
@@ -2204,7 +2219,7 @@ export async function action({ request }: any) {
         eta: null,
       });
 
-      const dispatchState = await loadDispatchState({ skipSetup: true });
+      const dispatchState = await loadDispatchState({ skipSetup: true, fast: true });
 
       return data({
         allowed: true,
@@ -2229,7 +2244,7 @@ export async function action({ request }: any) {
       });
       await resequenceChangedRoutes([existingOrder?.assignedRouteId]);
 
-      const dispatchState = await loadDispatchState({ skipSetup: true });
+      const dispatchState = await loadDispatchState({ skipSetup: true, fast: true });
 
       return data({
         allowed: true,
