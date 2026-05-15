@@ -36,7 +36,7 @@ export const classicColumnOptions: Record<
     { key: "date", label: "Date" },
     { key: "client", label: "Client" },
     { key: "address", label: "Address" },
-    { key: "weight", label: "Weight" },
+    { key: "weight", label: "QTY" },
     { key: "volume", label: "Volume" },
     { key: "status", label: "Status" },
     { key: "material", label: "Material" },
