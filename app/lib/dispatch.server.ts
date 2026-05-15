@@ -1064,6 +1064,42 @@ const EMPLOYEES_TABLE = "dispatch_employees";
 const SETTINGS_TABLE = "dispatch_settings";
 const DRIVER_LOCATIONS_TABLE = "dispatch_driver_locations";
 const CLASSIC_COLUMNS_SETTING_KEY = "classic_columns";
+const DISPATCH_ORDER_LIGHT_COLUMNS = [
+  "id",
+  "order_number",
+  "source",
+  "customer",
+  "contact",
+  "address",
+  "city",
+  "material",
+  "quantity",
+  "unit",
+  "requested_window",
+  "time_preference",
+  "truck_preference",
+  "notes",
+  "status",
+  "assigned_route_id",
+  "stop_sequence",
+  "delivery_status",
+  "eta",
+  "travel_minutes",
+  "travel_miles",
+  "travel_summary",
+  "arrived_at",
+  "departed_at",
+  "delivered_at",
+  "proof_name",
+  "proof_notes",
+  "email_subject",
+  "mailbox_message_id",
+  "signature_name",
+  "ticket_numbers",
+  "inspection_status",
+  "created_at",
+  "updated_at",
+].join(", ");
 
 function normalizeOrder(row: any): DispatchOrder {
   const deliveryStatus =
@@ -1462,10 +1498,10 @@ export async function ensureSeedDispatchEmployees() {
   }
 }
 
-export async function getDispatchOrders() {
+export async function getDispatchOrders(options: { lightweight?: boolean } = {}) {
   const { data, error } = await supabaseAdmin
     .from(ORDERS_TABLE)
-    .select("*")
+    .select(options.lightweight ? DISPATCH_ORDER_LIGHT_COLUMNS : "*")
     .order("created_at", { ascending: false });
 
   if (error) {

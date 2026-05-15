@@ -1103,7 +1103,7 @@ function clearDispatchStateCache() {
 }
 
 async function loadDispatchState(
-  options: { skipSetup?: boolean; useCache?: boolean; fast?: boolean } = {},
+  options: { skipSetup?: boolean; useCache?: boolean; fast?: boolean; lightweightOrders?: boolean } = {},
 ) {
   if (
     options.useCache &&
@@ -1126,7 +1126,7 @@ async function loadDispatchState(
       }
     }
     const [orders, routes, trucks, employees] = await Promise.all([
-      getDispatchOrders(),
+      getDispatchOrders({ lightweight: options.lightweightOrders || options.fast }),
       getDispatchRoutes(),
       getDispatchTrucks(),
       getDispatchEmployees(),
@@ -1274,10 +1274,12 @@ export async function loader({ request }: any) {
     process.env.DISPATCH_AUTO_POLL_ON_PAGE_LOAD === "true";
 
   const isEditorOpen = requestedView === "orders" && Boolean(url.searchParams.get("order"));
+  const isClassicPage = /\/(?:app\/)?classic\/?$/.test(url.pathname);
   const [dispatchState, mailboxStatus] = await Promise.all([
     loadDispatchState({
       skipSetup: isEditorOpen || shouldPollMailbox,
       useCache: !shouldPollMailbox,
+      lightweightOrders: isClassicPage,
     }),
     shouldPollMailbox
       ? maybeAutoPollDispatchMailbox().catch((error) => {

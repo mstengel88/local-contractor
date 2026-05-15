@@ -1,5 +1,5 @@
-import { type DragEvent, type FormEvent, type MouseEvent as ReactMouseEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Form, Link, useActionData, useLoaderData, useLocation, useSubmit } from "react-router";
+import { type DragEvent, type FormEvent, type MouseEvent as ReactMouseEvent, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { Form, Link, useActionData, useFetcher, useLoaderData, useLocation, useSubmit } from "react-router";
 import {
   action as dispatchAction,
   loader as dispatchLoader,
@@ -438,6 +438,7 @@ function sortItems<T>(
 }
 
 let classicGoogleMapsLoader: Promise<void> | null = null;
+const classicDirectionsCache = new Map<string, any>();
 
 function loadClassicGoogleMaps(apiKey: string) {
   if (typeof window === "undefined") return Promise.resolve();
@@ -644,72 +645,86 @@ function ClassicMap({
         for (const route of routePlan.slice(0, 6)) {
           for (const [stopIndex, stop] of route.stops.entries()) {
             await new Promise<void>((resolve) => {
-                      const renderer = new google.maps.DirectionsRenderer({
+              const renderer = new google.maps.DirectionsRenderer({
+                map,
+                preserveViewport: true,
+                suppressMarkers: true,
+                polylineOptions: {
+                  strokeColor: route.color,
+                  strokeOpacity: 0.78,
+                  strokeWeight: 5,
+                },
+              });
+              mapObjectsRef.current.push(renderer);
+
+              const renderResult = (result: any, routeStatus = "OK") => {
+                if (cancelled) {
+                  resolve();
+                  return;
+                }
+
+                if (result && routeStatus === "OK") {
+                  renderer.setDirections(result);
+                  const legs = result.routes?.[0]?.legs || [];
+                  const outboundLeg = legs[0];
+                  const returnLeg = legs[1];
+                  if (outboundLeg?.start_location) {
+                    bounds.extend(outboundLeg.start_location);
+                    if (!yardMarkerAdded) {
+                      const yardMarker = new google.maps.Marker({
                         map,
-                        preserveViewport: true,
-                        suppressMarkers: true,
-                        polylineOptions: {
-                          strokeColor: route.color,
-                          strokeOpacity: 0.78,
-                          strokeWeight: 5,
-                        },
+                        position: outboundLeg.start_location,
+                        label: "Y",
+                        title: "Green Hills Supply",
                       });
-                      mapObjectsRef.current.push(renderer);
+                      mapObjectsRef.current.push(yardMarker);
+                      yardMarkerAdded = true;
+                    }
+                  }
+                  if (outboundLeg?.end_location) {
+                    bounds.extend(outboundLeg.end_location);
+                    const marker = new google.maps.Marker({
+                      map,
+                      position: outboundLeg.end_location,
+                      label: String(stopIndex + 1),
+                      title: `${stop.label} · ${stop.customer}`,
+                    });
+                    mapObjectsRef.current.push(marker);
+                  }
+                  if (returnLeg?.end_location) bounds.extend(returnLeg.end_location);
+                } else {
+                  console.warn("[CLASSIC MAP ROUND TRIP ERROR]", route.code, stop.address, routeStatus);
+                }
+                resolve();
+              };
 
-                      directionsService.route(
-                        {
-                          origin: originAddress,
-                          destination: originAddress,
-                          waypoints: [
-                            {
-                              location: stop.address,
-                              stopover: true,
-                            },
-                          ],
-                          optimizeWaypoints: false,
-                          travelMode: google.maps.TravelMode.DRIVING,
-                        },
-                        (result: any, routeStatus: string) => {
-                          if (cancelled) {
-                            resolve();
-                            return;
-                          }
+              const directionsCacheKey = `${originAddress}::${stop.address}`;
+              const cachedDirections = classicDirectionsCache.get(directionsCacheKey);
+              if (cachedDirections) {
+                renderResult(cachedDirections);
+                return;
+              }
 
-                          if (result && routeStatus === "OK") {
-                            renderer.setDirections(result);
-                            const legs = result.routes?.[0]?.legs || [];
-                            const outboundLeg = legs[0];
-                            const returnLeg = legs[1];
-                            if (outboundLeg?.start_location) {
-                              bounds.extend(outboundLeg.start_location);
-                              if (!yardMarkerAdded) {
-                                const yardMarker = new google.maps.Marker({
-                                  map,
-                                  position: outboundLeg.start_location,
-                                  label: "Y",
-                                  title: "Green Hills Supply",
-                                });
-                                mapObjectsRef.current.push(yardMarker);
-                                yardMarkerAdded = true;
-                              }
-                            }
-                            if (outboundLeg?.end_location) {
-                              bounds.extend(outboundLeg.end_location);
-                              const marker = new google.maps.Marker({
-                                map,
-                                position: outboundLeg.end_location,
-                                label: String(stopIndex + 1),
-                                title: `${stop.label} · ${stop.customer}`,
-                              });
-                              mapObjectsRef.current.push(marker);
-                            }
-                            if (returnLeg?.end_location) bounds.extend(returnLeg.end_location);
-                          } else {
-                            console.warn("[CLASSIC MAP ROUND TRIP ERROR]", route.code, stop.address, routeStatus);
-                          }
-                          resolve();
-                        },
-                      );
+              directionsService.route(
+                {
+                  origin: originAddress,
+                  destination: originAddress,
+                  waypoints: [
+                    {
+                      location: stop.address,
+                      stopover: true,
+                    },
+                  ],
+                  optimizeWaypoints: false,
+                  travelMode: google.maps.TravelMode.DRIVING,
+                },
+                (result: any, routeStatus: string) => {
+                  if (result && routeStatus === "OK") {
+                    classicDirectionsCache.set(directionsCacheKey, result);
+                  }
+                  renderResult(result, routeStatus);
+                },
+              );
             });
           }
         }
@@ -723,10 +738,13 @@ function ClassicMap({
       }
     }
 
-    drawMap();
+    const drawTimer = window.setTimeout(() => {
+      void drawMap();
+    }, 450);
 
     return () => {
       cancelled = true;
+      window.clearTimeout(drawTimer);
       mapObjectsRef.current.forEach((object) => object.setMap?.(null));
       mapObjectsRef.current = [];
     };
@@ -841,7 +859,10 @@ export default function ClassicDispatchPage() {
   const actionData = useActionData<typeof action>() as any;
   const location = useLocation();
   const submit = useSubmit();
+  const mutationFetcher = useFetcher<typeof action>();
+  const mutationData = mutationFetcher.data as any;
   const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
   const [selectedRouteId, setSelectedRouteId] = useState(() => {
     if (typeof window === "undefined") return "";
     return window.localStorage.getItem(CLASSIC_SELECTED_ROUTE_KEY) || "";
@@ -894,8 +915,10 @@ export default function ClassicDispatchPage() {
   });
 
   const allowed = actionData?.allowed ?? loaderData.allowed;
-  const orders = (actionData?.orders ?? loaderData.orders ?? []) as DispatchOrder[];
-  const baseRoutes = (actionData?.routes ?? loaderData.routes ?? []) as DispatchRoute[];
+  const serverOrders = (actionData?.orders ?? mutationData?.orders ?? loaderData.orders ?? []) as DispatchOrder[];
+  const [localOrders, setLocalOrders] = useState<DispatchOrder[]>(serverOrders);
+  const orders = localOrders;
+  const baseRoutes = (actionData?.routes ?? mutationData?.routes ?? loaderData.routes ?? []) as DispatchRoute[];
   const trucks = (actionData?.trucks ?? loaderData.trucks ?? []) as DispatchTruck[];
   const employees = (actionData?.employees ?? loaderData.employees ?? []) as DispatchEmployee[];
   const initialDriverLocations = (actionData?.driverLocations ??
@@ -911,9 +934,9 @@ export default function ClassicDispatchPage() {
   const productDetailsByMaterial = (actionData?.productDetailsByMaterial ??
     loaderData.productDetailsByMaterial ??
     {}) as Record<string, DispatchProductDetail>;
-  const message = actionData?.message || loaderData?.mailboxStatus?.message || "";
-  const mailboxStatus = actionData?.mailboxStatus || loaderData?.mailboxStatus || null;
-  const shopifyImportStatus = actionData?.shopifyImportStatus || null;
+  const message = mutationData?.message || actionData?.message || loaderData?.mailboxStatus?.message || "";
+  const mailboxStatus = mutationData?.mailboxStatus || actionData?.mailboxStatus || loaderData?.mailboxStatus || null;
+  const shopifyImportStatus = mutationData?.shopifyImportStatus || actionData?.shopifyImportStatus || null;
   const importStatus = shopifyImportStatus || mailboxStatus;
   const googleMapsApiKey = actionData?.googleMapsApiKey ?? loaderData.googleMapsApiKey ?? "";
   const mapOriginAddress = actionData?.mapOriginAddress ?? loaderData.mapOriginAddress ?? "";
@@ -1040,6 +1063,10 @@ export default function ClassicDispatchPage() {
       window.setTimeout(() => setChimeStatus(""), 3000);
     }
   }
+
+  useEffect(() => {
+    setLocalOrders(serverOrders);
+  }, [serverOrders]);
 
   useEffect(() => {
     setDriverLocations(initialDriverLocations);
@@ -1179,28 +1206,44 @@ export default function ClassicDispatchPage() {
     [selectedRoute, tableSorts.sites, productDetailsByMaterial],
   );
 
-  const search = query.trim().toLowerCase();
+  const search = deferredQuery.trim().toLowerCase();
+  const searchTextByOrderId = useMemo(
+    () => new Map(planningOrders.map((order) => [order.id, buildSearchText(order)])),
+    [planningOrders],
+  );
   const visibleOrders = useMemo(
     () =>
       search
-        ? planningOrders.filter((order) => buildSearchText(order).includes(search))
+        ? planningOrders.filter((order) => searchTextByOrderId.get(order.id)?.includes(search))
         : planningOrders,
-    [planningOrders, search],
+    [planningOrders, search, searchTextByOrderId],
   );
-  const unscheduledOrders = visibleOrders.filter(
-    (order) =>
-      !order.assignedRouteId &&
-      isActiveBoardOrder(order) &&
-      order.status !== "scheduled",
+  const unscheduledOrders = useMemo(
+    () =>
+      visibleOrders.filter(
+        (order) =>
+          !order.assignedRouteId &&
+          isActiveBoardOrder(order) &&
+          order.status !== "scheduled",
+      ),
+    [visibleOrders],
   );
-  const scheduledOrders = visibleOrders.filter(
-    (order) =>
-      order.assignedRouteId &&
-      isActiveBoardOrder(order),
+  const scheduledOrders = useMemo(
+    () =>
+      visibleOrders.filter(
+        (order) =>
+          order.assignedRouteId &&
+          isActiveBoardOrder(order),
+      ),
+    [visibleOrders],
   );
-  const deliveredCount = orders.filter(
-    (order) => order.status === "delivered" || order.deliveryStatus === "delivered",
-  ).length;
+  const deliveredCount = useMemo(
+    () =>
+      orders.filter(
+        (order) => order.status === "delivered" || order.deliveryStatus === "delivered",
+      ).length,
+    [orders],
+  );
   const sortedVisibleOrders = useMemo(
     () =>
       sortItems(visibleOrders, tableSorts.orders, (order, key) => {
@@ -1529,6 +1572,89 @@ export default function ClassicDispatchPage() {
     setDraggedOrderId(orderId);
   }
 
+  function getOrderedRouteOrders(routeId: string, sourceOrders = orders) {
+    return sourceOrders
+      .filter(
+        (order) =>
+          order.assignedRouteId === routeId &&
+          isActiveBoardOrder(order),
+      )
+      .sort(
+        (a, b) =>
+          Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999) ||
+          String(a.created_at || "").localeCompare(String(b.created_at || "")),
+      );
+  }
+
+  function submitClassicMutation(payload: Record<string, string>) {
+    mutationFetcher.submit(payload, { method: "post" });
+  }
+
+  function optimisticallyAssignOrder(orderId: string, routeId: string) {
+    setLocalOrders((currentOrders) => {
+      const nextSequence =
+        Math.max(
+          0,
+          ...getOrderedRouteOrders(routeId, currentOrders).map((order) => Number(order.stopSequence || 0)),
+        ) + 1;
+
+      return currentOrders.map((order) =>
+        order.id === orderId
+          ? {
+              ...order,
+              assignedRouteId: routeId,
+              status: "scheduled",
+              deliveryStatus: order.deliveryStatus === "delivered" ? order.deliveryStatus : "not_started",
+              stopSequence: nextSequence,
+            }
+          : order,
+      );
+    });
+  }
+
+  function optimisticallyUnassignOrder(orderId: string) {
+    setLocalOrders((currentOrders) =>
+      currentOrders.map((order) =>
+        order.id === orderId
+          ? {
+              ...order,
+              assignedRouteId: null,
+              status: "new",
+              deliveryStatus: "not_started",
+              stopSequence: null,
+              eta: null,
+            }
+          : order,
+      ),
+    );
+  }
+
+  function optimisticallyMoveRouteStop(orderId: string, routeId: string, direction: "up" | "down") {
+    setLocalOrders((currentOrders) => {
+      const routeOrders = getOrderedRouteOrders(routeId, currentOrders);
+      const currentIndex = routeOrders.findIndex((order) => order.id === orderId);
+      const nextIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
+      if (currentIndex < 0 || nextIndex < 0 || nextIndex >= routeOrders.length) {
+        return currentOrders;
+      }
+
+      const reordered = [...routeOrders];
+      const [movedOrder] = reordered.splice(currentIndex, 1);
+      reordered.splice(nextIndex, 0, movedOrder);
+      const sequenceById = new Map(reordered.map((order, index) => [order.id, index + 1]));
+
+      return currentOrders.map((order) =>
+        sequenceById.has(order.id)
+          ? {
+              ...order,
+              stopSequence: sequenceById.get(order.id) || order.stopSequence,
+            }
+          : order,
+      );
+    });
+  }
+
   function allowRouteDrop(event: DragEvent<HTMLElement>) {
     if (!selectedRoute) return;
     event.preventDefault();
@@ -1543,14 +1669,14 @@ export default function ClassicDispatchPage() {
       setDraggedOrderId("");
       return;
     }
-    submit(
+    optimisticallyAssignOrder(draggedOrderId, selectedRoute.id);
+    submitClassicMutation(
       {
         intent: "assign-order",
         orderId: draggedOrderId,
         routeId: selectedRoute.id,
         splitCount,
       },
-      { method: "post" },
     );
     setDraggedOrderId("");
   }
@@ -1942,7 +2068,7 @@ export default function ClassicDispatchPage() {
         </div>
 
         {message ? (
-          <div style={actionData?.ok === false ? styles.errorBanner : styles.messageBanner}>
+          <div style={(mutationData?.ok ?? actionData?.ok) === false ? styles.errorBanner : styles.messageBanner}>
             {message}
           </div>
         ) : null}
@@ -2060,33 +2186,50 @@ export default function ClassicDispatchPage() {
                       ))}
                       <td>
                         <div style={styles.siteActions}>
-                          <Form method="post" style={styles.reorderForm}>
-                            <input type="hidden" name="intent" value="move-route-stop" />
-                            <input type="hidden" name="routeId" value={selectedRoute?.id || ""} />
-                            <input type="hidden" name="orderId" value={order.id} />
+                          <div style={styles.reorderForm}>
                             <button
-                              name="direction"
-                              value="up"
+                              type="button"
                               style={{
                                 ...styles.reorderButton,
                                 ...(index === 0 ? styles.reorderButtonDisabled : null),
                               }}
                               disabled={index === 0}
+                              onClick={() => {
+                                const routeId = selectedRoute?.id || "";
+                                if (!routeId) return;
+                                optimisticallyMoveRouteStop(order.id, routeId, "up");
+                                submitClassicMutation({
+                                  intent: "move-route-stop",
+                                  routeId,
+                                  orderId: order.id,
+                                  direction: "up",
+                                });
+                              }}
                             >
                               Up
                             </button>
                             <button
-                              name="direction"
-                              value="down"
+                              type="button"
                               style={{
                                 ...styles.reorderButton,
                                 ...(index === sortedSiteOrders.length - 1 ? styles.reorderButtonDisabled : null),
                               }}
                               disabled={index === sortedSiteOrders.length - 1}
+                              onClick={() => {
+                                const routeId = selectedRoute?.id || "";
+                                if (!routeId) return;
+                                optimisticallyMoveRouteStop(order.id, routeId, "down");
+                                submitClassicMutation({
+                                  intent: "move-route-stop",
+                                  routeId,
+                                  orderId: order.id,
+                                  direction: "down",
+                                });
+                              }}
                             >
                               Down
                             </button>
-                          </Form>
+                          </div>
                           <Form method="post" onSubmit={attachLoaderNote}>
                             <input type="hidden" name="intent" value="notify-loader" />
                             <input type="hidden" name="orderId" value={order.id} />
@@ -2094,11 +2237,19 @@ export default function ClassicDispatchPage() {
                               Load Next
                             </button>
                           </Form>
-                          <Form method="post">
-                            <input type="hidden" name="intent" value="unassign-order" />
-                            <input type="hidden" name="orderId" value={order.id} />
-                            <button style={styles.linkButton}>Unassign</button>
-                          </Form>
+                          <button
+                            type="button"
+                            style={styles.linkButton}
+                            onClick={() => {
+                              optimisticallyUnassignOrder(order.id);
+                              submitClassicMutation({
+                                intent: "unassign-order",
+                                orderId: order.id,
+                              });
+                            }}
+                          >
+                            Unassign
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -2223,6 +2374,12 @@ export default function ClassicDispatchPage() {
                               event.currentTarget,
                               event,
                             );
+                            if (event.defaultPrevented) return;
+                            event.preventDefault();
+                            const formData = new FormData(event.currentTarget);
+                            const nextRouteId = String(formData.get("routeId") || "");
+                            optimisticallyAssignOrder(order.id, nextRouteId);
+                            mutationFetcher.submit(formData, { method: "post" });
                           }}
                         >
                           <input type="hidden" name="intent" value="assign-order" />
