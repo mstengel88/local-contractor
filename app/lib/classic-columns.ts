@@ -49,6 +49,7 @@ export const classicColumnOptions: Record<
     { key: "client", label: "Client" },
     { key: "address", label: "Address" },
     { key: "product", label: "Product" },
+    { key: "roundTrip", label: "Round Trip" },
     { key: "weight", label: "Weight" },
     { key: "volume", label: "Volume" },
     { key: "timePreference", label: "Time Preference" },
@@ -61,5 +62,5 @@ export const defaultClassicColumnSettings: ClassicColumnSettings = {
   routes: ["code", "driver", "status", "weight", "start", "finish", "distance"],
   sites: ["stop", "orderNo", "sku", "address", "arrived", "departed", "eta", "miles"],
   orders: ["type", "orderNo", "date", "client", "weight", "volume", "status", "material"],
-  unscheduled: ["orderNo", "date", "client", "address", "weight", "volume", "route"],
+  unscheduled: ["orderNo", "date", "client", "address", "roundTrip", "weight", "volume", "route"],
 };

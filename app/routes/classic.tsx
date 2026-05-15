@@ -275,6 +275,7 @@ const defaultColumnWidths: Record<ClassicSortTable, Record<string, number>> = {
     client: 160,
     address: 220,
     product: 180,
+    roundTrip: 110,
     weight: 80,
     volume: 85,
     timePreference: 150,
@@ -865,8 +866,20 @@ export default function ClassicDispatchPage() {
         ...savedSiteColumnKeys.slice(Math.max(2, savedSiteColumnKeys.indexOf("orderNo") + 1)),
       ];
   const orderColumnKeys = classicColumnSettings.orders || defaultClassicColumnSettings.orders;
-  const unscheduledColumnKeys =
+  const savedUnscheduledColumnKeys =
     classicColumnSettings.unscheduled || defaultClassicColumnSettings.unscheduled;
+  const unscheduledColumnKeys = savedUnscheduledColumnKeys.includes("roundTrip")
+    ? savedUnscheduledColumnKeys
+    : [
+        ...savedUnscheduledColumnKeys.slice(
+          0,
+          Math.max(1, savedUnscheduledColumnKeys.indexOf("address") + 1),
+        ),
+        "roundTrip",
+        ...savedUnscheduledColumnKeys.slice(
+          Math.max(1, savedUnscheduledColumnKeys.indexOf("address") + 1),
+        ),
+      ];
 
   function toggleNavCollapsed() {
     setNavCollapsed((current) => {
@@ -1091,6 +1104,7 @@ export default function ClassicDispatchPage() {
         if (key === "client") return order.customer;
         if (key === "address") return getOrderAddress(order);
         if (key === "product") return order.material;
+        if (key === "roundTrip") return getTravelMinutes(order);
         if (key === "weight") return order.quantity || "";
         if (key === "volume") return order.unit;
         if (key === "timePreference") return order.timePreference || "";
@@ -1364,6 +1378,7 @@ export default function ClassicDispatchPage() {
     if (key === "client" || key === "customer") return order.customer || "-";
     if (key === "address") return getOrderAddress(order) || "-";
     if (key === "product" || key === "material") return order.material || "-";
+    if (key === "roundTrip") return order.travelSummary || formatTime(getTravelMinutes(order));
     if (key === "quantity" || key === "weight") return order.quantity || "-";
     if (key === "unit" || key === "volume") return order.unit || "-";
     if (key === "timePreference") return order.timePreference || "-";
