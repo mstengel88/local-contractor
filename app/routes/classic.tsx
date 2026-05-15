@@ -47,6 +47,83 @@ function getTodayDateInputValue() {
   return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 }
 
+function toDateInputValue(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+function parseDateInputValue(value: string) {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function startOfWeek(date: Date) {
+  const weekStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  return weekStart;
+}
+
+function parseRequestedDate(value?: string | null) {
+  const trimmed = String(value || "").trim();
+  if (!trimmed || /needs scheduling|unavailable|unknown/i.test(trimmed)) return null;
+
+  const today = new Date();
+  const lower = trimmed.toLowerCase();
+  if (/\btoday\b/.test(lower)) {
+    return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  }
+  if (/\btomorrow\b/.test(lower)) {
+    return addDays(today, 1);
+  }
+
+  const isoDate = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (isoDate) {
+    return new Date(Number(isoDate[1]), Number(isoDate[2]) - 1, Number(isoDate[3]));
+  }
+
+  const slashDate = trimmed.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/);
+  if (slashDate) {
+    const year =
+      slashDate[3].length === 2 ? 2000 + Number(slashDate[3]) : Number(slashDate[3]);
+    return new Date(year, Number(slashDate[1]) - 1, Number(slashDate[2]));
+  }
+
+  const monthDate = trimmed.match(
+    /\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+\d{1,2}(?:,\s*\d{4})?/i,
+  )?.[0];
+  if (monthDate) {
+    const parsed = new Date(/\d{4}/.test(monthDate) ? monthDate : `${monthDate}, ${today.getFullYear()}`);
+    if (!Number.isNaN(parsed.getTime())) {
+      return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+    }
+  }
+
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+}
+
+function getOrderPlanningDateKey(order: DispatchOrder) {
+  const date = parseRequestedDate(order.requestedWindow);
+  return date ? toDateInputValue(date) : "unscheduled";
+}
+
+function formatPlannerDate(date: Date) {
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 function statusLabel(order: DispatchOrder) {
   if (order.status === "delivered" || order.deliveryStatus === "delivered") return "Delivered";
   if (order.status === "cancelled") return "Cancelled";
@@ -221,6 +298,7 @@ type ClassicPanelLayout = {
 const CLASSIC_COLUMN_WIDTHS_KEY = "classicDispatchColumnWidths";
 const CLASSIC_PANEL_LAYOUT_KEY = "classicDispatchPanelLayout";
 const CLASSIC_SELECTED_ROUTE_KEY = "classicDispatchSelectedRouteId";
+const CLASSIC_PLANNING_DATE_KEY = "classicDispatchPlanningDate";
 const DISPATCH_NAV_COLLAPSED_KEY = "dispatchNavCollapsed";
 const DISPATCH_CHIME_ENABLED_KEY = "dispatchChimeEnabled";
 const CLASSIC_MANUAL_ROUTING_KEY = "dispatchManualRoutingMode";
@@ -766,6 +844,10 @@ export default function ClassicDispatchPage() {
     if (typeof window === "undefined") return "";
     return window.localStorage.getItem(CLASSIC_SELECTED_ROUTE_KEY) || "";
   });
+  const [selectedPlanningDate, setSelectedPlanningDate] = useState(() => {
+    if (typeof window === "undefined") return getTodayDateInputValue();
+    return window.localStorage.getItem(CLASSIC_PLANNING_DATE_KEY) || getTodayDateInputValue();
+  });
   const [draggedOrderId, setDraggedOrderId] = useState("");
   const [routeDrawerOpen, setRouteDrawerOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState("");
@@ -880,6 +962,34 @@ export default function ClassicDispatchPage() {
           Math.max(1, savedUnscheduledColumnKeys.indexOf("address") + 1),
         ),
       ];
+  const selectedPlanningDateObject =
+    parseDateInputValue(selectedPlanningDate) || parseDateInputValue(getTodayDateInputValue()) || new Date();
+  const planningWeekStart = startOfWeek(selectedPlanningDateObject);
+  const planningWeekDays = Array.from({ length: 7 }, (_, index) => addDays(planningWeekStart, index));
+  const planningOrders = useMemo(
+    () =>
+      orders.filter((order) => {
+        const planningKey = getOrderPlanningDateKey(order);
+        return planningKey === selectedPlanningDate || planningKey === "unscheduled";
+      }),
+    [orders, selectedPlanningDate],
+  );
+  const undatedPlanningCount = planningOrders.filter(
+    (order) => getOrderPlanningDateKey(order) === "unscheduled",
+  ).length;
+
+  function selectPlanningDate(value: string) {
+    setSelectedPlanningDate(value);
+    try {
+      window.localStorage.setItem(CLASSIC_PLANNING_DATE_KEY, value);
+    } catch {
+      // The selected planning day still works for the current session if storage is unavailable.
+    }
+  }
+
+  function movePlanningWeek(days: number) {
+    selectPlanningDate(toDateInputValue(addDays(selectedPlanningDateObject, days)));
+  }
 
   function toggleNavCollapsed() {
     setNavCollapsed((current) => {
@@ -971,7 +1081,7 @@ export default function ClassicDispatchPage() {
   const routes = useMemo(
     () =>
       baseRoutes.map((route) => {
-        const routeOrders = orders
+        const routeOrders = planningOrders
           .filter(
             (order) =>
               order.assignedRouteId === route.id &&
@@ -985,7 +1095,7 @@ export default function ClassicDispatchPage() {
           totalMinutes: routeOrders.reduce((sum, order) => sum + getTravelMinutes(order), 0),
         };
       }),
-    [baseRoutes, orders],
+    [baseRoutes, planningOrders],
   );
   const sortedRoutes = useMemo(
     () =>
@@ -1060,9 +1170,9 @@ export default function ClassicDispatchPage() {
   const visibleOrders = useMemo(
     () =>
       search
-        ? orders.filter((order) => buildSearchText(order).includes(search))
-        : orders,
-    [orders, search],
+        ? planningOrders.filter((order) => buildSearchText(order).includes(search))
+        : planningOrders,
+    [planningOrders, search],
   );
   const unscheduledOrders = visibleOrders.filter(
     (order) =>
@@ -1765,6 +1875,61 @@ export default function ClassicDispatchPage() {
           <div className="classic-company" style={styles.company}>Green Hills Dispatch</div>
         </header>
 
+        <div className="classic-planner-bar" style={styles.plannerBar}>
+          <button
+            type="button"
+            style={styles.plannerNavButton}
+            onClick={() => movePlanningWeek(-7)}
+          >
+            Previous Week
+          </button>
+          <input
+            type="date"
+            value={selectedPlanningDate}
+            onChange={(event) => selectPlanningDate(event.target.value || getTodayDateInputValue())}
+            style={styles.plannerDateInput}
+            aria-label="Planning delivery date"
+          />
+          <button
+            type="button"
+            style={styles.plannerNavButton}
+            onClick={() => selectPlanningDate(getTodayDateInputValue())}
+          >
+            Today
+          </button>
+          <div style={styles.plannerDayTabs}>
+            {planningWeekDays.map((day) => {
+              const value = toDateInputValue(day);
+              const active = value === selectedPlanningDate;
+              const dayOrdersCount = orders.filter(
+                (order) => getOrderPlanningDateKey(order) === value && isActiveBoardOrder(order),
+              ).length;
+
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => selectPlanningDate(value)}
+                  style={styles.plannerDayButton(active)}
+                >
+                  <span>{formatPlannerDate(day)}</span>
+                  <small>{dayOrdersCount} dated</small>
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            style={styles.plannerNavButton}
+            onClick={() => movePlanningWeek(7)}
+          >
+            Next Week
+          </button>
+          <span style={styles.plannerHint}>
+            Showing {formatPlannerDate(selectedPlanningDateObject)} plus {undatedPlanningCount} undated
+          </span>
+        </div>
+
         {message ? (
           <div style={actionData?.ok === false ? styles.errorBanner : styles.messageBanner}>
             {message}
@@ -1788,7 +1953,7 @@ export default function ClassicDispatchPage() {
             <div className="classic-panel" style={styles.panel}>
               <div style={styles.panelHeader}>
                 <strong>Routes {routes.length}</strong>
-                <span>Today</span>
+                <span>{formatPlannerDate(selectedPlanningDateObject)}</span>
               </div>
               <table
                 className="classic-table"
@@ -2447,6 +2612,66 @@ const styles: Record<string, any> = {
     fontWeight: 800,
     whiteSpace: "nowrap",
   },
+  plannerBar: {
+    minHeight: 54,
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "8px 14px",
+    background: "var(--classic-panel-header-bg)",
+    borderBottom: "1px solid var(--classic-border)",
+    overflowX: "auto",
+  },
+  plannerDayTabs: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+  },
+  plannerDayButton: (active: boolean) => ({
+    minWidth: 96,
+    minHeight: 38,
+    display: "grid",
+    gap: 2,
+    alignContent: "center",
+    justifyItems: "start",
+    borderRadius: 8,
+    border: active ? "1px solid #ff7a1a" : "1px solid var(--classic-border)",
+    background: active ? "rgba(249, 115, 22, 0.18)" : "var(--classic-input-bg)",
+    color: active ? "#ff9b25" : "var(--classic-text)",
+    padding: "4px 10px",
+    fontWeight: 900,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+  }),
+  plannerNavButton: {
+    minHeight: 38,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "0 12px",
+    borderRadius: 8,
+    border: "1px solid var(--classic-border)",
+    background: "var(--classic-input-bg)",
+    color: "var(--classic-text)",
+    fontWeight: 900,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+  },
+  plannerDateInput: {
+    minHeight: 38,
+    width: 140,
+    borderRadius: 8,
+    border: "1px solid var(--classic-border)",
+    background: "var(--classic-input-bg)",
+    color: "var(--classic-text)",
+    padding: "0 10px",
+    fontWeight: 900,
+  },
+  plannerHint: {
+    color: "var(--classic-muted)",
+    fontWeight: 900,
+    whiteSpace: "nowrap",
+  },
   messageBanner: {
     padding: "8px 14px",
     background: "rgba(56, 189, 248, 0.16)",
@@ -2462,7 +2687,7 @@ const styles: Record<string, any> = {
     fontWeight: 700,
   },
   mainGrid: {
-    height: "calc(100vh - 58px)",
+    height: "calc(100vh - 112px)",
     display: "grid",
     gap: 0,
     overflow: "hidden",
