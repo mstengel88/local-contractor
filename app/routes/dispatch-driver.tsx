@@ -31,6 +31,8 @@ import {
   updateDispatchOrder,
 } from "../lib/dispatch.server";
 
+const DISPATCH_TIME_ZONE = "America/Chicago";
+
 function getDriverPath(url: URL) {
   return url.pathname.startsWith("/app/")
     ? "/app/dispatch/driver"
@@ -137,6 +139,20 @@ function addDays(date: Date, days: number) {
   return next;
 }
 
+function getDispatchToday() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: DISPATCH_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const year = Number(parts.find((part) => part.type === "year")?.value || new Date().getFullYear());
+  const month = Number(parts.find((part) => part.type === "month")?.value || new Date().getMonth() + 1);
+  const day = Number(parts.find((part) => part.type === "day")?.value || new Date().getDate());
+
+  return new Date(year, month - 1, day);
+}
+
 function dateKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
     date.getDate(),
@@ -147,7 +163,7 @@ function parseRequestedDate(value?: string | null) {
   const trimmed = String(value || "").trim();
   if (!trimmed || /needs scheduling|unavailable|unknown/i.test(trimmed)) return null;
 
-  const today = new Date();
+  const today = getDispatchToday();
   const lower = trimmed.toLowerCase();
   if (/\btoday\b/.test(lower)) {
     return new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -185,7 +201,7 @@ function parseRequestedDate(value?: string | null) {
 
 function isRequestedToday(order: DispatchOrder) {
   const requestedDate = parseRequestedDate(order.requestedWindow);
-  return requestedDate ? dateKey(requestedDate) === dateKey(new Date()) : false;
+  return requestedDate ? dateKey(requestedDate) === dateKey(getDispatchToday()) : false;
 }
 
 function buildChecklistJson(form: FormData) {

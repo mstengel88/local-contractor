@@ -20754,6 +20754,7 @@ async function sendCustomerEnrouteText({
     route: route57
   });
 }
+const DISPATCH_TIME_ZONE = "America/Chicago";
 function getDriverPath(url) {
   return url.pathname.startsWith("/app/") ? "/app/dispatch/driver" : "/dispatch/driver";
 }
@@ -20824,6 +20825,19 @@ function addDays(date, days) {
   next.setDate(next.getDate() + days);
   return next;
 }
+function getDispatchToday() {
+  var _a2, _b, _c;
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: DISPATCH_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(/* @__PURE__ */ new Date());
+  const year = Number(((_a2 = parts.find((part) => part.type === "year")) == null ? void 0 : _a2.value) || (/* @__PURE__ */ new Date()).getFullYear());
+  const month = Number(((_b = parts.find((part) => part.type === "month")) == null ? void 0 : _b.value) || (/* @__PURE__ */ new Date()).getMonth() + 1);
+  const day = Number(((_c = parts.find((part) => part.type === "day")) == null ? void 0 : _c.value) || (/* @__PURE__ */ new Date()).getDate());
+  return new Date(year, month - 1, day);
+}
 function dateKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
@@ -20831,7 +20845,7 @@ function parseRequestedDate(value) {
   var _a2;
   const trimmed = String(value || "").trim();
   if (!trimmed || /needs scheduling|unavailable|unknown/i.test(trimmed)) return null;
-  const today = /* @__PURE__ */ new Date();
+  const today = getDispatchToday();
   const lower = trimmed.toLowerCase();
   if (/\btoday\b/.test(lower)) {
     return new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -20861,7 +20875,7 @@ function parseRequestedDate(value) {
 }
 function isRequestedToday(order) {
   const requestedDate = parseRequestedDate(order.requestedWindow);
-  return requestedDate ? dateKey(requestedDate) === dateKey(/* @__PURE__ */ new Date()) : false;
+  return requestedDate ? dateKey(requestedDate) === dateKey(getDispatchToday()) : false;
 }
 function buildChecklistJson(form) {
   const existing = parseChecklistJson(String(form.get("customChecklist") || ""));
