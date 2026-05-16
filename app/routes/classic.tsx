@@ -304,6 +304,7 @@ const CLASSIC_PLANNING_DATE_KEY = "classicDispatchPlanningDate";
 const DISPATCH_NAV_COLLAPSED_KEY = "dispatchNavCollapsed";
 const DISPATCH_CHIME_ENABLED_KEY = "dispatchChimeEnabled";
 const CLASSIC_MANUAL_ROUTING_KEY = "dispatchManualRoutingMode";
+const CLASSIC_TEST_DELIVERY_KEY = "classicTestDeliveryControls";
 const MIN_CLASSIC_COLUMN_WIDTH = 48;
 const DEFAULT_CLASSIC_PANEL_LAYOUT: ClassicPanelLayout = {
   mainLeft: 50,
@@ -889,6 +890,10 @@ export default function ClassicDispatchPage() {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(CLASSIC_MANUAL_ROUTING_KEY) === "1";
   });
+  const [testDeliveryControls, setTestDeliveryControls] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(CLASSIC_TEST_DELIVERY_KEY) === "1";
+  });
   const [tableSorts, setTableSorts] = useState<Record<ClassicSortTable, ClassicSortConfig>>({
     routes: { key: "weight", direction: "desc" },
     sites: { key: "stop", direction: "asc" },
@@ -1046,6 +1051,18 @@ export default function ClassicDispatchPage() {
         window.localStorage.setItem(CLASSIC_MANUAL_ROUTING_KEY, next ? "1" : "0");
       } catch {
         // The toggle still works for the current session if browser storage is unavailable.
+      }
+      return next;
+    });
+  }
+
+  function toggleTestDeliveryControls() {
+    setTestDeliveryControls((current) => {
+      const next = !current;
+      try {
+        window.localStorage.setItem(CLASSIC_TEST_DELIVERY_KEY, next ? "1" : "0");
+      } catch {
+        // Test controls still toggle for this browser session if storage is blocked.
       }
       return next;
     });
@@ -1655,6 +1672,23 @@ export default function ClassicDispatchPage() {
     });
   }
 
+  function optimisticallyMarkDelivered(orderId: string) {
+    const now = new Date().toISOString();
+    setLocalOrders((currentOrders) =>
+      currentOrders.map((order) =>
+        order.id === orderId
+          ? {
+              ...order,
+              status: "delivered",
+              deliveryStatus: "delivered",
+              departedAt: order.departedAt || now,
+              deliveredAt: now,
+            }
+          : order,
+      ),
+    );
+  }
+
   function allowRouteDrop(event: DragEvent<HTMLElement>) {
     if (!selectedRoute) return;
     event.preventDefault();
@@ -2009,6 +2043,14 @@ export default function ClassicDispatchPage() {
             Test Chime
           </button>
           {chimeStatus ? <span style={styles.chimeStatus}>{chimeStatus}</span> : null}
+          <label style={testDeliveryControls ? styles.manualRouteToggleActive : styles.manualRouteToggle}>
+            <input
+              type="checkbox"
+              checked={testDeliveryControls}
+              onChange={toggleTestDeliveryControls}
+            />
+            Test Delivery
+          </label>
           <a href="#add-route" style={styles.outlineButton}>Add Route</a>
           <a href="#add-order" style={styles.orangeButton}>Add Order</a>
           <div className="classic-company" style={styles.company}>Green Hills Dispatch</div>
@@ -2250,6 +2292,26 @@ export default function ClassicDispatchPage() {
                           >
                             Unassign
                           </button>
+                          {testDeliveryControls ? (
+                            <button
+                              type="button"
+                              style={styles.deliveredTestButton}
+                              onClick={() => {
+                                if (!window.confirm(`Mark ${getOrderNumber(order)} delivered for testing?`)) return;
+                                optimisticallyMarkDelivered(order.id);
+                                submitClassicMutation({
+                                  intent: "update-stop-status",
+                                  orderId: order.id,
+                                  deliveryStatus: "delivered",
+                                  proofName: currentUser?.name || "Classic test",
+                                  proofNotes: "Marked delivered from Classic test control.",
+                                  inspectionStatus: "completed",
+                                });
+                              }}
+                            >
+                              Delivered
+                            </button>
+                          ) : null}
                         </div>
                       </td>
                     </tr>
@@ -3053,6 +3115,18 @@ const styles: Record<string, any> = {
     color: "#0ea5c6",
     fontWeight: 800,
     cursor: "pointer",
+  },
+  deliveredTestButton: {
+    border: "1px solid rgba(34, 197, 94, 0.6)",
+    borderRadius: 5,
+    background: "rgba(34, 197, 94, 0.16)",
+    color: "#86efac",
+    fontSize: 10,
+    fontWeight: 950,
+    cursor: "pointer",
+    minHeight: 24,
+    padding: "0 8px",
+    textTransform: "uppercase" as const,
   },
   resizableHeader: {
     position: "relative",
