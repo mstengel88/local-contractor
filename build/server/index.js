@@ -4885,6 +4885,9 @@ function getCustomerEmail(order) {
   const match = order.contact.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
   return (match == null ? void 0 : match[0]) || "";
 }
+function getPublicAppUrl() {
+  return (process.env.APP_URL || process.env.SHOPIFY_APP_URL || "https://contractor.ghstickets.com").replace(/\/+$/, "");
+}
 function formatDeliveredAt(order) {
   if (!order.deliveredAt) return (/* @__PURE__ */ new Date()).toLocaleString();
   return new Date(order.deliveredAt).toLocaleString();
@@ -4931,6 +4934,7 @@ function buildDeliveryConfirmationEmail({
   const photoProof = order.photoUrls || "Not captured";
   const photoProofSource = getImageProofSource(order.photoUrls);
   const gpsProof = parseGpsProof(order.signatureData);
+  const logoUrl = `${getPublicAppUrl()}/email-green-hills-logo.png`;
   const subject = `Green Hills Supply delivery confirmation ${orderNumber}`;
   const text = [
     `Green Hills Supply Delivery Confirmation`,
@@ -4962,9 +4966,8 @@ function buildDeliveryConfirmationEmail({
     <div style="max-width:760px;margin:0 auto;background:#000000;padding:28px 24px 36px;">
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
         <tr>
-          <td style="width:130px;border:2px solid #ffffff;padding:10px;text-align:center;vertical-align:middle;">
-            <div style="font-size:18px;font-weight:900;line-height:1;color:#9ad20f;">GREEN</div>
-            <div style="font-size:28px;font-weight:900;line-height:1;color:#ffffff;">HILLS</div>
+          <td style="width:170px;border:2px solid #ffffff;padding:8px;text-align:center;vertical-align:middle;background:#ffffff;">
+            <img src="${escapeHtml$1(logoUrl)}" alt="Green Hills Supply" width="150" style="display:block;width:150px;max-width:150px;height:auto;margin:0 auto;border:0;" />
           </td>
           <td style="padding-left:16px;vertical-align:middle;">
             <div style="border:2px solid #ffffff;padding:12px 14px;font-size:20px;font-weight:900;color:#ffffff;">
