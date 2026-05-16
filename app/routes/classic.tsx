@@ -1523,7 +1523,7 @@ export default function ClassicDispatchPage() {
 
   function orderColumnValue(order: DispatchOrder, key: string, index = 0) {
     if (key === "type") return order.source === "email" ? "D" : "M";
-    if (key === "stop") return order.stopSequence || index + 1;
+    if (key === "stop") return index + 1;
     if (key === "orderNo") {
       return (
         <button

@@ -1797,6 +1797,9 @@ export async function getNextRouteStopSequence(routeId: string) {
     .from(ORDERS_TABLE)
     .select("stop_sequence")
     .eq("assigned_route_id", routeId)
+    .neq("status", "delivered")
+    .neq("status", "cancelled")
+    .or("delivery_status.is.null,delivery_status.neq.delivered")
     .not("stop_sequence", "is", null)
     .order("stop_sequence", { ascending: false })
     .limit(1);

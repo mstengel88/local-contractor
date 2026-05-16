@@ -1217,6 +1217,7 @@ async function resequenceRouteStops(routeId?: string | null) {
       (order) =>
         order.assignedRouteId === routeId &&
         order.status !== "delivered" &&
+        order.status !== "cancelled" &&
         order.deliveryStatus !== "delivered",
     )
     .sort(
@@ -2319,6 +2320,9 @@ export async function action({ request }: any) {
       }
 
       const updatedOrder = await updateDispatchOrder(orderId, patch);
+      if (deliveryStatus === "delivered") {
+        await resequenceChangedRoutes([updatedOrder.assignedRouteId]);
+      }
       const route = updatedOrder.assignedRouteId
         ? (await getDispatchRoutes()).find((entry) => entry.id === updatedOrder.assignedRouteId) || null
         : null;
