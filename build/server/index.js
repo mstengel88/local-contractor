@@ -5290,6 +5290,283 @@ async function clearLoaderNotificationHistory(user) {
   }
   if (error) throw new Error(error.message);
 }
+function parseShopifyRefs(order) {
+  var _a2;
+  const mailboxMatch = String(order.mailboxMessageId || "").match(
+    /^shopify:(gid:\/\/shopify\/Order\/[^#]+)#(.+)$/
+  );
+  if (mailboxMatch) {
+    return {
+      orderId: mailboxMatch[1],
+      lineItemId: mailboxMatch[2] || null
+    };
+  }
+  try {
+    const raw = JSON.parse(String(order.rawEmail || "{}"));
+    if ((raw == null ? void 0 : raw.id) && String(raw.id).startsWith("gid://shopify/Order/")) {
+      const material = String(order.material || "").toLowerCase();
+      const lineItem = (((_a2 = raw == null ? void 0 : raw.lineItems) == null ? void 0 : _a2.nodes) || []).find((line) => {
+        var _a3, _b;
+        const title = [(_b = (_a3 = line == null ? void 0 : line.variant) == null ? void 0 : _a3.product) == null ? void 0 : _b.title, line == null ? void 0 : line.title, line == null ? void 0 : line.name].filter(Boolean).join(" ").toLowerCase();
+        return title.includes(material) || material.includes(title);
+      });
+      return {
+        orderId: String(raw.id),
+        lineItemId: (lineItem == null ? void 0 : lineItem.id) || null
+      };
+    }
+  } catch {
+  }
+  return null;
+}
+function formatUserErrors(errors) {
+  return errors.map(
+    (error) => {
+      var _a2;
+      return [(_a2 = error.field) == null ? void 0 : _a2.join("."), error.message].filter(Boolean).join(": ");
+    }
+  ).filter(Boolean).join("; ");
+}
+function getQuantity$1(order) {
+  const quantity = Number(String(order.quantity || "").replace(/[^0-9.]/g, ""));
+  return Number.isFinite(quantity) && quantity > 0 ? Math.ceil(quantity) : 1;
+}
+async function graphql(query, variables) {
+  const shop = process.env.SHOPIFY_STORE_DOMAIN || "";
+  if (!shop) {
+    throw new Error("SHOPIFY_STORE_DOMAIN is not set.");
+  }
+  const { admin } = await shopify.unauthenticated.admin(shop);
+  const response = await admin.graphql(query, { variables });
+  const json = await response.json();
+  const errors = (json == null ? void 0 : json.errors) || [];
+  if (errors.length) {
+    throw new Error(
+      errors.map((error) => error.message || "Shopify GraphQL error.").join("; ")
+    );
+  }
+  return json == null ? void 0 : json.data;
+}
+async function getShopifyFulfillmentState(orderId) {
+  const data2 = await graphql(
+    `#graphql
+      query DispatchShopifyFulfillmentState($orderId: ID!) {
+        order(id: $orderId) {
+          id
+          name
+          fulfillmentOrders(first: 20) {
+            nodes {
+              id
+              status
+              requestStatus
+              lineItems(first: 100) {
+                nodes {
+                  id
+                  remainingQuantity
+                  totalQuantity
+                  lineItem {
+                    id
+                  }
+                }
+              }
+            }
+          }
+          fulfillments(first: 20) {
+            id
+            status
+            fulfillmentLineItems(first: 100) {
+              nodes {
+                quantity
+                lineItem {
+                  id
+                }
+              }
+            }
+          }
+        }
+      }
+    `,
+    { orderId }
+  );
+  if (!(data2 == null ? void 0 : data2.order)) {
+    throw new Error(`Shopify order ${orderId} was not found.`);
+  }
+  return data2.order;
+}
+function findFulfillmentLine(fulfillmentOrders, lineItemId) {
+  var _a2, _b;
+  for (const fulfillmentOrder of fulfillmentOrders) {
+    const lineItems = ((_a2 = fulfillmentOrder.lineItems) == null ? void 0 : _a2.nodes) || [];
+    for (const lineItem of lineItems) {
+      if (lineItemId && ((_b = lineItem.lineItem) == null ? void 0 : _b.id) !== lineItemId) continue;
+      const remainingQuantity = Number(lineItem.remainingQuantity || 0);
+      if (remainingQuantity <= 0) continue;
+      return {
+        fulfillmentOrder,
+        lineItem,
+        remainingQuantity
+      };
+    }
+  }
+  return null;
+}
+function findExistingFulfillment(fulfillments, lineItemId) {
+  if (!lineItemId) return fulfillments[0] || null;
+  return fulfillments.find(
+    (fulfillment) => {
+      var _a2;
+      return (((_a2 = fulfillment.fulfillmentLineItems) == null ? void 0 : _a2.nodes) || []).some(
+        (lineItem) => {
+          var _a3;
+          return ((_a3 = lineItem.lineItem) == null ? void 0 : _a3.id) === lineItemId;
+        }
+      );
+    }
+  ) || null;
+}
+async function fulfillDispatchOrderInShopify(order, route57) {
+  var _a2, _b, _c, _d;
+  const refs = parseShopifyRefs(order);
+  if (!refs) {
+    return {
+      ok: true,
+      skipped: true,
+      message: "Not a Shopify-imported order."
+    };
+  }
+  try {
+    const fulfillmentState = await getShopifyFulfillmentState(refs.orderId);
+    const fulfillmentOrders = ((_a2 = fulfillmentState.fulfillmentOrders) == null ? void 0 : _a2.nodes) || [];
+    const existingFulfillment = findExistingFulfillment(
+      fulfillmentState.fulfillments || [],
+      refs.lineItemId
+    );
+    if (existingFulfillment) {
+      return {
+        ok: true,
+        skipped: true,
+        message: "Already fulfilled in Shopify.",
+        fulfillmentId: existingFulfillment.id
+      };
+    }
+    const match = findFulfillmentLine(fulfillmentOrders, refs.lineItemId);
+    if (!match) {
+      return {
+        ok: true,
+        skipped: true,
+        message: "No remaining Shopify fulfillment quantity found."
+      };
+    }
+    const requestedQuantity = getQuantity$1(order);
+    const quantity = Math.min(requestedQuantity, match.remainingQuantity);
+    const data2 = await graphql(
+      `#graphql
+        mutation DispatchFulfillmentCreate($fulfillment: FulfillmentInput!, $message: String) {
+          fulfillmentCreate(fulfillment: $fulfillment, message: $message) {
+            fulfillment {
+              id
+              status
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `,
+      {
+        fulfillment: {
+          notifyCustomer: false,
+          lineItemsByFulfillmentOrder: [
+            {
+              fulfillmentOrderId: match.fulfillmentOrder.id,
+              fulfillmentOrderLineItems: [
+                {
+                  id: match.lineItem.id,
+                  quantity
+                }
+              ]
+            }
+          ]
+        },
+        message: `Assigned to ${(route57 == null ? void 0 : route57.code) || "dispatch route"} in Green Hills Dispatch.`
+      }
+    );
+    const userErrors = ((_b = data2 == null ? void 0 : data2.fulfillmentCreate) == null ? void 0 : _b.userErrors) || [];
+    if (userErrors.length) {
+      throw new Error(formatUserErrors(userErrors));
+    }
+    const fulfillmentId = ((_d = (_c = data2 == null ? void 0 : data2.fulfillmentCreate) == null ? void 0 : _c.fulfillment) == null ? void 0 : _d.id) || null;
+    return {
+      ok: true,
+      message: "Marked fulfilled in Shopify.",
+      fulfillmentId
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "Shopify fulfillment failed."
+    };
+  }
+}
+async function markDispatchOrderDeliveredInShopify(order, route57) {
+  var _a2;
+  const refs = parseShopifyRefs(order);
+  if (!refs) {
+    return {
+      ok: true,
+      skipped: true,
+      message: "Not a Shopify-imported order."
+    };
+  }
+  try {
+    const fulfillmentResult = await fulfillDispatchOrderInShopify(order, route57);
+    const fulfillmentState = await getShopifyFulfillmentState(refs.orderId);
+    const fulfillment = (fulfillmentResult.fulfillmentId ? (fulfillmentState.fulfillments || []).find(
+      (entry2) => entry2.id === fulfillmentResult.fulfillmentId
+    ) : null) || findExistingFulfillment(fulfillmentState.fulfillments || [], refs.lineItemId);
+    if (!(fulfillment == null ? void 0 : fulfillment.id)) {
+      throw new Error("No Shopify fulfillment was available to mark delivered.");
+    }
+    const data2 = await graphql(
+      `#graphql
+        mutation DispatchFulfillmentEventCreate($fulfillmentEvent: FulfillmentEventInput!) {
+          fulfillmentEventCreate(fulfillmentEvent: $fulfillmentEvent) {
+            fulfillmentEvent {
+              status
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `,
+      {
+        fulfillmentEvent: {
+          fulfillmentId: fulfillment.id,
+          status: "DELIVERED",
+          happenedAt: order.deliveredAt || (/* @__PURE__ */ new Date()).toISOString(),
+          message: `Delivered by Green Hills Supply${(route57 == null ? void 0 : route57.code) ? ` on ${route57.code}` : ""}.`
+        }
+      }
+    );
+    const userErrors = ((_a2 = data2 == null ? void 0 : data2.fulfillmentEventCreate) == null ? void 0 : _a2.userErrors) || [];
+    if (userErrors.length) {
+      throw new Error(formatUserErrors(userErrors));
+    }
+    return {
+      ok: true,
+      message: "Marked delivered in Shopify.",
+      fulfillmentId: fulfillment.id
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "Shopify delivery update failed."
+    };
+  }
+}
 const classicColumnOptions = {
   routes: [
     { key: "code", label: "Code" },
@@ -7646,7 +7923,8 @@ async function assignOrderToRoute({
   routeId,
   truck,
   splitCount,
-  eta
+  eta,
+  route: route57
 }) {
   const previousRouteId = order.assignedRouteId || null;
   const capacityError = getSplitCapacityError(order, truck, splitCount);
@@ -7660,7 +7938,7 @@ async function assignOrderToRoute({
   const shouldSplit = isYardOrder(order) && quantity > truckYards && splitCount > 1;
   const firstStopSequence = previousRouteId === routeId && order.stopSequence ? order.stopSequence : await getNextRouteStopSequence(routeId);
   if (!shouldSplit) {
-    await updateDispatchOrder(order.id, {
+    const updatedOrder = await updateDispatchOrder(order.id, {
       status: "scheduled",
       assignedRouteId: routeId,
       stopSequence: firstStopSequence,
@@ -7668,16 +7946,18 @@ async function assignOrderToRoute({
       eta: eta || null
     });
     await resequenceChangedRoutes([previousRouteId, routeId]);
+    const shopifyResult2 = await fulfillDispatchOrderInShopify(updatedOrder, route57);
+    const shopifyNote2 = shopifyResult2.skipped ? "" : shopifyResult2.ok ? " Shopify marked fulfilled." : ` Shopify fulfillment failed: ${shopifyResult2.message}`;
     return {
       ok: true,
-      message: "Order assigned to route.",
+      message: `Order assigned to route.${shopifyNote2}`,
       createdCount: 1
     };
   }
   const splitQuantity = formatSplitQuantity(quantity / splitCount);
   const baseOrderNumber = getSplitBaseOrderNumber(order);
   const splitNote = `Split from #${baseOrderNumber} into ${splitCount} loads.`;
-  await updateDispatchOrder(order.id, {
+  const updatedOriginal = await updateDispatchOrder(order.id, {
     orderNumber: `${baseOrderNumber}${getSplitSuffix(0)}`,
     quantity: splitQuantity,
     status: "scheduled",
@@ -7687,6 +7967,8 @@ async function assignOrderToRoute({
     eta: eta || null,
     notes: [order.notes, splitNote].filter(Boolean).join("\n")
   });
+  const shopifyResult = await fulfillDispatchOrderInShopify(updatedOriginal, route57);
+  const shopifyNote = shopifyResult.skipped ? "" : shopifyResult.ok ? " Shopify marked fulfilled." : ` Shopify fulfillment failed: ${shopifyResult.message}`;
   for (let index = 1; index < splitCount; index += 1) {
     const created = await createDispatchOrder({
       source: order.source,
@@ -7716,7 +7998,7 @@ async function assignOrderToRoute({
   await resequenceChangedRoutes([previousRouteId, routeId]);
   return {
     ok: true,
-    message: `Split #${baseOrderNumber} into ${splitCount} route tickets.`,
+    message: `Split #${baseOrderNumber} into ${splitCount} route tickets.${shopifyNote}`,
     createdCount: splitCount
   };
 }
@@ -8551,7 +8833,8 @@ async function action$p({
             routeId,
             truck: selectedTruck,
             splitCount,
-            eta
+            eta,
+            route: selectedRoute || null
           });
           if (!assignment.ok) {
             const dispatchState = await loadDispatchState();
@@ -8938,7 +9221,8 @@ async function action$p({
         routeId,
         truck: selectedTruck,
         splitCount,
-        eta: String(form.get("eta") || "").trim() || null
+        eta: String(form.get("eta") || "").trim() || null,
+        route: selectedRoute || null
       });
       const dispatchState = await loadDispatchState({
         skipSetup: true,
@@ -9145,6 +9429,7 @@ async function action$p({
       }
       const route57 = updatedOrder.assignedRouteId ? (await getDispatchRoutes()).find((entry2) => entry2.id === updatedOrder.assignedRouteId) || null : null;
       let emailNote = "";
+      let shopifyNote = "";
       if (deliveryStatus === "delivered") {
         try {
           const emailResult = await sendDeliveryConfirmationEmail({
@@ -9156,12 +9441,14 @@ async function action$p({
           const message = error instanceof Error ? error.message : "Unknown email error.";
           emailNote = ` Delivery confirmation email failed: ${message}`;
         }
+        const shopifyResult = await markDispatchOrderDeliveredInShopify(updatedOrder, route57);
+        shopifyNote = shopifyResult.skipped ? "" : shopifyResult.ok ? " Shopify marked delivered." : ` Shopify delivery update failed: ${shopifyResult.message}`;
       }
       const dispatchState = await loadDispatchState();
       return data({
         allowed: true,
         ok: true,
-        message: `Stop marked ${getDeliveryStatusLabel(deliveryStatus).toLowerCase()}.${emailNote}`,
+        message: `Stop marked ${getDeliveryStatusLabel(deliveryStatus).toLowerCase()}.${emailNote}${shopifyNote}`,
         selectedOrderId: orderId,
         ...dispatchState
       });
@@ -21272,6 +21559,7 @@ async function action$j({
     }
   }
   let emailNote = "";
+  let shopifyNote = "";
   if (deliveryStatus === "delivered") {
     try {
       const emailResult = await sendDeliveryConfirmationEmail({
@@ -21283,11 +21571,13 @@ async function action$j({
       const message = error instanceof Error ? error.message : "Unknown email error.";
       emailNote = ` Delivery confirmation email failed: ${message}`;
     }
+    const shopifyResult = await markDispatchOrderDeliveredInShopify(updatedOrder, currentRoute);
+    shopifyNote = shopifyResult.skipped ? "" : shopifyResult.ok ? " Shopify marked delivered." : ` Shopify delivery update failed: ${shopifyResult.message}`;
   }
   return data({
     allowed: true,
     ok: true,
-    message: `Stop marked ${getStatusLabel$1(deliveryStatus).toLowerCase()}.${smsNote}${loaderNote}${emailNote}`,
+    message: `Stop marked ${getStatusLabel$1(deliveryStatus).toLowerCase()}.${smsNote}${loaderNote}${emailNote}${shopifyNote}`,
     selectedRouteId: routeId || null,
     selectedOrderId: orderId,
     ...await loadDriverStateForRequest(request)

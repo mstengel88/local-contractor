@@ -9,6 +9,10 @@ import { userAuthCookie } from "../lib/user-auth.server";
 import { sendDeliveryConfirmationEmail } from "../lib/delivery-confirmation-email.server";
 import { createLoaderNotification } from "../lib/loader-notifications.server";
 import {
+  fulfillDispatchOrderInShopify,
+  markDispatchOrderDeliveredInShopify,
+} from "../lib/dispatch-shopify-fulfillment.server";
+import {
   createDispatchEmployee,
   createDispatchRoute,
   createDispatchTruck,
@@ -438,12 +442,14 @@ async function assignOrderToRoute({
   truck,
   splitCount,
   eta,
+  route,
 }: {
   order: DispatchOrder;
   routeId: string;
   truck?: DispatchTruck | null;
   splitCount: number;
   eta?: string | null;
+  route?: DispatchRoute | null;
 }) {
   const previousRouteId = order.assignedRouteId || null;
   const capacityError = getSplitCapacityError(order, truck, splitCount);
@@ -458,7 +464,7 @@ async function assignOrderToRoute({
       : await getNextRouteStopSequence(routeId);
 
   if (!shouldSplit) {
-    await updateDispatchOrder(order.id, {
+    const updatedOrder = await updateDispatchOrder(order.id, {
       status: "scheduled",
       assignedRouteId: routeId,
       stopSequence: firstStopSequence,
@@ -466,14 +472,24 @@ async function assignOrderToRoute({
       eta: eta || null,
     });
     await resequenceChangedRoutes([previousRouteId, routeId]);
-    return { ok: true, message: "Order assigned to route.", createdCount: 1 };
+    const shopifyResult = await fulfillDispatchOrderInShopify(updatedOrder, route);
+    const shopifyNote = shopifyResult.skipped
+      ? ""
+      : shopifyResult.ok
+        ? " Shopify marked fulfilled."
+        : ` Shopify fulfillment failed: ${shopifyResult.message}`;
+    return {
+      ok: true,
+      message: `Order assigned to route.${shopifyNote}`,
+      createdCount: 1,
+    };
   }
 
   const splitQuantity = formatSplitQuantity(quantity / splitCount);
   const baseOrderNumber = getSplitBaseOrderNumber(order);
   const splitNote = `Split from #${baseOrderNumber} into ${splitCount} loads.`;
 
-  await updateDispatchOrder(order.id, {
+  const updatedOriginal = await updateDispatchOrder(order.id, {
     orderNumber: `${baseOrderNumber}${getSplitSuffix(0)}`,
     quantity: splitQuantity,
     status: "scheduled",
@@ -483,6 +499,15 @@ async function assignOrderToRoute({
     eta: eta || null,
     notes: [order.notes, splitNote].filter(Boolean).join("\n"),
   });
+  const shopifyResult = await fulfillDispatchOrderInShopify(
+    { ...updatedOriginal, quantity: order.quantity },
+    route,
+  );
+  const shopifyNote = shopifyResult.skipped
+    ? ""
+    : shopifyResult.ok
+      ? " Shopify marked fulfilled."
+      : ` Shopify fulfillment failed: ${shopifyResult.message}`;
 
   for (let index = 1; index < splitCount; index += 1) {
     const created = await createDispatchOrder({
@@ -515,7 +540,7 @@ async function assignOrderToRoute({
   await resequenceChangedRoutes([previousRouteId, routeId]);
   return {
     ok: true,
-    message: `Split #${baseOrderNumber} into ${splitCount} route tickets.`,
+    message: `Split #${baseOrderNumber} into ${splitCount} route tickets.${shopifyNote}`,
     createdCount: splitCount,
   };
 }
@@ -1598,6 +1623,7 @@ export async function action({ request }: any) {
             truck: selectedTruck,
             splitCount,
             eta,
+            route: selectedRoute || null,
           });
           if (!assignment.ok) {
             const dispatchState = await loadDispatchState();
@@ -2071,6 +2097,7 @@ export async function action({ request }: any) {
         truck: selectedTruck,
         splitCount,
         eta: String(form.get("eta") || "").trim() || null,
+        route: selectedRoute || null,
       });
 
       const dispatchState = await loadDispatchState({ skipSetup: true, fast: true });
@@ -2327,6 +2354,7 @@ export async function action({ request }: any) {
         ? (await getDispatchRoutes()).find((entry) => entry.id === updatedOrder.assignedRouteId) || null
         : null;
       let emailNote = "";
+      let shopifyNote = "";
       if (deliveryStatus === "delivered") {
         try {
           const emailResult = await sendDeliveryConfirmationEmail({
@@ -2340,6 +2368,13 @@ export async function action({ request }: any) {
           const message = error instanceof Error ? error.message : "Unknown email error.";
           emailNote = ` Delivery confirmation email failed: ${message}`;
         }
+
+        const shopifyResult = await markDispatchOrderDeliveredInShopify(updatedOrder, route);
+        shopifyNote = shopifyResult.skipped
+          ? ""
+          : shopifyResult.ok
+            ? " Shopify marked delivered."
+            : ` Shopify delivery update failed: ${shopifyResult.message}`;
       }
 
       const dispatchState = await loadDispatchState();
@@ -2347,7 +2382,7 @@ export async function action({ request }: any) {
       return data({
         allowed: true,
         ok: true,
-        message: `Stop marked ${getDeliveryStatusLabel(deliveryStatus).toLowerCase()}.${emailNote}`,
+        message: `Stop marked ${getDeliveryStatusLabel(deliveryStatus).toLowerCase()}.${emailNote}${shopifyNote}`,
         selectedOrderId: orderId,
         ...dispatchState,
       });

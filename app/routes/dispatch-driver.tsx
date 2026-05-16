@@ -16,6 +16,7 @@ import {
   sendCustomerEnrouteText,
 } from "../lib/customer-text.server";
 import { createLoaderNotification } from "../lib/loader-notifications.server";
+import { markDispatchOrderDeliveredInShopify } from "../lib/dispatch-shopify-fulfillment.server";
 import {
   ensureSeedDispatchEmployees,
   ensureSeedDispatchOrders,
@@ -521,6 +522,7 @@ export async function action({ request }: any) {
   }
 
   let emailNote = "";
+  let shopifyNote = "";
   if (deliveryStatus === "delivered") {
     try {
       const emailResult = await sendDeliveryConfirmationEmail({
@@ -534,12 +536,19 @@ export async function action({ request }: any) {
       const message = error instanceof Error ? error.message : "Unknown email error.";
       emailNote = ` Delivery confirmation email failed: ${message}`;
     }
+
+    const shopifyResult = await markDispatchOrderDeliveredInShopify(updatedOrder, currentRoute);
+    shopifyNote = shopifyResult.skipped
+      ? ""
+      : shopifyResult.ok
+        ? " Shopify marked delivered."
+        : ` Shopify delivery update failed: ${shopifyResult.message}`;
   }
 
   return data({
     allowed: true,
     ok: true,
-    message: `Stop marked ${getStatusLabel(deliveryStatus).toLowerCase()}.${smsNote}${loaderNote}${emailNote}`,
+    message: `Stop marked ${getStatusLabel(deliveryStatus).toLowerCase()}.${smsNote}${loaderNote}${emailNote}${shopifyNote}`,
     selectedRouteId: routeId || null,
     selectedOrderId: orderId,
     ...(await loadDriverStateForRequest(request)),
