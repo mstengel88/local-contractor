@@ -2196,6 +2196,14 @@ export default function ClassicDispatchPage() {
               <div style={styles.panelHeader}>
                 <strong>Sites {selectedRoute?.orders.length || 0}</strong>
                 <span>{selectedRoute ? `${selectedRoute.code} · ${selectedRoute.truck || "No truck"}` : "Select a route"}</span>
+                <button
+                  type="button"
+                  style={testDeliveryControls ? styles.testDeliveryToggleActive : styles.testDeliveryToggle}
+                  onClick={toggleTestDeliveryControls}
+                  title="Show or hide quick testing delivery buttons"
+                >
+                  {testDeliveryControls ? "Test Delivery On" : "Test Delivery Off"}
+                </button>
               </div>
               <div
                 style={draggedOrderId ? styles.dropZoneActive : styles.dropZone}
@@ -2800,6 +2808,45 @@ const styles: Record<string, any> = {
     background: "var(--classic-panel-bg)",
     color: "var(--classic-text)",
     fontWeight: 800,
+    whiteSpace: "nowrap",
+  },
+  manualRouteToggleActive: {
+    height: 34,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 7,
+    padding: "0 12px",
+    borderRadius: 999,
+    border: "1px solid rgba(34, 197, 94, 0.65)",
+    background: "rgba(34, 197, 94, 0.18)",
+    color: "#86efac",
+    fontWeight: 900,
+    whiteSpace: "nowrap",
+  },
+  testDeliveryToggle: {
+    marginLeft: "auto",
+    minHeight: 24,
+    border: "1px solid var(--classic-border)",
+    borderRadius: 999,
+    background: "var(--classic-input-bg)",
+    color: "var(--classic-muted)",
+    fontSize: 11,
+    fontWeight: 900,
+    cursor: "pointer",
+    padding: "0 10px",
+    whiteSpace: "nowrap",
+  },
+  testDeliveryToggleActive: {
+    marginLeft: "auto",
+    minHeight: 24,
+    border: "1px solid rgba(34, 197, 94, 0.65)",
+    borderRadius: 999,
+    background: "rgba(34, 197, 94, 0.18)",
+    color: "#86efac",
+    fontSize: 11,
+    fontWeight: 950,
+    cursor: "pointer",
+    padding: "0 10px",
     whiteSpace: "nowrap",
   },
   outlineButton: {
