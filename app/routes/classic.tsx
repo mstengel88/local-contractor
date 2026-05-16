@@ -469,6 +469,38 @@ function getDirectionsMinutes(result: any) {
   return seconds > 0 ? Math.max(1, Math.round(seconds / 60)) : 0;
 }
 
+function getDirectionsLegMinutes(result: any, legIndex: number) {
+  const leg = result?.routes?.[0]?.legs?.[legIndex];
+  const seconds = leg?.duration_in_traffic?.value ?? leg?.duration?.value ?? 0;
+  return seconds > 0 ? Math.max(1, Math.round(Number(seconds) / 60)) : 0;
+}
+
+function parseRouteStartMinutes(shift?: string | null) {
+  const startText = String(shift || "")
+    .split("-")[0]
+    .trim() || "6:00 am";
+  const match = startText.match(/\b(\d{1,2})(?::(\d{2}))?\s*([ap](?:\.?m\.?)?)?/i);
+  if (!match) return 6 * 60;
+
+  let hour = Number(match[1]);
+  const minute = Number(match[2] || 0);
+  const suffix = String(match[3] || "").toLowerCase();
+  if (suffix.startsWith("p") && hour < 12) hour += 12;
+  if (suffix.startsWith("a") && hour === 12) hour = 0;
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return 6 * 60;
+  return hour * 60 + minute;
+}
+
+function formatRouteEta(date: Date, routeShift: string | null | undefined, offsetMinutes: number) {
+  const startMinutes = parseRouteStartMinutes(routeShift);
+  const etaDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  etaDate.setMinutes(startMinutes + Math.max(0, Math.round(offsetMinutes)));
+  return etaDate.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function getClassicRoundTripDirections(
   directionsService: any,
   google: any,
@@ -989,6 +1021,7 @@ export default function ClassicDispatchPage() {
     initialDriverLocations,
   );
   const [routeGoogleMinutesById, setRouteGoogleMinutesById] = useState<Record<string, number>>({});
+  const [routeGoogleEtaOffsetByOrderId, setRouteGoogleEtaOffsetByOrderId] = useState<Record<string, number>>({});
   const [routeDurationRefreshTick, setRouteDurationRefreshTick] = useState(0);
   const materialOptions = (actionData?.materialOptions ?? loaderData.materialOptions ?? []) as string[];
   const classicColumnSettings = (actionData?.classicColumnSettings ??
@@ -1220,8 +1253,12 @@ export default function ClassicDispatchPage() {
           return {
             id: route.id,
             stops: routeOrders
-              .map((order) => getOrderAddress(order))
-              .filter(Boolean),
+              .map((order) => ({
+                orderId: order.id,
+                address: getOrderAddress(order),
+                fallbackRoundTripMinutes: getTravelMinutes(order),
+              }))
+              .filter((stop) => stop.address),
           };
         })
         .filter((route) => route.stops.length),
@@ -1238,6 +1275,7 @@ export default function ClassicDispatchPage() {
     async function loadRouteDurations() {
       if (!googleMapsApiKey || !mapOriginAddress || !routeDurationPlans.length) {
         setRouteGoogleMinutesById({});
+        setRouteGoogleEtaOffsetByOrderId({});
         return;
       }
 
@@ -1248,20 +1286,33 @@ export default function ClassicDispatchPage() {
         const google = (window as any).google;
         const directionsService = new google.maps.DirectionsService();
         const nextDurations: Record<string, number> = {};
+        const nextEtaOffsets: Record<string, number> = {};
 
         for (const route of routeDurationPlans) {
           let routeMinutes = 0;
-          for (const stopAddress of route.stops) {
+          let elapsedMinutes = 0;
+          for (const stop of route.stops) {
             try {
               const result = await getClassicRoundTripDirections(
                 directionsService,
                 google,
                 mapOriginAddress,
-                stopAddress,
+                stop.address,
               );
-              routeMinutes += getDirectionsMinutes(result);
+              const outboundMinutes = getDirectionsLegMinutes(result, 0);
+              const roundTripMinutes = getDirectionsMinutes(result);
+              nextEtaOffsets[stop.orderId] = elapsedMinutes + outboundMinutes;
+              routeMinutes += roundTripMinutes;
+              elapsedMinutes += roundTripMinutes;
             } catch (error) {
-              console.warn("[CLASSIC ROUTE TIME ERROR]", route.id, stopAddress, error);
+              console.warn("[CLASSIC ROUTE TIME ERROR]", route.id, stop.address, error);
+              const fallbackRoundTripMinutes = stop.fallbackRoundTripMinutes;
+              if (fallbackRoundTripMinutes) {
+                nextEtaOffsets[stop.orderId] =
+                  elapsedMinutes + Math.max(1, Math.round(fallbackRoundTripMinutes / 2));
+                routeMinutes += fallbackRoundTripMinutes;
+                elapsedMinutes += fallbackRoundTripMinutes;
+              }
             }
           }
           nextDurations[route.id] = routeMinutes;
@@ -1269,6 +1320,7 @@ export default function ClassicDispatchPage() {
 
         if (!cancelled) {
           setRouteGoogleMinutesById(nextDurations);
+          setRouteGoogleEtaOffsetByOrderId(nextEtaOffsets);
         }
       } catch (error) {
         console.warn("[CLASSIC ROUTE TIME LOAD ERROR]", error);
@@ -1320,6 +1372,35 @@ export default function ClassicDispatchPage() {
   const selectedRoute =
     sortedRoutes.find((route) => route.id === selectedRouteId) || sortedRoutes[0] || null;
   const selectedOrder = orders.find((order) => order.id === selectedOrderId) || null;
+  const selectedRouteEtaByOrderId = useMemo(() => {
+    const etaByOrderId = new Map<string, string>();
+    if (!selectedRoute) return etaByOrderId;
+
+    let fallbackElapsedMinutes = 0;
+    const orderedStops = [...selectedRoute.orders].sort(
+      (a, b) =>
+        Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999) ||
+        String(a.created_at || "").localeCompare(String(b.created_at || "")),
+    );
+
+    for (const order of orderedStops) {
+      const fallbackRoundTripMinutes = getTravelMinutes(order);
+      const googleOffset = routeGoogleEtaOffsetByOrderId[order.id];
+      const fallbackOffset =
+        fallbackElapsedMinutes +
+        (fallbackRoundTripMinutes ? Math.max(1, Math.round(fallbackRoundTripMinutes / 2)) : 0);
+      const etaOffset = Number.isFinite(googleOffset) ? googleOffset : fallbackOffset;
+      if (etaOffset) {
+        etaByOrderId.set(
+          order.id,
+          formatRouteEta(selectedPlanningDateObject, selectedRoute.shift, etaOffset),
+        );
+      }
+      fallbackElapsedMinutes += fallbackRoundTripMinutes;
+    }
+
+    return etaByOrderId;
+  }, [routeGoogleEtaOffsetByOrderId, selectedPlanningDateObject, selectedRoute]);
 
   function getOrderProductDetail(order: DispatchOrder | null | undefined) {
     if (!order) return null;
@@ -1365,11 +1446,11 @@ export default function ClassicDispatchPage() {
         if (key === "timePreference") return order.timePreference || "";
         if (key === "arrived") return order.arrivedAt || "";
         if (key === "departed") return order.departedAt || "";
-        if (key === "eta") return order.eta || order.requestedWindow || "";
+        if (key === "eta") return routeGoogleEtaOffsetByOrderId[order.id] ?? order.eta ?? order.requestedWindow ?? "";
         if (key === "miles") return order.travelMiles || "";
         return "";
       }),
-    [selectedRoute, tableSorts.sites, productDetailsByMaterial],
+    [selectedRoute, tableSorts.sites, productDetailsByMaterial, routeGoogleEtaOffsetByOrderId],
   );
 
   const search = deferredQuery.trim().toLowerCase();
@@ -1724,7 +1805,7 @@ export default function ClassicDispatchPage() {
         ? new Date(order.departedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
         : "-";
     }
-    if (key === "eta") return order.eta || order.requestedWindow || "-";
+    if (key === "eta") return selectedRouteEtaByOrderId.get(order.id) || order.eta || "-";
     if (key === "miles") return order.travelMiles || "-";
     if (key === "status") {
       return <span style={styles.statusPill(getStatusTone(order))}>{statusLabel(order)}</span>;
