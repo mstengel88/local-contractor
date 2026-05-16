@@ -439,7 +439,75 @@ function sortItems<T>(
 }
 
 let classicGoogleMapsLoader: Promise<void> | null = null;
-const classicDirectionsCache = new Map<string, any>();
+const CLASSIC_DIRECTIONS_CACHE_MS = 5 * 60 * 1000;
+const classicDirectionsCache = new Map<string, { result: any; cachedAt: number }>();
+
+function getClassicDirectionsCacheKey(originAddress: string, stopAddress: string) {
+  return `${originAddress.trim()}::${stopAddress.trim()}`;
+}
+
+function getCachedClassicDirections(cacheKey: string) {
+  const cached = classicDirectionsCache.get(cacheKey);
+  if (!cached) return null;
+  if (Date.now() - cached.cachedAt > CLASSIC_DIRECTIONS_CACHE_MS) {
+    classicDirectionsCache.delete(cacheKey);
+    return null;
+  }
+  return cached.result;
+}
+
+function setCachedClassicDirections(cacheKey: string, result: any) {
+  classicDirectionsCache.set(cacheKey, { result, cachedAt: Date.now() });
+}
+
+function getDirectionsMinutes(result: any) {
+  const legs = result?.routes?.[0]?.legs || [];
+  const seconds = legs.reduce((sum: number, leg: any) => {
+    const durationSeconds = leg.duration_in_traffic?.value ?? leg.duration?.value ?? 0;
+    return sum + Number(durationSeconds || 0);
+  }, 0);
+  return seconds > 0 ? Math.max(1, Math.round(seconds / 60)) : 0;
+}
+
+function getClassicRoundTripDirections(
+  directionsService: any,
+  google: any,
+  originAddress: string,
+  stopAddress: string,
+) {
+  const cacheKey = getClassicDirectionsCacheKey(originAddress, stopAddress);
+  const cachedDirections = getCachedClassicDirections(cacheKey);
+  if (cachedDirections) return Promise.resolve(cachedDirections);
+
+  return new Promise<any>((resolve, reject) => {
+    directionsService.route(
+      {
+        origin: originAddress,
+        destination: originAddress,
+        waypoints: [
+          {
+            location: stopAddress,
+            stopover: true,
+          },
+        ],
+        optimizeWaypoints: false,
+        travelMode: google.maps.TravelMode.DRIVING,
+        drivingOptions: {
+          departureTime: new Date(),
+          trafficModel: google.maps.TrafficModel?.BEST_GUESS || "bestguess",
+        },
+      },
+      (result: any, routeStatus: string) => {
+        if (result && routeStatus === "OK") {
+          setCachedClassicDirections(cacheKey, result);
+          resolve(result);
+          return;
+        }
+        reject(new Error(routeStatus || "Google Directions failed"));
+      },
+    );
+  });
+}
 
 function loadClassicGoogleMaps(apiKey: string) {
   if (typeof window === "undefined") return Promise.resolve();
@@ -699,33 +767,21 @@ function ClassicMap({
                 resolve();
               };
 
-              const directionsCacheKey = `${originAddress}::${stop.address}`;
-              const cachedDirections = classicDirectionsCache.get(directionsCacheKey);
+              const directionsCacheKey = getClassicDirectionsCacheKey(originAddress, stop.address);
+              const cachedDirections = getCachedClassicDirections(directionsCacheKey);
               if (cachedDirections) {
                 renderResult(cachedDirections);
                 return;
               }
 
-              directionsService.route(
-                {
-                  origin: originAddress,
-                  destination: originAddress,
-                  waypoints: [
-                    {
-                      location: stop.address,
-                      stopover: true,
-                    },
-                  ],
-                  optimizeWaypoints: false,
-                  travelMode: google.maps.TravelMode.DRIVING,
-                },
-                (result: any, routeStatus: string) => {
-                  if (result && routeStatus === "OK") {
-                    classicDirectionsCache.set(directionsCacheKey, result);
-                  }
-                  renderResult(result, routeStatus);
-                },
-              );
+              getClassicRoundTripDirections(
+                directionsService,
+                google,
+                originAddress,
+                stop.address,
+              )
+                .then((result) => renderResult(result))
+                .catch((error) => renderResult(null, error instanceof Error ? error.message : "ERROR"));
             });
           }
         }
@@ -932,6 +988,8 @@ export default function ClassicDispatchPage() {
   const [driverLocations, setDriverLocations] = useState<DispatchDriverLocation[]>(
     initialDriverLocations,
   );
+  const [routeGoogleMinutesById, setRouteGoogleMinutesById] = useState<Record<string, number>>({});
+  const [routeDurationRefreshTick, setRouteDurationRefreshTick] = useState(0);
   const materialOptions = (actionData?.materialOptions ?? loaderData.materialOptions ?? []) as string[];
   const classicColumnSettings = (actionData?.classicColumnSettings ??
     loaderData.classicColumnSettings ??
@@ -1135,6 +1193,95 @@ export default function ClassicDispatchPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const timer = window.setInterval(
+      () => setRouteDurationRefreshTick((current) => current + 1),
+      CLASSIC_DIRECTIONS_CACHE_MS,
+    );
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const routeDurationPlans = useMemo(
+    () =>
+      baseRoutes
+        .map((route) => {
+          const routeOrders = planningOrders
+            .filter(
+              (order) =>
+                order.assignedRouteId === route.id &&
+                isActiveBoardOrder(order),
+            )
+            .sort(
+              (a, b) =>
+                Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999) ||
+                String(a.created_at || "").localeCompare(String(b.created_at || "")),
+            );
+
+          return {
+            id: route.id,
+            stops: routeOrders
+              .map((order) => getOrderAddress(order))
+              .filter(Boolean),
+          };
+        })
+        .filter((route) => route.stops.length),
+    [baseRoutes, planningOrders],
+  );
+  const routeDurationKey = useMemo(
+    () => JSON.stringify(routeDurationPlans),
+    [routeDurationPlans],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRouteDurations() {
+      if (!googleMapsApiKey || !mapOriginAddress || !routeDurationPlans.length) {
+        setRouteGoogleMinutesById({});
+        return;
+      }
+
+      try {
+        await loadClassicGoogleMaps(googleMapsApiKey);
+        if (cancelled) return;
+
+        const google = (window as any).google;
+        const directionsService = new google.maps.DirectionsService();
+        const nextDurations: Record<string, number> = {};
+
+        for (const route of routeDurationPlans) {
+          let routeMinutes = 0;
+          for (const stopAddress of route.stops) {
+            try {
+              const result = await getClassicRoundTripDirections(
+                directionsService,
+                google,
+                mapOriginAddress,
+                stopAddress,
+              );
+              routeMinutes += getDirectionsMinutes(result);
+            } catch (error) {
+              console.warn("[CLASSIC ROUTE TIME ERROR]", route.id, stopAddress, error);
+            }
+          }
+          nextDurations[route.id] = routeMinutes;
+        }
+
+        if (!cancelled) {
+          setRouteGoogleMinutesById(nextDurations);
+        }
+      } catch (error) {
+        console.warn("[CLASSIC ROUTE TIME LOAD ERROR]", error);
+      }
+    }
+
+    void loadRouteDurations();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [googleMapsApiKey, mapOriginAddress, routeDurationKey, routeDurationPlans, routeDurationRefreshTick]);
+
   const routes = useMemo(
     () =>
       baseRoutes.map((route) => {
@@ -1149,10 +1296,12 @@ export default function ClassicDispatchPage() {
           ...route,
           orders: routeOrders,
           weight: routeOrders.length,
-          totalMinutes: routeOrders.reduce((sum, order) => sum + getTravelMinutes(order), 0),
+          totalMinutes:
+            routeGoogleMinutesById[route.id] ||
+            routeOrders.reduce((sum, order) => sum + getTravelMinutes(order), 0),
         };
       }),
-    [baseRoutes, planningOrders],
+    [baseRoutes, planningOrders, routeGoogleMinutesById],
   );
   const sortedRoutes = useMemo(
     () =>

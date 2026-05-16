@@ -15,6 +15,7 @@ import {
   buildEnrouteTextMessage,
   sendCustomerEnrouteText,
 } from "../lib/customer-text.server";
+import { createLoaderNotification } from "../lib/loader-notifications.server";
 import {
   ensureSeedDispatchEmployees,
   ensureSeedDispatchOrders,
@@ -32,6 +33,7 @@ import {
 } from "../lib/dispatch.server";
 
 const DISPATCH_TIME_ZONE = "America/Chicago";
+const NEXT_STOP_RELEASE_DELAY_MS = 5 * 60 * 1000;
 
 function getDriverPath(url: URL) {
   return url.pathname.startsWith("/app/")
@@ -110,27 +112,6 @@ function getOneWayTravelMinutes(order: DispatchOrder) {
 function getCustomerEtaText(order: DispatchOrder) {
   const oneWayMinutes = getOneWayTravelMinutes(order);
   return oneWayMinutes ? `${oneWayMinutes} minute${oneWayMinutes === 1 ? "" : "s"}` : "soon";
-}
-
-function getReleaseDelayMs(order: DispatchOrder) {
-  const oneWayMinutes = getOneWayTravelMinutes(order);
-  return Math.max(0, oneWayMinutes - 5) * 60 * 1000;
-}
-
-function getReleaseRemainingMs(order: DispatchOrder, nowMs: number) {
-  if (order.status === "delivered" || order.deliveryStatus === "delivered") return 0;
-  if (order.deliveryStatus !== "en_route" || !order.departedAt) return null;
-
-  const departedMs = new Date(order.departedAt).getTime();
-  if (Number.isNaN(departedMs)) return null;
-  return Math.max(0, getReleaseDelayMs(order) - (nowMs - departedMs));
-}
-
-function formatCountdown(ms: number) {
-  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
 function addDays(date: Date, days: number) {
@@ -231,6 +212,54 @@ function parseChecklistJson(value?: string | null) {
 function getLoadedQuantity(order: DispatchOrder) {
   const checklist = parseChecklistJson(order.checklistJson);
   return String(checklist.loadedQuantity || "").trim();
+}
+
+function isDeliveredStop(order: DispatchOrder) {
+  return order.status === "delivered" || order.deliveryStatus === "delivered";
+}
+
+function isCancelledStop(order: DispatchOrder) {
+  return order.status === "cancelled";
+}
+
+function sortRouteStops(a: DispatchOrder, b: DispatchOrder) {
+  return (
+    Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999) ||
+    String(a.created_at || "").localeCompare(String(b.created_at || ""))
+  );
+}
+
+function isStopReleasedAfterPreviousDelivery(
+  orderedStops: DispatchOrder[],
+  stopIndex: number,
+  nowMs: number,
+) {
+  if (stopIndex <= 0) return true;
+  const previousStop = orderedStops[stopIndex - 1];
+  if (!previousStop || !isDeliveredStop(previousStop)) return false;
+  if (!previousStop.deliveredAt) return true;
+
+  const deliveredMs = new Date(previousStop.deliveredAt).getTime();
+  if (Number.isNaN(deliveredMs)) return true;
+  return nowMs - deliveredMs >= NEXT_STOP_RELEASE_DELAY_MS;
+}
+
+function findNextRouteStopAfterDelivery(
+  orders: DispatchOrder[],
+  routeId: string,
+  deliveredOrderId: string,
+) {
+  const orderedStops = orders
+    .filter((order) => order.assignedRouteId === routeId && !isCancelledStop(order))
+    .sort(sortRouteStops);
+  const deliveredIndex = orderedStops.findIndex((order) => order.id === deliveredOrderId);
+  if (deliveredIndex < 0) return null;
+
+  return (
+    orderedStops
+      .slice(deliveredIndex + 1)
+      .find((order) => !isDeliveredStop(order)) || null
+  );
 }
 
 function canViewAllDriverRoutes(user: AppUserProfile | null) {
@@ -466,6 +495,31 @@ export async function action({ request }: any) {
     }
   }
 
+  let loaderNote = "";
+  if (deliveryStatus === "delivered") {
+    const nextOrder = findNextRouteStopAfterDelivery(
+      scopedState.orders,
+      currentRoute.id,
+      currentOrder.id,
+    );
+    if (nextOrder) {
+      try {
+        await createLoaderNotification({
+          order: nextOrder,
+          route: currentRoute,
+          actor: currentUser,
+          loaderNote: `Previous stop ${getOrderDisplayNumber(updatedOrder)} was delivered. Load this next for ${currentRoute.code}.`,
+        });
+        loaderNote = ` Next load sent to loader: ${getOrderDisplayNumber(nextOrder)}.`;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown loader notification error.";
+        loaderNote = ` Next load loader alert failed: ${message}`;
+      }
+    } else {
+      loaderNote = " No next load on this route.";
+    }
+  }
+
   let emailNote = "";
   if (deliveryStatus === "delivered") {
     try {
@@ -485,7 +539,7 @@ export async function action({ request }: any) {
   return data({
     allowed: true,
     ok: true,
-    message: `Stop marked ${getStatusLabel(deliveryStatus).toLowerCase()}.${smsNote}${emailNote}`,
+    message: `Stop marked ${getStatusLabel(deliveryStatus).toLowerCase()}.${smsNote}${loaderNote}${emailNote}`,
     selectedRouteId: routeId || null,
     selectedOrderId: orderId,
     ...(await loadDriverStateForRequest(request)),
@@ -523,46 +577,35 @@ export default function DispatchDriverPage() {
             .filter(
               (order) =>
                 order.assignedRouteId === selectedRoute.id &&
-                order.status !== "delivered" &&
-                order.deliveryStatus !== "delivered",
+                !isCancelledStop(order),
             )
-            .sort(
-              (a, b) =>
-                Number(a.stopSequence || 9999) - Number(b.stopSequence || 9999),
-            )
+            .sort(sortRouteStops)
         : [],
     [orders, selectedRoute],
   );
-  const completedCount = routeStops.filter(
-    (stop) => stop.deliveryStatus === "delivered",
-  ).length;
-  const visibleStopCount = routeStops.reduce((count, stop, index) => {
-    if (index === 0) return Math.max(count, 1);
-    const previousStop = routeStops[index - 1];
-    const previousRemainingMs = getReleaseRemainingMs(previousStop, nowMs);
-    const previousReleased =
-      previousStop.status === "delivered" ||
-      previousStop.deliveryStatus === "delivered" ||
-      previousRemainingMs === 0;
-    return previousReleased ? index + 1 : count;
-  }, 0);
-  const visibleStops = routeStops.slice(0, Math.max(visibleStopCount, routeStops.length ? 1 : 0));
-  const nextLockedStopCount = Math.max(routeStops.length - visibleStops.length, 0);
-  const activeCountdownStop = visibleStops.find((stop) => {
-    const remainingMs = getReleaseRemainingMs(stop, nowMs);
-    return remainingMs !== null && remainingMs > 0;
-  });
-  const activeCountdownMs = activeCountdownStop
-    ? getReleaseRemainingMs(activeCountdownStop, nowMs) || 0
-    : 0;
+  const activeRouteStops = useMemo(
+    () => routeStops.filter((stop) => !isDeliveredStop(stop)),
+    [routeStops],
+  );
+  const completedCount = routeStops.filter(isDeliveredStop).length;
+  const visibleStops = useMemo(
+    () =>
+      routeStops.filter(
+        (stop, index) =>
+          !isDeliveredStop(stop) &&
+          isStopReleasedAfterPreviousDelivery(routeStops, index, nowMs),
+      ),
+    [nowMs, routeStops],
+  );
+  const nextLockedStopCount = Math.max(activeRouteStops.length - visibleStops.length, 0);
   const trackingStop =
     visibleStops.find((stop) => stop.deliveryStatus === "en_route") ||
     visibleStops[0] ||
-    routeStops[0] ||
+    activeRouteStops[0] ||
     null;
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
+    const timer = window.setInterval(() => setNowMs(Date.now()), 15000);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -748,20 +791,13 @@ export default function DispatchDriverPage() {
         <main style={styles.stopList}>
           {routeStops.length === 0 ? (
             <div style={styles.empty}>No stops scheduled for this route today.</div>
+          ) : activeRouteStops.length === 0 ? (
+            <div style={styles.empty}>All stops on this route are delivered.</div>
           ) : (
             <>
-            {activeCountdownStop ? (
-              <div style={styles.countdownPanel}>
-                <span>Next stop releases in</span>
-                <strong>{formatCountdown(activeCountdownMs)}</strong>
-                <small>
-                  Based on {getCustomerEtaText(activeCountdownStop)} travel time minus 5 minutes.
-                </small>
-              </div>
-            ) : null}
             {nextLockedStopCount ? (
               <div style={styles.lockedNotice}>
-                {nextLockedStopCount} later stop{nextLockedStopCount === 1 ? "" : "s"} hidden until the route timer releases them.
+                {nextLockedStopCount} later stop{nextLockedStopCount === 1 ? "" : "s"} hidden. The next stop appears 5 minutes after the current stop is delivered.
               </div>
             ) : null}
             {visibleStops.map((stop) => (
