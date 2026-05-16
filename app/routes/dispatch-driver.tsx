@@ -131,6 +131,63 @@ function formatCountdown(ms: number) {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
+function addDays(date: Date, days: number) {
+  const next = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function dateKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+function parseRequestedDate(value?: string | null) {
+  const trimmed = String(value || "").trim();
+  if (!trimmed || /needs scheduling|unavailable|unknown/i.test(trimmed)) return null;
+
+  const today = new Date();
+  const lower = trimmed.toLowerCase();
+  if (/\btoday\b/.test(lower)) {
+    return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  }
+  if (/\btomorrow\b/.test(lower)) {
+    return addDays(today, 1);
+  }
+
+  const isoDate = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (isoDate) {
+    return new Date(Number(isoDate[1]), Number(isoDate[2]) - 1, Number(isoDate[3]));
+  }
+
+  const slashDate = trimmed.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/);
+  if (slashDate) {
+    const year =
+      slashDate[3].length === 2 ? 2000 + Number(slashDate[3]) : Number(slashDate[3]);
+    return new Date(year, Number(slashDate[1]) - 1, Number(slashDate[2]));
+  }
+
+  const monthDate = trimmed.match(
+    /\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+\d{1,2}(?:,\s*\d{4})?/i,
+  )?.[0];
+  if (monthDate) {
+    const parsed = new Date(/\d{4}/.test(monthDate) ? monthDate : `${monthDate}, ${today.getFullYear()}`);
+    if (!Number.isNaN(parsed.getTime())) {
+      return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+    }
+  }
+
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+}
+
+function isRequestedToday(order: DispatchOrder) {
+  const requestedDate = parseRequestedDate(order.requestedWindow);
+  return requestedDate ? dateKey(requestedDate) === dateKey(new Date()) : false;
+}
+
 function buildChecklistJson(form: FormData) {
   const existing = parseChecklistJson(String(form.get("customChecklist") || ""));
   return JSON.stringify({
@@ -212,9 +269,20 @@ async function loadDriverState() {
       await resetDispatchRoutesForNewDay();
     }
 
+    const [allOrders, allRoutes] = await Promise.all([
+      getDispatchOrders(),
+      getDispatchRoutes(),
+    ]);
+    const todayOrders = allOrders.filter(isRequestedToday);
+    const todayRouteIds = new Set(
+      todayOrders
+        .map((order) => order.assignedRouteId)
+        .filter(Boolean),
+    );
+
     return {
-      orders: await getDispatchOrders(),
-      routes: await getDispatchRoutes(),
+      orders: todayOrders,
+      routes: allRoutes.filter((route) => todayRouteIds.has(route.id)),
       storageReady: true,
       storageError: null,
     };
@@ -224,8 +292,12 @@ async function loadDriverState() {
     console.error("[DISPATCH DRIVER STORAGE ERROR]", message);
 
     return {
-      orders: seedDispatchOrders,
-      routes: seedDispatchRoutes,
+      orders: seedDispatchOrders.filter(isRequestedToday),
+      routes: seedDispatchRoutes.filter((route) =>
+        seedDispatchOrders
+          .filter(isRequestedToday)
+          .some((order) => order.assignedRouteId === route.id),
+      ),
       storageReady: false,
       storageError: message,
     };
@@ -589,7 +661,7 @@ export default function DispatchDriverPage() {
             <p style={styles.subtle}>
               {selectedRoute
                 ? `${selectedRoute.driver}${selectedRoute.helper ? ` / ${selectedRoute.helper}` : ""} · ${selectedRoute.shift || "Shift not set"}`
-                : "No active route selected"}
+                : "No route scheduled for today"}
             </p>
           </div>
           <div className="driver-header-actions" style={styles.headerActions}>
@@ -659,7 +731,7 @@ export default function DispatchDriverPage() {
 
         <main style={styles.stopList}>
           {routeStops.length === 0 ? (
-            <div style={styles.empty}>No stops assigned to this route yet.</div>
+            <div style={styles.empty}>No stops scheduled for this route today.</div>
           ) : (
             <>
             {activeCountdownStop ? (

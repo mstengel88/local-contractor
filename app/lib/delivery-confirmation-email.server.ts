@@ -29,6 +29,31 @@ function formatDeliveredAt(order: DispatchOrder) {
   return new Date(order.deliveredAt).toLocaleString();
 }
 
+function getImageProofSource(value?: string | null) {
+  const proof = String(value || "").trim();
+  if (/^data:image\//i.test(proof)) return proof;
+  if (/^https?:\/\/.+\.(?:png|jpe?g|webp|gif)(?:\?.*)?$/i.test(proof)) return proof;
+  return "";
+}
+
+function parseGpsProof(value?: string | null) {
+  const proof = String(value || "").trim();
+  const match = proof.match(/(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
+  if (!match) {
+    return {
+      text: proof || "Not captured",
+      mapsUrl: "",
+    };
+  }
+
+  const latitude = match[1];
+  const longitude = match[2];
+  return {
+    text: proof,
+    mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${latitude},${longitude}`)}`,
+  };
+}
+
 function getQuantityColumns(order: DispatchOrder) {
   const unit = order.unit.toLowerCase();
   return {
@@ -51,7 +76,8 @@ export function buildDeliveryConfirmationEmail({
   const deliveredAt = formatDeliveredAt(order);
   const driverName = order.signatureName || route?.driver || order.proofName || "";
   const photoProof = order.photoUrls || "Not captured";
-  const gpsProof = order.signatureData || "Not captured";
+  const photoProofSource = getImageProofSource(order.photoUrls);
+  const gpsProof = parseGpsProof(order.signatureData);
 
   const subject = `Green Hills Supply delivery confirmation ${orderNumber}`;
   const text = [
@@ -76,7 +102,7 @@ export function buildDeliveryConfirmationEmail({
     ``,
     `Delivery Notes: ${order.proofNotes || order.notes || ""}`,
     `Photo Proof: ${photoProof}`,
-    `GPS Proof: ${gpsProof}`,
+    `GPS Proof: ${gpsProof.text}${gpsProof.mapsUrl ? ` (${gpsProof.mapsUrl})` : ""}`,
   ].join("\n");
 
   const html = `<!doctype html>
@@ -144,10 +170,10 @@ export function buildDeliveryConfirmationEmail({
       <table role="presentation" width="100%" cellspacing="12" cellpadding="0" style="border-collapse:separate;margin-top:10px;">
         <tr>
           ${fieldCell("Driver Signature", driverName)}
-          ${fieldCell("GPS Location Verification", gpsProof)}
+          ${fieldCellHtml("GPS Location Verification", gpsProofHtml(gpsProof.text, gpsProof.mapsUrl))}
         </tr>
         <tr>
-          ${fieldCell("Picture of Delivered Order", photoProof)}
+          ${photoProofSource ? photoCell(photoProofSource) : fieldCell("Picture of Delivered Order", photoProof)}
           ${fieldCell("Driver Notes Upon Delivery", order.proofNotes || "")}
         </tr>
       </table>
@@ -170,6 +196,27 @@ function fieldCell(label: string, value: string) {
   return `<td style="width:50%;border:2px solid #ffffff;padding:8px 10px;vertical-align:top;">
     <div style="color:#9ad20f;font-size:12px;font-weight:900;">${escapeHtml(label)}</div>
     <div style="color:#ffffff;font-size:14px;line-height:1.45;margin-top:4px;">${escapeHtml(value || " ")}</div>
+  </td>`;
+}
+
+function fieldCellHtml(label: string, htmlValue: string) {
+  return `<td style="width:50%;border:2px solid #ffffff;padding:8px 10px;vertical-align:top;">
+    <div style="color:#9ad20f;font-size:12px;font-weight:900;">${escapeHtml(label)}</div>
+    <div style="color:#ffffff;font-size:14px;line-height:1.45;margin-top:4px;">${htmlValue || " "}</div>
+  </td>`;
+}
+
+function gpsProofHtml(value: string, mapsUrl: string) {
+  const escapedValue = escapeHtml(value || "Not captured");
+  if (!mapsUrl) return escapedValue;
+
+  return `${escapedValue}<br /><a href="${escapeHtml(mapsUrl)}" style="color:#9ad20f;font-weight:900;">Open GPS location in Google Maps</a>`;
+}
+
+function photoCell(src: string) {
+  return `<td style="width:50%;border:2px solid #ffffff;padding:8px 10px;vertical-align:top;">
+    <div style="color:#9ad20f;font-size:12px;font-weight:900;">Picture of Delivered Order</div>
+    <img src="${escapeHtml(src)}" alt="Picture of delivered order" style="display:block;width:100%;max-width:320px;height:auto;margin-top:8px;border:1px solid #9ad20f;border-radius:6px;" />
   </td>`;
 }
 
