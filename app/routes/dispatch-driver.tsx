@@ -890,6 +890,7 @@ function DriverLiveTracking({
   const [trackingStatus, setTrackingStatus] = useState(
     trackingEnabled ? "Starting GPS tracking..." : "Live GPS is paused on this device.",
   );
+  const [backgroundTrackingStatus, setBackgroundTrackingStatus] = useState("");
   const [lastPing, setLastPing] = useState("");
   const routeRef = useRef(route);
   const activeStopRef = useRef(activeStop);
@@ -1090,15 +1091,45 @@ function DriverLiveTracking({
     setTrackingStatus("Live GPS is paused on this device.");
   }
 
+  async function startWinterWatchBackgroundTracking() {
+    setBackgroundTrackingStatus("Opening WinterWatch background GPS...");
+
+    try {
+      const params = new URLSearchParams({
+        routeId: route.id,
+      });
+      if (activeStop?.id) params.set("orderId", activeStop.id);
+
+      const response = await fetch(`/api/dispatch-tracking-session?${params.toString()}`);
+      const result = await response.json().catch(() => null);
+      if (!response.ok || result?.ok === false || !result?.deepLink) {
+        throw new Error(result?.message || "Unable to create background tracking session.");
+      }
+
+      window.location.href = result.deepLink;
+      window.setTimeout(() => {
+        setBackgroundTrackingStatus("If WinterWatch did not open, open this route from the WinterWatch app once.");
+      }, 2500);
+    } catch (error) {
+      setBackgroundTrackingStatus(
+        error instanceof Error ? error.message : "Unable to start WinterWatch background GPS.",
+      );
+    }
+  }
+
   return (
     <section style={styles.trackingPanel}>
       <div>
         <span style={styles.trackingLabel}>Live GPS</span>
         <strong>{trackingStatus}</strong>
+        {backgroundTrackingStatus ? <small>{backgroundTrackingStatus}</small> : null}
       </div>
       {trackingEnabled ? (
         <div style={styles.trackingActions}>
           <small>{lastPing ? `Last map update ${lastPing}` : "Waiting for the first GPS update."}</small>
+          <button type="button" style={styles.trackingButton} onClick={startWinterWatchBackgroundTracking}>
+            Start iOS Background GPS
+          </button>
           <button type="button" style={styles.trackingSecondaryButton} onClick={pauseTracking}>
             Pause GPS
           </button>

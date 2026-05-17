@@ -4,6 +4,7 @@ import {
   getLatestDispatchDriverLocations,
   upsertDispatchDriverLocation,
 } from "../lib/dispatch.server";
+import { verifyDispatchTrackingToken } from "../lib/dispatch-tracking-token.server";
 
 function getCorsHeaders(request: Request) {
   const configuredOrigin = process.env.DISPATCH_TRACKING_ALLOWED_ORIGIN || "*";
@@ -13,7 +14,7 @@ function getCorsHeaders(request: Request) {
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-Dispatch-Tracking-Token",
+    "Access-Control-Allow-Headers": "Content-Type, X-Dispatch-Tracking-Token, X-Dispatch-Tracking-Session",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };
@@ -24,6 +25,13 @@ function hasDispatchTrackingToken(request: Request) {
   if (!expectedToken) return false;
   const providedToken = request.headers.get("x-dispatch-tracking-token") || "";
   return providedToken === expectedToken;
+}
+
+function getDispatchTrackingSession(request: Request) {
+  return verifyDispatchTrackingToken(
+    request.headers.get("x-dispatch-tracking-session") ||
+      request.headers.get("x-dispatch-tracking-token"),
+  );
 }
 
 export async function loader({ request }: { request: Request }) {
@@ -58,9 +66,11 @@ export async function action({ request }: { request: Request }) {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
+  const trackingSession = getDispatchTrackingSession(request);
   const allowed =
     (await hasAdminQuotePermissionAccess(request, "driver")) ||
-    hasDispatchTrackingToken(request);
+    hasDispatchTrackingToken(request) ||
+    Boolean(trackingSession);
   if (!allowed) {
     return data({ ok: false, message: "Unauthorized" }, { status: 401, headers: corsHeaders });
   }
@@ -78,11 +88,11 @@ export async function action({ request }: { request: Request }) {
 
   try {
     const location = await upsertDispatchDriverLocation({
-      routeId: body?.routeId || null,
-      orderId: body?.orderId || null,
-      driverId: body?.driverId || null,
-      driverName: String(body?.driverName || ""),
-      truck: String(body?.truck || ""),
+      routeId: trackingSession?.routeId || body?.routeId || null,
+      orderId: trackingSession?.orderId || body?.orderId || null,
+      driverId: trackingSession?.driverId || body?.driverId || null,
+      driverName: String(trackingSession?.driverName || body?.driverName || ""),
+      truck: String(trackingSession?.truck || body?.truck || ""),
       latitude,
       longitude,
       accuracy: Number.isFinite(Number(body?.accuracy)) ? Number(body.accuracy) : null,
