@@ -2272,6 +2272,22 @@ export default function ClassicDispatchPage() {
           <button type="button" style={styles.outlineButton} onClick={testChime}>
             Test Chime
           </button>
+          {canManageDispatch ? (
+            <Form
+              method="post"
+              style={styles.compactTopForm}
+              onSubmit={(event) => {
+                if (!window.confirm("Clear all live driver tracking icons from the map?")) {
+                  event.preventDefault();
+                } else {
+                  setDriverLocations([]);
+                }
+              }}
+            >
+              <input type="hidden" name="intent" value="clear-driver-locations" />
+              <button type="submit" style={styles.outlineButton}>Clear Tracking</button>
+            </Form>
+          ) : null}
           {chimeStatus ? <span style={styles.chimeStatus}>{chimeStatus}</span> : null}
           <label style={testDeliveryControls ? styles.manualRouteToggleActive : styles.manualRouteToggle}>
             <input

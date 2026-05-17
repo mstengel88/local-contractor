@@ -1063,6 +1063,7 @@ const TRUCKS_TABLE = "dispatch_trucks";
 const EMPLOYEES_TABLE = "dispatch_employees";
 const SETTINGS_TABLE = "dispatch_settings";
 const DRIVER_LOCATIONS_TABLE = "dispatch_driver_locations";
+const DEFAULT_DRIVER_LOCATION_MAX_AGE_MINUTES = 20;
 const CLASSIC_COLUMNS_SETTING_KEY = "classic_columns";
 const DISPATCH_ORDER_LIGHT_COLUMNS = [
   "id",
@@ -1511,10 +1512,21 @@ export async function getDispatchOrders(options: { lightweight?: boolean } = {})
   return (data || []).map(normalizeOrder);
 }
 
+function getDriverLocationMaxAgeMinutes() {
+  const configured = Number(process.env.DISPATCH_DRIVER_LOCATION_MAX_AGE_MINUTES || "");
+  return Number.isFinite(configured) && configured > 0
+    ? configured
+    : DEFAULT_DRIVER_LOCATION_MAX_AGE_MINUTES;
+}
+
 export async function getLatestDispatchDriverLocations() {
+  const cutoff = new Date(
+    Date.now() - getDriverLocationMaxAgeMinutes() * 60 * 1000,
+  ).toISOString();
   const { data, error } = await supabaseAdmin
     .from(DRIVER_LOCATIONS_TABLE)
     .select("*")
+    .gte("captured_at", cutoff)
     .order("captured_at", { ascending: false });
 
   if (error) {
@@ -1534,6 +1546,20 @@ export async function getLatestDispatchDriverLocations() {
       seen.add(key);
       return Number.isFinite(location.latitude) && Number.isFinite(location.longitude);
     });
+}
+
+export async function clearDispatchDriverLocations(routeId?: string | null) {
+  let query = supabaseAdmin.from(DRIVER_LOCATIONS_TABLE).delete();
+  query = routeId ? query.eq("route_id", routeId) : query.gte("captured_at", "1970-01-01T00:00:00.000Z");
+
+  const { error } = await query;
+  if (error) {
+    if (error.code === "42P01" || /does not exist|schema cache/i.test(error.message || "")) {
+      console.warn("[DISPATCH DRIVER LOCATION STORAGE MISSING]", formatSupabaseError(error));
+      return;
+    }
+    throw new Error(formatSupabaseError(error));
+  }
 }
 
 export async function upsertDispatchDriverLocation(input: {

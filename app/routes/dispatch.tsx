@@ -17,6 +17,7 @@ import {
   createDispatchRoute,
   createDispatchTruck,
   createDispatchOrder,
+  clearDispatchDriverLocations,
   deleteDispatchEmployee,
   deleteDispatchOrder,
   deleteDispatchRoute,
@@ -1366,6 +1367,26 @@ export async function action({ request }: any) {
   try {
     if (process.env.DISPATCH_AUTO_DAILY_RESET === "true") {
       await resetDispatchRoutesForNewDay();
+    }
+
+    if (intent === "clear-driver-locations") {
+      await clearDispatchDriverLocations();
+      const dispatchState = await loadDispatchState({ skipSetup: true, fast: true });
+
+      await logAuditEvent({
+        actor: currentUser,
+        action: "clear_driver_locations",
+        targetType: "dispatch",
+        targetId: "driver-locations",
+        targetLabel: "Driver GPS locations",
+      });
+
+      return data({
+        allowed: true,
+        ok: true,
+        message: "Live tracking icons cleared from the map.",
+        ...dispatchState,
+      });
     }
 
     if (intent === "auto-route-orders") {
