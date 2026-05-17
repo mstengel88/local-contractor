@@ -7967,7 +7967,10 @@ async function assignOrderToRoute({
     eta: eta || null,
     notes: [order.notes, splitNote].filter(Boolean).join("\n")
   });
-  const shopifyResult = await fulfillDispatchOrderInShopify(updatedOriginal, route57);
+  const shopifyResult = await fulfillDispatchOrderInShopify({
+    ...updatedOriginal,
+    quantity: order.quantity
+  }, route57);
   const shopifyNote = shopifyResult.skipped ? "" : shopifyResult.ok ? " Shopify marked fulfilled." : ` Shopify fulfillment failed: ${shopifyResult.message}`;
   for (let index = 1; index < splitCount; index += 1) {
     const created = await createDispatchOrder({
@@ -26596,6 +26599,24 @@ const route45 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.definePrope
   __proto__: null,
   loader: loader$3
 }, Symbol.toStringTag, { value: "Module" }));
+function getCorsHeaders(request) {
+  const configuredOrigin = process.env.DISPATCH_TRACKING_ALLOWED_ORIGIN || "*";
+  const requestOrigin = request.headers.get("origin") || "*";
+  const allowedOrigin = configuredOrigin === "*" ? requestOrigin : configuredOrigin;
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, X-Dispatch-Tracking-Token",
+    "Access-Control-Max-Age": "86400",
+    Vary: "Origin"
+  };
+}
+function hasDispatchTrackingToken(request) {
+  const expectedToken = process.env.DISPATCH_DRIVER_TRACKING_TOKEN || "";
+  if (!expectedToken) return false;
+  const providedToken = request.headers.get("x-dispatch-tracking-token") || "";
+  return providedToken === expectedToken;
+}
 async function loader$2({
   request
 }) {
@@ -26627,13 +26648,21 @@ async function loader$2({
 async function action$5({
   request
 }) {
-  const allowed = await hasAdminQuotePermissionAccess(request, "driver");
+  const corsHeaders = getCorsHeaders(request);
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders
+    });
+  }
+  const allowed = await hasAdminQuotePermissionAccess(request, "driver") || hasDispatchTrackingToken(request);
   if (!allowed) {
     return data({
       ok: false,
       message: "Unauthorized"
     }, {
-      status: 401
+      status: 401,
+      headers: corsHeaders
     });
   }
   const body = await request.json().catch(() => null);
@@ -26644,7 +26673,8 @@ async function action$5({
       ok: false,
       message: "Missing GPS coordinates."
     }, {
-      status: 400
+      status: 400,
+      headers: corsHeaders
     });
   }
   try {
@@ -26664,13 +26694,16 @@ async function action$5({
     return data({
       ok: true,
       location
+    }, {
+      headers: corsHeaders
     });
   } catch (error) {
     return data({
       ok: false,
       message: error instanceof Error ? error.message : "Unable to save driver location."
     }, {
-      status: 500
+      status: 500,
+      headers: corsHeaders
     });
   }
 }

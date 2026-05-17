@@ -5,6 +5,27 @@ import {
   upsertDispatchDriverLocation,
 } from "../lib/dispatch.server";
 
+function getCorsHeaders(request: Request) {
+  const configuredOrigin = process.env.DISPATCH_TRACKING_ALLOWED_ORIGIN || "*";
+  const requestOrigin = request.headers.get("origin") || "*";
+  const allowedOrigin = configuredOrigin === "*" ? requestOrigin : configuredOrigin;
+
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, X-Dispatch-Tracking-Token",
+    "Access-Control-Max-Age": "86400",
+    Vary: "Origin",
+  };
+}
+
+function hasDispatchTrackingToken(request: Request) {
+  const expectedToken = process.env.DISPATCH_DRIVER_TRACKING_TOKEN || "";
+  if (!expectedToken) return false;
+  const providedToken = request.headers.get("x-dispatch-tracking-token") || "";
+  return providedToken === expectedToken;
+}
+
 export async function loader({ request }: { request: Request }) {
   const allowed =
     (await hasAdminQuotePermissionAccess(request, "dispatch")) ||
@@ -32,9 +53,16 @@ export async function loader({ request }: { request: Request }) {
 }
 
 export async function action({ request }: { request: Request }) {
-  const allowed = await hasAdminQuotePermissionAccess(request, "driver");
+  const corsHeaders = getCorsHeaders(request);
+  if (request.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
+  const allowed =
+    (await hasAdminQuotePermissionAccess(request, "driver")) ||
+    hasDispatchTrackingToken(request);
   if (!allowed) {
-    return data({ ok: false, message: "Unauthorized" }, { status: 401 });
+    return data({ ok: false, message: "Unauthorized" }, { status: 401, headers: corsHeaders });
   }
 
   const body = await request.json().catch(() => null);
@@ -42,7 +70,10 @@ export async function action({ request }: { request: Request }) {
   const longitude = Number(body?.longitude);
 
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-    return data({ ok: false, message: "Missing GPS coordinates." }, { status: 400 });
+    return data(
+      { ok: false, message: "Missing GPS coordinates." },
+      { status: 400, headers: corsHeaders },
+    );
   }
 
   try {
@@ -60,14 +91,14 @@ export async function action({ request }: { request: Request }) {
       capturedAt: body?.capturedAt || new Date().toISOString(),
     });
 
-    return data({ ok: true, location });
+    return data({ ok: true, location }, { headers: corsHeaders });
   } catch (error) {
     return data(
       {
         ok: false,
         message: error instanceof Error ? error.message : "Unable to save driver location.",
       },
-      { status: 500 },
+      { status: 500, headers: corsHeaders },
     );
   }
 }
