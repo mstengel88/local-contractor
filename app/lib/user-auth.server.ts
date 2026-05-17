@@ -14,11 +14,13 @@ const cookieSecret =
 const supabaseUrl = process.env.SUPABASE_URL || "";
 const supabaseAuthKey =
   process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const embeddedAuthCookiesEnabled =
+  process.env.CONTRACTOR_EMBEDDED_AUTH_COOKIES === "true";
 
 export const userAuthCookie = createCookie("contractor_user_session", {
   httpOnly: true,
   path: "/",
-  sameSite: "lax",
+  sameSite: embeddedAuthCookiesEnabled ? "none" : "lax",
   secure: true,
   secrets: [cookieSecret],
   maxAge: 60 * 60 * 24 * 7,

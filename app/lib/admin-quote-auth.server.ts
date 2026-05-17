@@ -4,11 +4,13 @@ import { type UserPermission } from "./user-permissions";
 
 const cookieSecret =
   process.env.QUOTE_ACCESS_COOKIE_SECRET || "dev-secret-change-me";
+const embeddedAuthCookiesEnabled =
+  process.env.CONTRACTOR_EMBEDDED_AUTH_COOKIES === "true";
 
 export const adminQuoteCookie = createCookie("admin_quote_access", {
   httpOnly: true,
   path: "/",
-  sameSite: "lax",
+  sameSite: embeddedAuthCookiesEnabled ? "none" : "lax",
   secure: true,
   secrets: [cookieSecret],
   maxAge: 60 * 60 * 12,

@@ -916,10 +916,11 @@ const allPermissions = Object.keys(permissionLabels);
 const cookieSecret$1 = process.env.USER_AUTH_COOKIE_SECRET || process.env.QUOTE_ACCESS_COOKIE_SECRET || "dev-secret-change-me";
 const supabaseUrl = process.env.SUPABASE_URL || "";
 const supabaseAuthKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const embeddedAuthCookiesEnabled$1 = process.env.CONTRACTOR_EMBEDDED_AUTH_COOKIES === "true";
 const userAuthCookie = createCookie("contractor_user_session", {
   httpOnly: true,
   path: "/",
-  sameSite: "lax",
+  sameSite: embeddedAuthCookiesEnabled$1 ? "none" : "lax",
   secure: true,
   secrets: [cookieSecret$1],
   maxAge: 60 * 60 * 24 * 7
@@ -1202,10 +1203,11 @@ async function changeCurrentUserPassword(request, password) {
   });
 }
 const cookieSecret = process.env.QUOTE_ACCESS_COOKIE_SECRET || "dev-secret-change-me";
+const embeddedAuthCookiesEnabled = process.env.CONTRACTOR_EMBEDDED_AUTH_COOKIES === "true";
 const adminQuoteCookie = createCookie("admin_quote_access", {
   httpOnly: true,
   path: "/",
-  sameSite: "lax",
+  sameSite: embeddedAuthCookiesEnabled ? "none" : "lax",
   secure: true,
   secrets: [cookieSecret],
   maxAge: 60 * 60 * 12
